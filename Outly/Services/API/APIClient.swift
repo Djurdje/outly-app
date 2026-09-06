@@ -216,6 +216,16 @@ struct CloudinarySignature: Decodable {
     let timestamp: Int
     let folder: String
     let signature: String
+
+    /// Backend ga sestavi sam in ga vkljuci v podpis (npr. "outly/u42/1757193600-3f9a1c2b").
+    /// Ker je del podpisa, ga MORAMO poslati naprej Cloudinaryju nespremenjenega,
+    /// sicer podpis ne velja. Hkrati preprecuje pisanje cez tuje slike.
+    let publicId: String
+
+    enum CodingKeys: String, CodingKey {
+        case cloudName, apiKey, timestamp, folder, signature
+        case publicId
+    }
 }
 
 extension APIClient {
@@ -285,6 +295,7 @@ extension APIClient {
         addField("api_key", signature.apiKey)
         addField("timestamp", String(signature.timestamp))
         addField("folder", signature.folder)
+        addField("public_id", signature.publicId)
         addField("signature", signature.signature)
 
         addFile("file", fileName, imageData)

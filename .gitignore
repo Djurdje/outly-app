@@ -28,3 +28,6 @@ fastlane/test_output
 
 # Logs
 *.log
+
+# Interno git smetisce (mount ne dovoli brisanja)
+.git/_smeti/
