@@ -17,15 +17,11 @@ struct HomeView: View {
     @EnvironmentObject private var prefs: UserPreferences
     @EnvironmentObject private var locationManager: LocationManager
 
-    private var userMinAge: Int {
-        switch prefs.selectedAgeGroup {
-        case .under18: return 0
-        case ._18plus: return 18
-        case ._21plus: return 21
-        case ._25plus: return 25
-        case nil: return 0
-        }
-    }
+    /// Starost iz datuma rojstva (GET /me). nil = neznana -> klubov ne filtriramo po starosti.
+    private var userAge: Int? { session.me?.age }
+
+    /// Zanri uporabnika iz streznika (PATCH /me v dokoncanju racuna).
+    private var userGenres: [String] { session.me?.genres ?? [] }
 
     private func distanceKm(to club: APIClub) -> Double? {
         guard let userLoc = locationManager.location else { return nil }
@@ -37,10 +33,10 @@ struct HomeView: View {
 
     private var filteredClubs: [APIClub] {
         clubs.filter { club in
-            if club.minAge > userMinAge { return false }
+            if let age = userAge, club.minAge > age { return false }
 
-            if !prefs.selectedGenres.isEmpty {
-                let selectedSet = Set(prefs.selectedGenres.map { $0.rawValue.lowercased() })
+            if !userGenres.isEmpty {
+                let selectedSet = Set(userGenres.map { $0.lowercased() })
                 let clubSet = Set(club.genres.map { $0.lowercased() })
                 if selectedSet.isDisjoint(with: clubSet) { return false }
             }
@@ -203,11 +199,7 @@ struct HomeView: View {
 
     private func loadMe() async {
         guard !authToken.isEmpty else { return }
-        do {
-            let fetched = try await APIClient.shared.me(token: authToken)
-            await MainActor.run { self.me = fetched }
-        } catch {
-            print("HomeView loadMe error:", error.localizedDescription)
-        }
+        await session.refreshMe()
+        await MainActor.run { self.me = session.me }
     }
 }

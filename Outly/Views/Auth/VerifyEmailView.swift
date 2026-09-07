@@ -30,7 +30,7 @@ struct VerifyEmailView: View {
 
                 Text("Verify your email")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(red: 0.33, green: 0.47, blue: 0.98))
+                    .foregroundColor(Color.outlyBlue)
 
                 Text("We sent a 6-digit code to:")
                     .font(.system(size: 14, weight: .semibold))
@@ -72,7 +72,7 @@ struct VerifyEmailView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color(red: 0.33, green: 0.47, blue: 0.98))
+                    .background(Color.outlyBlue)
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 }

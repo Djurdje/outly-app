@@ -27,7 +27,7 @@ struct RegisterView: View {
 
                 Text("Create an account")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(red: 0.33, green: 0.47, blue: 0.98))
+                    .foregroundColor(Color.outlyBlue)
                     .padding(.top, 6)
 
                 VStack(spacing: 12) {
@@ -68,7 +68,7 @@ struct RegisterView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color(red: 0.33, green: 0.47, blue: 0.98))
+                        .background(Color.outlyBlue)
                         .foregroundColor(.white)
                         .cornerRadius(14)
                     }

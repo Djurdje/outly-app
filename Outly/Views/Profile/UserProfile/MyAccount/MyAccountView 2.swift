@@ -105,12 +105,9 @@ struct MyAccountView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Button {
-                        // TODO: confirmation + backend delete
-                    } label: {
+                    NavigationLink(destination: DeleteAccountView()) {
                         OutlyMenuRowButton(icon: "trash", title: "Delete account")
                     }
-                    .buttonStyle(.plain)
                 }
 
                 Spacer()

@@ -1,0 +1,128 @@
+import SwiftUI
+
+/// Figma: "Create New Password" (15:985). Figma nima polja za kodo, backend
+/// (POST /auth/reset-password) pa jo zahteva — zato je tu dodano polje za 6-mestno kodo.
+struct ResetPasswordView: View {
+    let email: String
+
+    @AppStorage("authStage") private var authStage: String = "login"
+    @AppStorage("loginNotice") private var loginNotice: String = ""
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var code = ""
+    @State private var password = ""
+    @State private var confirm = ""
+    @State private var message: String?
+    @State private var isLoading = false
+    @State private var resent = false
+
+    var body: some View {
+        ZStack {
+            Color.outlyBackground.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 12) {
+                    Spacer().frame(height: 30)
+
+                    Image("logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 140)
+
+                    Text("We sent a 6-digit code to \(email).")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 10)
+
+                    Text("Your new password must be different from the\npreviously used password.")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 10)
+
+                    OutlyTextField(placeholder: "6-digit code", text: $code)
+                        .keyboardType(.numberPad)
+                        .textContentType(.oneTimeCode)
+                        .onChange(of: code) { _, newVal in
+                            let digits = newVal.filter { $0.isNumber }
+                            let cut = String(digits.prefix(6))
+                            if cut != newVal { code = cut }
+                        }
+
+                    OutlySecureField(placeholder: "new password...", text: $password)
+                        .textContentType(.newPassword)
+                    OutlySecureField(placeholder: "confirm password...", text: $confirm)
+                        .textContentType(.newPassword)
+
+                    if let message {
+                        Text(message)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)
+                    }
+
+                    OutlyPrimaryButton(title: isLoading ? "Saving..." : "Save", isLoading: isLoading) {
+                        Task { await save() }
+                    }
+                    .disabled(isLoading || !canSubmit)
+                    .opacity(canSubmit ? 1 : 0.6)
+
+                    Button {
+                        Task { await resend() }
+                    } label: {
+                        Text(resent ? "Code sent again" : "Resend code")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.85))
+                            .padding(.top, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isLoading || resent)
+
+                    Spacer(minLength: 40)
+                }
+                .padding(.horizontal, 32)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.outlyBackground, for: .navigationBar)
+        .preferredColorScheme(.dark)
+    }
+
+    private var canSubmit: Bool {
+        code.count == 6 && password.count >= 8 && !confirm.isEmpty
+    }
+
+    private func save() async {
+        message = nil
+        guard code.count == 6 else { message = "Enter the 6-digit code from the email."; return }
+        guard password.count >= 8 else { message = "Password must be at least 8 characters."; return }
+        guard password == confirm else { message = "Passwords do not match."; return }
+
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            try await APIClient.shared.resetPassword(email: email, code: code, newPassword: password)
+            // Nazaj na prijavo z obvestilom. Ponastavitev NE prijavi samodejno
+            // (streznik ne vrne zetona), kar je prav: uporabnik se prijavi z novim geslom.
+            loginNotice = "Password updated. Log in with your new password."
+            authStage = "login"
+            dismiss()
+        } catch {
+            message = error.userMessage
+        }
+    }
+
+    private func resend() async {
+        message = nil
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            try await APIClient.shared.forgotPassword(email: email)
+            resent = true
+        } catch {
+            message = error.userMessage
+        }
+    }
+}

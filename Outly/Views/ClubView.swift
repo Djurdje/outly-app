@@ -11,7 +11,7 @@ struct ClubDetailView: View {
     @State private var errorText: String?
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
-        span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02),
+        span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
     )
 
     var body: some View {

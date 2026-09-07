@@ -15,7 +15,15 @@ final class SessionStore: ObservableObject {
 
     @Published private(set) var token: String = ""
 
+    /// Trenutni uporabnik iz GET /me. nil = se ni nalozen (ali odjavljen).
+    @Published var me: Me? = nil
+    /// Napaka zadnjega nalaganja /me (razumljivo sporocilo), nil ce je slo v redu.
+    @Published var meLoadError: String? = nil
+
     var isLoggedIn: Bool { !token.isEmpty }
+
+    /// Racun se ni dokoncan (onboarded_at je prazen) -> pokazi "Complete your account".
+    var needsOnboarding: Bool { me != nil && me?.isOnboarded == false }
 
     init() {
         migrateLegacyTokenIfNeeded()
@@ -41,6 +49,31 @@ final class SessionStore: ObservableObject {
     func logout() {
         _ = KeychainService.shared.deleteToken()
         token = ""
+        me = nil
+        meLoadError = nil
+    }
+
+    /// Nalozi GET /me. Ob 401 (zeton potekel ali preklican) odjavi.
+    /// Vrne true, ce je uporabnik nalozen.
+    @discardableResult
+    func refreshMe() async -> Bool {
+        guard !token.isEmpty else { return false }
+        do {
+            let fetched = try await APIClient.shared.me(token: token)
+            me = fetched
+            meLoadError = nil
+            return true
+        } catch let api as APIError {
+            if case let .requestFailed(code, _) = api, code == 401 {
+                logout()
+                return false
+            }
+            meLoadError = api.userMessage
+            return false
+        } catch {
+            meLoadError = error.userMessage
+            return false
+        }
     }
 
     /// Enkratna selitev: starejse razlicice so zeton hranile v UserDefaults ("authToken").

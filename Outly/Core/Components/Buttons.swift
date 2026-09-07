@@ -2,6 +2,30 @@ import SwiftUI
 import PhotosUI
 
 //Gumbi
+
+/// Glavni modri gumb iz Figme (#4C76FF, visina 40-48, radij 8-14). Eno mesto,
+/// da se Login/Register/Forgot/Complete ne razidejo.
+struct OutlyPrimaryButton: View {
+    let title: String
+    var isLoading: Bool = false
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                if isLoading { ProgressView().tint(.white) }
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.outlyBlue)
+            .foregroundColor(.white)
+            .cornerRadius(14)
+        }
+    }
+}
+
 struct OutlyMenuRowButton: View {
     let icon: String
     let title: String

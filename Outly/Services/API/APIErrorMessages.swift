@@ -1,0 +1,77 @@
+import Foundation
+
+/// Prevod napak streznika v sporocila za uporabnika.
+/// Pravilo: uporabnik nikoli ne vidi surovega besedila streznika ali stevilke napake.
+extension Error {
+    var userMessage: String {
+        if let api = self as? APIError { return api.userMessage }
+        if let url = self as? URLError {
+            switch url.code {
+            case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                return "No internet connection. Check your network and try again."
+            case .timedOut:
+                return "The server took too long to respond. Please try again."
+            default:
+                return "Connection problem. Please try again."
+            }
+        }
+        return "Something went wrong. Please try again."
+    }
+}
+
+extension APIError {
+    var userMessage: String {
+        switch self {
+        case .invalidURL, .decodingFailed:
+            return "Unexpected response from the server. Please try again later."
+        case .requestFailed(let code, let raw):
+            return APIError.translate(code: code, raw: raw)
+        }
+    }
+
+    /// Znana sporocila backenda (index.js) -> razumljiva sporocila.
+    private static func translate(code: Int, raw: String) -> String {
+        let t = raw.lowercased()
+
+        // Najprej po vsebini, ker je ista koda (400) uporabljena za vec razlicnih stvari.
+        if t.contains("invalid or expired code")        { return "The code is wrong or has expired. Request a new one." }
+        if t.contains("too many attempts")              { return "Too many wrong attempts. Request a new code." }
+        if t.contains("code must be 6 digits")          { return "Enter the 6-digit code from the email." }
+        if t.contains("password too short")             { return "Password must be at least 8 characters." }
+        if t.contains("email not verified")             { return "Your email is not verified yet." }
+        if t.contains("locked")                         { return "Too many failed logins. Try again in 15 minutes." }
+        if t.contains("invalid credentials")            { return "Wrong email or password." }
+        if t.contains("username too short")             { return "Username must be at least 3 characters." }
+        if t.contains("username too long")              { return "Username can have at most 20 characters." }
+        if t.contains("username invalid")               { return "Username can contain only letters, numbers and underscore." }
+        if t.contains("username already in use")        { return "That username is already taken." }
+        if t.contains("phone must be")                  { return "Enter the phone number with country code, e.g. +386 41 123 456." }
+        if t.contains("phone number already in use")    { return "That phone number is already used by another account." }
+        if t.contains("dateofbirth") || t.contains("date of birth") {
+            if t.contains("future")     { return "Date of birth cannot be in the future." }
+            if t.contains("plausible")  { return "That date of birth does not look right." }
+            return "Enter a valid date of birth."
+        }
+        if t.contains("country must be")                { return "Choose your country." }
+        if t.contains("unknown_genres")                 { return "One of the selected genres is not available. Reload and try again." }
+        if t.contains("genres must be")                 { return "Select at least one genre." }
+        if t.contains("nothing to update")              { return "Nothing to save." }
+        if t.contains("password required")              { return "Enter your password to continue." }
+        if t.contains("club_has_orders")                { return "Your club has sold tickets. Transfer club ownership before deleting your account." }
+        if t.contains("already exists") || t.contains("already registered") {
+            return "An account with this email or username already exists."
+        }
+
+        switch code {
+        case 400: return "Please check what you entered and try again."
+        case 401: return "Wrong password or your session has expired."
+        case 403: return "You do not have permission to do that."
+        case 404: return "Not found."
+        case 409: return "This is already in use."
+        case 429: return "Too many attempts. Please wait a while and try again."
+        case 500...599: return "The server is having trouble. Please try again later."
+        case -1: return "No response from the server. Check your connection."
+        default: return "Something went wrong. Please try again."
+        }
+    }
+}

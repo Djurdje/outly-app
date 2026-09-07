@@ -4,6 +4,8 @@ struct LoginView: View {
     @AppStorage("authStage") private var authStage: String = "login"
     @EnvironmentObject private var session: SessionStore
     @AppStorage("pendingEmail") private var pendingEmail: String = ""
+    /// Enkratno obvestilo (npr. po ponastavitvi gesla). Pokaze se in pobrise.
+    @AppStorage("loginNotice") private var loginNotice: String = ""
 
     @State private var email = ""
     @State private var password = ""
@@ -11,6 +13,13 @@ struct LoginView: View {
     @State private var isLoading = false
 
     var body: some View {
+        NavigationStack {
+            loginContent
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var loginContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -25,11 +34,12 @@ struct LoginView: View {
                     .padding(.top, 10)
 
                 Button {
+                    loginNotice = ""
                     authStage = "register"
                 } label: {
                     Text("Create an account")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(red: 0.33, green: 0.47, blue: 0.98))
+                        .foregroundColor(Color.outlyBlue)
                         .padding(.top, 6)
                 }
                 .buttonStyle(.plain)
@@ -50,6 +60,26 @@ struct LoginView: View {
                 }
                 .padding(.top, 6)
 
+                HStack {
+                    Spacer()
+                    NavigationLink {
+                        ForgotPasswordView()
+                    } label: {
+                        Text("Forgot password?")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                .padding(.top, -6)
+
+                if !loginNotice.isEmpty {
+                    Text(loginNotice)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.green)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 18)
+                }
+
                 if let message = message {
                     Text(message)
                         .font(.system(size: 14, weight: .medium))
@@ -68,7 +98,7 @@ struct LoginView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color(red: 0.33, green: 0.47, blue: 0.98))
+                    .background(Color.outlyBlue)
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 }
@@ -76,24 +106,8 @@ struct LoginView: View {
 
                 Spacer()
 
-                Divider()
-                    .background(Color.gray)
-                    .padding(.horizontal, 15)
-
-                Button {
-                    // TODO: Sign in with Apple later
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "apple.logo")
-                        Text("Continue with Apple")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.white.opacity(0.95))
-                    .foregroundColor(.black.opacity(0.85))
-                    .cornerRadius(14)
-                }
+                // "Continue with Apple" odstranjen: gumb ni delal nic (TODO), Apple
+                // nedelujoc gumb zavrne po smernici 2.1. Vrni ga, ko bo Sign in with Apple narejen.
 
                 VStack(spacing: 4) {
                     Text("By clicking continue, you agree to our")
@@ -101,13 +115,13 @@ struct LoginView: View {
                         .foregroundColor(Color.white.opacity(0.35))
 
                     HStack(spacing: 6) {
-                        Text("Terms of Service")
+                        Link("Terms of Service", destination: LegalLinks.terms)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.white.opacity(0.9))
                         Text("and")
                             .font(.system(size: 12))
                             .foregroundColor(Color.white.opacity(0.35))
-                        Text("Privacy Policy")
+                        Link("Privacy Policy", destination: LegalLinks.privacy)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.white.opacity(0.9))
                     }
@@ -118,11 +132,11 @@ struct LoginView: View {
             }
             .padding(.horizontal, 24)
         }
-        .preferredColorScheme(.dark)
     }
 
     private func login() async {
         message = nil
+        loginNotice = ""
 
         let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
@@ -156,13 +170,17 @@ struct LoginView: View {
             }
 
         } catch {
-            let text = error.localizedDescription
+            let text = error.userMessage
+            let raw: String = {
+                if case let .requestFailed(_, r)? = error as? APIError { return r.lowercased() }
+                return ""
+            }()
 
             await MainActor.run {
                 message = text
 
                 // ✅ če backend blokira login zaradi verifikacije
-                if text.lowercased().contains("email not verified") {
+                if raw.contains("email not verified") {
                     pendingEmail = cleanEmail
                     authStage = "verifyEmail"
                 }

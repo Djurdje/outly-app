@@ -67,7 +67,8 @@ final class APIClient {
     static let shared = APIClient()
     private init() {}
 
-    private let baseURL = URL(string: "https://outly-backend-roy3.onrender.com")!
+    // Interni (ne private), da ga vidijo razsiritve v drugih datotekah (APIClient+Account).
+    let baseURL = URL(string: "https://outly-backend-roy3.onrender.com")!
 
     // MARK: - Login
 
