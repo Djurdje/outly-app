@@ -129,16 +129,12 @@ struct ProfileView: View {
 
                     if user?.role == "business" {
 
-                        NavigationLink(destination: BusinessDashboardView()) {
-                            OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
-                        }
+                        // "Dashboard" in "Team" sta skrita: kazala sta izmisljene stevilke
+                        // (prihodki v $, osebje), backend za to se ne obstaja. Predlogi
+                        // sta v _staro/. Vrni ju, ko bodo podatki pravi.
 
-                        NavigationLink(destination: BusinessEventsView()) {
+                        NavigationLink(destination: BusinessEventsView(clubId: businessClub?.id, clubName: businessClub?.name)) {
                             OutlyMenuRowButton(icon: "calendar", title: "Events")
-                        }
-
-                        NavigationLink(destination: BusinessTeamView()) {
-                            OutlyMenuRowButton(icon: "person.2", title: "Team")
                         }
 
                         NavigationLink(destination: BusinessSettingsView()) {

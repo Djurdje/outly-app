@@ -11,7 +11,6 @@ struct EditBusinessPageView: View {
         case clubInfo
         case passwordSecurity
         case switchToPersonal
-        case withdraw
     }
 
     var body: some View {
@@ -36,16 +35,9 @@ struct EditBusinessPageView: View {
                         path.append(Route.switchToPersonal)
                     }
                 }
-                
-                Divider()
-                    .background(Color.gray)
-                    .padding(.horizontal, 15)
 
-                VStack(spacing: 12) {
-                    menuRow(icon: "dollarsign", title: "Withdraw") {
-                        path.append(Route.withdraw)
-                    }
-                }
+                // "Withdraw" odstranjen: v aplikaciji ni denarnice (odlocitev: brez izdajanja
+                // e-denarja po ZPlaSSIED). Izplacila klubom gredo neposredno prek Stripe Connect.
 
                 Spacer()
             }
@@ -64,10 +56,6 @@ struct EditBusinessPageView: View {
                 case .switchToPersonal:
                     Text("Switch to personal account")
                         .navigationTitle("Switch account")
-
-                case .withdraw:
-                    Text("Withdraw")
-                        .navigationTitle("Withdraw")
                 }
             }
             .task {

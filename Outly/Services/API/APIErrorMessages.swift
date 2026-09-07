@@ -47,6 +47,17 @@ extension APIError {
         if t.contains("username already in use")        { return "That username is already taken." }
         if t.contains("phone must be")                  { return "Enter the phone number with country code, e.g. +386 41 123 456." }
         if t.contains("phone number already in use")    { return "That phone number is already used by another account." }
+        if t.contains("at least 15 years")              { return "You must be at least 15 years old to use Outly." }
+        if t.contains("title is required")              { return "Enter a title." }
+        if t.contains("startat must be")                { return "Enter a valid start date." }
+        if t.contains("endat must be")                  { return "Enter a valid end date." }
+        if t.contains("ticketpricecents")               { return "Enter the price as a number, e.g. 12.50." }
+        if t.contains("minage must be")                 { return "Minimum age must be between 0 and 99." }
+        if t.contains("status must be")                 { return "Invalid event status." }
+        if t.contains("own club")                       { return "You can only manage events of your own club." }
+        if t.contains("club not found")                 { return "Your club is not set up yet." }
+        if t.contains("event not found")                { return "This event no longer exists." }
+        if t.contains("sold tickets and was cancelled") { return "Tickets were already sold, so the event was cancelled instead of deleted." }
         if t.contains("dateofbirth") || t.contains("date of birth") {
             if t.contains("future")     { return "Date of birth cannot be in the future." }
             if t.contains("plausible")  { return "That date of birth does not look right." }

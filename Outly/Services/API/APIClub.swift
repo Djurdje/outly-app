@@ -50,4 +50,28 @@ struct APIClub: Identifiable, Decodable {
         case genres
         case createdAt = "created_at"
     }
+
+    /// Obrambno dekodiranje: shema ima NOT NULL DEFAULT '' na besedilih, a ce bi
+    /// kdaj prisel NULL ali manjkajoc kljuc, ne sme pasti dekodiranje CELOTNEGA seznama.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id           = try c.decode(Int.self, forKey: .id)
+        ownerUserId  = try c.decodeIfPresent(Int.self, forKey: .ownerUserId) ?? 0
+        name         = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        logoUrl      = try c.decodeIfPresent(String.self, forKey: .logoUrl) ?? ""
+        bannerUrl    = try c.decodeIfPresent(String.self, forKey: .bannerUrl) ?? ""
+        description  = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+        contactEmail = try c.decodeIfPresent(String.self, forKey: .contactEmail) ?? ""
+        contactPhone = try c.decodeIfPresent(String.self, forKey: .contactPhone) ?? ""
+        instagram    = try c.decodeIfPresent(String.self, forKey: .instagram) ?? ""
+        website      = try c.decodeIfPresent(String.self, forKey: .website) ?? ""
+        address      = try c.decodeIfPresent(String.self, forKey: .address) ?? ""
+        city         = try c.decodeIfPresent(String.self, forKey: .city) ?? ""
+        country      = try c.decodeIfPresent(String.self, forKey: .country) ?? ""
+        lat          = try c.decodeIfPresent(Double.self, forKey: .lat)
+        lng          = try c.decodeIfPresent(Double.self, forKey: .lng)
+        minAge       = try c.decodeIfPresent(Int.self, forKey: .minAge) ?? 18
+        genres       = try c.decodeIfPresent([String].self, forKey: .genres) ?? []
+        createdAt    = try c.decodeIfPresent(String.self, forKey: .createdAt)
+    }
 }

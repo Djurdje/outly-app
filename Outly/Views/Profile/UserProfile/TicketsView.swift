@@ -1,35 +1,36 @@
 import SwiftUI
 
+/// Vstopnice uporabnika. Prodaja vstopnic v aplikaciji se ne obstaja (pride s Stripe
+/// Connect, migracija 002), zato backend nima poti za seznam vstopnic. Do takrat
+/// zaslon posteno pokaze prazno stanje — prej je kazal pet izmisljenih vstopnic.
 struct TicketsView: View {
-    @State private var search = ""
-
     var body: some View {
         Screen {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(spacing: 22) {
+                Text("Tickets")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 6)
 
-                HStack {
-                    Text("Tickets")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                Spacer()
 
-                    Spacer()
+                Image(systemName: "ticket")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundColor(.outlyBlue)
 
-                    SearchBar(text: $search)
-                        .frame(maxWidth: 140)
-                }
-                .padding(.top, 6)
+                Text("No tickets yet")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 14) {
-                        TicketRow(imageName: "cirkus_1", title: "Henny", subtitle: "7. July - Pure")
-                        TicketRow(imageName: "cirkus_2", title: "Aca Lukas", subtitle: "7. August - Pure")
-                        TicketRow(imageName: "cirkus_3", title: "Crni Cerak", subtitle: "7. Septembr - Pure")
-                        TicketRow(imageName: "k4", title: "Inas", subtitle: "7. November - Pure")
-                        TicketRow(imageName: "logo", title: "Milica Pavlovic", subtitle: "7. December - Pure")
-                    }
-                    .padding(.top, 10)
-                }
+                Text("Tickets you buy through Outly\nwill show up here.")
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+
+                Spacer()
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -47,10 +48,9 @@ struct SearchBar: View {
 
             TextField(placeholder, text: $text)
                 .foregroundColor(.white)
-            
         }
         .padding(12)
-        .background(Color.blackColor)
+        .background(Color.outlyBlue)
         .cornerRadius(12)
     }
 }

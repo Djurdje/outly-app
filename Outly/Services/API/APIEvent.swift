@@ -43,6 +43,27 @@ struct APIEvent: Identifiable, Decodable {
         case currency
         case ticketUrl = "ticket_url"
     }
+
+    /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
+    /// ne sme podreti celotnega seznama dogodkov.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id               = try c.decode(Int.self, forKey: .id)
+        clubId           = try c.decodeIfPresent(Int.self, forKey: .clubId) ?? 0
+        title            = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        description      = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+        posterUrl        = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+        startAt          = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
+        endAt            = try c.decodeIfPresent(String.self, forKey: .endAt)
+        minAge           = try c.decodeIfPresent(Int.self, forKey: .minAge) ?? 18
+        genres           = try c.decodeIfPresent([String].self, forKey: .genres) ?? []
+        status           = try c.decodeIfPresent(String.self, forKey: .status) ?? "published"
+        timeStatus       = try c.decodeIfPresent(String.self, forKey: .timeStatus)
+        createdAt        = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        ticketPriceCents = try c.decodeIfPresent(Int.self, forKey: .ticketPriceCents)
+        currency         = try c.decodeIfPresent(String.self, forKey: .currency)
+        ticketUrl        = try c.decodeIfPresent(String.self, forKey: .ticketUrl)
+    }
 }
 
 // MARK: - Date helpers (UI)
