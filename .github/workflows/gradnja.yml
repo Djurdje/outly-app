@@ -41,6 +41,7 @@ jobs:
       - name: Prevedi za simulator (brez podpisa)
         run: |
           set -o pipefail
+          mkdir -p build
           xcodebuild build \
             -project Outly.xcodeproj \
             -scheme Outly \
