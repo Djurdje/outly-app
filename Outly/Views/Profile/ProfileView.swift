@@ -9,7 +9,8 @@ struct BusinessClub: Decodable {
 
 struct ProfileView: View {
     @AppStorage("authStage") private var authStage: String = "main"
-    @AppStorage("authToken") private var authToken: String = ""
+    @EnvironmentObject private var session: SessionStore
+    private var authToken: String { session.token }
     @State private var user: Me?
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -171,7 +172,7 @@ struct ProfileView: View {
                 Spacer()
 
                 Button {
-                    authToken = ""
+                    session.logout()
                     authStage = "login"
                 } label: {
                     Text("Log out")
@@ -214,7 +215,7 @@ struct ProfileView: View {
         } catch let apiErr as APIError {
             if case let .requestFailed(code, _) = apiErr, code == 401 {
                 await MainActor.run {
-                    authToken = ""
+                    session.logout()
                     authStage = "login"
                 }
                 return

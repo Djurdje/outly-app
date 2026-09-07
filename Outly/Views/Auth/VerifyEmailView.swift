@@ -10,7 +10,6 @@ import SwiftUI
 struct VerifyEmailView: View {
     @AppStorage("authStage") private var authStage: String = "verifyEmail"
     @AppStorage("pendingEmail") private var pendingEmail: String = ""
-    @AppStorage("authToken") private var authToken: String = ""
 
     @State private var code: String = ""
     @State private var message: String?

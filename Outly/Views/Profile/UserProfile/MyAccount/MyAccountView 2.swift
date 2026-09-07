@@ -4,7 +4,8 @@ struct MyAccountView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("authStage") private var authStage: String = "main"
-    @AppStorage("authToken") private var authToken: String = ""
+    @EnvironmentObject private var session: SessionStore
+    private var authToken: String { session.token }
     @State private var user: Me?
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -97,7 +98,7 @@ struct MyAccountView: View {
                         .padding(.top, 8)
 
                     Button {
-                        authToken = ""
+                        session.logout()
                         authStage = "login"
                     } label: {
                         OutlyMenuRowButton(icon: "arrow.left", title: "Log out")
@@ -147,7 +148,7 @@ struct MyAccountView: View {
         } catch let apiErr as APIError {
             if case let .requestFailed(code, _) = apiErr, code == 401 {
                 await MainActor.run {
-                    authToken = ""
+                    session.logout()
                     authStage = "login"
                 }
                 return

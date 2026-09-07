@@ -3,7 +3,8 @@ import PhotosUI
 
 struct ClubInfoView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("authToken") private var authToken: String = ""
+    @EnvironmentObject private var session: SessionStore
+    private var authToken: String { session.token }
 
     let clubId: Int? // trenutno ga ne rabimo, ker bomo brali /business/clubs/me
 

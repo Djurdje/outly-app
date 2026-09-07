@@ -11,7 +11,8 @@ struct HomeView: View {
     @State private var popularEvents: [APIEvent] = []
     @State private var clubsById: [Int: APIClub] = [:]
 
-    @AppStorage("authToken") private var authToken: String = ""
+    @EnvironmentObject private var session: SessionStore
+    private var authToken: String { session.token }
 
     @EnvironmentObject private var prefs: UserPreferences
     @EnvironmentObject private var locationManager: LocationManager

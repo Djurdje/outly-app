@@ -5,7 +5,8 @@ struct PersonalInfoView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("authStage") private var authStage: String = "main"
-    @AppStorage("authToken") private var authToken: String = ""
+    @EnvironmentObject private var session: SessionStore
+    private var authToken: String { session.token }
 
     @State private var user: Me?
     @State private var isLoading = false
@@ -198,7 +199,7 @@ struct PersonalInfoView: View {
             // Če je 401, logout
             if case let .requestFailed(code, _) = apiErr, code == 401 {
                 await MainActor.run {
-                    authToken = ""
+                    session.logout()
                     authStage = "login"
                 }
                 return

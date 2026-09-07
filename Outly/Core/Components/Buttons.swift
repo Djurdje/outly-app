@@ -77,7 +77,7 @@ struct OutlyInfoCardButton: View {
 }
 
 struct AvatarUploadButton: View {
-    @AppStorage("authToken") private var authToken: String?
+    @EnvironmentObject private var session: SessionStore
 
     // Parent ti poda trenutnega userja, mi ga posodabljamo po uploadu
     @Binding var user: Me?
@@ -121,10 +121,8 @@ struct AvatarUploadButton: View {
     }
 
     private func handlePicked(_ item: PhotosPickerItem) async {
-        guard let token = authToken else {
-            print("No authToken")
-            return
-        }
+        let token = session.token
+        guard !token.isEmpty else { return }
 
         isUploading = true
         defer { isUploading = false }

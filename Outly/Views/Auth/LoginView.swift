@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @AppStorage("authStage") private var authStage: String = "login"
-    @AppStorage("authToken") private var authToken: String = ""
+    @EnvironmentObject private var session: SessionStore
     @AppStorage("pendingEmail") private var pendingEmail: String = ""
 
     @State private var email = ""
@@ -142,7 +142,7 @@ struct LoginView: View {
             let token = try await APIClient.shared.login(email: cleanEmail, password: password)
 
             await MainActor.run {
-                authToken = token
+                session.setToken(token)
                 authStage = "main"
             }
 
