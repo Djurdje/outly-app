@@ -1,0 +1,102 @@
+# Gradnja iOS aplikacije brez Maca: GitHub Actions na macOS runnerju.
+#
+# Ob vsakem potisku na main (in rocno prek "Run workflow"):
+#   1. prevede projekt za simulator (brez podpisa) -> ce se ne prevede, je
+#      workflow rdec in v dnevniku so napake prevajalnika;
+#   2. naredi NEPODPISAN Outly.ipa in ga prilozi kot artefakt -> na Windowsu ga
+#      AltServer podpise z navadnim Apple ID-jem in nalozi na iPhone (velja 7 dni).
+#
+# Poraba: macOS-minute stejejo 10x; ena gradnja je ~5-10 min = 50-100 "minut" od
+# 2000 brezplacnih na mesec za zasebni repo. Zato se ne pozene ob vsakem
+# commitu na drugih vejah, samo na main in rocno.
+name: Gradnja iOS
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "_staro/**"
+  workflow_dispatch:
+
+concurrency:
+  group: gradnja-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gradnja:
+    name: Prevajanje in IPA
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Izberi Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.2.app || sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+          swift --version
+
+      - name: Prevedi za simulator (brez podpisa)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Outly.xcodeproj \
+            -scheme Outly \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            -derivedDataPath build/sim \
+            | tee build/sim.log \
+            | grep -E "error:|warning: .*(deprecated|unused)|BUILD (SUCCEEDED|FAILED)|Compiling|Ld " || true
+          grep -q "BUILD SUCCEEDED" build/sim.log
+
+      - name: Napake prevajalnika (povzetek)
+        if: failure()
+        run: |
+          echo "::group::Vse napake"
+          grep -E "error:" build/sim.log || true
+          echo "::endgroup::"
+
+      - name: Arhiv za napravo (nepodpisan)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project Outly.xcodeproj \
+            -scheme Outly \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            -archivePath build/Outly.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee build/archive.log \
+            | grep -E "error:|ARCHIVE (SUCCEEDED|FAILED)" || true
+          grep -q "ARCHIVE SUCCEEDED" build/archive.log
+
+      - name: Sestavi Outly.ipa
+        run: |
+          mkdir -p build/Payload
+          cp -R "build/Outly.xcarchive/Products/Applications/Outly.app" build/Payload/
+          (cd build && zip -qr Outly-nepodpisan.ipa Payload)
+          ls -la build/Outly-nepodpisan.ipa
+
+      - name: Prilozi IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Outly-nepodpisan-ipa
+          path: build/Outly-nepodpisan.ipa
+          retention-days: 14
+
+      - name: Prilozi dnevnike
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dnevniki-gradnje
+          path: build/*.log
+          retention-days: 7
