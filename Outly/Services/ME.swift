@@ -63,7 +63,7 @@ struct Me: Decodable {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)
+        // Lokalni casovni pas, enako kot DatePicker in prikaz — sicer je zahodno od GMT dan prej.
         f.dateFormat = "yyyy-MM-dd"
         guard let d = f.date(from: dob) else { return nil }
         return Calendar.current.dateComponents([.year], from: d, to: Date()).year

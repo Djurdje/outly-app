@@ -73,6 +73,14 @@ struct LoginView: View {
                 }
                 .padding(.top, -6)
 
+                if let n = session.sessionExpiredNotice {
+                    Text(n)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.orange)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 18)
+                }
+
                 if !loginNotice.isEmpty {
                     Text(loginNotice)
                         .font(.system(size: 14, weight: .medium))
@@ -154,9 +162,9 @@ struct LoginView: View {
         defer { isLoading = false }
 
         do {
-            let token = try await APIClient.shared.login(email: cleanEmail, password: password)
+            let pair = try await APIClient.shared.login(email: cleanEmail, password: password)
 
-            session.setToken(token)
+            session.setSession(token: pair.token, refreshToken: pair.refreshToken)
             guard session.isLoggedIn else {
                 // Keychain je zavrnil zapis (redko; npr. naprava se ni odklenjena po zagonu).
                 message = "Could not save your session on this device. Please try again."

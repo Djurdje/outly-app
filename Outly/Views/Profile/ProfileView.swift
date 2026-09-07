@@ -138,7 +138,9 @@ struct ProfileView: View {
                             OutlyMenuRowButton(icon: "calendar", title: "Events")
                         }
 
-                        NavigationLink(destination: BusinessSettingsView()) {
+                        // BusinessSettingsView (hardcoded "Cirkus", nedelujoce vrstice, Withdraw)
+                        // je v _staro/; "Settings" vodi na isti zaslon kot "Edit your page".
+                        NavigationLink(destination: EditBusinessPageView(clubId: businessClub?.id)) {
                             OutlyMenuRowButton(icon: "gearshape", title: "Settings")
                         }
 

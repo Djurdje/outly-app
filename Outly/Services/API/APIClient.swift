@@ -17,198 +17,56 @@ enum APIError: Error, LocalizedError {
     }
 }
 
-extension APIClient {
-
-    struct VerifyEmailBody: Encodable {
-        let email: String
-        let code: String
-    }
-
-    func verifyEmail(email: String, code: String) async throws {
-        let url = baseURL.appendingPathComponent("auth/verify-email")
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONEncoder().encode(VerifyEmailBody(email: email, code: code))
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-    }
-
-    struct ResendBody: Encodable {
-        let email: String
-    }
-
-    func resendVerification(email: String) async throws {
-        let url = baseURL.appendingPathComponent("auth/resend-verification")
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONEncoder().encode(ResendBody(email: email))
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-    }
-}
-
+/// Klient za Outly backend. Vsi klici gredo skozi send() (APIClient+Account.swift),
+/// ki poskrbi za Authorization, napake in osvezitev poteklega zetona ob 401.
+/// Poti so razdeljene po datotekah: +Account, +Events, +Discover, +Business.
 final class APIClient: Sendable {
     static let shared = APIClient()
     private init() {}
 
-    // Interni (ne private), da ga vidijo razsiritve v drugih datotekah (APIClient+Account).
+    // Interni (ne private), da ga vidijo razsiritve v drugih datotekah.
     let baseURL = URL(string: "https://outly-backend-roy3.onrender.com")!
 
-    // MARK: - Login
+    // MARK: - Registracija / potrditev e-naslova
 
-    struct LoginBody: Encodable {
-        let email: String
-        let password: String
+    func verifyEmail(email: String, code: String) async throws {
+        _ = try await send(path: "auth/verify-email", method: "POST", json: ["email": email, "code": code])
     }
 
-    struct LoginResponse: Decodable {
-        let token: String
+    func resendVerification(email: String) async throws {
+        _ = try await send(path: "auth/resend-verification", method: "POST", json: ["email": email])
     }
 
-    func login(email: String, password: String) async throws -> String {
-        let url = baseURL.appendingPathComponent("auth/login")
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONEncoder().encode(LoginBody(email: email, password: password))
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode(LoginResponse.self, from: data).token
-        } catch {
-            throw APIError.decodingFailed
-        }
-    }
-
-    // MARK: - Me
-
-    func me(token: String) async throws -> Me {
-        let url = baseURL.appendingPathComponent("me")
-        var req = URLRequest(url: url)
-        req.httpMethod = "GET"
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode(Me.self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
-    }
-
-    // MARK: - Clubs (public)
+    // MARK: - Klubi in dogodki (javno)
 
     func fetchClubs() async throws -> [APIClub] {
-        let url = baseURL.appendingPathComponent("clubs")
-        var req = URLRequest(url: url)
-        req.httpMethod = "GET"
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode([APIClub].self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
+        let data = try await send(path: "clubs", method: "GET")
+        return try decode([APIClub].self, from: data)
     }
 
-    // MARK: - Events (public)
+    func fetchClub(id: Int) async throws -> APIClub {
+        let data = try await send(path: "clubs/\(id)", method: "GET")
+        return try decode(APIClub.self, from: data)
+    }
 
     func fetchEvents(clubId: Int? = nil, upcoming: Bool = true) async throws -> [APIEvent] {
-        var comps = URLComponents(url: baseURL.appendingPathComponent("events"), resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            URLQueryItem(name: "upcoming", value: upcoming ? "true" : "false")
-        ]
-        if let clubId {
-            comps.queryItems?.append(URLQueryItem(name: "clubId", value: "\(clubId)"))
-        }
-
-        guard let url = comps.url else { throw APIError.invalidURL }
-        var req = URLRequest(url: url)
-        req.httpMethod = "GET"
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode([APIEvent].self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
-    }
-    
-    // MARK: - Single Club (public)
-    func fetchClub(id: Int) async throws -> APIClub {
-        let url = baseURL.appendingPathComponent("clubs/\(id)")
-        var req = URLRequest(url: url)
-        req.httpMethod = "GET"
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode(APIClub.self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
+        var q = [URLQueryItem(name: "upcoming", value: upcoming ? "true" : "false")]
+        if let clubId { q.append(URLQueryItem(name: "clubId", value: "\(clubId)")) }
+        let data = try await send(path: "events", method: "GET", query: q)
+        return try decode([APIEvent].self, from: data)
     }
 
+    // MARK: - Slike
+
+    func fetchCloudinarySignature(token: String) async throws -> CloudinarySignature {
+        let data = try await send(path: "uploads/cloudinary-signature", method: "POST", token: token)
+        return try decode(CloudinarySignature.self, from: data)
+    }
+
+    func updateMyAvatar(token: String, avatarUrl: String) async throws -> Me {
+        let data = try await send(path: "me/avatar", method: "PATCH", token: token, json: ["avatarUrl": avatarUrl])
+        return try decode(Me.self, from: data)
+    }
 }
 
 struct CloudinarySignature: Decodable {
@@ -222,38 +80,7 @@ struct CloudinarySignature: Decodable {
     /// Ker je del podpisa, ga MORAMO poslati naprej Cloudinaryju nespremenjenega,
     /// sicer podpis ne velja. Hkrati preprecuje pisanje cez tuje slike.
     let publicId: String
-
-    enum CodingKeys: String, CodingKey {
-        case cloudName, apiKey, timestamp, folder, signature
-        case publicId
-    }
 }
-
-extension APIClient {
-    func fetchCloudinarySignature(token: String) async throws -> CloudinarySignature {
-        let url = baseURL.appendingPathComponent("uploads/cloudinary-signature")
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode(CloudinarySignature.self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
-    }
-}
-
 
 struct CloudinaryUploadResponse: Decodable {
     let secureUrl: String
@@ -263,6 +90,8 @@ struct CloudinaryUploadResponse: Decodable {
     }
 }
 
+// Nalaganje na Cloudinary gre na TUJ streznik (api.cloudinary.com), ne na nas backend,
+// zato ne gre skozi send().
 extension APIClient {
     func uploadImageToCloudinary(
         imageData: Data,
@@ -322,35 +151,4 @@ extension APIClient {
         }
     }
 }
-
-extension APIClient {
-    func updateMyAvatar(token: String, avatarUrl: String) async throws -> Me {
-        let url = baseURL.appendingPathComponent("me/avatar")
-        var req = URLRequest(url: url)
-        req.httpMethod = "PATCH"
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let payload = ["avatarUrl": avatarUrl]
-        req.httpBody = try JSONSerialization.data(withJSONObject: payload)
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-
-        do {
-            return try JSONDecoder().decode(Me.self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
-    }
-}
-
-
 

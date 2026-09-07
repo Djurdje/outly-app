@@ -2,27 +2,36 @@ import Foundation
 import SwiftUI
 import Combine
 
-/// Edino mesto v aplikaciji, ki hrani prijavni zeton.
-/// Zeton zivi IZKLJUCNO v Keychainu (KeychainService); v pomnilniku je le kopija,
-/// da SwiftUI pogledi lahko reagirajo na prijavo/odjavo.
+/// Edino mesto v aplikaciji, ki hrani sejo: dostopni zeton (1 h) in osvezevalni
+/// zeton (30 dni). Oba zivita IZKLJUCNO v Keychainu; v pomnilniku je le kopija,
+/// da SwiftUI pogledi reagirajo na prijavo/odjavo.
 ///
-/// Pogledi NE smejo brati "authToken" iz @AppStorage/UserDefaults.
+/// Pogledi NE smejo brati zetonov iz @AppStorage/UserDefaults.
 /// Uporabi: @EnvironmentObject var session: SessionStore  ->  session.token
+///
+/// Osvezevanje: APIClient.send ob 401 poklice refreshAccessToken() in klic ponovi.
+/// Pogledi se s tem ne ukvarjajo.
 ///
 /// Stanje zaslona (@AppStorage("authStage")) je locena zadeva in ostane, kjer je.
 @MainActor
 final class SessionStore: ObservableObject {
 
     @Published private(set) var token: String = ""
+    @Published private(set) var refreshToken: String = ""
 
     /// Trenutni uporabnik iz GET /me. nil = se ni nalozen (ali odjavljen).
     @Published var me: Me? = nil
     /// Napaka zadnjega nalaganja /me (razumljivo sporocilo), nil ce je slo v redu.
     @Published var meLoadError: String? = nil
 
+    /// Nastavi se, ko streznik sejo dokoncno zavrne (osvezitev ni uspela).
+    /// AuthGateView takrat pokaze prijavo; LoginView pokaze to sporocilo.
+    @Published var sessionExpiredNotice: String? = nil
+
+    private var refreshTask: Task<Bool, Never>?
+
     var isLoggedIn: Bool { !token.isEmpty }
 
-    /// Racun se ni dokoncan (onboarded_at je prazen) -> pokazi "Complete your account".
     /// Velja za navadne uporabnike. Poslovni racun (klub) in admin nimata datuma
     /// rojstva in zanrov osebe, zato ju ne silimo skozi ta tok.
     var needsOnboarding: Bool {
@@ -32,33 +41,103 @@ final class SessionStore: ObservableObject {
 
     init() {
         migrateLegacyTokenIfNeeded()
-        token = KeychainService.shared.readToken() ?? ""
+        token = KeychainService.shared.read(.accessToken) ?? ""
+        refreshToken = KeychainService.shared.read(.refreshToken) ?? ""
+        SessionRefresh.handler = { [weak self] in
+            guard let self else { return nil }
+            return await self.refreshAccessToken() ? self.token : nil
+        }
+        SessionRefresh.isLoggedIn = { [weak self] in self?.isLoggedIn ?? false }
+        SessionRefresh.currentRefreshToken = { [weak self] in self?.refreshToken }
     }
 
-    /// Po uspesni prijavi. Zapise v Keychain in obvesti poglede.
-    func setToken(_ newToken: String) {
-        let trimmed = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            logout()
-            return
-        }
-        if KeychainService.shared.saveToken(trimmed) {
-            token = trimmed
-        } else {
+    // MARK: - Prijava / odjava
+
+    /// Po uspesni prijali ali osvezitvi. Zapise oba zetona v Keychain in obvesti poglede.
+    func setSession(token newToken: String, refreshToken newRefresh: String?) {
+        let t = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { logout(); return }
+        guard KeychainService.shared.save(t, for: .accessToken) else {
             // Keychain je odpovedal: zeton ne sme ostati nikjer drugje.
             token = ""
+            return
         }
+        token = t
+        if let r = newRefresh?.trimmingCharacters(in: .whitespacesAndNewlines), !r.isEmpty {
+            if KeychainService.shared.save(r, for: .refreshToken) { refreshToken = r }
+        }
+        sessionExpiredNotice = nil
     }
 
-    /// Odjava: izbrise zeton iz Keychaina in pomnilnika.
+    /// Stari klic (samo dostopni zeton). Ostane za zdruzljivost; nova koda naj klice setSession.
+    func setToken(_ newToken: String) { setSession(token: newToken, refreshToken: nil) }
+
+    /// Odjava: streznik preklice osvezevalni zeton (da ne velja se 30 dni),
+    /// nato lokalno pobrisemo vse. Lokalni del se zgodi VEDNO, tudi brez omrezja.
     func logout() {
-        _ = KeychainService.shared.deleteToken()
+        let r = refreshToken
+        if !r.isEmpty {
+            Task.detached { try? await APIClient.shared.logout(refreshToken: r) }
+        }
+        clearLocalSession()
+    }
+
+    /// Streznik je sejo zavrnil (npr. po ponastavitvi gesla na drugi napravi).
+    func sessionRejected(message: String = "Your session has expired. Please log in again.") {
+        clearLocalSession()
+        sessionExpiredNotice = message
+    }
+
+    private func clearLocalSession() {
+        KeychainService.shared.delete(.accessToken)
+        KeychainService.shared.delete(.refreshToken)
         token = ""
+        refreshToken = ""
         me = nil
         meLoadError = nil
+        refreshTask?.cancel()
+        refreshTask = nil
     }
 
-    /// Nalozi GET /me. Ob 401 (zeton potekel ali preklican) odjavi.
+    // MARK: - Osvezevanje
+
+    /// Zamenja potekli dostopni zeton z novim prek POST /auth/refresh.
+    /// Vec socasnih klicev deli isto osvezitev (en sam klic na streznik).
+    /// Vrne false, ce osvezitev ni mogoca — takrat je uporabnik odjavljen.
+    func refreshAccessToken() async -> Bool {
+        if let t = refreshTask { return await t.value }
+        let task = Task<Bool, Never> { [weak self] in
+            guard let self else { return false }
+            let r = self.refreshToken
+            guard !r.isEmpty else {
+                // Stara namestitev brez osvezevalnega zetona: dostopni je potekel, nic za osveziti.
+                self.sessionRejected()
+                return false
+            }
+            do {
+                let pair = try await APIClient.shared.refresh(refreshToken: r)
+                self.setSession(token: pair.token, refreshToken: pair.refreshToken)
+                return true
+            } catch let api as APIError {
+                if case let .requestFailed(code, _) = api, code == 400 || code == 401 {
+                    self.sessionRejected()
+                } else {
+                    // Omrezje / 5xx: seje NE brisemo, naslednji klic poskusi znova.
+                }
+                return false
+            } catch {
+                return false
+            }
+        }
+        refreshTask = task
+        let ok = await task.value
+        refreshTask = nil
+        return ok
+    }
+
+    // MARK: - Uporabnik
+
+    /// Nalozi GET /me. Ob 401 (tudi po neuspesni osvezitvi) odjavi.
     /// Vrne true, ce je uporabnik nalozen.
     @discardableResult
     func refreshMe() async -> Bool {
@@ -70,7 +149,7 @@ final class SessionStore: ObservableObject {
             return true
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 {
-                logout()
+                sessionRejected()
                 return false
             }
             meLoadError = api.userMessage
@@ -81,6 +160,8 @@ final class SessionStore: ObservableObject {
         }
     }
 
+    // MARK: - Selitev
+
     /// Enkratna selitev: starejse razlicice so zeton hranile v UserDefaults ("authToken").
     /// Prenesemo ga v Keychain in iz UserDefaults IZBRISEMO, da tam ne ostane cistopis.
     private func migrateLegacyTokenIfNeeded() {
@@ -89,8 +170,8 @@ final class SessionStore: ObservableObject {
         defer { defaults.removeObject(forKey: "authToken") }
         let trimmed = legacy.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        if KeychainService.shared.readToken() == nil {
-            _ = KeychainService.shared.saveToken(trimmed)
+        if KeychainService.shared.read(.accessToken) == nil {
+            KeychainService.shared.save(trimmed, for: .accessToken)
         }
     }
 }

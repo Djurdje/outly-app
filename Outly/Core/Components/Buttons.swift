@@ -79,10 +79,13 @@ struct OutlyInfoCardButton: View {
 
                 Spacer()
 
-                Button(action: onAction) {
-                    Text(actionTitle)
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(.blackColor)
+                // Prazen actionTitle = samo prikaz, brez gumba (npr. e-naslov, ki ga ni mogoce urejati).
+                if !actionTitle.isEmpty {
+                    Button(action: onAction) {
+                        Text(actionTitle)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.blackColor)
+                    }
                 }
             }
 

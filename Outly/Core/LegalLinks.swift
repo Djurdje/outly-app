@@ -6,4 +6,6 @@ import Foundation
 enum LegalLinks {
     static let terms   = URL(string: "https://outly.si/terms")!
     static let privacy = URL(string: "https://outly.si/privacy")!
+    /// Prijava za ustvarjalce/klube (obstaja na spletni strani).
+    static let creatorForm = URL(string: "https://outly.si/Creator.html")!
 }

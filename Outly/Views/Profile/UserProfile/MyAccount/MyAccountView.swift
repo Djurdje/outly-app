@@ -16,7 +16,9 @@ struct MyAccountView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // Ta pogled se POTISNE na obstojeci NavigationStack (ProfileView/MyAccountView);
+        // gnezden NavigationStack bi skril gumb nazaj in zlomil navigacijo.
+        Group {
             VStack(spacing: 30) {
                 // ===== HEADER =====
                 VStack(spacing: 10) {

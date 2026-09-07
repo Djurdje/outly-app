@@ -186,7 +186,7 @@ struct CompleteAccountView: View {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)
+        // Lokalni casovni pas, enako kot DatePicker in prikaz — sicer je zahodno od GMT dan prej.
         f.dateFormat = "yyyy-MM-dd"
         return f.date(from: s)
     }

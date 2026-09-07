@@ -8,7 +8,9 @@ struct EventView: View {
     @State private var errorText: String?
 
     var body: some View {
-        NavigationStack {
+        // Ta pogled se POTISNE na obstojeci NavigationStack (ProfileView/MyAccountView);
+        // gnezden NavigationStack bi skril gumb nazaj in zlomil navigacijo.
+        Group {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
 

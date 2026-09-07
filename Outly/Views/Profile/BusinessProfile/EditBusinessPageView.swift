@@ -1,20 +1,22 @@
 import SwiftUI
 
+@MainActor
 struct EditBusinessPageView: View {
     let clubId: Int?
+    @EnvironmentObject private var session: SessionStore
     // header data (loaded)
     @State private var clubName: String = ""
     @State private var clubLogoUrl: String?
-    @State private var path = NavigationPath()
 
     enum Route: Hashable {
         case clubInfo
         case passwordSecurity
-        case switchToPersonal
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        // Potisnjen na ProfileView-ov NavigationStack; navigationDestination(for:) deluje
+        // na starsevskem skladu, zato tu ni lastnega NavigationStacka.
+        Group {
             VStack(alignment: .leading, spacing: 20) {
 
                 header
@@ -23,17 +25,18 @@ struct EditBusinessPageView: View {
                     .opacity(0.25)
 
                 VStack(spacing: 12) {
-                    menuRow(icon: "person", title: "Club info") {
-                        path.append(Route.clubInfo)
+                    NavigationLink(value: Route.clubInfo) {
+                        OutlyMenuRowButton(icon: "person", title: "Club info")
                     }
+                    .buttonStyle(.plain)
 
-                    menuRow(icon: "lock", title: "Password and security") {
-                        path.append(Route.passwordSecurity)
+                    NavigationLink(value: Route.passwordSecurity) {
+                        OutlyMenuRowButton(icon: "lock", title: "Password and security")
                     }
+                    .buttonStyle(.plain)
 
-                    menuRow(icon: "arrow.up.right", title: "Switch to personal account") {
-                        path.append(Route.switchToPersonal)
-                    }
+                    // "Switch to personal account" odstranjen: backend nima poti za
+                    // spremembo vloge; gumb ni delal nic.
                 }
 
                 // "Withdraw" odstranjen: v aplikaciji ni denarnice (odlocitev: brez izdajanja
@@ -50,12 +53,7 @@ struct EditBusinessPageView: View {
                     ClubInfoView(clubId: clubId)
                     
                 case .passwordSecurity:
-                    Text("Password and security")
-                        .navigationTitle("Password and security")
-
-                case .switchToPersonal:
-                    Text("Switch to personal account")
-                        .navigationTitle("Switch account")
+                    PasswordSecurityView()
                 }
             }
             .task {
@@ -88,36 +86,16 @@ struct EditBusinessPageView: View {
         .padding(.top, 6)
     }
 
-    // MARK: - Clickable row wrapper
-
-    private func menuRow(icon: String, title: String, onTap: @escaping () -> Void) -> some View {
-        Button(action: onTap) {
-            OutlyMenuRowButton(icon: icon, title: title)
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
-    }
-
     // MARK: - Load club name + logo using existing APIClub model
 
     private func loadHeaderClubInfo() async {
-        guard let clubId else { return }
-
+        guard !session.token.isEmpty else { return }
         do {
-            guard let url = URL(string: "https://outly-backend-roy3.onrender.com/clubs") else { return }
-
-            let (data, _) = try await URLSession.shared.data(from: url)
-
-            let clubs = try JSONDecoder().decode([APIClub].self, from: data)
-
-            if let club = clubs.first(where: { $0.id == clubId }) {
-                await MainActor.run {
-                    self.clubName = club.name
-                    self.clubLogoUrl = club.logoUrl
-                }
-            }
+            let club = try await APIClient.shared.fetchMyBusinessClub(token: session.token)
+            clubName = club.name
+            clubLogoUrl = club.logoUrl
         } catch {
-            // optional: print(error)
+            // Glava ostane "Your club"; podrobno napako pokaze ClubInfoView.
         }
     }
 }

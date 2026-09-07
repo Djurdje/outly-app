@@ -5,7 +5,9 @@ struct ReguestForCreatorView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        // Ta pogled se POTISNE na obstojeci NavigationStack (ProfileView/MyAccountView);
+        // gnezden NavigationStack bi skril gumb nazaj in zlomil navigacijo.
+        Group {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 30) {
 
@@ -39,15 +41,18 @@ struct ReguestForCreatorView: View {
                         .foregroundColor(.white.opacity(0.70))
                     }
 
-                    OutlyInfoCardButton(
-                        icon: "doc.text",
-                        title: "Application form",
-                        value: "Fill your Application form",
-                        description: "",
-                        actionTitle: "Fill"
-                    ) {
-                        print("Open application form")
+                    // Obrazec za ustvarjalce je na spletni strani (Creator.html); prijave
+                    // gredo v tabelo creator_applications in na luka@/fedja@outly.si.
+                    Link(destination: LegalLinks.creatorForm) {
+                        OutlyInfoCardButton(
+                            icon: "doc.text",
+                            title: "Application form",
+                            value: "Fill your application form",
+                            description: "Opens outly.si in your browser.",
+                            actionTitle: ""
+                        ) {}
                     }
+                    .buttonStyle(.plain)
 
                     Spacer(minLength: 18)
                 }

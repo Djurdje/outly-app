@@ -5,7 +5,11 @@ import SwiftUI
 /// Streznik nato nastavi onboarded_at in AuthGateView spusti uporabnika v aplikacijo.
 @MainActor
 struct SelectGenresView: View {
+    /// true = urejanje iz "Personal info": po shranjevanju se zaslon zapre.
+    var isEditing: Bool = false
+
     @EnvironmentObject private var session: SessionStore
+    @Environment(\.dismiss) private var dismiss
 
     @State private var genres: [String] = []
     @State private var selected: Set<String> = []
@@ -60,7 +64,7 @@ struct SelectGenresView: View {
                                 .foregroundColor(.red)
                         }
 
-                        OutlyPrimaryButton(title: isSaving ? "Saving..." : "Complete", isLoading: isSaving) {
+                        OutlyPrimaryButton(title: isSaving ? "Saving..." : (isEditing ? "Save" : "Complete"), isLoading: isSaving) {
                             Task { await save() }
                         }
                         .disabled(isSaving || selected.isEmpty || genres.isEmpty)
@@ -107,6 +111,7 @@ struct SelectGenresView: View {
             update.genres = genres.filter { selected.contains($0) }  // ohrani vrstni red streznika
             let me = try await APIClient.shared.updateMe(token: session.token, update)
             session.me = me
+            if isEditing { dismiss(); return }
             if !me.isOnboarded {
                 // Streznik zahteva datum rojstva + vsaj en zanr. Ce se vedno ni dokoncano,
                 // manjka datum rojstva (uporabnik je prisel sem po drugi poti).

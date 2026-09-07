@@ -1,6 +1,11 @@
 import SwiftUI
 import PhotosUI
+import CoreLocation
 
+/// Podatki kluba (GET/PATCH /business/clubs/me). Vsi klici gredo prek APIClient.send,
+/// napake prek userMessage. Ob spremembi naslova ali mesta se koordinate izracunajo
+/// na napravi (CLGeocoder) in posljejo strezniku — brez njih klub NI na zemljevidu.
+@MainActor
 struct ClubInfoView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionStore
@@ -19,6 +24,9 @@ struct ClubInfoView: View {
     @State private var clubEmail = ""
     @State private var clubDescription = ""
     @State private var clubAddress = ""
+    @State private var clubCity = ""
+    @State private var clubLat: Double?
+    @State private var clubLng: Double?
     @State private var clubLogoUrl = ""
     @State private var clubBannerUrl = ""
 
@@ -37,7 +45,7 @@ struct ClubInfoView: View {
     @State private var isUploadingBanner = false
 
     enum EditField: Identifiable {
-        case name, phone, website, email, description, address
+        case name, phone, website, email, description, address, city
         var id: String { "\(self)" }
 
         var title: String {
@@ -48,6 +56,7 @@ struct ClubInfoView: View {
             case .email: return "Email"
             case .description: return "About club"
             case .address: return "Address"
+            case .city: return "City"
             }
         }
 
@@ -126,8 +135,13 @@ struct ClubInfoView: View {
                 infoCard(icon: "doc.text", title: "About club", value: clubDescription, field: .description,
                          description: "Short description shown on your club page.")
 
-                infoCard(icon: "mappin.and.ellipse", title: "Location", value: clubAddress, field: .address,
-                         description: "Your club address shown to users.")
+                infoCard(icon: "mappin.and.ellipse", title: "Address", value: clubAddress, field: .address,
+                         description: "Street and number. Together with the city this places your club on the map.")
+
+                infoCard(icon: "building.2", title: "City", value: clubCity, field: .city,
+                         description: clubLat != nil
+                            ? "On the map ✓"
+                            : "Not on the map yet — set the address and city.")
 
                 // ===== BANNER CARD (button opens picker) =====
                 OutlyInfoCardButton(
@@ -279,7 +293,7 @@ struct ClubInfoView: View {
                     Button("Save") {
                         applyEdit(field)
                         activeEdit = nil
-                        Task { await saveClub() }
+                        Task { await saveClub(changed: field) }
                     }
                 }
             }
@@ -296,79 +310,91 @@ struct ClubInfoView: View {
         case .email: clubEmail = v
         case .description: clubDescription = v
         case .address: clubAddress = v
+        case .city: clubCity = v
         }
     }
 
     // MARK: - API
 
     private func loadClub() async {
-        guard !authToken.isEmpty else {
-            await MainActor.run { errorMessage = "Missing auth token." }
-            return
-        }
-
-        await MainActor.run {
-            isLoading = true
-            errorMessage = nil
-        }
-        defer { Task { @MainActor in isLoading = false } }
-
+        guard !authToken.isEmpty else { return }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
         do {
-            guard let url = URL(string: "https://outly-backend-roy3.onrender.com/business/clubs/me") else { return }
-            var req = URLRequest(url: url)
-            req.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
-
-            let (data, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                throw NSError(domain: "ClubInfo", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to load club (check backend /business/clubs/me)."])
-            }
-
-            let club = try JSONDecoder().decode(APIClub.self, from: data)
-
-            await MainActor.run {
-                clubName = club.name
-                clubPhone = club.contactPhone
-                clubWebsite = club.website
-                clubEmail = club.contactEmail
-                clubDescription = club.description
-                clubAddress = club.address
-                clubLogoUrl = club.logoUrl
-                clubBannerUrl = club.bannerUrl
+            let club = try await APIClient.shared.fetchMyBusinessClub(token: authToken)
+            apply(club)
+        } catch let api as APIError {
+            if case let .requestFailed(code, raw) = api, code == 404, raw.lowercased().contains("club") {
+                errorMessage = "Your club is not set up yet. Contact luka@outly.si to get it created."
+            } else {
+                errorMessage = api.userMessage
             }
         } catch {
-            await MainActor.run { errorMessage = error.localizedDescription }
+            errorMessage = error.userMessage
         }
     }
 
-    private func saveClub() async {
+    private func apply(_ club: APIClub) {
+        clubName = club.name
+        clubPhone = club.contactPhone
+        clubWebsite = club.website
+        clubEmail = club.contactEmail
+        clubDescription = club.description
+        clubAddress = club.address
+        clubCity = club.city
+        clubLat = club.lat
+        clubLng = club.lng
+        clubLogoUrl = club.logoUrl
+        clubBannerUrl = club.bannerUrl
+    }
+
+    /// Shrani spremenjeno polje. Pri naslovu/mestu najprej poisce koordinate.
+    private func saveClub(changed field: EditField? = nil) async {
         guard !authToken.isEmpty else { return }
+        errorMessage = nil
+
+        if field == .address || field == .city {
+            await geocodeIfPossible()
+        }
+
+        var fields: [String: Any] = [
+            "name": clubName,
+            "contact_phone": clubPhone,
+            "website": clubWebsite,
+            "contact_email": clubEmail,
+            "description": clubDescription,
+            "address": clubAddress,
+            "city": clubCity,
+            "logo_url": clubLogoUrl,
+            "banner_url": clubBannerUrl,
+        ]
+        // Koordinati gresta v paru (omejitev v bazi: obe ali nobena).
+        if let lat = clubLat, let lng = clubLng {
+            fields["lat"] = lat
+            fields["lng"] = lng
+        }
 
         do {
-            guard let url = URL(string: "https://outly-backend-roy3.onrender.com/business/clubs/me") else { return }
+            let club = try await APIClient.shared.updateMyBusinessClub(token: authToken, fields: fields)
+            apply(club)
+        } catch {
+            errorMessage = error.userMessage
+        }
+    }
 
-            let payload: [String: Any] = [
-                "name": clubName,
-                "contact_phone": clubPhone,
-                "website": clubWebsite,
-                "contact_email": clubEmail,
-                "description": clubDescription,
-                "address": clubAddress,
-                "logo_url": clubLogoUrl,
-                "banner_url": clubBannerUrl
-            ]
-
-            var req = URLRequest(url: url)
-            req.httpMethod = "PATCH"
-            req.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try JSONSerialization.data(withJSONObject: payload)
-
-            let (_, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                throw NSError(domain: "ClubInfo", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to save club."])
+    /// Naslov + mesto -> koordinate. Ce geokodiranje ne uspe, stare koordinate ostanejo.
+    private func geocodeIfPossible() async {
+        let query = [clubAddress, clubCity].filter { !$0.isEmpty }.joined(separator: ", ")
+        guard !query.isEmpty else { return }
+        do {
+            let marks = try await CLGeocoder().geocodeAddressString(query)
+            if let loc = marks.first?.location {
+                clubLat = loc.coordinate.latitude
+                clubLng = loc.coordinate.longitude
             }
         } catch {
-            await MainActor.run { errorMessage = error.localizedDescription }
+            // Ni usodno: klub se shrani brez novih koordinat, uporabnik vidi "Not on the map yet".
         }
     }
 
@@ -398,7 +424,7 @@ struct ClubInfoView: View {
             await MainActor.run { clubLogoUrl = imageUrl }
             await saveClub()
         } catch {
-            await MainActor.run { errorMessage = "Logo upload failed: \(error.localizedDescription)" }
+            await MainActor.run { errorMessage = "Logo upload failed. \(error.userMessage)" }
         }
     }
 
@@ -426,7 +452,7 @@ struct ClubInfoView: View {
             await MainActor.run { clubBannerUrl = imageUrl }
             await saveClub()
         } catch {
-            await MainActor.run { errorMessage = "Banner upload failed: \(error.localizedDescription)" }
+            await MainActor.run { errorMessage = "Banner upload failed. \(error.userMessage)" }
         }
     }
 }

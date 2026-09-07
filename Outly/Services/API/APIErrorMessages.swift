@@ -47,6 +47,13 @@ extension APIError {
         if t.contains("username already in use")        { return "That username is already taken." }
         if t.contains("phone must be")                  { return "Enter the phone number with country code, e.g. +386 41 123 456." }
         if t.contains("phone number already in use")    { return "That phone number is already used by another account." }
+        if t.contains("new password must be different")   { return "New password must be different from the current one." }
+        if t.contains("club name is required")          { return "Enter the club name." }
+        if t.contains("lat and lng")                    { return "Location could not be saved. Try again." }
+        if t.contains("invalid club data")              { return "Some club data is out of range. Check the values and try again." }
+        if t.contains("invalid value type")             { return "Please check what you entered and try again." }
+        if t.contains("refresh token")                  { return "Your session has expired. Please log in again." }
+        if t.contains("invalid token") || t.contains("missing token") { return "Your session has expired. Please log in again." }
         if t.contains("at least 15 years")              { return "You must be at least 15 years old to use Outly." }
         if t.contains("title is required")              { return "Enter a title." }
         if t.contains("startat must be")                { return "Enter a valid start date." }
