@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Dogodki lastnega kluba — pravi podatki (GET /business/events).
 /// Prej je zaslon kazal pet izmisljenih dogodkov in gumb "Add event" ni delal nic.
+@MainActor
 struct BusinessEventsView: View {
     let clubId: Int?
     let clubName: String?

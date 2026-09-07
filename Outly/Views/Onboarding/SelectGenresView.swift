@@ -3,6 +3,7 @@ import SwiftUI
 /// Figma: "complete acc 2" (424:1433). Cipi v treh stolpcih, izbrani so modri.
 /// Seznam pride iz GET /genres (21 zanrov); ob "Complete" gre PATCH /me { genres }.
 /// Streznik nato nastavi onboarded_at in AuthGateView spusti uporabnika v aplikacijo.
+@MainActor
 struct SelectGenresView: View {
     @EnvironmentObject private var session: SessionStore
 

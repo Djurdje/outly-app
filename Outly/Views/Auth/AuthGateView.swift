@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct AuthGateView: View {
     @AppStorage("authStage") private var authStage: String = "register"
     @EnvironmentObject var session: SessionStore
@@ -38,6 +39,7 @@ struct AuthGateView: View {
 
 /// Kratek zaslon med nalaganjem GET /me. Ob napaki omrezja ponudi ponovni poskus
 /// in odjavo; ob 401 SessionStore sam odjavi in gate pokaze prijavo.
+@MainActor
 struct SessionLoadingView: View {
     @EnvironmentObject private var session: SessionStore
     @AppStorage("authStage") private var authStage: String = "main"

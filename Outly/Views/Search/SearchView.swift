@@ -1,95 +1,180 @@
 import SwiftUI
 
+/// Iskanje prek GET /search: klubi IN dogodki, na strezniku, ne po prvih 100 klubih na napravi.
+@MainActor
 struct SearchView: View {
     @State private var query = ""
-
-    @State private var clubs: [APIClub] = []
+    @State private var results: SearchResults?
     @State private var isLoading = false
     @State private var errorText: String?
+    @State private var searchTask: Task<Void, Never>?
+    @State private var openEvent: APIEvent?
+    @State private var showEvent = false
+    @State private var openingEventId: Int?
 
-    // filtrirani klubi glede na vnos
-    private var filteredClubs: [APIClub] {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !q.isEmpty else { return [] }
-
-        return clubs.filter { $0.name.lowercased().contains(q) }
-    }
+    private var trimmed: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
-
-                // SEARCH BAR
-                TextField("Search clubs or events", text: $query)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Search clubs or events", text: $query)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .submitLabel(.search)
+                    if !query.isEmpty {
+                        Button { query = "" } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(12)
 
                 if isLoading {
-                    ProgressView()
-                        .padding(.top, 8)
+                    ProgressView().padding(.top, 8)
                 }
 
                 if let errorText {
-                    Text(errorText)
-                        .foregroundStyle(.red)
-                        .padding(.top, 8)
+                    Text(errorText).foregroundStyle(.red).padding(.top, 8)
                 }
 
-                // SUGGESTIONS
-                if !filteredClubs.isEmpty {
+                ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
-                        ForEach(filteredClubs) { club in
-                            NavigationLink {
-                                ClubDetailView(clubId: club.id)
-                            } label: {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "magnifyingglass")
-                                        .foregroundColor(.gray)
-
-                                    Text(club.name)
-                                        .foregroundColor(.white)
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.gray.opacity(0.7))
-                                }
-                                .padding(.vertical, 10)
+                        if let r = results {
+                            if r.isEmpty && !isLoading {
+                                Text("No results for \"\(trimmed)\".")
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 10)
                             }
-                            .buttonStyle(.plain)
 
-                            Divider()
-                                .background(Color.gray.opacity(0.3))
+                            if !r.clubs.isEmpty {
+                                SectionHeader(title: "Clubs")
+                                ForEach(r.clubs) { club in
+                                    NavigationLink {
+                                        ClubDetailView(clubId: club.id)
+                                    } label: {
+                                        row(icon: "building.2", title: club.name,
+                                            subtitle: club.city, imageUrl: club.logoUrl)
+                                    }
+                                    .buttonStyle(.plain)
+                                    Divider().background(Color.gray.opacity(0.3))
+                                }
+                            }
+
+                            if !r.events.isEmpty {
+                                SectionHeader(title: "Events")
+                                ForEach(r.events) { e in
+                                    Button {
+                                        Task { await open(eventId: e.id) }
+                                    } label: {
+                                        row(icon: "calendar", title: e.title,
+                                            subtitle: eventSubtitle(e), imageUrl: e.posterUrl,
+                                            busy: openingEventId == e.id)
+                                    }
+                                    .buttonStyle(.plain)
+                                    Divider().background(Color.gray.opacity(0.3))
+                                }
+                            }
+                        } else if trimmed.count == 1 {
+                            Text("Type at least 2 characters.")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 10)
                         }
                     }
-                    .padding(.top, 8)
-                } else if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading {
-                    Text("No results.")
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 10)
+                    .padding(.bottom, 40)   // odmik za spodnjo vrstico (past 8)
                 }
+                .scrollDismissesKeyboard(.immediately)
 
-                Spacer()
+                Spacer(minLength: 0)
             }
             .padding()
             .navigationTitle("Search")
-            .task {
-                await loadClubs()
+            .navigationDestination(isPresented: $showEvent) {
+                if let e = openEvent {
+                    EventDetailView(event: e)
+                }
             }
         }
         .preferredColorScheme(.dark)
+        .onChange(of: query) { _, _ in scheduleSearch() }
     }
 
-    private func loadClubs() async {
-        guard clubs.isEmpty else { return }
-        isLoading = true
-        errorText = nil
-        do {
-            clubs = try await APIClient.shared.fetchClubs()
-        } catch {
-            errorText = error.localizedDescription
+    private func eventSubtitle(_ e: SearchResults.Event) -> String {
+        var parts: [String] = []
+        if !e.clubName.isEmpty { parts.append(e.clubName) }
+        if let d = e.startDate {
+            let f = DateFormatter()
+            f.dateFormat = "d. MMM, HH:mm"
+            parts.append(f.string(from: d))
         }
-        isLoading = false
+        return parts.joined(separator: " · ")
+    }
+
+    private func row(icon: String, title: String, subtitle: String, imageUrl: String, busy: Bool = false) -> some View {
+        HStack(spacing: 12) {
+            if let url = URL(string: imageUrl), !imageUrl.isEmpty {
+                AsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                Image(systemName: icon)
+                    .foregroundColor(.gray)
+                    .frame(width: 44, height: 44)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).foregroundColor(.white).lineLimit(1)
+                if !subtitle.isEmpty {
+                    Text(subtitle).font(.caption).foregroundColor(.gray).lineLimit(1)
+                }
+            }
+            Spacer()
+            if busy {
+                ProgressView()
+            } else {
+                Image(systemName: "chevron.right").foregroundColor(.gray.opacity(0.7))
+            }
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+    }
+
+    /// Iskanje sprozimo 350 ms po zadnjem znaku, da ne streljamo klica na vsako tipko.
+    private func scheduleSearch() {
+        searchTask?.cancel()
+        errorText = nil
+        let q = trimmed
+        guard q.count >= 2 else {
+            results = nil
+            isLoading = false
+            return
+        }
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            if Task.isCancelled { return }
+            isLoading = true
+            defer { isLoading = false }
+            do {
+                let r = try await APIClient.shared.search(q)
+                if Task.isCancelled { return }
+                results = r
+            } catch {
+                if Task.isCancelled { return }
+                errorText = error.userMessage
+            }
+        }
+    }
+
+    private func open(eventId: Int) async {
+        openingEventId = eventId
+        defer { openingEventId = nil }
+        do {
+            openEvent = try await APIClient.shared.fetchEvent(id: eventId)
+            showEvent = true
+        } catch {
+            errorText = error.userMessage
+        }
     }
 }

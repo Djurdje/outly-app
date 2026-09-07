@@ -8,7 +8,7 @@
 import Foundation
 import Security
 
-final class KeychainService {
+final class KeychainService: Sendable {
     static let shared = KeychainService()
     private init() {}
 

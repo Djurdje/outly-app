@@ -3,6 +3,7 @@ import PhotosUI
 
 /// Obrazec za nov dogodek (POST /events) ali urejanje (PATCH /events/:id).
 /// Cena se vnese v evrih, poslje pa se v CENTIH kot celo stevilo (Decimal, ne Double).
+@MainActor
 struct EventFormView: View {
     let clubId: Int
     let existing: APIEvent?
@@ -180,8 +181,10 @@ struct EventFormView: View {
     /// "12,50" ali "12.50" -> 1250. Decimal, da 0.1 + 0.2 ne postane 0.30000000000000004.
     static func cents(from text: String) -> Int?? {
         let t = text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
-        if t.isEmpty { return .some(nil) }   // prazno = brezplacno / brez cene
-        guard let d = Decimal(string: t, locale: Locale(identifier: "en_US_POSIX")), d >= 0 else { return nil }
+        if t.isEmpty { return .some(nil) }   // prazno = brez cene (prikaze se "FREE")
+        // Decimal(string:) sprejme "12.5abc" kot 12.5, zato obliko preverimo sami.
+        guard t.range(of: #"^\d{1,6}(\.\d{1,2})?$"#, options: .regularExpression) != nil,
+              let d = Decimal(string: t, locale: Locale(identifier: "en_US_POSIX")), d >= 0 else { return nil }
         var scaled = d * 100
         var rounded = Decimal()
         NSDecimalRound(&rounded, &scaled, 0, .plain)

@@ -63,7 +63,7 @@ extension APIClient {
     }
 }
 
-final class APIClient {
+final class APIClient: Sendable {
     static let shared = APIClient()
     private init() {}
 

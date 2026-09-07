@@ -2,12 +2,12 @@ import SwiftUI
 
 /// Figma: "Create New Password" (15:985). Figma nima polja za kodo, backend
 /// (POST /auth/reset-password) pa jo zahteva — zato je tu dodano polje za 6-mestno kodo.
+@MainActor
 struct ResetPasswordView: View {
     let email: String
 
     @AppStorage("authStage") private var authStage: String = "login"
     @AppStorage("loginNotice") private var loginNotice: String = ""
-    @Environment(\.dismiss) private var dismiss
 
     @State private var code = ""
     @State private var password = ""
@@ -106,9 +106,10 @@ struct ResetPasswordView: View {
             try await APIClient.shared.resetPassword(email: email, code: code, newPassword: password)
             // Nazaj na prijavo z obvestilom. Ponastavitev NE prijavi samodejno
             // (streznik ne vrne zetona), kar je prav: uporabnik se prijavi z novim geslom.
+            // ForgotPasswordView opazuje loginNotice in se sam umakne na prijavo
+            // (skupaj s tem zaslonom). Tukaj NE klicemo dismiss(), da ni dvojnega pop-a.
             loginNotice = "Password updated. Log in with your new password."
             authStage = "login"
-            dismiss()
         } catch {
             message = error.userMessage
         }
@@ -121,6 +122,9 @@ struct ResetPasswordView: View {
         do {
             try await APIClient.shared.forgotPassword(email: email)
             resent = true
+            // Streznik nove kode ne poslje pogosteje kot enkrat na minuto.
+            try? await Task.sleep(for: .seconds(60))
+            resent = false
         } catch {
             message = error.userMessage
         }

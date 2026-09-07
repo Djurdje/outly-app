@@ -83,8 +83,24 @@ extension APIEvent {
 }
 
 enum DateParsing {
-    static let iso = ISO8601DateFormatter()
-    static let isoFrac = ISO8601DateFormatter()
+    // Nastavljeno enkrat: spreminjanje formatOptions ob vsakem klicu je bilo
+    // tekmovanje med socasnimi klici (HomeView nalaga tri sezname hkrati).
+    static let iso: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+    static let isoFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let plain: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f
+    }()
 
     static let shortDate: DateFormatter = {
         let f = DateFormatter()
@@ -99,20 +115,11 @@ enum DateParsing {
     }()
 
     static func parseBackendDate(_ s: String) -> Date? {
-        // pg pogosto vrne ISO string; včasih z fractional seconds
-        iso.formatOptions = [.withInternetDateTime]
-        if let d = iso.date(from: s) { return d }
-
-        isoFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        // pg vrne ISO niz, obicajno z milisekundami ("2026-10-10T21:00:00.000Z")
         if let d = isoFrac.date(from: s) { return d }
-
-        // fallback: "YYYY-MM-DD HH:MM:SS" brez timezone
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        if let d = f.date(from: s) { return d }
-
-        return nil
+        if let d = iso.date(from: s) { return d }
+        // fallback: "YYYY-MM-DD HH:MM:SS" brez casovnega pasu
+        return plain.date(from: s)
     }
 }
 

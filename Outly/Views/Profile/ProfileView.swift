@@ -7,6 +7,7 @@ struct BusinessClub: Decodable {
     let logo_url: String?
 }
 
+@MainActor
 struct ProfileView: View {
     @AppStorage("authStage") private var authStage: String = "main"
     @EnvironmentObject private var session: SessionStore
@@ -218,13 +219,13 @@ struct ProfileView: View {
             }
 
             await MainActor.run {
-                errorMessage = apiErr.localizedDescription
+                errorMessage = apiErr.userMessage
                 isLoading = false
             }
 
         } catch {
             await MainActor.run {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userMessage
                 isLoading = false
             }
         }
@@ -245,7 +246,7 @@ struct ProfileView: View {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = error.userMessage
             }
         }
     }

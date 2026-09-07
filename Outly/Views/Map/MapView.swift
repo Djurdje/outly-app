@@ -2,22 +2,32 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
+/// Zemljevid VSEH klubov (GET /clubs/map). Prej je risal en sam klub — najblizjega.
+/// Dotik pina odpre ClubDetailView.
+@MainActor
 struct MapView: View {
     @EnvironmentObject var locationManager: LocationManager
 
-    @State private var clubs: [APIClub] = []
+    @State private var clubs: [MapClub] = []
     @State private var isLoading = false
     @State private var errorText: String?
+    @State private var selectedClubId: Int?
+    @State private var showClub = false
+    @State private var hasCentered = false
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-
-                CleanMKMapView(
+                ClubsMKMapView(
+                    clubs: clubs,
                     userLocation: locationManager.location,
-                    selectedClub: selectedClub
+                    hasCentered: $hasCentered,
+                    onSelect: { id in
+                        selectedClubId = id
+                        showClub = true
+                    }
                 )
-                .ignoresSafeArea()
+                .ignoresSafeArea(edges: .top)
 
                 if isLoading {
                     ProgressView()
@@ -28,8 +38,20 @@ struct MapView: View {
                 }
 
                 if let errorText {
-                    Text(errorText)
-                        .foregroundStyle(.red)
+                    VStack(spacing: 6) {
+                        Text(errorText).foregroundStyle(.red)
+                        Button("Try again") { Task { await loadClubs(force: true) } }
+                            .foregroundStyle(Color.outlyBlue)
+                    }
+                    .padding(10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.top, 10)
+                }
+
+                if !isLoading, errorText == nil, clubs.isEmpty {
+                    Text("No clubs on the map yet.")
+                        .foregroundStyle(.secondary)
                         .padding(10)
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -38,121 +60,110 @@ struct MapView: View {
             }
             .navigationTitle("Map")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $showClub) {
+                if let id = selectedClubId {
+                    ClubDetailView(clubId: id)
+                }
+            }
         }
         .preferredColorScheme(.dark)
         .task {
             locationManager.requestPermission()
-            await loadClubs()
+            await loadClubs(force: false)
         }
     }
 
-    // samo klubi z veljavnimi koordinatami
-    private var clubsWithCoordinates: [APIClub] {
-        clubs.filter { $0.lat != nil && $0.lng != nil }
-    }
-
-    // izberi EN klub: najbližjega userju, sicer prvega
-    private var selectedClub: APIClub? {
-        guard !clubsWithCoordinates.isEmpty else { return nil }
-
-        guard let userLoc = locationManager.location else {
-            return clubsWithCoordinates.first
-        }
-
-        return clubsWithCoordinates.min { a, b in
-            let da = distance(from: userLoc.coordinate, to: clubCoordinate(a)!)
-            let db = distance(from: userLoc.coordinate, to: clubCoordinate(b)!)
-            return da < db
-        }
-    }
-
-    private func clubCoordinate(_ club: APIClub) -> CLLocationCoordinate2D? {
-        guard let lat = club.lat, let lng = club.lng else { return nil }
-        return CLLocationCoordinate2D(latitude: lat, longitude: lng)
-    }
-
-    private func loadClubs() async {
-        guard clubs.isEmpty else { return }
+    private func loadClubs(force: Bool) async {
+        guard force || clubs.isEmpty else { return }
         isLoading = true
         errorText = nil
+        defer { isLoading = false }
         do {
-            clubs = try await APIClient.shared.fetchClubs()
+            clubs = try await APIClient.shared.fetchMapClubs()
         } catch {
-            errorText = error.localizedDescription
+            errorText = error.userMessage
         }
-        isLoading = false
-    }
-
-    private func distance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> CLLocationDistance {
-        CLLocation(latitude: from.latitude, longitude: from.longitude)
-            .distance(from: CLLocation(latitude: to.latitude, longitude: to.longitude))
     }
 }
 
-//
-// MARK: - MKMapView wrapper (NO auto Ljubljana, black pin)
-//
-private struct CleanMKMapView: UIViewRepresentable {
+// MARK: - MKMapView
+
+private final class ClubAnnotation: NSObject, MKAnnotation {
+    let clubId: Int
+    let coordinate: CLLocationCoordinate2D
+    let title: String?
+    let subtitle: String?
+
+    init(club: MapClub) {
+        clubId = club.clubId
+        coordinate = CLLocationCoordinate2D(latitude: club.lat, longitude: club.lng)
+        title = club.name
+        subtitle = club.city.isEmpty ? nil : club.city
+    }
+}
+
+private extension MapClub {
+    var clubId: Int { id }
+}
+
+private struct ClubsMKMapView: UIViewRepresentable {
+    let clubs: [MapClub]
     let userLocation: CLLocation?
-    let selectedClub: APIClub?
+    @Binding var hasCentered: Bool
+    let onSelect: (Int) -> Void
 
     func makeUIView(context: Context) -> MKMapView {
         let map = MKMapView(frame: .zero)
-
+        map.delegate = context.coordinator
         map.pointOfInterestFilter = .excludingAll
         map.showsTraffic = false
-
         map.showsUserLocation = true
-
-        map.isRotateEnabled = true
-        map.isPitchEnabled = true
-        map.isZoomEnabled = true
-        map.isScrollEnabled = true
-            
+        map.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: "club")
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        // odstrani stare pin-e (razen user)
-        let toRemove = map.annotations.filter { !($0 is MKUserLocation) }
-        map.removeAnnotations(toRemove)
-
-        // dodaj EN club pin (črn)
-        if let club = selectedClub,
-           let lat = club.lat,
-           let lng = club.lng {
-
-            let ann = MKPointAnnotation()
-            ann.title = club.name
-            ann.coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
-            map.addAnnotation(ann)
+        // Pine osvezimo samo, ce se je seznam spremenil (sicer utripajo ob vsakem premiku).
+        let current = Set(map.annotations.compactMap { ($0 as? ClubAnnotation)?.clubId })
+        let wanted = Set(clubs.map(\.id))
+        if current != wanted {
+            map.removeAnnotations(map.annotations.filter { $0 is ClubAnnotation })
+            map.addAnnotations(clubs.map(ClubAnnotation.init(club:)))
         }
 
-        // CENTER LOGIKA (to je KLJUČNO)
+        // Prvic centriramo: na uporabnika, sicer tako, da so vidni vsi klubi.
+        // Potem uporabniku ne premikamo zemljevida vec (prej je skakal ob vsaki lokaciji).
+        guard !hasCentered else { return }
         if let userLoc = userLocation {
-            let region = MKCoordinateRegion(
-                center: userLoc.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
-            )
-            map.setRegion(region, animated: true)
-
-        } else if let club = selectedClub,
-                  let lat = club.lat,
-                  let lng = club.lng {
-            let region = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
-                span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
-            )
-            map.setRegion(region, animated: true)
+            map.setRegion(MKCoordinateRegion(center: userLoc.coordinate,
+                                             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)),
+                          animated: false)
+            DispatchQueue.main.async { hasCentered = true }
+        } else if !clubs.isEmpty {
+            map.showAnnotations(map.annotations.filter { $0 is ClubAnnotation }, animated: false)
+            DispatchQueue.main.async { hasCentered = true }
         }
     }
 
-    static func dismantleUIView(_ uiView: MKMapView, coordinator: ()) {}
+    func makeCoordinator() -> Coordinator { Coordinator(onSelect: onSelect) }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        let onSelect: (Int) -> Void
+        init(onSelect: @escaping (Int) -> Void) { self.onSelect = onSelect }
+
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            guard annotation is ClubAnnotation else { return nil }
+            let v = mapView.dequeueReusableAnnotationView(withIdentifier: "club", for: annotation) as! MKMarkerAnnotationView
+            v.markerTintColor = UIColor(Color.outlyBlue)
+            v.glyphImage = UIImage(systemName: "music.note")
+            v.canShowCallout = true
+            v.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
+            return v
+        }
+
+        func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
+            guard let a = view.annotation as? ClubAnnotation else { return }
+            onSelect(a.clubId)
+        }
     }
-
-    class Coordinator: NSObject, MKMapViewDelegate {}
-
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct LoginView: View {
     @AppStorage("authStage") private var authStage: String = "login"
     @EnvironmentObject private var session: SessionStore
@@ -155,19 +156,14 @@ struct LoginView: View {
         do {
             let token = try await APIClient.shared.login(email: cleanEmail, password: password)
 
-            await MainActor.run {
-                session.setToken(token)
-                authStage = "main"
+            session.setToken(token)
+            guard session.isLoggedIn else {
+                // Keychain je zavrnil zapis (redko; npr. naprava se ni odklenjena po zagonu).
+                message = "Could not save your session on this device. Please try again."
+                return
             }
-
-            Task {
-                do {
-                    let me = try await APIClient.shared.me(token: token)
-                    print("✅ Logged in as \(me.username) role=\(me.role)")
-                } catch {
-                    print("⚠️ /me failed: \(error.localizedDescription)")
-                }
-            }
+            // GET /me naredi SessionLoadingView takoj po preklopu na "main".
+            authStage = "main"
 
         } catch {
             let text = error.userMessage

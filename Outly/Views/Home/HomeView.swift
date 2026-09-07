@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreLocation
 
+@MainActor
 struct HomeView: View {
     @State private var clubs: [APIClub] = []
     @State private var isLoading = false
@@ -190,7 +191,7 @@ struct HomeView: View {
             await loadMe()
         } catch {
             await MainActor.run {
-                self.errorText = error.localizedDescription
+                self.errorText = error.userMessage
             }
         }
 

@@ -5,6 +5,7 @@ import SwiftUI
 /// racuna sploh ne nalozi. Vsebina kartice je enaka Figmi.
 ///
 /// Poslje PATCH /me { phone?, dateOfBirth, country } in nadaljuje na izbiro zanrov.
+@MainActor
 struct CompleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
 

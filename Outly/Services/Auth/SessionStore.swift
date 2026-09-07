@@ -23,7 +23,12 @@ final class SessionStore: ObservableObject {
     var isLoggedIn: Bool { !token.isEmpty }
 
     /// Racun se ni dokoncan (onboarded_at je prazen) -> pokazi "Complete your account".
-    var needsOnboarding: Bool { me != nil && me?.isOnboarded == false }
+    /// Velja za navadne uporabnike. Poslovni racun (klub) in admin nimata datuma
+    /// rojstva in zanrov osebe, zato ju ne silimo skozi ta tok.
+    var needsOnboarding: Bool {
+        guard let me else { return false }
+        return me.role == "user" && !me.isOnboarded
+    }
 
     init() {
         migrateLegacyTokenIfNeeded()

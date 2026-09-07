@@ -3,6 +3,7 @@ import SwiftUI
 /// Figma: "my acc delete" (558:1943). Applova zahteva 5.1.1(v): brisanje racuna v aplikaciji.
 /// Backend (DELETE /me) zahteva geslo; ce ima uporabnik narocila, jih anonimizira
 /// (racunovodske listine ostanejo, osebni podatki ne).
+@MainActor
 struct DeleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
     @AppStorage("authStage") private var authStage: String = "main"
@@ -74,7 +75,7 @@ struct DeleteAccountView: View {
             Button("Delete Account", role: .destructive) { Task { await deleteAccount() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("We're sorry to see you go! This action is permanent and will remove all your data, tickets, and saved clubs.")
+            Text("We're sorry to see you go! This is permanent: your account and personal data will be removed, and tickets you bought will no longer be linked to you.")
         }
     }
 

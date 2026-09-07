@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Figma: "Forgot pass" (15:738). Vnos e-naslova -> POST /auth/forgot-password.
 /// Streznik vedno odgovori 200, zato uporabniku ne povemo, ali racun obstaja.
+@MainActor
 struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
     /// Ko ResetPasswordView uspe, nastavi obvestilo; tu se umaknemo nazaj na prijavo.
