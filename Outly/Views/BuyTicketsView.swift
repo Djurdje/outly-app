@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Nakup vstopnic (sheet iz EventDetailView). Kolicina -> potrditev -> vstopnice s QR.
 /// Kartica se NE vnasa v aplikaciji (PCI DSS): ko pride Stripe, tu vstopi Stripov
@@ -103,10 +104,11 @@ struct BuyTicketsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                OutlyPrimaryButton(title: "Confirm purchase", isLoading: isBuying) {
+                OutlyPrimaryButton(title: event.isSoldOut ? "Sold out" : "Confirm purchase", isLoading: isBuying) {
                     Task { await kupi() }
                 }
-                .disabled(isBuying)
+                .disabled(isBuying || event.isSoldOut)
+                .opacity(event.isSoldOut ? 0.5 : 1)
 
                 Text("Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.")
                     .font(.system(size: 11))
@@ -201,8 +203,11 @@ struct BuyTicketsView: View {
         isBuying = true
         defer { isBuying = false }
         do {
-            purchase = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity)
+            let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { purchase = p }
         } catch {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
             errorMessage = error.userMessage
         }
     }

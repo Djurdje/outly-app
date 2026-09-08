@@ -26,6 +26,11 @@ struct APIEvent: Identifiable, Decodable {
     let currency: String?
     let ticketUrl: String?
 
+    /// Zaloga (migracija 002; javno od septembra 2026). capacity nil = brez omejitve.
+    let capacity: Int?
+    let soldCount: Int
+    /// Streznik: "available" | "few_left" | "sold_out" | "external"
+    let availability: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -42,6 +47,9 @@ struct APIEvent: Identifiable, Decodable {
         case ticketPriceCents = "ticket_price_cents"
         case currency
         case ticketUrl = "ticket_url"
+        case capacity
+        case soldCount = "sold_count"
+        case availability
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -63,6 +71,9 @@ struct APIEvent: Identifiable, Decodable {
         ticketPriceCents = try c.decodeIfPresent(Int.self, forKey: .ticketPriceCents)
         currency         = try c.decodeIfPresent(String.self, forKey: .currency)
         ticketUrl        = try c.decodeIfPresent(String.self, forKey: .ticketUrl)
+        capacity         = try c.decodeIfPresent(Int.self, forKey: .capacity)
+        soldCount        = try c.decodeIfPresent(Int.self, forKey: .soldCount) ?? 0
+        availability     = try c.decodeIfPresent(String.self, forKey: .availability)
     }
 }
 
@@ -150,5 +161,45 @@ extension APIEvent {
         }
 
         return "\(symbol)\(String(format: "%.2f", amount))"
+    }
+}
+
+// MARK: - Zaloga in cas (oznake na karticah)
+extension APIEvent {
+    var isSoldOut: Bool { availability == "sold_out" }
+    var isFewLeft: Bool { availability == "few_left" }
+    var ticketsLeft: Int? { capacity.map { max(0, $0 - soldCount) } }
+
+    /// Kratka oznaka za kartico ali nil, ce ni nic posebnega.
+    var badgeText: String? {
+        if isPast { return nil }
+        if isSoldOut { return "SOLD OUT" }
+        if isFewLeft, let n = ticketsLeft { return n == 1 ? "LAST ONE" : "\(n) LEFT" }
+        if ticketPriceCents == nil, let u = ticketUrl, !u.isEmpty { return nil }
+        if ticketPriceCents == 0 { return "FREE" }
+        return nil
+    }
+
+    var isToday: Bool {
+        guard let d = startDate else { return false }
+        return Calendar.current.isDateInToday(d) || (d > Date() && d.timeIntervalSinceNow < 6 * 3600)
+    }
+
+    /// Petek ali sobota (ali nedelja) tega tedna, ki se ni minil.
+    var isThisWeekend: Bool {
+        guard let d = startDate, d > Date() else { return false }
+        let cal = Calendar.current
+        let wd = cal.component(.weekday, from: d) // 1 = nedelja, 6 = petek, 7 = sobota
+        guard wd == 6 || wd == 7 || wd == 1 else { return false }
+        return d.timeIntervalSinceNow < 8 * 24 * 3600
+    }
+
+    /// "Fri 11 Sep · 22:00"
+    var displayDayTime: String {
+        guard let d = startDate else { return "" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "EEE d MMM · HH:mm"
+        return f.string(from: d)
     }
 }

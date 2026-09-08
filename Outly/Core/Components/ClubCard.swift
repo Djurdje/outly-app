@@ -8,10 +8,13 @@ enum ClubCardVariant {
 struct ClubCard: View {
     let club: APIClub
     let variant: ClubCardVariant
+    /// Razdalja do kluba v km (samo "Near you"); nil = ne prikazi.
+    var distanceKm: Double? = nil
 
-    init(club: APIClub, variant: ClubCardVariant) {
+    init(club: APIClub, variant: ClubCardVariant, distanceKm: Double? = nil) {
         self.club = club
         self.variant = variant
+        self.distanceKm = distanceKm
     }
 
     var body: some View {
@@ -63,6 +66,12 @@ struct ClubCard: View {
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
+
+            if let d = distanceKm {
+                Text(d < 1 ? "\(Int(d * 1000)) m" : String(format: "%.1f km", d))
+                    .font(.caption)
+                    .foregroundStyle(Color.outlyBlue)
+            }
         }
         .frame(width: 110)
     }
