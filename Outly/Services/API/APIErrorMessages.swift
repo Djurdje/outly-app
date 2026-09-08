@@ -81,6 +81,17 @@ extension APIError {
         if t.contains("contactname is required")        { return "Enter the contact person's name." }
         if t.contains("phone must contain")             { return "Enter a valid phone number, e.g. +386 41 123 456." }
         if t.contains("invalid application data")       { return "Please check what you entered and try again." }
+        // Vstopnice
+        if t.contains("quantity must be")               { return "Choose between 1 and 10 tickets." }
+        if t.contains("not on sale")                    { return "This event is not on sale." }
+        if t.contains("no tickets on outly")            { return "Tickets for this event are not sold on Outly." }
+        if t.contains("already started")                { return "This event has already started." }
+        if t.contains("have not opened")                { return "Ticket sales have not opened yet." }
+        if t.contains("sales are closed")               { return "Ticket sales are closed." }
+        if t.contains("tickets left") || t.contains("not enough tickets") { return "Not enough tickets left." }
+        if t.contains("add your date of birth")         { return "Add your date of birth in Personal info to buy tickets." }
+        if t.contains("you must be at least")           { return raw }
+        if t.contains("payments are not available")     { return "Payments are not available yet." }
         if t.contains("club_has_orders")                { return "Your club has sold tickets. Transfer club ownership before deleting your account." }
         if t.contains("already exists") || t.contains("already registered") {
             return "An account with this email or username already exists."

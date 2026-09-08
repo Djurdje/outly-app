@@ -130,9 +130,10 @@ struct ProfileView: View {
 
                     if user?.role == "business" {
 
-                        // "Dashboard" in "Team" sta skrita: kazala sta izmisljene stevilke
-                        // (prihodki v $, osebje), backend za to se ne obstaja. Predlogi
-                        // sta v _staro/. Vrni ju, ko bodo podatki pravi.
+                        // Dashboard s pravimi podatki (GET /business/sales). "Team" ostaja v _staro/.
+                        NavigationLink(destination: BusinessDashboardView(clubName: businessClub?.name)) {
+                            OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
+                        }
 
                         NavigationLink(destination: BusinessEventsView(clubId: businessClub?.id, clubName: businessClub?.name)) {
                             OutlyMenuRowButton(icon: "calendar", title: "Events")
@@ -237,15 +238,16 @@ struct ProfileView: View {
         guard let user = user, user.role == "business" else { return }
 
         do {
-            let urlString = "https://outly-backend-roy3.onrender.com/clubs"
-            guard let url = URL(string: urlString) else { return }
-
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let clubs = try JSONDecoder().decode([BusinessClub].self, from: data)
-
+            // Prej: javni /clubs in iskanje po owner_user_id — skrit klub (migracija 006)
+            // tam ni, in klic je sel mimo APIClient. Zdaj lastna pot.
+            let c = try await APIClient.shared.fetchMyBusinessClub(token: authToken)
             await MainActor.run {
-                self.businessClub = clubs.first(where: { $0.owner_user_id == user.id })
+                self.businessClub = BusinessClub(id: c.id, owner_user_id: user.id, name: c.name, logo_url: c.logoUrl)
             }
+        } catch let apiErr as APIError {
+            // 404 = klub se ni ustvarjen; to ni napaka za uporabnika.
+            if case let .requestFailed(code, _) = apiErr, code == 404 { return }
+            await MainActor.run { self.errorMessage = apiErr.userMessage }
         } catch {
             await MainActor.run {
                 self.errorMessage = error.userMessage

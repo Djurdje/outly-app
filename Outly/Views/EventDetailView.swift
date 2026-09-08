@@ -8,6 +8,8 @@ struct EventDetailView: View {
     @State private var club: APIClub?
     @State private var isLoading = false
     @State private var errorText: String?
+    @State private var showBuy = false
+    @EnvironmentObject private var session: SessionStore
 
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
@@ -34,6 +36,10 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await loadClub() }
+        .sheet(isPresented: $showBuy) {
+            BuyTicketsView(event: event, clubName: club?.name ?? "Club")
+                .environmentObject(session)
+        }
     }
 
     // MARK: - Header (poster + title + centered ticket button)
@@ -105,10 +111,13 @@ struct EventDetailView: View {
         .onTapGesture {
             guard !isEnded else { return }
 
-            // kasneje: payment flow
-            if let urlStr = event.ticketUrl,
-               !urlStr.isEmpty,
-               let url = URL(string: urlStr) {
+            // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView, testni nacin do Stripa).
+            // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
+            if event.ticketPriceCents != nil {
+                showBuy = true
+            } else if let urlStr = event.ticketUrl,
+                      !urlStr.isEmpty,
+                      let url = URL(string: urlStr) {
                 UIApplication.shared.open(url)
             }
         }
