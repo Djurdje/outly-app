@@ -13,7 +13,7 @@ name: Gradnja iOS
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
     paths-ignore:
       - "**.md"
       - "_staro/**"
