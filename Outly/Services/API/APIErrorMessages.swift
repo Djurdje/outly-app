@@ -75,6 +75,12 @@ extension APIError {
         if t.contains("genres must be")                 { return "Select at least one genre." }
         if t.contains("nothing to update")              { return "Nothing to save." }
         if t.contains("password required")              { return "Enter your password to continue." }
+        // Prosnja za poslovni racun (POST /creator-applications)
+        if t.contains("already pending")                { return "You already have an application waiting for review." }
+        if t.contains("businessname is required")       { return "Enter the business name (at least 2 characters)." }
+        if t.contains("contactname is required")        { return "Enter the contact person's name." }
+        if t.contains("phone must contain")             { return "Enter a valid phone number, e.g. +386 41 123 456." }
+        if t.contains("invalid application data")       { return "Please check what you entered and try again." }
         if t.contains("club_has_orders")                { return "Your club has sold tickets. Transfer club ownership before deleting your account." }
         if t.contains("already exists") || t.contains("already registered") {
             return "An account with this email or username already exists."
