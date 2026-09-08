@@ -76,7 +76,7 @@ struct ClubCard: View {
             let url = URL(string: club.bannerUrl)
         {
             AsyncImage(url: url) { img in
-                img.resizable().scaledToFill()
+                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 Rectangle().opacity(0.15)
             }
@@ -94,9 +94,7 @@ struct ClubCard: View {
             let url = URL(string: club.logoUrl)
         {
             AsyncImage(url: url) { img in
-                img
-                    .resizable()
-                    .scaledToFill()
+                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 RoundedRectangle(cornerRadius: 22)
                     .opacity(0.15)

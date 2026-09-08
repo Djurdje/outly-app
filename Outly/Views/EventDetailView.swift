@@ -48,7 +48,7 @@ struct EventDetailView: View {
             // Poster
             if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
                 AsyncImage(url: url) { img in
-                    img.resizable().scaledToFill()
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().opacity(0.12)
                 }
@@ -129,7 +129,7 @@ struct EventDetailView: View {
         HStack(spacing: 12) {
             if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
                 AsyncImage(url: url) { img in
-                    img.resizable().scaledToFill()
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Circle().opacity(0.12)
                 }

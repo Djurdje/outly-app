@@ -56,11 +56,15 @@ struct ClubDetailView: View {
     }
 
     // MARK: - 1) Header
+    // Slike so povsod ovite v Color.clear.overlay(...).clipped(): AsyncImage s
+    // scaledToFill brez okvirja prevzame naravno velikost slike (1600 px) in
+    // razsiri celoten zaslon v desno — vsebina je bila odrezana, dotiki na
+    // domaci strani pa so zgresili kartice. Color.clear vzame le prostor starsa.
     private var header: some View {
         ZStack(alignment: .bottomLeading) {
             if let banner = club?.bannerUrl, !banner.isEmpty, let url = URL(string: banner) {
                 AsyncImage(url: url) { img in
-                    img.resizable().scaledToFill()
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().opacity(0.15)
                 }
@@ -88,7 +92,7 @@ struct ClubDetailView: View {
         HStack(alignment: .top, spacing: 12) {
             if let logo = club?.logoUrl, !logo.isEmpty, let url = URL(string: logo) {
                 AsyncImage(url: url) { img in
-                    img.resizable().scaledToFill()
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Circle().opacity(0.12)
                 }

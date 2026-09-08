@@ -138,7 +138,7 @@ struct EventCardAPI: View {
             let url = URL(string: event.posterUrl)
         {
             AsyncImage(url: url) { img in
-                img.resizable().scaledToFill()
+                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 RoundedRectangle(cornerRadius: 14)
                     .opacity(0.12)
@@ -212,7 +212,7 @@ struct EventCardAPI: View {
     private var heroPoster: some View {
         if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
             AsyncImage(url: url) { img in
-                img.resizable().scaledToFill()
+                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 Rectangle().opacity(0.12)
             }
