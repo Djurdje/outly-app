@@ -35,8 +35,17 @@ struct APITicket: Decodable, Identifiable {
     let city: String
     let logoUrl: String
 
+    // Prenos prijatelju (008). transferred = vstopnico sem prejel (ne kupil);
+    // transferable = veljavna in dogodek se ni zacel; holderUsername = trenutni imetnik.
+    let transferable: Bool
+    let transferred: Bool
+    let holderUsername: String
+    let buyerUsername: String
+
     enum CodingKeys: String, CodingKey {
-        case id, serial, status, qr, address, city
+        case id, serial, status, qr, address, city, transferable, transferred
+        case holderUsername = "holder_username"
+        case buyerUsername = "buyer_username"
         case orderId = "order_id"
         case eventId = "event_id"
         case usedAt = "used_at"
@@ -73,6 +82,10 @@ struct APITicket: Decodable, Identifiable {
         address = try c.decodeIfPresent(String.self, forKey: .address) ?? ""
         city = try c.decodeIfPresent(String.self, forKey: .city) ?? ""
         logoUrl = try c.decodeIfPresent(String.self, forKey: .logoUrl) ?? ""
+        transferable = try c.decodeIfPresent(Bool.self, forKey: .transferable) ?? false
+        transferred = try c.decodeIfPresent(Bool.self, forKey: .transferred) ?? false
+        holderUsername = try c.decodeIfPresent(String.self, forKey: .holderUsername) ?? ""
+        buyerUsername = try c.decodeIfPresent(String.self, forKey: .buyerUsername) ?? ""
     }
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
@@ -292,6 +305,11 @@ enum Denar {
     }
 }
 
+struct TransferResponse: Decodable {
+    let result: String
+    let message: String
+}
+
 // MARK: - Klici
 
 extension APIClient {
@@ -301,6 +319,14 @@ extension APIClient {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
                                   json: ["quantity": quantity])
         return try decode(PurchaseResponse.self, from: data)
+    }
+
+    /// POST /tickets/:id/transfer — posljem vstopnico prijatelju (po e-naslovu njegovega Outly racuna).
+    /// Po uspehu vstopnica ni vec moja; nov QR dobi prejemnik.
+    func transferTicket(token: String, ticketId: Int, email: String) async throws -> TransferResponse {
+        let data = try await send(path: "tickets/\(ticketId)/transfer", method: "POST", token: token,
+                                  json: ["email": email])
+        return try decode(TransferResponse.self, from: data)
     }
 
     /// GET /me/tickets — moje vstopnice, prihajajoce najprej.

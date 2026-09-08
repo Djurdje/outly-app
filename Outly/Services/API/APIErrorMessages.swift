@@ -81,6 +81,16 @@ extension APIError {
         if t.contains("contactname is required")        { return "Enter the contact person's name." }
         if t.contains("phone must contain")             { return "Enter a valid phone number, e.g. +386 41 123 456." }
         if t.contains("invalid application data")       { return "Please check what you entered and try again." }
+        // Prenos vstopnice (POST /tickets/:id/transfer)
+        if t.contains("valid email is required")        { return "Enter your friend's email address." }
+        if t.contains("no outly account with this email") { return "No Outly account with this email. Ask your friend to sign up first." }
+        if t.contains("already hold this ticket")       { return "That is your own email." }
+        if t.contains("not verified yet")               { return "Your friend's account is not verified yet." }
+        if t.contains("must add a date of birth")       { return "Your friend must add a date of birth in the app before receiving this ticket." }
+        if t.contains("friend must be at least")        { return "Your friend is too young for this event." }
+        if t.contains("already used")                   { return "This ticket was already used." }
+        if t.contains("ticket not found")               { return "This ticket is not available anymore." }
+        if t.contains("no longer valid")                { return "This ticket is no longer valid." }
         // Vstopnice
         if t.contains("quantity must be")               { return "Choose between 1 and 10 tickets." }
         if t.contains("not on sale")                    { return "This event is not on sale." }

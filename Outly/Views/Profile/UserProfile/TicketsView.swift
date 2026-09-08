@@ -105,6 +105,9 @@ struct TicketsView: View {
                         Text("VALID").font(.caption.weight(.bold)).foregroundColor(.outlyBlue)
                     }
                     Text(t.publicRef).font(.caption).foregroundColor(.gray)
+                    if t.transferred && !t.buyerUsername.isEmpty {
+                        Text("· from \(t.buyerUsername)").font(.caption).foregroundColor(.gray)
+                    }
                 }
             }
             Spacer()
@@ -138,6 +141,9 @@ struct TicketsView: View {
 struct TicketDetailView: View {
     let ticket: APITicket
     @State private var prikazana = false
+    @State private var showTransfer = false
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var session: SessionStore
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -147,11 +153,35 @@ struct TicketDetailView: View {
                     .scaleEffect(prikazana ? 1 : 0.96)
                     .opacity(prikazana ? 1 : 0)
 
+                if ticket.transferred && !ticket.buyerUsername.isEmpty {
+                    Text("Sent to you by \(ticket.buyerUsername)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+
                 Text("Show this code at the entrance. A screenshot works too — the code is signed and valid only once.")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.5))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 10)
+
+                // Prenos prijatelju: samo veljavna vstopnica pred zacetkom dogodka (streznik preveri znova).
+                if ticket.transferable {
+                    Button { showTransfer = true } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "paperplane.fill")
+                            Text("Send to a friend")
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.white.opacity(0.10))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                        .cornerRadius(14)
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Spacer(minLength: 20)
             }
@@ -162,6 +192,11 @@ struct TicketDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { prikazana = true } }
+        .sheet(isPresented: $showTransfer) {
+            // Po prenosu vstopnica ni vec moja -> nazaj na seznam, ki se ob prikazu osvezi.
+            TransferTicketView(ticket: ticket, onTransferred: { dismiss() })
+                .environmentObject(session)
+        }
     }
 }
 
