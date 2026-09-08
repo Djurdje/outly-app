@@ -22,6 +22,8 @@ struct EventDetailView: View {
 
                 headerPoster
 
+                ticketBar
+
                 clubRow
 
                 infoBlock
@@ -42,10 +44,9 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - Header (poster + title + centered ticket button)
+    // MARK: - Header (poster, brez prekrivanja; cena je v vrstici pod njim)
     private var headerPoster: some View {
         ZStack {
-            // Poster
             if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
                 AsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
@@ -56,61 +57,91 @@ struct EventDetailView: View {
                 Rectangle().opacity(0.12)
             }
 
-            // Gradient
+            // Mehak prehod v crno podlago strani
             LinearGradient(
-                colors: [.clear, .black.opacity(0.85)],
-                startPoint: .center,
+                colors: [.clear, .black.opacity(0.9)],
+                startPoint: .init(x: 0.5, y: 0.7),
                 endPoint: .bottom
             )
-
-            // Centered ticket button a bit above bottom
-            VStack {
-                Spacer()
-                buyTicketButton
-                    .padding(.bottom, 24)
-            }
         }
-        .frame(height: 420)
+        .frame(height: 380)
         .clipped()
     }
 
-    private var buyTicketButton: some View {
-        let isEnded = event.isPast
-        let topText = isEnded ? "END" : (event.displayPrice ?? "Tickets")
+    // MARK: - Vrstica z vstopnicami (cena levo, gumb desno) v slogu OutlyPrimaryButton
+    private enum TicketState { case buy, free, external, door, fewLeft(Int), soldOut, ended }
 
-        return VStack(spacing: 2) {
-            Text(topText)
-                .font(.system(size: 34, weight: .bold))
-                .foregroundStyle(.white.opacity(isEnded ? 0.6 : 1.0))
-
-            Text(isEnded ? "event ended" : "per ticket")
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(isEnded ? 0.45 : 0.75))
+    private var ticketState: TicketState {
+        if event.isPast { return .ended }
+        if event.isSoldOut { return .soldOut }
+        if let cents = event.ticketPriceCents {
+            if event.isFewLeft, let n = event.ticketsLeft { return .fewLeft(n) }
+            return cents == 0 ? .free : .buy
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 14)
-        
-        .background(
-            Group {
-                if isEnded {
-                    Color.gray.opacity(0.30)
-                } else {
-                    Color.blackColor.opacity(0.70)
-                }
-            }
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    Color.white.opacity(isEnded ? 0.35 : 0.9),
-                    lineWidth: 2
-                )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .opacity(isEnded ? 0.7 : 1.0)
-        .onTapGesture {
-            guard !isEnded else { return }
+        if let u = event.ticketUrl, !u.isEmpty { return .external }
+        return .door
+    }
 
+    private var ticketBar: some View {
+        let state = ticketState
+        let price = event.displayPrice ?? "Tickets"
+
+        let (top, sub, button): (String, String, String?) = {
+            switch state {
+            case .buy:          return (price, "per ticket", "Get tickets")
+            case .free:         return ("FREE", "free entry", "Get tickets")
+            case .fewLeft(let n): return (price, n == 1 ? "last ticket" : "only \(n) left", "Get tickets")
+            case .external:     return ("Tickets", "sold by the club", "Open")
+            case .door:         return ("Tickets", "at the door", nil)
+            case .soldOut:      return (price, "sold out", nil)
+            case .ended:        return ("Ended", "event is over", nil)
+            }
+        }()
+
+        let active: Bool = {
+            if case .buy = state { return true }
+            if case .free = state { return true }
+            if case .fewLeft = state { return true }
+            if case .external = state { return true }
+            return false
+        }()
+
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(top)
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(.white)
+                Text(sub)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+
+            Spacer(minLength: 8)
+
+            if let button {
+                HStack(spacing: 6) {
+                    Text(button)
+                        .font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .foregroundStyle(Color.outlyBlue)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.white)
+                .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
+        .background(active ? Color.outlyBlue : Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.top, -28) // rahlo cez spodnji rob plakata
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard active else { return }
             // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView, testni nacin do Stripa).
             // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
             if event.ticketPriceCents != nil {
