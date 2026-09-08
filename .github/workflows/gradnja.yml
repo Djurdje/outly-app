@@ -32,11 +32,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Izberi Xcode
+      - name: Xcode na runnerju
+        # Privzeti Xcode runnerja: ima ujemajoc simulatorski runtime. Rocna izbira
+        # Xcode 16.2 je padla, ker runner nima simulatorja iOS 18.2.
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app || sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
           swift --version
+          xcrun simctl list runtimes | head -20
 
       - name: Prevedi za simulator (brez podpisa)
         run: |
