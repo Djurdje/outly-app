@@ -135,6 +135,10 @@ struct ProfileView: View {
                             OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
                         }
 
+                        NavigationLink(destination: QRScannerView()) {
+                            OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan tickets")
+                        }
+
                         NavigationLink(destination: BusinessEventsView(clubId: businessClub?.id, clubName: businessClub?.name)) {
                             OutlyMenuRowButton(icon: "calendar", title: "Events")
                         }

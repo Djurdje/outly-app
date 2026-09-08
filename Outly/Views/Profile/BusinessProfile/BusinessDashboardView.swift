@@ -341,7 +341,22 @@ struct EventTicketsView: View {
                     }
                 }
 
-                Text("The QR on each ticket is signed by the server; scanning it twice is refused. A camera scanner will replace this list.")
+                NavigationLink { QRScannerView() } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "qrcode.viewfinder")
+                        Text("Open camera scanner")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(14)
+                    .background(Color.outlyBlue)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                Text("The QR on each ticket is signed by the server; scanning it twice is refused. Use the list above when the camera is not handy.")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)
