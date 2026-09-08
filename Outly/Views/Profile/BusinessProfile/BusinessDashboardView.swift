@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 /// Nadzorna plosca kluba s PRAVIMI podatki (GET /business/sales): prihodek, prodane
 /// vstopnice, provizija, izplacilo, prodaja po dogodkih, zadnja narocila, vstop na vratih.
@@ -48,6 +49,7 @@ struct BusinessDashboardView: View {
                     .frame(maxWidth: .infinity)
                 } else if let sales {
                     statistika(sales)
+                    graf(sales)
                     dogodki(sales)
                     narocila(sales)
                 }
@@ -105,6 +107,60 @@ struct BusinessDashboardView: View {
         .padding(14)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    // MARK: - Graf (Swift Charts, zadnjih 14 dni)
+
+    private func graf(_ s: BusinessSales) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sales, last 14 days")
+                    .font(.title3.bold())
+                    .foregroundColor(.white)
+                Spacer()
+                Text(Denar.evri(s.salesByDay.reduce(0) { $0 + $1.grossCents }))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.outlyBlue)
+            }
+
+            if s.salesByDay.isEmpty {
+                Text("No daily data yet.")
+                    .font(.subheadline).foregroundColor(.white.opacity(0.6))
+            } else {
+                Chart(s.salesByDay) { d in
+                    BarMark(
+                        x: .value("Day", d.date, unit: .day),
+                        y: .value("Revenue", Double(d.grossCents) / 100.0)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(colors: [Color.outlyBlue, Color.outlyBlue.opacity(0.45)], startPoint: .top, endPoint: .bottom)
+                    )
+                    .cornerRadius(4)
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .day, count: 3)) { _ in
+                        AxisGridLine().foregroundStyle(Color.white.opacity(0.08))
+                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                            .foregroundStyle(Color.white.opacity(0.5))
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { v in
+                        AxisGridLine().foregroundStyle(Color.white.opacity(0.08))
+                        AxisValueLabel {
+                            if let n = v.as(Double.self) {
+                                Text(n >= 1000 ? String(format: "%.1fk €", n / 1000) : String(format: "%.0f €", n))
+                                    .foregroundColor(.white.opacity(0.5))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 170)
+                .padding(14)
+                .background(Color.white.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+        }
     }
 
     // MARK: - Dogodki
@@ -341,22 +397,7 @@ struct EventTicketsView: View {
                     }
                 }
 
-                NavigationLink { QRScannerView() } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "qrcode.viewfinder")
-                        Text("Open camera scanner")
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white)
-                    .padding(14)
-                    .background(Color.outlyBlue)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .buttonStyle(.plain)
-
-                Text("The QR on each ticket is signed by the server; scanning it twice is refused. Use the list above when the camera is not handy.")
+                Text("The QR on each ticket is signed by the server; scanning it twice is refused. A camera scanner will replace this list.")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)

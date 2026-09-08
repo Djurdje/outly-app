@@ -222,16 +222,48 @@ struct BusinessSales: Decodable {
         var startDate: Date? { DateParsing.parseBackendDate(startAt) }
     }
 
+    struct DaySales: Decodable, Identifiable {
+        let day: String
+        let grossCents: Int
+        let tickets: Int
+        var id: String { day }
+
+        enum CodingKeys: String, CodingKey {
+            case day, tickets
+            case grossCents = "gross_cents"
+        }
+
+        var date: Date {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "yyyy-MM-dd"
+            return f.date(from: day) ?? Date()
+        }
+    }
+
     let mode: String
     let feePercent: Double
     let summary: Summary
     let events: [EventSales]
     let recentOrders: [APIOrder]
+    /// Zadnjih 14 dni; starejsi streznik ga ne vraca -> prazno.
+    let salesByDay: [DaySales]
 
     enum CodingKeys: String, CodingKey {
         case mode, summary, events
         case feePercent = "fee_percent"
         case recentOrders = "recent_orders"
+        case salesByDay = "sales_by_day"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "test"
+        feePercent = try c.decodeIfPresent(Double.self, forKey: .feePercent) ?? 10
+        summary = try c.decode(Summary.self, forKey: .summary)
+        events = try c.decodeIfPresent([EventSales].self, forKey: .events) ?? []
+        recentOrders = try c.decodeIfPresent([APIOrder].self, forKey: .recentOrders) ?? []
+        salesByDay = try c.decodeIfPresent([DaySales].self, forKey: .salesByDay) ?? []
     }
 }
 

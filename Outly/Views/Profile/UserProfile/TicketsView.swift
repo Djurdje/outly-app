@@ -133,59 +133,25 @@ struct TicketsView: View {
     }
 }
 
-/// Ena vstopnica: QR za vrata, podatki o dogodku.
+/// Ena vstopnica kot "wallet" kartica: zgornji del s plakatom in podatki, perforacija,
+/// spodnji del s QR. Uporabljena vstopnica je zatemnjena in prekrizana.
 struct TicketDetailView: View {
     let ticket: APITicket
+    @State private var prikazana = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 18) {
-                Text(ticket.eventTitle)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 10)
+            VStack(spacing: 22) {
+                WalletTicketCard(ticket: ticket)
+                    .padding(.top, 12)
+                    .scaleEffect(prikazana ? 1 : 0.96)
+                    .opacity(prikazana ? 1 : 0)
 
-                Text(ticket.clubName)
-                    .font(.headline)
-                    .foregroundColor(.white.opacity(0.7))
-
-                if let d = ticket.startDate {
-                    Text(d.formatted(date: .abbreviated, time: .shortened))
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.6))
-                }
-
-                QRCodeView(content: ticket.qr, size: 240)
-                    .padding(.top, 6)
-                    .opacity(ticket.isUsed ? 0.35 : 1)
-                    .overlay {
-                        if ticket.isUsed {
-                            Text("ALREADY USED")
-                                .font(.system(size: 18, weight: .black))
-                                .foregroundColor(.red)
-                                .rotationEffect(.degrees(-15))
-                        }
-                    }
-
-                Text(ticket.serial.uppercased())
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.45))
-
-                VStack(spacing: 8) {
-                    vrstica("Order", ticket.publicRef)
-                    vrstica("Status", ticket.isUsed ? "Used" : "Valid")
-                    if !ticket.address.isEmpty { vrstica("Address", "\(ticket.address), \(ticket.city)") }
-                    if ticket.minAge > 0 { vrstica("Age", "\(ticket.minAge)+ (ID at the door)") }
-                }
-                .padding(16)
-                .background(Color.white.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                Text("Show this code at the entrance. Screenshot works too — the code is signed and valid only once.")
+                Text("Show this code at the entrance. A screenshot works too — the code is signed and valid only once.")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.5))
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 10)
 
                 Spacer(minLength: 20)
             }
@@ -195,15 +161,171 @@ struct TicketDetailView: View {
         .background(Color.black.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
+        .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { prikazana = true } }
+    }
+}
+
+/// Kartica vstopnice v slogu denarnice. Zgoraj plakat (zatemnjen) s podatki,
+/// perforacija z izrezanima polkrogoma, spodaj QR na beli podlagi.
+struct WalletTicketCard: View {
+    let ticket: APITicket
+
+    private var barva: Color { Color.outlyBlue }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            zgornjiDel
+            perforacija
+            spodnjiDel
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .shadow(color: barva.opacity(0.25), radius: 24, y: 10)
+        .opacity(ticket.isUsed ? 0.6 : 1)
     }
 
-    private func vrstica(_ k: String, _ v: String) -> some View {
-        HStack {
-            Text(k).foregroundColor(.white.opacity(0.6))
-            Spacer()
-            Text(v).foregroundColor(.white)
+    private var zgornjiDel: some View {
+        ZStack(alignment: .bottomLeading) {
+            Group {
+                if !ticket.posterUrl.isEmpty, let url = URL(string: ticket.posterUrl) {
+                    AsyncImage(url: url) { img in
+                        Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                    } placeholder: { SkeletonBlock() }
+                } else {
+                    LinearGradient(colors: [barva, Color.purple.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+            }
+            .frame(height: 210)
+            .clipped()
+
+            LinearGradient(colors: [.black.opacity(0.05), .black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    if !ticket.logoUrl.isEmpty, let url = URL(string: ticket.logoUrl) {
+                        AsyncImage(url: url) { img in
+                            Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                        } placeholder: { Circle().fill(Color.white.opacity(0.2)) }
+                        .frame(width: 26, height: 26)
+                        .clipShape(Circle())
+                    }
+                    Text(ticket.clubName.uppercased())
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(1.2)
+                        .foregroundColor(.white.opacity(0.85))
+                    Spacer()
+                    Text(ticket.isUsed ? "USED" : "VALID")
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(0.8)
+                        .foregroundColor(ticket.isUsed ? .white : .black)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(ticket.isUsed ? Color.white.opacity(0.25) : Color.white)
+                        .clipShape(Capsule())
+                }
+                Text(ticket.eventTitle)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(18)
         }
-        .font(.system(size: 14))
+        .frame(height: 210)
+        .background(Color.black)
+    }
+
+    private var perforacija: some View {
+        ZStack {
+            Color(white: 0.09)
+            HStack(spacing: 0) {
+                Circle().fill(Color.black).frame(width: 22, height: 22).offset(x: -11)
+                Line().stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
+                    .foregroundColor(.white.opacity(0.25))
+                    .frame(height: 1)
+                Circle().fill(Color.black).frame(width: 22, height: 22).offset(x: 11)
+            }
+        }
+        .frame(height: 22)
+    }
+
+    private var spodnjiDel: some View {
+        VStack(spacing: 16) {
+            HStack(alignment: .top) {
+                polje("DATE", datum)
+                Spacer()
+                polje("TIME", cas)
+                Spacer()
+                polje("ORDER", ticket.publicRef)
+            }
+            if !ticket.address.isEmpty {
+                HStack {
+                    polje("VENUE", "\(ticket.address), \(ticket.city)")
+                    Spacer()
+                }
+            }
+
+            ZStack {
+                QRCodeView(content: ticket.qr, size: 200)
+                if ticket.isUsed {
+                    Text("ALREADY USED")
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundColor(.red)
+                        .rotationEffect(.degrees(-14))
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Color.white.opacity(0.9))
+                }
+            }
+            .padding(.top, 4)
+
+            Text(ticket.serial.uppercased())
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(.white.opacity(0.4))
+            if ticket.minAge > 0 {
+                Text("\(ticket.minAge)+ · ID checked at the door")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity)
+        .background(Color(white: 0.09))
+    }
+
+    private func polje(_ naslov: String, _ vrednost: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(naslov)
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundColor(.white.opacity(0.45))
+            Text(vrednost)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(2)
+        }
+    }
+
+    private var datum: String {
+        guard let d = ticket.startDate else { return "—" }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.dateFormat = "EEE, d MMM"
+        return f.string(from: d)
+    }
+
+    private var cas: String {
+        guard let d = ticket.startDate else { return "—" }
+        return DateParsing.shortTime.string(from: d)
+    }
+}
+
+/// Vodoravna crta kot Shape (za perforacijo).
+private struct Line: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        return p
     }
 }
 
