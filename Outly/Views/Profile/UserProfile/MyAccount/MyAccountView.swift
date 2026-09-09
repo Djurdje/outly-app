@@ -169,4 +169,3 @@ struct MyAccountView: View {
 
 // ===== Placeholder views =====
 
-struct NotificationsView: View { var body: some View { Text("Notifications").padding() } }
