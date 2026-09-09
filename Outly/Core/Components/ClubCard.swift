@@ -32,23 +32,27 @@ struct ClubCard: View {
     // Brez lokacije
     private var suggestionBody: some View {
         ZStack {
+            // Figma 37:151: 188x123, radij 14, slika zatemnjena, ime na sredini.
             bannerImage
-                .frame(width: 220, height: 120)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .frame(width: 188, height: 123)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             LinearGradient(
-                colors: [.black.opacity(0.65), .black.opacity(0.15)],
+                colors: [.black.opacity(0.75), .black.opacity(0.35)],
                 startPoint: .bottom,
                 endPoint: .top
             )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Text(club.name)
-                .font(.headline.bold())
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
                 .padding(.horizontal, 12)
         }
+        .frame(width: 188, height: 123)
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
     }
 
     // MARK: - IN YOUR AREA
@@ -57,15 +61,17 @@ struct ClubCard: View {
     // Brez lokacije
     private var areaBody: some View {
         VStack(spacing: 8) {
+            // Figma 389:773: kvadrat 121, radij 10, ime pod sliko.
             clubLogo
-                .frame(width: 110, height: 110)
-                .clipShape(RoundedRectangle(cornerRadius: 22))
+                .frame(width: 121, height: 121)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
 
             Text(club.name)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .lineLimit(1)
 
             if let d = distanceKm {
                 Text(d < 1 ? "\(Int(d * 1000)) m" : String(format: "%.1f km", d))
@@ -73,7 +79,7 @@ struct ClubCard: View {
                     .foregroundStyle(Color.outlyBlue)
             }
         }
-        .frame(width: 110)
+        .frame(width: 121)
     }
 
     // MARK: - Helpers
