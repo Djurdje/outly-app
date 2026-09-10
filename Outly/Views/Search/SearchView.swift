@@ -12,6 +12,12 @@ struct SearchView: View {
     @State private var showEvent = false
     @State private var openingEventId: Int?
 
+    // Prazno stanje (Martin: "search bar je cist prazen"): zanri in klubi, se preden kaj vtipkas.
+    @State private var genres: [String] = []
+    @State private var clubs: [APIClub] = []
+    @State private var events: [APIEvent] = []
+    @State private var browseLoaded = false
+
     private var trimmed: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
@@ -82,6 +88,8 @@ struct SearchView: View {
                             Text("Type at least 2 characters.")
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 10)
+                        } else {
+                            browse
                         }
                     }
                     .padding(.bottom, 40)   // odmik za spodnjo vrstico (past 8)
@@ -100,6 +108,93 @@ struct SearchView: View {
         }
         .preferredColorScheme(.dark)
         .onChange(of: query) { _, _ in scheduleSearch() }
+        .task { await loadBrowse() }
+    }
+
+    // MARK: - Prazno stanje: zanri (vodoravni trak) + klubi
+
+    private var clubsById: [Int: APIClub] {
+        Dictionary(clubs.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    private func events(for genre: String) -> [APIEvent] {
+        let g = genre.lowercased()
+        return events.filter { e in e.genres.contains { $0.lowercased() == g } }
+    }
+
+    private var browse: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if !genres.isEmpty {
+                SectionHeader(title: "Browse by genre")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(genres, id: \.self) { g in
+                            NavigationLink {
+                                GenreEventsView(genre: g, events: events(for: g), clubsById: clubsById)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text(g.capitalized)
+                                        .font(.system(size: 14, weight: .semibold))
+                                    let n = events(for: g).count
+                                    if n > 0 {
+                                        Text("\(n)")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.white.opacity(0.55))
+                                    }
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14).padding(.vertical, 9)
+                                .background(Color.white.opacity(0.08))
+                                .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            if !clubs.isEmpty {
+                SectionHeader(title: "Clubs")
+                    .padding(.top, 4)
+                ForEach(clubs) { club in
+                    NavigationLink {
+                        ClubDetailView(clubId: club.id)
+                    } label: {
+                        row(icon: "building.2", title: club.name,
+                            subtitle: clubSubtitle(club), imageUrl: club.logoUrl)
+                    }
+                    .buttonStyle(.plain)
+                    Divider().background(Color.gray.opacity(0.3))
+                }
+            }
+
+            if browseLoaded && genres.isEmpty && clubs.isEmpty {
+                Text("Search for a club or an event.")
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 10)
+            }
+        }
+    }
+
+    private func clubSubtitle(_ c: APIClub) -> String {
+        let n = events.filter { $0.clubId == c.id }.count
+        var parts: [String] = []
+        if !c.city.isEmpty { parts.append(c.city) }
+        if n > 0 { parts.append(n == 1 ? "1 upcoming event" : "\(n) upcoming events") }
+        return parts.joined(separator: " · ")
+    }
+
+    private func loadBrowse() async {
+        guard !browseLoaded else { return }
+        async let g = APIClient.shared.fetchGenres()
+        async let c = APIClient.shared.fetchClubs()
+        async let e = APIClient.shared.fetchEvents()
+        genres = (try? await g) ?? []
+        clubs = (try? await c) ?? []
+        events = (try? await e) ?? []
+        browseLoaded = true
     }
 
     private func eventSubtitle(_ e: SearchResults.Event) -> String {

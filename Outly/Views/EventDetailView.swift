@@ -22,17 +22,17 @@ struct EventDetailView: View {
 
                 headerPoster
 
-                ticketBar
+                titleBlock
 
-                clubRow
+                whenCard
+
+                ticketBar
 
                 infoBlock
 
                 aboutBlock
 
-                vipBlock
-
-                contactFooter
+                Spacer(minLength: 40)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -44,28 +44,147 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - Header (poster, brez prekrivanja; cena je v vrstici pod njim)
+    // MARK: - Header: slika KLUBA (pasica), ne plakat. Martin: plakat je poljuben in
+    // pogosto nosi datum/uro v sliki; ozadje naj bo cisto, podatki pa v besedilu spodaj.
+    private var headerImageUrl: String {
+        if let b = club?.bannerUrl, !b.isEmpty { return b }
+        return event.posterUrl
+    }
+
     private var headerPoster: some View {
         ZStack {
-            if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
+            if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
                 AsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().opacity(0.12)
                 }
             } else {
-                Rectangle().opacity(0.12)
+                Color(white: 0.14)
             }
 
             // Mehak prehod v crno podlago strani
             LinearGradient(
-                colors: [.clear, .black.opacity(0.9)],
-                startPoint: .init(x: 0.5, y: 0.7),
+                colors: [.clear, .black.opacity(0.95)],
+                startPoint: .init(x: 0.5, y: 0.45),
                 endPoint: .bottom
             )
         }
-        .frame(height: 380)
+        .frame(height: 300)
         .clipped()
+    }
+
+    // MARK: - Naslov + klub (nad vrstico s ceno, brez prekrivanja slike)
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(event.title)
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+
+            HStack(spacing: 10) {
+                if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
+                    AsyncImage(url: url) { img in
+                        Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                    } placeholder: { Circle().opacity(0.12) }
+                    .frame(width: 28, height: 28)
+                    .clipShape(Circle())
+                }
+                Text((club?.name ?? "Club").uppercased())
+                    .font(.system(size: 12, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(.white.opacity(0.7))
+                if event.minAge > 0 {
+                    Text("\(event.minAge)+")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(Color.white.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.top, -40) // naslov seze v spodnji, temni del slike
+    }
+
+    // MARK: - Kdaj: datum in ura, jasno in na enem mestu
+    private var whenCard: some View {
+        HStack(spacing: 14) {
+            VStack(spacing: 1) {
+                Text(monthShort.uppercased())
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1)
+                    .foregroundStyle(.white.opacity(0.6))
+                Text(dayNumber)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 56, height: 56)
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(dayLong)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(timeRange)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white.opacity(0.65))
+            }
+
+            Spacer()
+
+            if let rel = relativeLabel {
+                Text(rel)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(rel == "TONIGHT" ? .black : .white.opacity(0.8))
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(rel == "TONIGHT" ? Color.white : Color.white.opacity(0.10))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(14)
+        .background(Color(white: 0.11))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
+        .padding(.horizontal, 16)
+    }
+
+    private var monthShort: String {
+        guard let d = event.startDate else { return "" }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.dateFormat = "MMM"
+        return f.string(from: d)
+    }
+    private var dayNumber: String {
+        guard let d = event.startDate else { return "–" }
+        return String(Calendar.current.component(.day, from: d))
+    }
+    private var dayLong: String {
+        guard let d = event.startDate else { return event.startAt }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.dateFormat = "EEEE, d MMMM"
+        return f.string(from: d)
+    }
+    private var timeRange: String {
+        guard let d = event.startDate else { return "" }
+        let t = DateParsing.shortTime.string(from: d)
+        if let e = event.endDate {
+            return "\(t) – \(DateParsing.shortTime.string(from: e))"
+        }
+        return "Starts at \(t)"
+    }
+    private var relativeLabel: String? {
+        guard let d = event.startDate else { return nil }
+        let cal = Calendar.current
+        if event.isPast { return "ENDED" }
+        if cal.isDateInToday(d) { return "TONIGHT" }
+        if cal.isDateInTomorrow(d) { return "TOMORROW" }
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: d)).day ?? 0
+        if days > 0 && days <= 14 { return "IN \(days) DAYS" }
+        return nil
     }
 
     // MARK: - Vrstica z vstopnicami: temna kartica, cena levo, bel gumb desno (Martin: modra tu ne pase)
@@ -160,33 +279,6 @@ struct EventDetailView: View {
     }
 
 
-    // MARK: - Club line (logo + name)
-    private var clubRow: some View {
-        HStack(spacing: 12) {
-            if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
-                AsyncImage(url: url) { img in
-                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-                } placeholder: {
-                    Circle().opacity(0.12)
-                }
-                .frame(width: 42, height: 42)
-                .clipShape(Circle())
-            } else {
-                Circle().opacity(0.12)
-                    .frame(width: 42, height: 42)
-                    .overlay(Text("🎧"))
-            }
-
-            Text((club?.name ?? "Club").uppercased())
-                .font(.headline)
-                .tracking(0.6)
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-    }
-
     // MARK: - Info block (address/phone/map style)
     private var infoBlock: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -194,8 +286,6 @@ struct EventDetailView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     labeled("ADDRESS", club?.addressFull ?? "-")
                     labeled("PHONE", club?.contactPhone.isEmpty == false ? club!.contactPhone : "-")
-
-                    labeled("DATE", "\(event.displayDateShort) \(event.displayTimeShort.isEmpty ? "" : "• \(event.displayTimeShort)")")
                 }
 
                 Spacer(minLength: 0)
@@ -221,19 +311,6 @@ struct EventDetailView: View {
                 }
             }
 
-            Button {
-                // kasneje: open bar price link / sheet
-            } label: {
-                Text("BAR PRICE")
-                    .font(.headline)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .buttonStyle(.plain)
-
             if isLoading {
                 ProgressView().padding(.top, 6)
             }
@@ -247,60 +324,34 @@ struct EventDetailView: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: - About
+    // MARK: - About (+ plakat, ki ga je izbral ustvarjalec, kot kartica in ne kot ozadje)
     private var aboutBlock: some View {
-        VStack(alignment: .center, spacing: 10) {
-            Text("ABOUT EVENT:")
-                .font(.headline)
-                .padding(.top, 4)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("ABOUT")
+                .font(.system(size: 11, weight: .bold))
+                .tracking(1.2)
+                .foregroundStyle(.white.opacity(0.5))
 
-            Text(event.description.isEmpty ? "No description." : event.description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 6)
+            Text(event.description.isEmpty ? "No description yet." : event.description)
+                .font(.system(size: 15))
+                .foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
+                AsyncImage(url: url) { img in
+                    img.resizable().scaledToFit()
+                } placeholder: {
+                    Rectangle().opacity(0.08).frame(height: 200)
+                }
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
+                .padding(.top, 6)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.top, 4)
-    }
-
-    // MARK: - VIP
-    private var vipBlock: some View {
-        VStack(spacing: 12) {
-            Text("VIP and TABLES:")
-                .font(.headline)
-                .padding(.top, 8)
-
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 120)
-                .overlay(
-                    VStack(spacing: 6) {
-                        Text("No VIPs or TABLES available")
-                            .font(.headline)
-                        Text("For this event!")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                )
-                .padding(.horizontal, 16)
-        }
-        .padding(.top, 6)
-    }
-
-    // MARK: - Footer contact
-    private var contactFooter: some View {
-        VStack(spacing: 8) {
-            Text("FOR MORE QUESTIONS CALL:")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(club?.contactPhone.isEmpty == false ? club!.contactPhone : "+386 ...")
-                .font(.headline)
-                .foregroundStyle(.blue)
-        }
-        .padding(.top, 10)
-        .padding(.bottom, 40)
     }
 
     private func labeled(_ title: String, _ value: String) -> some View {

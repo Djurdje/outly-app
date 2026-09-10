@@ -459,7 +459,7 @@ struct BuyTicketsView: View {
                         }
                     )
             } else {
-                LinearGradient(colors: [Color.outlyBlue, Color.purple.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color(white: 0.14).overlay(Image(systemName: "music.note").font(.system(size: 22)).foregroundColor(.white.opacity(0.3)))
             }
         }
         .frame(width: width, height: height)
