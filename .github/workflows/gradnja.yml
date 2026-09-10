@@ -58,6 +58,21 @@ jobs:
             | grep -E "error:|warning: .*(deprecated|unused)|BUILD (SUCCEEDED|FAILED)|Compiling|Ld " || true
           grep -q "BUILD SUCCEEDED" build/sim.log
 
+      - name: Sestavi simulatorsko .app (za Appetize.io / simulator na Macu)
+        # Martin nima Maca: .app za simulator se nalozi na appetize.io in tece v brskalniku.
+        run: |
+          APP=$(find build/sim/Build/Products -name "Outly.app" -type d | head -1)
+          test -n "$APP"
+          (cd "$(dirname "$APP")" && zip -qr "$GITHUB_WORKSPACE/build/Outly-simulator.zip" Outly.app)
+          ls -la build/Outly-simulator.zip
+
+      - name: Prilozi simulatorsko .app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Outly-simulator-app
+          path: build/Outly-simulator.zip
+          retention-days: 14
+
       - name: Napake prevajalnika (povzetek)
         if: failure()
         run: |
