@@ -21,10 +21,22 @@ final class KeychainService: Sendable {
         case refreshToken = "refreshToken"
     }
 
+    // MARK: - Simulator (appetize.io, Xcode): nepodpisana aplikacija brez pravic
+    // v simulatorju NE more pisati v Keychain (errSecMissingEntitlement, -34018) ->
+    // prijava je javljala "Could not save your session on this device".
+    // Samo v simulatorju zato uporabimo UserDefaults; na pravi napravi ostane Keychain.
+    #if targetEnvironment(simulator)
+    private var simKey: String { "sim.keychain." + service + "." }
+    #endif
+
     // MARK: - Splosno
 
     @discardableResult
     func save(_ value: String, for kljuc: Kljuc) -> Bool {
+        #if targetEnvironment(simulator)
+        UserDefaults.standard.set(value, forKey: simKey + kljuc.rawValue)
+        return true
+        #else
         let data = Data(value.utf8)
         _ = delete(kljuc)
         let query: [String: Any] = [
@@ -35,9 +47,13 @@ final class KeychainService: Sendable {
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         ]
         return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
+        #endif
     }
 
     func read(_ kljuc: Kljuc) -> String? {
+        #if targetEnvironment(simulator)
+        return UserDefaults.standard.string(forKey: simKey + kljuc.rawValue)
+        #else
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -51,10 +67,15 @@ final class KeychainService: Sendable {
               let data = item as? Data,
               let s = String(data: data, encoding: .utf8) else { return nil }
         return s
+        #endif
     }
 
     @discardableResult
     func delete(_ kljuc: Kljuc) -> Bool {
+        #if targetEnvironment(simulator)
+        UserDefaults.standard.removeObject(forKey: simKey + kljuc.rawValue)
+        return true
+        #else
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -62,6 +83,7 @@ final class KeychainService: Sendable {
         ]
         let status = SecItemDelete(query as CFDictionary)
         return status == errSecSuccess || status == errSecItemNotFound
+        #endif
     }
 
     // MARK: - Stari klici (obdrzani, da obstojeca koda dela)
