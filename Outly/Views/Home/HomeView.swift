@@ -229,25 +229,7 @@ struct HomeView: View {
 
                         // 7. Discover your genre (Figma 838:1638) — vrstice zanrov
                         if !genreRows.isEmpty {
-                            sekcija("Discover your genre", podnaslov: nil) {
-                                // Vidne 3 vrstice, ostale z drsenjem znotraj okvirja (Martin, 10. 9.).
-                                ScrollView(.vertical, showsIndicators: false) {
-                                    VStack(spacing: 10) {
-                                        ForEach(genreRows, id: \.genre) { g in
-                                            NavigationLink {
-                                                GenreEventsView(genre: g.genre, events: eventsForGenre(g.genre), clubsById: clubsById)
-                                            } label: {
-                                                GenreRow(genre: g.genre, posterUrl: g.poster, count: g.count)
-                                            }
-                                            .buttonStyle(.plain)
-                                        }
-                                    }
-                                }
-                                .frame(height: genreRows.count >= 3 ? 72 * 3 + 10 * 2 + 24 : CGFloat(genreRows.count) * 82)
-                                .mask {
-                                    LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.85), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom)
-                                }
-                            }
+                            genreSection
                         }
 
                         if upcomingEvents.isEmpty && clubs.isEmpty && !isLoading && errorText == nil {
@@ -290,6 +272,44 @@ struct HomeView: View {
         }
         .onAppear {
             Task { await loadMe() }
+        }
+    }
+
+    // MARK: - Discover your genre (vidne 3 vrstice, ostale z drsenjem) — loceno,
+    // da tipni preverjevalnik v body ne obupa (Actions #17: "unable to type-check").
+    private var genreListHeight: CGFloat {
+        let n = genreRows.count
+        if n >= 3 { return 72 * 3 + 10 * 2 + 24 }
+        return CGFloat(n) * 82
+    }
+
+    private var genreFadeMask: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .black, location: 0),
+                .init(color: .black, location: 0.85),
+                .init(color: .clear, location: 1)
+            ],
+            startPoint: .top, endPoint: .bottom
+        )
+    }
+
+    private var genreSection: some View {
+        sekcija("Discover your genre", podnaslov: nil) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 10) {
+                    ForEach(genreRows, id: \.genre) { g in
+                        NavigationLink {
+                            GenreEventsView(genre: g.genre, events: eventsForGenre(g.genre), clubsById: clubsById)
+                        } label: {
+                            GenreRow(genre: g.genre, posterUrl: g.poster, count: g.count)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(height: genreListHeight)
+            .mask { genreFadeMask }
         }
     }
 
