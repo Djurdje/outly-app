@@ -10,8 +10,12 @@ struct TicketsView: View {
     @State private var isLoading = false
     @State private var errorText: String?
 
-    private var upcoming: [APITicket] { tickets.filter { !$0.isPast } }
-    private var past: [APITicket] { tickets.filter { $0.isPast } }
+    // Skenirane (used) izginejo iz glavnega seznama — Martin: "ko se karta skenira, naj zgine iz profila".
+    // Ostanejo dosegljive pod zloženim "Used tickets".
+    private var upcoming: [APITicket] { tickets.filter { !$0.isPast && !$0.isUsed } }
+    private var past: [APITicket] { tickets.filter { $0.isPast && !$0.isUsed } }
+    private var used: [APITicket] { tickets.filter { $0.isUsed } }
+    @State private var showUsed = false
 
     var body: some View {
         Screen {
@@ -35,6 +39,9 @@ struct TicketsView: View {
                     } else if tickets.isEmpty {
                         prazno
                     } else {
+                        if upcoming.isEmpty && past.isEmpty {
+                            prazno
+                        }
                         if !upcoming.isEmpty {
                             Text("Upcoming")
                                 .font(.headline)
@@ -53,6 +60,30 @@ struct TicketsView: View {
                                 NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
                                     .buttonStyle(.plain)
                                     .opacity(0.6)
+                            }
+                        }
+                        if !used.isEmpty {
+                            Button {
+                                withAnimation(.snappy) { showUsed.toggle() }
+                            } label: {
+                                HStack {
+                                    Text("Used tickets (\(used.count))")
+                                        .font(.headline)
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Spacer()
+                                    Image(systemName: showUsed ? "chevron.up" : "chevron.down")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
+                                .padding(.top, 8)
+                            }
+                            .buttonStyle(.plain)
+                            if showUsed {
+                                ForEach(used) { t in
+                                    NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
+                                        .buttonStyle(.plain)
+                                        .opacity(0.5)
+                                }
                             }
                         }
                     }

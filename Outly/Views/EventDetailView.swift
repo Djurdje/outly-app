@@ -68,7 +68,7 @@ struct EventDetailView: View {
         .clipped()
     }
 
-    // MARK: - Vrstica z vstopnicami (cena levo, gumb desno) v slogu OutlyPrimaryButton
+    // MARK: - Vrstica z vstopnicami: temna kartica, cena levo, bel gumb desno (Martin: modra tu ne pase)
     private enum TicketState { case buy, free, external, door, fewLeft(Int), soldOut, ended }
 
     private var ticketState: TicketState {
@@ -107,13 +107,13 @@ struct EventDetailView: View {
         }()
 
         return HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(top)
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(.white)
                 Text(sub)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.55))
             }
 
             Spacer(minLength: 8)
@@ -123,20 +123,25 @@ struct EventDetailView: View {
                     Text(button)
                         .font(.system(size: 15, weight: .semibold))
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                 }
-                .foregroundStyle(Color.outlyBlue)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.white)
+                .foregroundStyle(active ? Color.black : Color.white.opacity(0.6))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 11)
+                .background(active ? Color.white : Color.white.opacity(0.10))
                 .clipShape(Capsule())
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
-        .background(active ? Color.outlyBlue : Color.white.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color(white: 0.11))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
         .padding(.horizontal, 16)
         .padding(.top, -28) // rahlo cez spodnji rob plakata
         .contentShape(Rectangle())
