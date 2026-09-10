@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// Naslov razdelka v Outlyjevem slogu: ena beseda -> zadnja CRKA modra,
-/// vec besed -> zadnja BESEDA modra (npr. "Suggestion|s", "In your |area").
+/// Naslov razdelka. Prej: zadnja crka/beseda modra; od 10. 9. cel naslov bel
+/// (Martin: "odstranit modro barvo v teh naslovih"). razdeli() ostane za morebitno rabo.
 struct SectionHeader: View {
     let title: String
     var size: CGFloat = 20
 
     var body: some View {
-        let (bel, moder) = SectionHeader.razdeli(title)
-        return (Text(bel).foregroundColor(.white) + Text(moder).foregroundColor(Color.outlyBlue))
+        Text(title)
+            .foregroundColor(.white)
             .font(.system(size: size, weight: .bold))
             .lineLimit(1)
             .minimumScaleFactor(0.85)

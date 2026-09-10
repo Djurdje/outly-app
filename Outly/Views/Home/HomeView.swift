@@ -22,6 +22,8 @@ struct HomeView: View {
     @State private var popularEvents: [APIEvent] = []
     @State private var clubsById: [Int: APIClub] = [:]
     @State private var suggestedOrder: [Int] = []
+    /// "In your area": klub, ki je po prvem dotiku zatemnjen in kaze razdaljo (drugi dotik odpre klub).
+    @State private var areaSelected: Int?
 
     @EnvironmentObject private var session: SessionStore
     private var authToken: String { session.token }
@@ -200,7 +202,7 @@ struct HomeView: View {
                         // 4. In your area (Figma 50:86) — kvadratni logotipi
                         if !areaClubs.isEmpty {
                             sekcija("In your area", podnaslov: nearbyClubs.isEmpty ? "Clubs on Outly" : "Closest clubs first") {
-                                HorizontalClubsScrollAPI(clubs: areaClubs, variant: .area, distances: nearbyDistances)
+                                HorizontalClubsScrollAPI(clubs: areaClubs, variant: .area, distances: nearbyDistances, selected: $areaSelected)
                             }
                         }
 
@@ -228,15 +230,22 @@ struct HomeView: View {
                         // 7. Discover your genre (Figma 838:1638) — vrstice zanrov
                         if !genreRows.isEmpty {
                             sekcija("Discover your genre", podnaslov: nil) {
-                                VStack(spacing: 10) {
-                                    ForEach(genreRows, id: \.genre) { g in
-                                        NavigationLink {
-                                            GenreEventsView(genre: g.genre, events: eventsForGenre(g.genre), clubsById: clubsById)
-                                        } label: {
-                                            GenreRow(genre: g.genre, posterUrl: g.poster, count: g.count)
+                                // Vidne 3 vrstice, ostale z drsenjem znotraj okvirja (Martin, 10. 9.).
+                                ScrollView(.vertical, showsIndicators: false) {
+                                    VStack(spacing: 10) {
+                                        ForEach(genreRows, id: \.genre) { g in
+                                            NavigationLink {
+                                                GenreEventsView(genre: g.genre, events: eventsForGenre(g.genre), clubsById: clubsById)
+                                            } label: {
+                                                GenreRow(genre: g.genre, posterUrl: g.poster, count: g.count)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
-                                        .buttonStyle(.plain)
                                     }
+                                }
+                                .frame(height: genreRows.count >= 3 ? 72 * 3 + 10 * 2 + 24 : CGFloat(genreRows.count) * 82)
+                                .mask {
+                                    LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.85), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom)
                                 }
                             }
                         }
@@ -267,7 +276,10 @@ struct HomeView: View {
                 }
                 .padding()
                 .padding(.bottom, 40)
+                .contentShape(Rectangle())
+                .onTapGesture { if areaSelected != nil { withAnimation(.easeOut(duration: 0.15)) { areaSelected = nil } } }
             }
+            .background(homeBackground)
             .navigationTitle("")
             .refreshable { await loadAll() }
         }
@@ -282,6 +294,27 @@ struct HomeView: View {
     }
 
     // MARK: - Deli
+
+    /// Ozadje domacega zaslona: Outlyjeva modra kot mehak sij zgoraj, ki prehaja v crno
+    /// (kot outly.si / Revolut). Samo tu — ostali zasloni ostanejo crni.
+    private var homeBackground: some View {
+        ZStack {
+            Color.black
+            LinearGradient(
+                stops: [
+                    .init(color: Color.outlyBlue.opacity(0.42), location: 0),
+                    .init(color: Color.outlyBlue.opacity(0.14), location: 0.28),
+                    .init(color: .black, location: 0.62)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            RadialGradient(
+                colors: [Color.outlyBlue.opacity(0.35), .clear],
+                center: .init(x: 0.5, y: -0.1), startRadius: 0, endRadius: 420
+            )
+        }
+        .ignoresSafeArea()
+    }
 
     /// Figma 239:804: avatar levo, logo Outly na sredini. Pozdrav je pod logom, majhen.
     private var header: some View {
@@ -314,14 +347,8 @@ struct HomeView: View {
 
     private func sekcija<Content: View>(_ naslov: String, podnaslov: String?, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                SectionHeader(title: naslov)
-                if let podnaslov {
-                    Text(podnaslov)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.5))
-                }
-            }
+            // Podnaslovi umaknjeni (Martin, 10. 9.): parameter ostane, da klici ne padejo.
+            SectionHeader(title: naslov)
             content()
         }
     }

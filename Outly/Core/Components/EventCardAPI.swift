@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum EventCardVariant {
     case clubRow
@@ -7,6 +8,22 @@ enum EventCardVariant {
 }
 
 struct EventCardAPI: View {
+    /// Priljubljeni dogodki — lokalno na napravi (UserDefaults), dokler ni backenda.
+    @AppStorage("favoriteEventIds") private var favoriteIdsJson: String = "[]"
+
+    private var favoriteIds: Set<Int> {
+        (try? JSONDecoder().decode([Int].self, from: Data(favoriteIdsJson.utf8))).map(Set.init) ?? []
+    }
+    private var isFavorite: Bool { favoriteIds.contains(event.id) }
+    private func toggleFavorite() {
+        var ids = favoriteIds
+        if ids.contains(event.id) { ids.remove(event.id) } else { ids.insert(event.id) }
+        if let d = try? JSONEncoder().encode(Array(ids).sorted()), let str = String(data: d, encoding: .utf8) {
+            favoriteIdsJson = str
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
     let event: APIEvent
     let clubName: String?
     let clubLogoUrl: String?
@@ -38,12 +55,13 @@ struct EventCardAPI: View {
     }
 
     // MARK: - CLUB ROW
-    // Zahteva: brez bannerja levo
-    // sredina: title, pod njim genres, pod genres cena
-    // desno: datum (v .blackColor)
+    // Levo plakat (Figma "Coming Soon"), sredina: naslov, zanri, cena; desno datum + srce.
     private var clubRowBody: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: 12) {
+            eventPosterSmall
+                .frame(width: 56, height: 56)
+
+            VStack(alignment: .leading, spacing: 4) {
                 Text(event.title)
                     .font(.headline)
                     .foregroundStyle(Color.white)
@@ -52,26 +70,36 @@ struct EventCardAPI: View {
                 if !event.genres.isEmpty {
                     Text(event.genres.map { $0.capitalized }.joined(separator: " • "))
                         .font(.subheadline)
-                        .foregroundStyle(Color.gray.opacity(0.85))
+                        .foregroundStyle(Color.white.opacity(0.55))
                         .lineLimit(1)
                 }
 
-                Text(event.displayPrice ?? "FREE")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.blackColor)
+                HStack(spacing: 6) {
+                    Text(event.displayPrice ?? "Free")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.white)
+                    Text("·").foregroundStyle(Color.white.opacity(0.4))
+                    Text(event.displayDateShort)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.white.opacity(0.7))
+                }
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            Text(event.displayDateShort)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.blackColor)
-                .multilineTextAlignment(.trailing)
+            Button(action: toggleFavorite) {
+                Image(systemName: isFavorite ? "heart.fill" : "heart")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(isFavorite ? Color.red : Color.white.opacity(0.6))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
-        .padding(14)
+        .padding(12)
         .background(Color.white.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - HOME ROW
@@ -147,7 +175,7 @@ struct EventCardAPI: View {
         } else {
             RoundedRectangle(cornerRadius: 14)
                 .opacity(0.12)
-                .overlay(Text(""))
+                .overlay(Image(systemName: "music.note").foregroundStyle(.white.opacity(0.4)))
         }
     }
 
@@ -219,7 +247,7 @@ struct EventCardAPI: View {
         } else {
             RoundedRectangle(cornerRadius: 24)
                 .opacity(0.12)
-                .overlay(Text("🎟️").font(.largeTitle))
+                .overlay(Image(systemName: "ticket").font(.largeTitle).foregroundStyle(.white.opacity(0.4)))
         }
     }
 }

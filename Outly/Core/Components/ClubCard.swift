@@ -8,13 +8,21 @@ enum ClubCardVariant {
 struct ClubCard: View {
     let club: APIClub
     let variant: ClubCardVariant
-    /// Razdalja do kluba v km (samo "Near you"); nil = ne prikazi.
+    /// Razdalja do kluba v km (samo "In your area"); nil = ni znana.
     var distanceKm: Double? = nil
+    /// true = logo zatemnjen in cez njega razdalja (po prvem dotiku).
+    var showDistance: Bool = false
 
-    init(club: APIClub, variant: ClubCardVariant, distanceKm: Double? = nil) {
+    init(club: APIClub, variant: ClubCardVariant, distanceKm: Double? = nil, showDistance: Bool = false) {
         self.club = club
         self.variant = variant
         self.distanceKm = distanceKm
+        self.showDistance = showDistance
+    }
+
+    private var distanceText: String {
+        guard let d = distanceKm else { return "" }
+        return d < 1 ? "\(Int(d * 1000)) m" : String(format: "%.1f km", d)
     }
 
     var body: some View {
@@ -64,20 +72,33 @@ struct ClubCard: View {
             // Figma 389:773: kvadrat 121, radij 10, ime pod sliko.
             clubLogo
                 .frame(width: 121, height: 121)
+                .overlay(
+                    ZStack {
+                        Color.black.opacity(showDistance ? 0.62 : 0)
+                        if showDistance {
+                            VStack(spacing: 4) {
+                                Image(systemName: "location.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text(distanceText)
+                                    .font(.system(size: 18, weight: .bold))
+                                Text("Tap to open")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .opacity(0.7)
+                            }
+                            .foregroundStyle(.white)
+                            .transition(.opacity)
+                        }
+                    }
+                )
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(showDistance ? 0.35 : 0.10), lineWidth: 1))
+                .animation(.easeOut(duration: 0.15), value: showDistance)
 
             Text(club.name)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
-
-            if let d = distanceKm {
-                Text(d < 1 ? "\(Int(d * 1000)) m" : String(format: "%.1f km", d))
-                    .font(.caption)
-                    .foregroundStyle(Color.outlyBlue)
-            }
         }
         .frame(width: 121)
     }
@@ -98,7 +119,7 @@ struct ClubCard: View {
         } else {
             Rectangle()
                 .opacity(0.15)
-                .overlay(Text("🎧").font(.largeTitle))
+                .overlay(Image(systemName: "music.note").font(.title2).foregroundStyle(.white.opacity(0.5)))
         }
     }
 

@@ -5,22 +5,45 @@ import SwiftUI
 struct HorizontalClubsScrollAPI: View {
     let clubs: [APIClub]
     let variant: ClubCardVariant
-    /// Razdalja v km po id kluba (samo za "Near you").
+    /// Razdalja v km po id kluba (samo "In your area").
     var distances: [Int: Double] = [:]
+    /// "In your area" (Martin, 10. 9.): prvi dotik logo zatemni in pokaze razdaljo,
+    /// drugi dotik odpre klub, dotik drugam (HomeView) izbiro pocisti. nil = obnasanje kot prej.
+    var selected: Binding<Int?>? = nil
+
+    @State private var openClubId: Int?
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 ForEach(clubs) { club in
-                    NavigationLink {
-                        ClubDetailView(clubId: club.id)
-                    } label: {
-                        ClubCard(club: club, variant: variant, distanceKm: distances[club.id])
+                    if let selected, variant == .area {
+                        Button {
+                            if selected.wrappedValue == club.id || distances[club.id] == nil {
+                                openClubId = club.id
+                            } else {
+                                withAnimation(.easeOut(duration: 0.15)) { selected.wrappedValue = club.id }
+                            }
+                        } label: {
+                            ClubCard(club: club, variant: variant,
+                                     distanceKm: distances[club.id],
+                                     showDistance: selected.wrappedValue == club.id)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        NavigationLink {
+                            ClubDetailView(clubId: club.id)
+                        } label: {
+                            ClubCard(club: club, variant: variant, distanceKm: distances[club.id])
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.vertical, 4)
+        }
+        .navigationDestination(item: $openClubId) { id in
+            ClubDetailView(clubId: id)
         }
     }
 }

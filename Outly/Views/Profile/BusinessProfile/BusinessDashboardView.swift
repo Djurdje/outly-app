@@ -128,14 +128,29 @@ struct BusinessDashboardView: View {
                     .font(.subheadline).foregroundColor(.white.opacity(0.6))
             } else {
                 Chart(s.salesByDay) { d in
-                    BarMark(
+                    AreaMark(
                         x: .value("Day", d.date, unit: .day),
                         y: .value("Revenue", Double(d.grossCents) / 100.0)
                     )
+                    .interpolationMethod(.catmullRom)
                     .foregroundStyle(
-                        LinearGradient(colors: [Color.outlyBlue, Color.outlyBlue.opacity(0.45)], startPoint: .top, endPoint: .bottom)
+                        LinearGradient(colors: [Color.outlyBlue.opacity(0.35), Color.outlyBlue.opacity(0.0)], startPoint: .top, endPoint: .bottom)
                     )
-                    .cornerRadius(4)
+                    LineMark(
+                        x: .value("Day", d.date, unit: .day),
+                        y: .value("Revenue", Double(d.grossCents) / 100.0)
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                    .foregroundStyle(Color.outlyBlue)
+                    if d.grossCents > 0 {
+                        PointMark(
+                            x: .value("Day", d.date, unit: .day),
+                            y: .value("Revenue", Double(d.grossCents) / 100.0)
+                        )
+                        .symbolSize(40)
+                        .foregroundStyle(Color.white)
+                    }
                 }
                 .chartXAxis {
                     AxisMarks(values: .stride(by: .day, count: 3)) { _ in
