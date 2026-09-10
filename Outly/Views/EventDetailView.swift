@@ -236,7 +236,7 @@ struct EventDetailView: View {
                     .foregroundStyle(.white)
                 Text(sub)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(.white.opacity(active ? 0.8 : 0.55))
             }
 
             Spacer(minLength: 8)
@@ -248,7 +248,7 @@ struct EventDetailView: View {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                 }
-                .foregroundStyle(active ? Color.black : Color.white.opacity(0.6))
+                .foregroundStyle(active ? Color.outlyBlue : Color.white.opacity(0.6))
                 .padding(.horizontal, 18)
                 .padding(.vertical, 11)
                 .background(active ? Color.white : Color.white.opacity(0.10))
@@ -258,13 +258,14 @@ struct EventDetailView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
-        .background(Color(white: 0.11))
+        // Martin (10. 9.): modra kot v Figmi (Kups karto), ne temna. Neaktivna stanja ostanejo temna.
+        .background(active ? Color.outlyBlue : Color(white: 0.11))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                .stroke(Color.white.opacity(active ? 0 : 0.10), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+        .shadow(color: active ? Color.outlyBlue.opacity(0.35) : .black.opacity(0.35), radius: 16, y: 6)
         .padding(.horizontal, 16)
         .padding(.top, -28) // rahlo cez spodnji rob plakata
         .contentShape(Rectangle())
