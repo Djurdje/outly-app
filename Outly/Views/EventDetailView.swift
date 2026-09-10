@@ -131,6 +131,8 @@ struct EventDetailView: View {
                 Text(dayLong)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Text(timeRange)
                     .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.65))
@@ -141,6 +143,8 @@ struct EventDetailView: View {
             if let rel = relativeLabel {
                 Text(rel)
                     .font(.system(size: 11, weight: .bold))
+                    .lineLimit(1)
+                    .fixedSize()
                     .foregroundStyle(rel == "TONIGHT" ? .black : .white.opacity(0.8))
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(rel == "TONIGHT" ? Color.white : Color.white.opacity(0.10))
