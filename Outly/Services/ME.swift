@@ -22,6 +22,11 @@ struct Me: Decodable {
     let onboardedAt: String?
     let createdAt: String?
 
+    /// Klub, v katerem uporabnik dela (lastnik ali clan ekipe, migracija 009). nil = nobenega.
+    let clubId: Int?
+    /// "owner" | "manager" | "doorman" | nil. Poslovni obraz se odloca po tem, ne po role.
+    let clubRole: String?
+
     enum CodingKeys: String, CodingKey {
         case id, email, username, role, phone, country, genres
         case avatarUrl = "avatar_url"
@@ -30,6 +35,8 @@ struct Me: Decodable {
         case dateOfBirth = "date_of_birth"
         case onboardedAt = "onboarded_at"
         case createdAt = "created_at"
+        case clubId = "club_id"
+        case clubRole = "club_role"
     }
 
     init(from decoder: Decoder) throws {
@@ -46,11 +53,32 @@ struct Me: Decodable {
         genres = try c.decodeIfPresent([String].self, forKey: .genres) ?? []
         onboardedAt = try c.decodeIfPresent(String.self, forKey: .onboardedAt)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        clubId = try c.decodeIfPresent(Int.self, forKey: .clubId)
+        clubRole = try c.decodeIfPresent(String.self, forKey: .clubRole)
         // Postgres DATE pride kot "YYYY-MM-DD" ali kot ISO cas; obdrzimo prvih 10 znakov.
         if let raw = try c.decodeIfPresent(String.self, forKey: .dateOfBirth), raw.count >= 10 {
             dateOfBirth = String(raw.prefix(10))
         } else {
             dateOfBirth = nil
+        }
+    }
+
+    /// Poslovni obraz v profilu: lastnik (role business, tudi brez kluba) ali clan ekipe.
+    var isBusiness: Bool { role == "business" || clubRole != nil }
+
+    /// Sme urejati klub in dogodke, videti prodajo: lastnik in manager (in admin brez kluba).
+    var canManageClub: Bool { clubRole == "owner" || clubRole == "manager" || (clubRole == nil && isBusiness) }
+
+    /// Sme urejati ekipo (lastnik vse, manager samo vratarje).
+    var canSeeTeam: Bool { clubRole == "owner" || clubRole == "manager" }
+
+    /// Napis vloge za profil: "Owner", "Manager", "Door staff".
+    var clubRoleLabel: String? {
+        switch clubRole {
+        case "owner": return "Owner"
+        case "manager": return "Manager"
+        case "doorman": return "Door staff"
+        default: return nil
         }
     }
 
