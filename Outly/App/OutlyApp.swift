@@ -12,6 +12,7 @@ struct OutlyApp: App {
     @StateObject private var prefs = UserPreferences()
     @StateObject private var locationManager = LocationManager()
     @StateObject private var session = SessionStore()
+    @StateObject private var favorites = FavoritesStore()
 
     var body: some Scene {
         WindowGroup {
@@ -19,6 +20,11 @@ struct OutlyApp: App {
                 .environmentObject(prefs)
                 .environmentObject(locationManager)
                 .environmentObject(session)
+                .environmentObject(favorites)
+                // Ob odjavi pobrisi priljubljene prejsnjega racuna (tudi lokalni cache).
+                .onChange(of: session.token) { _, novi in
+                    if novi.isEmpty { favorites.clear() }
+                }
         }
     }
 }

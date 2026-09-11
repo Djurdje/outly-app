@@ -8,19 +8,13 @@ enum EventCardVariant {
 }
 
 struct EventCardAPI: View {
-    /// Priljubljeni dogodki — lokalno na napravi (UserDefaults), dokler ni backenda.
-    @AppStorage("favoriteEventIds") private var favoriteIdsJson: String = "[]"
+    /// Priljubljeni dogodki — na strezniku (FavoritesStore, migracija 012).
+    @EnvironmentObject private var favorites: FavoritesStore
+    @EnvironmentObject private var session: SessionStore
 
-    private var favoriteIds: Set<Int> {
-        (try? JSONDecoder().decode([Int].self, from: Data(favoriteIdsJson.utf8))).map(Set.init) ?? []
-    }
-    private var isFavorite: Bool { favoriteIds.contains(event.id) }
+    private var isFavorite: Bool { favorites.contains(event.id) }
     private func toggleFavorite() {
-        var ids = favoriteIds
-        if ids.contains(event.id) { ids.remove(event.id) } else { ids.insert(event.id) }
-        if let d = try? JSONEncoder().encode(Array(ids).sorted()), let str = String(data: d, encoding: .utf8) {
-            favoriteIdsJson = str
-        }
+        favorites.toggle(event.id, token: session.token)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
