@@ -114,16 +114,24 @@ struct PasswordSecurityView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await APIClient.shared.changePassword(token: session.token, current: current, new: newPassword)
+            // Trenutno geslo preverimo s ponovno prijavo pri Supabase (dobimo svezo sejo),
+            // nato z njo nastavimo novo geslo. Supabase ob tem odjavi DRUGE seje;
+            // ta naprava nadaljuje s svezo sejo.
+            guard let email = session.me?.email, !email.isEmpty else {
+                message = "Your profile is still loading. Please try again."
+                return
+            }
+            let seja = try await SupabaseAuth.shared.signIn(email: email, password: current)
+            try await SupabaseAuth.shared.updatePassword(token: seja.accessToken, newPassword: newPassword)
+            session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
             current = ""; newPassword = ""; confirm = ""
             success = "Password changed. Other devices were signed out."
-        } catch let api as APIError {
-            if case let .requestFailed(code, _) = api, code == 401 {
-                // Tu 401 pomeni napacno trenutno geslo, ne potekle seje (send() bi sejo ze osvezil).
+        } catch let sb as SupabaseAuthError {
+            if sb.code == "invalid_credentials" || sb.message.lowercased().contains("invalid login credentials") {
                 message = "Current password is wrong."
                 return
             }
-            message = api.userMessage
+            message = sb.userMessage
         } catch {
             message = error.userMessage
         }
@@ -133,9 +141,9 @@ struct PasswordSecurityView: View {
         isLoggingOutAll = true
         defer { isLoggingOutAll = false }
         do {
-            _ = try await APIClient.shared.send(path: "auth/logout-all", method: "POST", token: session.token)
+            try await SupabaseAuth.shared.signOut(token: session.token, scope: "global")
         } catch {
-            // Tudi ce streznik ne odgovori, se lokalno odjavimo.
+            // Tudi ce Supabase ne odgovori, se lokalno odjavimo.
         }
         session.logout()
         authStage = "login"

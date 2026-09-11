@@ -5,6 +5,7 @@ import Foundation
 extension Error {
     var userMessage: String {
         if let api = self as? APIError { return api.userMessage }
+        if let sb = self as? SupabaseAuthError { return sb.userMessage }
         if let url = self as? URLError {
             switch url.code {
             case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
@@ -54,6 +55,9 @@ extension APIError {
         if t.contains("invalid value type")             { return "Please check what you entered and try again." }
         if t.contains("refresh token")                  { return "Your session has expired. Please log in again." }
         if t.contains("invalid token") || t.contains("missing token") { return "Your session has expired. Please log in again." }
+        if t.contains("auth service unavailable")       { return "Sign-in service is temporarily unavailable. Please try again." }
+        if t.contains("identity provider")              { return "Please sign out and sign in again, then retry." }
+        if t.contains("could not delete the account")   { return "Could not delete the account right now. Please try again." }
         if t.contains("at least 15 years")              { return "You must be at least 15 years old to use Outly." }
         if t.contains("title is required")              { return "Enter a title." }
         if t.contains("startat must be")                { return "Enter a valid start date." }

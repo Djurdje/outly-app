@@ -2,9 +2,12 @@ import Foundation
 import SwiftUI
 import Combine
 
-/// Edino mesto v aplikaciji, ki hrani sejo: dostopni zeton (1 h) in osvezevalni
-/// zeton (30 dni). Oba zivita IZKLJUCNO v Keychainu; v pomnilniku je le kopija,
+/// Edino mesto v aplikaciji, ki hrani sejo: Supabasov dostopni zeton (1 h) in
+/// osvezevalni zeton. Oba zivita IZKLJUCNO v Keychainu; v pomnilniku je le kopija,
 /// da SwiftUI pogledi reagirajo na prijavo/odjavo.
+///
+/// Od 11. 9. 2026 je identiteta Supabase Auth (SupabaseAuth.swift): prijava,
+/// osvezitev in odjava gredo na Supabase, backend Outlyja zeton samo preverja.
 ///
 /// Pogledi NE smejo brati zetonov iz @AppStorage/UserDefaults.
 /// Uporabi: @EnvironmentObject var session: SessionStore  ->  session.token
@@ -43,12 +46,19 @@ final class SessionStore: ObservableObject {
         migrateLegacyTokenIfNeeded()
         token = KeychainService.shared.read(.accessToken) ?? ""
         refreshToken = KeychainService.shared.read(.refreshToken) ?? ""
+        // Zeton iz starejse razlicice (lastni HS256 zeton backenda) ni vec uporaben:
+        // pobrisemo ga, uporabnik se prijavi znova (isti e-naslov in geslo).
+        if !token.isEmpty && !SupabaseAuth.jeSupabaseZeton(token) {
+            KeychainService.shared.delete(.accessToken)
+            KeychainService.shared.delete(.refreshToken)
+            token = ""
+            refreshToken = ""
+        }
         SessionRefresh.handler = { [weak self] in
             guard let self else { return nil }
             return await self.refreshAccessToken() ? self.token : nil
         }
         SessionRefresh.isLoggedIn = { [weak self] in self?.isLoggedIn ?? false }
-        SessionRefresh.currentRefreshToken = { [weak self] in self?.refreshToken }
     }
 
     // MARK: - Prijava / odjava
@@ -72,12 +82,12 @@ final class SessionStore: ObservableObject {
     /// Stari klic (samo dostopni zeton). Ostane za zdruzljivost; nova koda naj klice setSession.
     func setToken(_ newToken: String) { setSession(token: newToken, refreshToken: nil) }
 
-    /// Odjava: streznik preklice osvezevalni zeton (da ne velja se 30 dni),
-    /// nato lokalno pobrisemo vse. Lokalni del se zgodi VEDNO, tudi brez omrezja.
+    /// Odjava: Supabase preklice sejo (osvezevalni zeton), nato lokalno pobrisemo
+    /// vse. Lokalni del se zgodi VEDNO, tudi brez omrezja.
     func logout() {
-        let r = refreshToken
-        if !r.isEmpty {
-            Task.detached { try? await APIClient.shared.logout(refreshToken: r) }
+        let t = token
+        if !t.isEmpty {
+            Task.detached { try? await SupabaseAuth.shared.signOut(token: t) }
         }
         clearLocalSession()
     }
@@ -101,7 +111,7 @@ final class SessionStore: ObservableObject {
 
     // MARK: - Osvezevanje
 
-    /// Zamenja potekli dostopni zeton z novim prek POST /auth/refresh.
+    /// Zamenja potekli dostopni zeton z novim prek Supabase (grant_type=refresh_token).
     /// Vec socasnih klicev deli isto osvezitev (en sam klic na streznik).
     /// Vrne false, ce osvezitev ni mogoca — takrat je uporabnik odjavljen.
     func refreshAccessToken() async -> Bool {
@@ -115,14 +125,14 @@ final class SessionStore: ObservableObject {
                 return false
             }
             do {
-                let pair = try await APIClient.shared.refresh(refreshToken: r)
-                self.setSession(token: pair.token, refreshToken: pair.refreshToken)
+                let seja = try await SupabaseAuth.shared.refresh(refreshToken: r)
+                self.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
                 return true
-            } catch let api as APIError {
-                if case let .requestFailed(code, _) = api, code == 400 || code == 401 {
+            } catch let e as SupabaseAuthError {
+                // 400/401/403: zeton porabljen, preklican ali potekel -> odjava.
+                // 5xx / omrezje: seje NE brisemo, naslednji klic poskusi znova.
+                if e.status == 400 || e.status == 401 || e.status == 403 {
                     self.sessionRejected()
-                } else {
-                    // Omrezje / 5xx: seje NE brisemo, naslednji klic poskusi znova.
                 }
                 return false
             } catch {

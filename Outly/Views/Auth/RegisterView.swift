@@ -151,46 +151,24 @@ struct RegisterView: View {
         isLoading = true
         defer { isLoading = false }
 
-        let urlString = "https://outly-backend-roy3.onrender.com/auth/register"
-        guard let url = URL(string: urlString) else {
-            message = "Napačen URL."
-            return
-        }
-
-        let payload: [String: Any] = [
-            "username": trimmedUsername,
-            "email": cleanEmail,
-            "password": password
-        ]
-
+        // Registracija pri Supabase (edina identiteta). Username gre v user_metadata;
+        // backend ga prevzame, ko ob prvi prijavi ustvari lokalni racun.
         do {
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else {
-                message = "Ni veljavnega odziva."
-                return
-            }
-
-            if http.statusCode == 201 {
-                await MainActor.run {
+            let ustvarjen = try await SupabaseAuth.shared.signUp(
+                email: cleanEmail, password: password, username: trimmedUsername
+            )
+            await MainActor.run {
+                if ustvarjen {
                     pendingEmail = cleanEmail
                     message = "Account created. Check your email for the code."
                     authStage = "verifyEmail"
-                }
-            } else {
-                let text = String(data: data, encoding: .utf8) ?? "Unknown error"
-                await MainActor.run {
-                    message = "Napaka (\(http.statusCode)): \(text)"
+                } else {
+                    message = "That email is already registered. Sign in instead."
                 }
             }
-
         } catch {
             await MainActor.run {
-                message = "Napaka: \(error.localizedDescription)"
+                message = error.userMessage
             }
         }
     }

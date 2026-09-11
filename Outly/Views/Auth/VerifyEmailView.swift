@@ -7,9 +7,14 @@
 
 import SwiftUI
 
+/// Potrditev e-naslova s 6-mestno kodo iz Supabasovega maila (predloga
+/// "Confirm signup" vsebuje kodo {{ .Token }} in povezavo). Uspesna potrditev
+/// vrne sejo -> uporabnik je takoj prijavljen. Ce je e-naslov potrdil prek
+/// povezave na outly.si, gre na prijavo z gumbom spodaj.
 struct VerifyEmailView: View {
     @AppStorage("authStage") private var authStage: String = "verifyEmail"
     @AppStorage("pendingEmail") private var pendingEmail: String = ""
+    @EnvironmentObject private var session: SessionStore
 
     @State private var code: String = ""
     @State private var message: String?
@@ -89,6 +94,16 @@ struct VerifyEmailView: View {
                 .disabled(isLoading || pendingEmail.isEmpty)
 
                 Button {
+                    // E-naslov potrjen prek povezave v mailu -> prijava.
+                    authStage = "login"
+                } label: {
+                    Text("Already confirmed? Sign in")
+                        .foregroundColor(.white.opacity(0.75))
+                        .padding(.top, 4)
+                }
+                .buttonStyle(.plain)
+
+                Button {
                     // nazaj na register
                     pendingEmail = ""
                     authStage = "register"
@@ -114,14 +129,21 @@ struct VerifyEmailView: View {
         defer { isLoading = false }
 
         do {
-            try await APIClient.shared.verifyEmail(email: pendingEmail, code: code)
+            let seja = try await SupabaseAuth.shared.verify(email: pendingEmail, code: code, type: "signup")
             await MainActor.run {
-                message = "Email verified. Please log in."
-                authStage = "login"
+                session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
+                pendingEmail = ""
+                if session.isLoggedIn {
+                    // Prijavljen; GET /me (SessionLoadingView) ustvari racun na backendu.
+                    authStage = "main"
+                } else {
+                    message = "Email verified. Please log in."
+                    authStage = "login"
+                }
             }
         } catch {
             await MainActor.run {
-                message = error.localizedDescription
+                message = error.userMessage
             }
         }
     }
@@ -134,13 +156,13 @@ struct VerifyEmailView: View {
         defer { isLoading = false }
 
         do {
-            try await APIClient.shared.resendVerification(email: pendingEmail)
+            try await SupabaseAuth.shared.resend(email: pendingEmail, type: "signup")
             await MainActor.run {
                 message = "Code sent again. Check your email."
             }
         } catch {
             await MainActor.run {
-                message = error.localizedDescription
+                message = error.userMessage
             }
         }
     }

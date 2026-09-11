@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// Figma: "Create New Password" (15:985). Figma nima polja za kodo, backend
-/// (POST /auth/reset-password) pa jo zahteva — zato je tu dodano polje za 6-mestno kodo.
+/// Figma: "Create New Password" (15:985). Figma nima polja za kodo, Supabase pa
+/// jo posilja v mailu — zato je tu polje za 6-mestno kodo. Koda (type "recovery")
+/// vrne sejo, z njo nastavimo novo geslo (PUT /user) in sejo odjavimo, da se
+/// uporabnik prijavi z novim geslom.
 @MainActor
 struct ResetPasswordView: View {
     let email: String
@@ -103,9 +105,13 @@ struct ResetPasswordView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            try await APIClient.shared.resetPassword(email: email, code: code, newPassword: password)
-            // Nazaj na prijavo z obvestilom. Ponastavitev NE prijavi samodejno
-            // (streznik ne vrne zetona), kar je prav: uporabnik se prijavi z novim geslom.
+            let seja = try await SupabaseAuth.shared.verify(email: email, code: code, type: "recovery")
+            try await SupabaseAuth.shared.updatePassword(token: seja.accessToken, newPassword: password)
+            // Sprememba gesla pri Supabase odjavi druge seje; to zacasno sejo zapremo
+            // sami, da se uporabnik prijavi z novim geslom (kot prej).
+            try? await SupabaseAuth.shared.signOut(token: seja.accessToken, scope: "global")
+            // Nazaj na prijavo z obvestilom. Ponastavitev NE prijavi samodejno,
+            // kar je prav: uporabnik se prijavi z novim geslom.
             // ForgotPasswordView opazuje loginNotice in se sam umakne na prijavo
             // (skupaj s tem zaslonom). Tukaj NE klicemo dismiss(), da ni dvojnega pop-a.
             loginNotice = "Password updated. Log in with your new password."
@@ -120,7 +126,7 @@ struct ResetPasswordView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            try await APIClient.shared.forgotPassword(email: email)
+            try await SupabaseAuth.shared.requestPasswordReset(email: email)
             resent = true
             // Streznik nove kode ne poslje pogosteje kot enkrat na minuto.
             try? await Task.sleep(for: .seconds(60))

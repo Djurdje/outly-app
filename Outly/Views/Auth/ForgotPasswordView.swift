@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Figma: "Forgot pass" (15:738). Vnos e-naslova -> POST /auth/forgot-password.
-/// Streznik vedno odgovori 200, zato uporabniku ne povemo, ali racun obstaja.
+/// Figma: "Forgot pass" (15:738). Vnos e-naslova -> Supabase /recover (mail s
+/// 6-mestno kodo in povezavo). Supabase vedno odgovori 200, zato uporabniku ne
+/// povemo, ali racun obstaja.
 @MainActor
 struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
@@ -84,7 +85,7 @@ struct ForgotPasswordView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            try await APIClient.shared.forgotPassword(email: e)
+            try await SupabaseAuth.shared.requestPasswordReset(email: e)
             goToReset = true
         } catch {
             message = error.userMessage

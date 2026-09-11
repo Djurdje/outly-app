@@ -162,9 +162,11 @@ struct LoginView: View {
         defer { isLoading = false }
 
         do {
-            let pair = try await APIClient.shared.login(email: cleanEmail, password: password)
+            // Prijava pri Supabase (edina identiteta). Backend Outlyja zeton preveri
+            // in ob prvem klicu (GET /me) racun poveze ali ustvari.
+            let seja = try await SupabaseAuth.shared.signIn(email: cleanEmail, password: password)
 
-            session.setSession(token: pair.token, refreshToken: pair.refreshToken)
+            session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
             guard session.isLoggedIn else {
                 // Keychain je zavrnil zapis (redko; npr. naprava se ni odklenjena po zagonu).
                 message = "Could not save your session on this device. Please try again."
@@ -175,16 +177,12 @@ struct LoginView: View {
 
         } catch {
             let text = error.userMessage
-            let raw: String = {
-                if case let .requestFailed(_, r)? = error as? APIError { return r.lowercased() }
-                return ""
-            }()
+            let nepotrjen = (error as? SupabaseAuthError)?.code == "email_not_confirmed"
 
             await MainActor.run {
                 message = text
-
-                // ✅ če backend blokira login zaradi verifikacije
-                if raw.contains("email not verified") {
+                // E-naslov se ni potrjen: na zaslon s kodo iz maila.
+                if nepotrjen {
                     pendingEmail = cleanEmail
                     authStage = "verifyEmail"
                 }

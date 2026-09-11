@@ -19,6 +19,7 @@ enum APIError: Error, LocalizedError {
 
 /// Klient za Outly backend. Vsi klici gredo skozi send() (APIClient+Account.swift),
 /// ki poskrbi za Authorization, napake in osvezitev poteklega zetona ob 401.
+/// Racun (prijava, registracija, geslo) je pri Supabase: SupabaseAuth.swift.
 /// Poti so razdeljene po datotekah: +Account, +Events, +Discover, +Business.
 final class APIClient: Sendable {
     static let shared = APIClient()
@@ -26,16 +27,6 @@ final class APIClient: Sendable {
 
     // Interni (ne private), da ga vidijo razsiritve v drugih datotekah.
     let baseURL = URL(string: "https://outly-backend-roy3.onrender.com")!
-
-    // MARK: - Registracija / potrditev e-naslova
-
-    func verifyEmail(email: String, code: String) async throws {
-        _ = try await send(path: "auth/verify-email", method: "POST", json: ["email": email, "code": code])
-    }
-
-    func resendVerification(email: String) async throws {
-        _ = try await send(path: "auth/resend-verification", method: "POST", json: ["email": email])
-    }
 
     // MARK: - Klubi in dogodki (javno)
 
