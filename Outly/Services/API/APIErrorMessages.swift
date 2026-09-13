@@ -37,7 +37,7 @@ extension APIError {
         // Najprej po vsebini, ker je ista koda (400) uporabljena za vec razlicnih stvari.
         if t.contains("invalid or expired code")        { return "The code is wrong or has expired. Request a new one." }
         if t.contains("too many attempts")              { return "Too many wrong attempts. Request a new code." }
-        if t.contains("code must be 6 digits")          { return "Enter the 6-digit code from the email." }
+        if t.contains("code must be 6 digits")          { return "Enter the code from the email." }
         if t.contains("password too short")             { return "Password must be at least 8 characters." }
         if t.contains("email not verified")             { return "Your email is not verified yet." }
         if t.contains("locked")                         { return "Too many failed logins. Try again in 15 minutes." }
@@ -95,6 +95,17 @@ extension APIError {
         if t.contains("already used")                   { return "This ticket was already used." }
         if t.contains("ticket not found")               { return "This ticket is not available anymore." }
         if t.contains("no longer valid")                { return "This ticket is no longer valid." }
+        // Ekipa in vabila (migracija 013)
+        if t.contains("already_invited") || t.contains("pending invitation") { return "This person already has a pending invitation from your club." }
+        if t.contains("already in the team") || t.contains("already_member") || t.contains("already in a club team") || t.contains("another club's team") {
+            return t.contains("you are") ? "You are already in a club team. Leave it first." : "This person is already in a club team."
+        }
+        if t.contains("is_owner") || t.contains("owns the club") || t.contains("owns another club") || t.contains("own a club and") {
+            return t.contains("you own") ? "You own a club, so you can't join another team." : "This person owns a club and can't join a team."
+        }
+        if t.contains("only the club owner can")        { return "Only the club owner can do that." }
+        if t.contains("invitation not found")           { return "This invitation is no longer available." }
+        if t.contains("not in a club team")             { return "You are not in a club team." }
         // Vstopnice
         if t.contains("quantity must be")               { return "Choose between 1 and 10 tickets." }
         if t.contains("not on sale")                    { return "This event is not on sale." }

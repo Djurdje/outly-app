@@ -69,7 +69,7 @@ struct EventCardAPI: View {
                 }
 
                 HStack(spacing: 6) {
-                    Text(event.displayPrice ?? "Free")
+                    Text(event.priceLabel)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.white)
                     Text("·").foregroundStyle(Color.white.opacity(0.4))

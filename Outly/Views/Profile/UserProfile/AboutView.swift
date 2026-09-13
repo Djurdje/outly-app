@@ -55,7 +55,7 @@ struct AboutUsView: View {
                     .foregroundColor(.white)
                     .padding(.top, 6)
 
-                Text("Outly helps you find where to go tonight: clubs, events and, soon, tickets.")
+                Text("Outly helps you find where to go tonight: clubs, events and tickets.")
                     .foregroundColor(.white.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
 

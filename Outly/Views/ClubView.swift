@@ -120,6 +120,15 @@ struct ClubDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                // Opis kluba (lastnik ga ureja v Club info; prej ni bil nikjer prikazan).
+                if let d = club?.description.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty {
+                    Text(d)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 4)
+                }
+
             }
 
             Spacer()
@@ -215,10 +224,11 @@ struct ClubDetailView: View {
             async let up = APIClient.shared.fetchEvents(clubId: clubId, upcoming: true)  // future -> coming soon
 
             club = try await c
-            popular = try await pop
+            // Pretekli dogodki pridejo od najstarejsega -> obrnemo, da so najnovejsi prvi.
+            popular = try await pop.sorted { ($0.startDate ?? .distantPast) > ($1.startDate ?? .distantPast) }
             comingSoon = try await up
         } catch {
-            errorText = error.localizedDescription
+            errorText = error.userMessage
         }
         isLoading = false
     }

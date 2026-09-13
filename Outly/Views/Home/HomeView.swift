@@ -30,6 +30,15 @@ struct HomeView: View {
 
     @EnvironmentObject private var prefs: UserPreferences
     @EnvironmentObject private var locationManager: LocationManager
+    /// Priljubljeni (srcek) s streznika — razdelek "Liked events" (od 13. 9. namesto zavihka Saved).
+    @EnvironmentObject private var favorites: FavoritesStore
+
+    /// Prihajajoci priljubljeni dogodki, najblizji najprej (pretekli so samo v "See all").
+    private var likedUpcoming: [APIEvent] {
+        favorites.events
+            .filter { ($0.startDate ?? .distantFuture) >= Date().addingTimeInterval(-6 * 3600) }
+            .sorted { ($0.startDate ?? .distantFuture) < ($1.startDate ?? .distantFuture) }
+    }
 
     private var userAge: Int? { session.me?.age }
     private var userGenres: [String] { session.me?.genres ?? [] }
@@ -104,7 +113,10 @@ struct HomeView: View {
 
     /// Hit tedna: pretekli dogodek z najvec prodanimi; ce ga ni, najbolje prodajan prihajajoci.
     private var hitTedna: (event: APIEvent, label: String)? {
-        if let p = popularEvents.filter({ $0.soldCount > 0 }).max(by: { $0.soldCount < $1.soldCount }) {
+        // Samo pretekli dogodki zadnjih 7 dni — sicer bi bil "hit tedna" lahko star mesece.
+        let teden = Date().addingTimeInterval(-7 * 24 * 3600)
+        if let p = popularEvents.filter({ $0.soldCount > 0 && ($0.startDate ?? .distantPast) >= teden })
+            .max(by: { $0.soldCount < $1.soldCount }) {
             return (p, "Last week's biggest hit")
         }
         if let t = trending.first { return (t, "Trending right now") }
@@ -189,6 +201,12 @@ struct HomeView: View {
                             }
                         }
 
+                        // 2b. Liked events (Martin, 13. 9.): srcki iz nav bara na domaci zaslon.
+                        // Razdelek je viden samo, ko uporabnik kaj oznaci — prazen ne moti.
+                        if !likedUpcoming.isEmpty {
+                            likedSection
+                        }
+
                         // 3. Last week's biggest hits (Figma 50:100)
                         if let hit = hitTedna {
                             sekcija("Last week's biggest hits", podnaslov: nil) {
@@ -270,8 +288,27 @@ struct HomeView: View {
             locationManager.requestPermission()
             await loadAll()
         }
+        // Ob vrnitvi na zavihek osvezimo samo profil (avatar, pozdrav), ne vsega.
+        // Prvi prikaz: .task ze klice loadMe() znotraj loadAll(), zato tu preskocimo.
         .onAppear {
-            Task { await loadMe() }
+            if !clubs.isEmpty { Task { await loadMe() } }
+        }
+    }
+
+    // MARK: - Liked events (loceno zaradi tipnega preverjevalnika, kot genreSection)
+    private var likedSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeader(title: "Liked events")
+                Spacer()
+                NavigationLink { SavedView() } label: {
+                    Text("See all")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+            }
+            HorizontalEventsScroll(events: likedUpcoming, clubsById: clubsById)
         }
     }
 
@@ -408,6 +445,8 @@ struct HomeView: View {
                 if !genresRes.isEmpty { self.genres = genresRes }
             }
             await loadMe()
+            // Liked events: osvezimo tudi priljubljene (pull-to-refresh), napaka tu ni kriticna.
+            await favorites.load(token: authToken)
         } catch {
             self.errorText = error.userMessage
         }

@@ -1,8 +1,10 @@
 import Foundation
 
 // Ekipa kluba (migracija 009): lastnik + managerji + vratarji.
-// Backend: GET/POST /business/team, DELETE /business/team/:userId, DELETE /business/team/me.
-// Lastnik sme vse; manager sme dodajati in odstranjevati samo vratarje.
+// Backend: GET/POST /business/team, DELETE /business/team/:userId, DELETE /business/team/me,
+// DELETE /business/team/invites/:id. Lastnik sme vse; manager sme vabiti in odstranjevati samo vratarje.
+// Od migracije 013 POST /business/team ustvari VABILO (TeamInvite); clan nastane,
+// ko uporabnik vabilo sprejme v aplikaciji (My clubs -> zvonec).
 
 /// Ena vrstica ekipe. Lastnik pride kot prva vrstica z role "owner".
 struct TeamMember: Decodable, Identifiable {
@@ -53,15 +55,55 @@ struct TeamMember: Decodable, Identifiable {
     }
 }
 
+/// Cakajoce vabilo kluba (GET /business/team -> invites[]).
+struct TeamInvite: Decodable, Identifiable {
+    let id: Int
+    let userId: Int
+    let username: String
+    let email: String
+    let avatarUrl: String?
+    let role: String
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, username, email, role
+        case userId = "user_id"
+        case avatarUrl = "avatar_url"
+        case createdAt = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        userId = try c.decodeIfPresent(Int.self, forKey: .userId) ?? 0
+        username = try c.decodeIfPresent(String.self, forKey: .username) ?? ""
+        email = try c.decodeIfPresent(String.self, forKey: .email) ?? ""
+        avatarUrl = try c.decodeIfPresent(String.self, forKey: .avatarUrl)
+        role = try c.decodeIfPresent(String.self, forKey: .role) ?? "doorman"
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+    }
+
+    var roleLabel: String { role == "manager" ? "Manager" : "Door staff" }
+}
+
 /// Odgovor GET/POST/DELETE /business/team.
 struct TeamResponse: Decodable {
     /// Vloga prijavljenega: "owner" | "manager" | "admin".
     let myRole: String
     let members: [TeamMember]
+    /// Cakajoca vabila (prazno pri starem backendu brez migracije 013).
+    let invites: [TeamInvite]
 
     enum CodingKeys: String, CodingKey {
-        case members
+        case members, invites
         case myRole = "my_role"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        myRole = try c.decodeIfPresent(String.self, forKey: .myRole) ?? ""
+        members = try c.decodeIfPresent([TeamMember].self, forKey: .members) ?? []
+        invites = try c.decodeIfPresent([TeamInvite].self, forKey: .invites) ?? []
     }
 }
 
@@ -72,7 +114,8 @@ extension APIClient {
         return try decode(TeamResponse.self, from: data)
     }
 
-    /// role: "manager" ali "doorman". Uporabnik mora ze imeti Outly racun (sicer 404 no_account).
+    /// Poslje VABILO (role: "manager" ali "doorman"). Uporabnik mora ze imeti Outly racun
+    /// (sicer 404 no_account); 409 already_invited, ce vabilo ze caka.
     func addTeamMember(token: String, email: String, role: String) async throws -> TeamResponse {
         let data = try await send(path: "business/team", method: "POST", token: token,
                                   json: ["email": email, "role": role])
@@ -81,6 +124,12 @@ extension APIClient {
 
     func removeTeamMember(token: String, userId: Int) async throws -> TeamResponse {
         let data = try await send(path: "business/team/\(userId)", method: "DELETE", token: token)
+        return try decode(TeamResponse.self, from: data)
+    }
+
+    /// Preklice cakajoce vabilo (lastnik vsa, manager samo vratarjeva).
+    func cancelTeamInvite(token: String, inviteId: Int) async throws -> TeamResponse {
+        let data = try await send(path: "business/team/invites/\(inviteId)", method: "DELETE", token: token)
         return try decode(TeamResponse.self, from: data)
     }
 

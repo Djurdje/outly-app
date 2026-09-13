@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Ekipa kluba: lastnik + managerji + vratarji (GET /business/team).
-/// Lastnik dodaja in odstranjuje vse; manager samo vratarje. Vratar tega zaslona ne vidi.
-/// Clan mora ze imeti Outly racun — dodamo ga po e-naslovu racuna.
+/// Ekipa kluba: lastnik + managerji + vratarji (GET /business/team) + cakajoca vabila.
+/// Lastnik vabi in odstranjuje vse; manager samo vratarje. Vratar tega zaslona ne vidi.
+/// Od 13. 9. (migracija 013) dodajanje poslje VABILO: clan nastane, ko ga
+/// povabljeni sprejme v aplikaciji (My clubs -> zvonec). Povabljeni mora ze imeti Outly racun.
 @MainActor
 struct TeamView: View {
     let clubName: String?
@@ -11,6 +12,8 @@ struct TeamView: View {
 
     @State private var myRole = ""
     @State private var members: [TeamMember] = []
+    @State private var invites: [TeamInvite] = []
+    @State private var cancelling: TeamInvite?
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var showAdd = false
@@ -52,13 +55,25 @@ struct TeamView: View {
                         }
                     }
 
+                    if !invites.isEmpty {
+                        Text("Waiting for reply")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.6))
+                            .padding(.top, 4)
+                        VStack(spacing: 10) {
+                            ForEach(invites) { v in
+                                vabiloVrstica(v)
+                            }
+                        }
+                    }
+
                     if let errorText {
                         Text(errorText)
                             .font(.system(size: 13))
                             .foregroundColor(.red)
                     }
 
-                    OutlyPrimaryButton(title: "Add member") { showAdd = true }
+                    OutlyPrimaryButton(title: "Invite member") { showAdd = true }
                         .padding(.top, 6)
 
                     razlaga
@@ -77,6 +92,7 @@ struct TeamView: View {
             AddTeamMemberView(canAddManagers: canAddManagers) { r in
                 myRole = r.myRole
                 members = r.members
+                invites = r.invites
             }
             .environmentObject(session)
         }
@@ -92,6 +108,73 @@ struct TeamView: View {
         } message: {
             Text("They lose access to the club tools right away.")
         }
+        .confirmationDialog(
+            cancelling.map { "Cancel the invitation for \($0.username.isEmpty ? $0.email : $0.username)?" } ?? "",
+            isPresented: Binding(get: { cancelling != nil }, set: { if !$0 { cancelling = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel invitation", role: .destructive) {
+                if let v = cancelling { Task { await cancel(v) } }
+            }
+            Button("Keep it", role: .cancel) { cancelling = nil }
+        }
+    }
+
+    // MARK: - Vrstica cakajocega vabila
+
+    private func canCancel(_ v: TeamInvite) -> Bool {
+        if canAddManagers { return true }
+        return v.role == "doorman"
+    }
+
+    private func vabiloVrstica(_ v: TeamInvite) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(Color.white.opacity(0.06))
+                Image(systemName: "envelope")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            .frame(width: 44, height: 44)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(v.username.isEmpty ? v.email : v.username)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.8))
+                    .lineLimit(1)
+                Text("Invited as \(v.roleLabel.lowercased()) · waiting")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            if canCancel(v) {
+                Button {
+                    cancelling = v
+                } label: {
+                    Group {
+                        if busyUserId == -v.id {
+                            ProgressView().tint(.white)
+                        } else {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                    }
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                .disabled(busyUserId != nil)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.10), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+        )
     }
 
     // MARK: - Vrstica clana
@@ -184,7 +267,7 @@ struct TeamView: View {
             vloga(icon: "person.text.rectangle", title: "Manager",
                   text: "Events, sales, club page and door staff. Can't add other managers.")
             vloga(icon: "qrcode.viewfinder", title: "Door staff",
-                  text: "Scans tickets at the door and sees who has arrived. Nothing else.")
+                  text: "Scans tickets at the door. Nothing else.")
         }
         .padding(.top, 10)
     }
@@ -212,6 +295,7 @@ struct TeamView: View {
             let r = try await APIClient.shared.fetchTeam(token: session.token)
             myRole = r.myRole
             members = r.members
+            invites = r.invites
             errorText = nil
         } catch {
             errorText = error.userMessage
@@ -226,6 +310,22 @@ struct TeamView: View {
             let r = try await APIClient.shared.removeTeamMember(token: session.token, userId: m.userId)
             myRole = r.myRole
             members = r.members
+            invites = r.invites
+            errorText = nil
+        } catch {
+            errorText = error.userMessage
+        }
+    }
+
+    private func cancel(_ v: TeamInvite) async {
+        cancelling = nil
+        busyUserId = -v.id
+        defer { busyUserId = nil }
+        do {
+            let r = try await APIClient.shared.cancelTeamInvite(token: session.token, inviteId: v.id)
+            myRole = r.myRole
+            members = r.members
+            invites = r.invites
             errorText = nil
         } catch {
             errorText = error.userMessage
@@ -235,7 +335,7 @@ struct TeamView: View {
 
 // MARK: - Dodajanje clana
 
-/// Sheet: e-naslov Outly racuna + vloga. Manager lahko doda samo vratarja.
+/// Sheet: e-naslov Outly racuna + vloga -> poslje VABILO. Manager lahko povabi samo vratarja.
 @MainActor
 struct AddTeamMemberView: View {
     let canAddManagers: Bool
@@ -258,7 +358,7 @@ struct AddTeamMemberView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text("Add to team")
+                    Text("Invite to team")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.top, 6)
@@ -271,7 +371,7 @@ struct AddTeamMemberView: View {
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                        Text("They need an Outly account with this email. Their own login stays private.")
+                        Text("They need an Outly account with this email. They get the invitation in the app (Profile → My clubs) and join once they accept.")
                             .font(.system(size: 12))
                             .foregroundColor(.white.opacity(0.5))
                     }
@@ -281,7 +381,7 @@ struct AddTeamMemberView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.white.opacity(0.7))
                         izbira(value: "doorman", icon: "qrcode.viewfinder", title: "Door staff",
-                               text: "Scans tickets and sees guest lists.")
+                               text: "Scans tickets at the door.")
                         if canAddManagers {
                             izbira(value: "manager", icon: "person.text.rectangle", title: "Manager",
                                    text: "Events, sales, club page and door staff.")
@@ -294,7 +394,7 @@ struct AddTeamMemberView: View {
                             .foregroundColor(.red)
                     }
 
-                    OutlyPrimaryButton(title: "Add member", isLoading: isSending) {
+                    OutlyPrimaryButton(title: "Send invite", isLoading: isSending) {
                         Task { await dodaj() }
                     }
                     .disabled(!emailOk || isSending)

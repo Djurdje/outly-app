@@ -75,12 +75,13 @@ struct EventView: View {
 
             await MainActor.run {
                 self.comingSoon = u
-                self.popular = p
+                // Pretekli od najnovejsega (backend vraca od najstarejsega).
+                self.popular = p.sorted { ($0.startDate ?? .distantPast) > ($1.startDate ?? .distantPast) }
                 self.clubsById = Dictionary(uniqueKeysWithValues: c.map { ($0.id, $0) })
             }
         } catch {
             await MainActor.run {
-                self.errorText = error.localizedDescription
+                self.errorText = error.userMessage
             }
         }
 

@@ -167,6 +167,15 @@ extension APIEvent {
 // MARK: - Zaloga in cas (oznake na karticah)
 extension APIEvent {
     var isSoldOut: Bool { availability == "sold_out" }
+
+    /// Napis cene na karticah. Brez cene NI "Free": NULL cena pomeni, da vstopnic
+    /// ni na Outlyju (zunanja prodaja ali na vratih) — "Free" je samo pri ceni 0.
+    var priceLabel: String {
+        if isSoldOut { return "—" }
+        if let p = displayPrice { return p }
+        if let u = ticketUrl, !u.isEmpty { return "Tickets" }
+        return "At the door"
+    }
     var isFewLeft: Bool { availability == "few_left" }
     var ticketsLeft: Int? { capacity.map { max(0, $0 - soldCount) } }
 

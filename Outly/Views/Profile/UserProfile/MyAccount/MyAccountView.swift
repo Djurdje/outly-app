@@ -160,7 +160,7 @@ struct MyAccountView: View {
 
         } catch {
             await MainActor.run {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userMessage
                 isLoading = false
             }
         }

@@ -74,6 +74,8 @@ final class FavoritesStore: ObservableObject {
             } catch {
                 if novo { self.ids.remove(eventId) } else { self.ids.insert(eventId) }
                 self.shraniCache()
+                // Pri neuspesnem odznacevanju je dogodek ze izpadel iz seznama — nalozimo znova.
+                if !novo { await self.load(token: token) }
             }
         }
     }

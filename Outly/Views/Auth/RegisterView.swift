@@ -95,13 +95,13 @@ struct RegisterView: View {
                         .foregroundColor(Color.white.opacity(0.35))
 
                     HStack(spacing: 6) {
-                        Text("Terms of Service")
+                        Link("Terms of Service", destination: LegalLinks.terms)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.white.opacity(0.9))
                         Text("and")
                             .font(.system(size: 12))
                             .foregroundColor(Color.white.opacity(0.35))
-                        Text("Privacy Policy")
+                        Link("Privacy Policy", destination: LegalLinks.privacy)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.white.opacity(0.9))
                     }
@@ -121,30 +121,30 @@ struct RegisterView: View {
         let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard trimmedUsername.count >= 3 else {
-            message = "Username naj bo vsaj 3 znake."
+            message = "Username must be at least 3 characters."
             return
         }
         guard trimmedUsername.count <= 20 else {
-            message = "Username naj bo največ 20 znakov."
+            message = "Username can have at most 20 characters."
             return
         }
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
         guard trimmedUsername.unicodeScalars.allSatisfy({ allowed.contains($0) }) else {
-            message = "Username lahko vsebuje le črke, številke in _"
+            message = "Username can contain only letters, numbers and underscore."
             return
         }
 
         let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard cleanEmail.contains("@") else {
-            message = "Vpiši veljaven email."
+            message = "Enter a valid email address."
             return
         }
         guard password.count >= 8 else {
-            message = "Geslo naj bo dolgo vsaj 8 znakov."
+            message = "Password must be at least 8 characters."
             return
         }
         guard password == confirmPassword else {
-            message = "Gesli se ne ujemata."
+            message = "Passwords do not match."
             return
         }
 

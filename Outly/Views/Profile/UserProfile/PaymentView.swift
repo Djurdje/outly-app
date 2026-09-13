@@ -23,7 +23,7 @@ struct PaymentView: View {
                             .font(.headline)
                             .foregroundColor(.white)
                     }
-                    Text("Ticket purchases are coming soon. Payments will be processed by Stripe; Outly never sees or stores your card details, and the app does not hold a balance.")
+                    Text("Tickets are paid at checkout. Payments are processed by Stripe; Outly never sees or stores your card details, and the app does not hold a balance.")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.7))
                         .fixedSize(horizontal: false, vertical: true)

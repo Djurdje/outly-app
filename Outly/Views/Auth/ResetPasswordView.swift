@@ -1,7 +1,10 @@
 import SwiftUI
 
 /// Figma: "Create New Password" (15:985). Figma nima polja za kodo, Supabase pa
-/// jo posilja v mailu — zato je tu polje za 6-mestno kodo. Koda (type "recovery")
+/// jo posilja v mailu — zato je tu polje za kodo. Dolzina kode je nastavljiva v
+/// Supabase (Email OTP length, 6–10 stevk), zato sprejmemo 6 do 10 stevk in ne
+/// odrezemo na 6 (Martin, 13. 9.: koda iz maila je bila daljsa in je ni bilo mogoce vpisati).
+/// Koda (type "recovery")
 /// vrne sejo, z njo nastavimo novo geslo (PUT /user) in sejo odjavimo, da se
 /// uporabnik prijavi z novim geslom.
 @MainActor
@@ -31,7 +34,7 @@ struct ResetPasswordView: View {
                         .scaledToFit()
                         .frame(maxHeight: 140)
 
-                    Text("We sent a 6-digit code to \(email).")
+                    Text("We sent a code to \(email).")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center)
@@ -43,12 +46,12 @@ struct ResetPasswordView: View {
                         .multilineTextAlignment(.center)
                         .padding(.bottom, 10)
 
-                    OutlyTextField(placeholder: "6-digit code", text: $code)
+                    OutlyTextField(placeholder: "code from the email", text: $code)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                         .onChange(of: code) { _, newVal in
                             let digits = newVal.filter { $0.isNumber }
-                            let cut = String(digits.prefix(6))
+                            let cut = String(digits.prefix(10))
                             if cut != newVal { code = cut }
                         }
 
@@ -93,12 +96,12 @@ struct ResetPasswordView: View {
     }
 
     private var canSubmit: Bool {
-        code.count == 6 && password.count >= 8 && !confirm.isEmpty
+        (6...10).contains(code.count) && password.count >= 8 && !confirm.isEmpty
     }
 
     private func save() async {
         message = nil
-        guard code.count == 6 else { message = "Enter the 6-digit code from the email."; return }
+        guard (6...10).contains(code.count) else { message = "Enter the code from the email."; return }
         guard password.count >= 8 else { message = "Password must be at least 8 characters."; return }
         guard password == confirm else { message = "Passwords do not match."; return }
 
@@ -124,15 +127,20 @@ struct ResetPasswordView: View {
     private func resend() async {
         message = nil
         isLoading = true
-        defer { isLoading = false }
         do {
             try await SupabaseAuth.shared.requestPasswordReset(email: email)
-            resent = true
-            // Streznik nove kode ne poslje pogosteje kot enkrat na minuto.
-            try? await Task.sleep(for: .seconds(60))
-            resent = false
         } catch {
             message = error.userMessage
+            isLoading = false
+            return
+        }
+        isLoading = false
+        resent = true
+        // Streznik nove kode ne poslje pogosteje kot enkrat na minuto. Cakanje tece
+        // loceno, da gumb Save medtem NI zaklenjen (prej je bil 60 s "Saving...").
+        Task {
+            try? await Task.sleep(for: .seconds(60))
+            resent = false
         }
     }
 }

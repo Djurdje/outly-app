@@ -412,7 +412,7 @@ struct EventTicketsView: View {
                     }
                 }
 
-                Text("The QR on each ticket is signed by the server; scanning it twice is refused. A camera scanner will replace this list.")
+                Text("The QR on each ticket is signed by the server; scanning it twice is refused. Use Scan tickets in your profile for the camera scanner.")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)

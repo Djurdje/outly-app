@@ -10,6 +10,8 @@ struct EventDetailView: View {
     @State private var errorText: String?
     @State private var showBuy = false
     @EnvironmentObject private var session: SessionStore
+    /// Srcek (Liked events na domacem zaslonu). Prej na zaslonu dogodka ni bilo srcka.
+    @EnvironmentObject private var favorites: FavoritesStore
 
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
@@ -77,11 +79,27 @@ struct EventDetailView: View {
     // MARK: - Naslov + klub (nad vrstico s ceno, brez prekrivanja slike)
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(event.title)
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(.white)
-                .lineLimit(3)
-                .minimumScaleFactor(0.8)
+            HStack(alignment: .top, spacing: 12) {
+                Text(event.title)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 4)
+                if session.isLoggedIn {
+                    Button {
+                        favorites.toggle(event.id, token: session.token)
+                    } label: {
+                        Image(systemName: favorites.contains(event.id) ? "heart.fill" : "heart")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.8))
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(Color.white.opacity(0.10)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events")
+                }
+            }
 
             HStack(spacing: 10) {
                 if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
@@ -380,7 +398,7 @@ struct EventDetailView: View {
             }
         } catch {
             await MainActor.run {
-                self.errorText = error.localizedDescription
+                self.errorText = error.userMessage
             }
         }
         isLoading = false

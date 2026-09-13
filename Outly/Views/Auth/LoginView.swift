@@ -46,7 +46,7 @@ struct LoginView: View {
                 .buttonStyle(.plain)
                 .padding(.top, 6)
 
-                Text("Enter your email to sign up for this app")
+                Text("Sign in with your email and password")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white.opacity(0.9))
                     .padding(.top, -6)
@@ -150,11 +150,11 @@ struct LoginView: View {
         let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         guard cleanEmail.contains("@") else {
-            message = "Vpiši veljaven email."
+            message = "Enter a valid email address."
             return
         }
         guard !password.isEmpty else {
-            message = "Vpiši geslo."
+            message = "Enter your password."
             return
         }
 

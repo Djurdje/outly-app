@@ -15,7 +15,7 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $zavihek) {
-            HomeView(odpriIskanje: { zavihek = 1 }, odpriProfil: { zavihek = 4 })
+            HomeView(odpriIskanje: { zavihek = 1 }, odpriProfil: { zavihek = 3 })
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
@@ -27,23 +27,20 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            SavedView()
-                .tabItem {
-                    Label("Saved", systemImage: "heart.fill")
-                }
-                .tag(2)
-
+            // Zavihek "Saved" umaknjen (Martin, 13. 9.): priljubljeni dogodki so
+            // razdelek "Liked events" na domacem zaslonu (SavedView = "See all").
+            // Vrstni red kot v Figmi: Home, Search, Map, Profile.
             MapView()
                 .tabItem {
                     Label("Map", systemImage: "map.fill")
                 }
-                .tag(3)
+                .tag(2)
 
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
-                .tag(4)
+                .tag(3)
         }
         .accentColor(.blackColor)
         // Priljubljeni s streznika ob prijavi (in ob menjavi seje).

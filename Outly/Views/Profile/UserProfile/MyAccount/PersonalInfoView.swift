@@ -387,9 +387,12 @@ struct PersonalInfoView: View {
             let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
             let imageUrl = try await APIClient.shared.uploadImageToCloudinary(
                 imageData: data, fileName: "avatar.jpg", signature: sig)
-            let updated = try await APIClient.shared.updateMyAvatar(token: authToken, avatarUrl: imageUrl)
-            user = updated
-            session.me = updated
+            // PATCH /me/avatar vrne samo del polj (brez onboarded_at, club_role ...).
+            // Ce bi ta delni objekt shranili v sejo, bi AuthGate uporabnika vrgel v
+            // "Complete your account" in poslovni obraz bi izginil. Zato polni GET /me.
+            _ = try await APIClient.shared.updateMyAvatar(token: authToken, avatarUrl: imageUrl)
+            await session.refreshMe()
+            if let m = session.me { user = m }
         } catch {
             errorMessage = error.userMessage
         }

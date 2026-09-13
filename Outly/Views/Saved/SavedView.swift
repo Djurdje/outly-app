@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// Zavihek "Saved": dogodki, ki jih je uporabnik oznacil s srckom. Seznam pride s
-/// streznika (FavoritesStore / GET /me/favorites), zato je isti na vseh napravah.
+/// "Liked events" (od 13. 9. ni vec zavihek, ampak zaslon "See all" iz razdelka
+/// Liked events na domacem zaslonu): dogodki, ki jih je uporabnik oznacil s srckom.
+/// Seznam pride s streznika (FavoritesStore / GET /me/favorites), zato je isti na
+/// vseh napravah. Potisnjen pogled — brez lastnega NavigationStack (past 9).
 /// Odpovedani in pretekli dogodki so v loceni skupini spodaj, da uporabnik vidi,
 /// zakaj jih ni vec na vrhu.
 @MainActor
@@ -19,13 +21,12 @@ struct SavedView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        Group {
             Screen {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("Saved")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                        Text("Liked events")
+                            .font(.system(size: 30, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.top, 6)
 
@@ -82,6 +83,7 @@ struct SavedView: View {
                 }
             }
         }
+        .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
     }
 
@@ -91,10 +93,10 @@ struct SavedView: View {
                 .font(.system(size: 40, weight: .light))
                 .foregroundColor(.white.opacity(0.35))
                 .padding(.top, 50)
-            Text("Nothing saved yet")
+            Text("No liked events yet")
                 .font(.headline)
                 .foregroundColor(.white)
-            Text("Tap the heart on any event and it will wait for you here — on every device you log in to.")
+            Text("Tap the heart on any event and it will show up here and on your home screen — on every device you log in to.")
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.6))
                 .multilineTextAlignment(.center)

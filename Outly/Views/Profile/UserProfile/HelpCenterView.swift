@@ -139,7 +139,7 @@ struct HelpArticle: Identifiable {
             topic: "Getting started  >  Account",
             title: "Creating an account",
             body: """
-            Tap Sign up, enter your username, email and a password. We send a 6-digit code to your email — type it in to confirm your address.
+            Tap Sign up, enter your username, email and a password. We send a code (6–10 digits) to your email — type it in to confirm your address.
 
             Then complete your profile: date of birth, country and the music you like. Your date of birth is used only to check age limits on events.
 

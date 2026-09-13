@@ -7,13 +7,14 @@
 
 import SwiftUI
 
-/// Potrditev e-naslova s 6-mestno kodo iz Supabasovega maila (predloga
+/// Potrditev e-naslova s kodo (6–10 stevk, dolzina je nastavljena v Supabase) iz Supabasovega maila (predloga
 /// "Confirm signup" vsebuje kodo {{ .Token }} in povezavo). Uspesna potrditev
 /// vrne sejo -> uporabnik je takoj prijavljen. Ce je e-naslov potrdil prek
 /// povezave na outly.si, gre na prijavo z gumbom spodaj.
 struct VerifyEmailView: View {
     @AppStorage("authStage") private var authStage: String = "verifyEmail"
     @AppStorage("pendingEmail") private var pendingEmail: String = ""
+    @AppStorage("loginNotice") private var loginNotice: String = ""
     @EnvironmentObject private var session: SessionStore
 
     @State private var code: String = ""
@@ -37,7 +38,7 @@ struct VerifyEmailView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Color.outlyBlue)
 
-                Text("We sent a 6-digit code to:")
+                Text("We sent a verification code to:")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white.opacity(0.9))
 
@@ -45,7 +46,8 @@ struct VerifyEmailView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
 
-                TextField("123456", text: $code)
+                TextField("code", text: $code)
+                    .textContentType(.oneTimeCode)
                     .keyboardType(.numberPad)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
@@ -53,10 +55,10 @@ struct VerifyEmailView: View {
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
                     .onChange(of: code) { _, newVal in
-                        // samo številke, max 6
+                        // samo stevilke, najvec 10 (Supabase OTP je lahko 6–10 stevk)
                         let filtered = newVal.filter { $0.isNumber }
                         if filtered != newVal { code = filtered }
-                        if code.count > 6 { code = String(code.prefix(6)) }
+                        if code.count > 10 { code = String(code.prefix(10)) }
                     }
 
                 if let message = message {
@@ -81,7 +83,7 @@ struct VerifyEmailView: View {
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 }
-                .disabled(isLoading || pendingEmail.isEmpty || code.count != 6)
+                .disabled(isLoading || pendingEmail.isEmpty || code.count < 6)
 
                 Button {
                     Task { await resend() }
@@ -123,7 +125,7 @@ struct VerifyEmailView: View {
 
     private func verify() async {
         message = nil
-        guard !pendingEmail.isEmpty, code.count == 6 else { return }
+        guard !pendingEmail.isEmpty, (6...10).contains(code.count) else { return }
 
         isLoading = true
         defer { isLoading = false }
@@ -137,7 +139,8 @@ struct VerifyEmailView: View {
                     // Prijavljen; GET /me (SessionLoadingView) ustvari racun na backendu.
                     authStage = "main"
                 } else {
-                    message = "Email verified. Please log in."
+                    // Zaslon se zamenja, zato obvestilo pokaze LoginView (loginNotice).
+                    loginNotice = "Email verified. Log in with your email and password."
                     authStage = "login"
                 }
             }

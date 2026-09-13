@@ -23,7 +23,7 @@ struct DeleteAccountView: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.white)
 
-                Text("This action is permanent. It will remove your account, saved clubs and personal data. Tickets you have already bought stay valid, but they will no longer be linked to you and cannot be recovered in the app.")
+                Text("This action is permanent. It will remove your account, liked events and personal data. Tickets you have already bought stay valid, but they will no longer be linked to you and cannot be recovered in the app.")
                     .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.75))
                     .fixedSize(horizontal: false, vertical: true)

@@ -90,6 +90,13 @@ struct APITicket: Decodable, Identifiable {
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
     var isUsed: Bool { status == "used" }
+    /// Napis na kartici: VALID samo za veljavno vstopnico prihodnjega dogodka;
+    /// sicer USED / REFUNDED / VOID / EXPIRED (prej je bilo vse razen used "VALID").
+    var statusLabel: String {
+        if isUsed { return "USED" }
+        if status != "valid" { return status.uppercased() }
+        return isPast ? "EXPIRED" : "VALID"
+    }
     var isPast: Bool { (startDate ?? .distantFuture) < Date().addingTimeInterval(-8 * 3600) }
 }
 

@@ -1,16 +1,24 @@
 import SwiftUI
 
-/// "My clubs" za navadnega uporabnika: klubi, v katerih je ze imel vstopnico
-/// (iz GET /me/tickets, brez podvajanja), in spodaj vsi klubi (GET /clubs).
-/// Vsaka vrstica vodi na ClubDetailView. Prazno stanje vabi k prijavi kluba.
+/// "My clubs" po Figmi (370:735 prazno, 382:805 s klubom, 370:849 z vabilom,
+/// 370:1303 po sprejemu): pokaze SAMO klub, v katerem uporabnik dela (lastnik,
+/// manager ali vratar) — ne vseh klubov. Desno zgoraj je zvonec z znacko:
+/// tam uporabnik prejme vabilo v ekipo in ga sprejme ali zavrne (ClubInvitesView).
+/// Podatki: GET /me (club_id, club_role, pending_invites), GET /business/clubs/me,
+/// GET /me/invites. Martin, 13. 9. 2026.
 @MainActor
 struct MyClubsView: View {
     @EnvironmentObject private var session: SessionStore
 
-    @State private var visited: [APIClub] = []
-    @State private var all: [APIClub] = []
+    @State private var club: APIClub?
+    @State private var invites: [MyInvite] = []
     @State private var isLoading = false
     @State private var errorText: String?
+    /// Po sprejemu vabila: "Congratulations, you have become a X employee." (Figma 370:1303).
+    @State private var justJoined: String?
+
+    private var me: Me? { session.me }
+    private var pendingCount: Int { max(invites.count, me?.pendingInvites ?? 0) }
 
     var body: some View {
         Screen {
@@ -18,144 +26,411 @@ struct MyClubsView: View {
                 VStack(alignment: .leading, spacing: 18) {
 
                     Text("My clubs")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.top, 6)
 
-                    if isLoading && all.isEmpty {
+                    if isLoading && club == nil && invites.isEmpty && me?.clubRole == nil {
                         HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.top, 40)
-                    } else if let errorText, all.isEmpty {
-                        VStack(spacing: 10) {
-                            Text(errorText).foregroundColor(.red).font(.subheadline)
-                            Button("Try again") { Task { await load() } }.foregroundColor(.outlyBlue)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 30)
                     } else {
-                        if visited.isEmpty {
-                            prazno
+                        if let justJoined {
+                            cestitka(justJoined)
+                        }
+
+                        if let role = me?.clubRole {
+                            klubVrstica(role: role)
                         } else {
-                            Text("Clubs you've been to")
-                                .font(.headline)
-                                .foregroundColor(.white.opacity(0.7))
-                            ForEach(visited) { c in
-                                NavigationLink { ClubDetailView(clubId: c.id) } label: { vrstica(c) }
-                                    .buttonStyle(.plain)
+                            if let first = invites.first {
+                                vabiloNamig(first)
                             }
+                            prazno
                         }
 
-                        if !all.isEmpty {
-                            Text("All clubs")
-                                .font(.headline)
-                                .foregroundColor(.white.opacity(0.7))
-                                .padding(.top, visited.isEmpty ? 0 : 8)
-                            ForEach(all) { c in
-                                NavigationLink { ClubDetailView(clubId: c.id) } label: { vrstica(c) }
-                                    .buttonStyle(.plain)
-                            }
+                        if let errorText {
+                            Text(errorText)
+                                .font(.system(size: 13))
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity)
                         }
-
-                        NavigationLink { ReguestForCreatorView() } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: "building.2")
-                                    .foregroundColor(.outlyBlue)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text("Own or run a club?")
-                                        .font(.subheadline).fontWeight(.semibold).foregroundColor(.white)
-                                    Text("Request creator access and list your events on Outly.")
-                                        .font(.caption).foregroundColor(.gray)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right").foregroundColor(.gray)
-                            }
-                            .padding(14)
-                            .background(Color.outlyBlue.opacity(0.12))
-                            .cornerRadius(16)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 8)
                     }
 
                     Spacer(minLength: 40)
                 }
                 .padding(.bottom, 40)
             }
+            .refreshable { await load() }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { Task { await load() } }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    ClubInvitesView(invites: $invites) { clubName in
+                        justJoined = clubName
+                        Task { await load() }
+                    }
+                } label: {
+                    zvonec
+                }
+            }
+        }
+        .task { await load() }
     }
 
+    // MARK: - Deli
+
+    /// Zvonec z rdeco znacko (Figma 370:1093–1095).
+    private var zvonec: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(systemName: "bell")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 30, height: 30)
+            if pendingCount > 0 {
+                Text("\(pendingCount)")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(minWidth: 15, minHeight: 15)
+                    .background(Circle().fill(Color(red: 1, green: 0.30, blue: 0.30)))
+                    .offset(x: 3, y: -2)
+            }
+        }
+        .accessibilityLabel(pendingCount > 0 ? "\(pendingCount) invitations" : "Notifications")
+    }
+
+    /// Vrstica kluba (Figma 382:805): logo, ime, vloga, desno "View".
+    private func klubVrstica(role: String) -> some View {
+        NavigationLink {
+            MyClubDetailView(club: club, role: role)
+        } label: {
+            HStack(spacing: 14) {
+                logo(club?.logoUrl, size: 56, radius: 12)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(club?.name ?? "Your club")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    Text(roleLabel(role))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+                Spacer(minLength: 8)
+                Text("View")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.outlyBlue)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Namig nad praznim stanjem (Figma 370:931–940): "X has sent you an invitation — Open it".
+    private func vabiloNamig(_ v: MyInvite) -> some View {
+        NavigationLink {
+            ClubInvitesView(invites: $invites) { clubName in
+                justJoined = clubName
+                Task { await load() }
+            }
+        } label: {
+            HStack(spacing: 12) {
+                logo(v.clubLogoUrl, size: 40, radius: 10)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(v.clubName) has sent you an invitation")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                    Text("Open it")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.outlyBlue)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Prazno stanje (Figma 370:846–847).
     private var prazno: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "building.2")
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundColor(.outlyBlue)
-            Text("No clubs yet")
-                .font(.title3).fontWeight(.semibold).foregroundColor(.white)
-            Text("Clubs you buy tickets for\nwill show up here.")
-                .font(.footnote).foregroundColor(.gray).multilineTextAlignment(.center)
+        VStack(spacing: 14) {
+            Text("You are currently not working\nfor any club")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+            Text("tap the bell above\nto see invitations")
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 30)
+        .padding(.top, 90)
         .padding(.bottom, 10)
     }
 
-    private func vrstica(_ c: APIClub) -> some View {
-        HStack(spacing: 12) {
-            if !c.logoUrl.isEmpty, let url = URL(string: c.logoUrl) {
-                Color.clear
-                    .overlay(
-                        AsyncImage(url: url) { img in
-                            img.resizable().scaledToFill()
-                        } placeholder: {
-                            Rectangle().opacity(0.12)
-                        }
-                    )
-                    .frame(width: 60, height: 60)
-                    .clipped()
-                    .cornerRadius(12)
-            } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.outlyBlue.opacity(0.25))
-                    .frame(width: 60, height: 60)
-                    .overlay(Image(systemName: "building.2").foregroundColor(.outlyBlue))
+    /// Kartica po sprejemu (Figma 370:1377): zapre jo X.
+    private func cestitka(_ clubName: String) -> some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 12) {
+                logo(club?.logoUrl, size: 72, radius: 12)
+                Text("Congratulations, you have become a \(clubName) employee.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 26)
+            .background(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(LinearGradient(colors: [Color(red: 25/255, green: 25/255, blue: 25/255), .black],
+                                         startPoint: .top, endPoint: .bottom))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(c.name)
-                    .font(.headline).foregroundColor(.white).lineLimit(1)
-                Text(c.city.isEmpty ? c.address : c.city)
-                    .font(.subheadline).foregroundColor(.gray).lineLimit(1)
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) { justJoined = nil }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white.opacity(0.7))
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
             }
-            Spacer()
-            Image(systemName: "chevron.right").foregroundColor(.gray)
+            .buttonStyle(.plain)
+            .padding(10)
         }
-        .padding(14)
-        .background(Color.gray.opacity(0.14))
-        .cornerRadius(16)
     }
 
+    private func logo(_ url: String?, size: CGFloat, radius: CGFloat) -> some View {
+        Group {
+            if let url, !url.isEmpty, let u = URL(string: url) {
+                Color.clear
+                    .overlay(
+                        AsyncImage(url: u) { img in
+                            img.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(Color.white.opacity(0.1))
+                        }
+                    )
+                    .clipped()
+            } else {
+                RoundedRectangle(cornerRadius: radius)
+                    .fill(Color.outlyBlue.opacity(0.2))
+                    .overlay(Image(systemName: "building.2").foregroundColor(.outlyBlue))
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+
+    private func roleLabel(_ role: String) -> String {
+        switch role {
+        case "owner": return "Owner"
+        case "manager": return "Manager"
+        default: return "Door staff"
+        }
+    }
+
+    // MARK: - Podatki
+
     private func load() async {
+        guard session.isLoggedIn else { return }
         isLoading = true
         defer { isLoading = false }
+        errorText = nil
+        await session.refreshMe()
         do {
-            let clubs = try await APIClient.shared.fetchClubs()
-            all = clubs
-
-            if session.isLoggedIn {
-                // Klubi iz vstopnic: prvi pojav vsakega clubId, v vrstnem redu vstopnic.
-                let tickets = try await APIClient.shared.fetchMyTickets(token: session.token)
-                var seen = Set<Int>()
-                var ids: [Int] = []
-                for t in tickets where !seen.contains(t.clubId) {
-                    seen.insert(t.clubId)
-                    ids.append(t.clubId)
-                }
-                let byId = Dictionary(clubs.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-                visited = ids.compactMap { byId[$0] }
+            if session.me?.clubId != nil {
+                club = try await APIClient.shared.fetchMyBusinessClub(token: session.token)
+            } else {
+                club = nil
             }
-            errorText = nil
+            invites = try await APIClient.shared.fetchMyInvites(token: session.token)
+        } catch let api as APIError {
+            // 404 = klub se ni ustvarjen; to ni napaka za uporabnika.
+            if case let .requestFailed(code, _) = api, code == 404 { return }
+            errorText = api.userMessage
+        } catch {
+            errorText = error.userMessage
+        }
+    }
+}
+
+/// Klub, v katerem delam (Figma 382:897 "My clubs profile club"): glava kluba,
+/// vrstice Create event / View events / Scan ticket in spodaj izstop iz ekipe.
+/// Vratar vidi samo skener (streznik mu ostalo zavrne s 403).
+@MainActor
+struct MyClubDetailView: View {
+    let club: APIClub?
+    let role: String
+
+    @EnvironmentObject private var session: SessionStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var showCreate = false
+    @State private var showLeave = false
+    @State private var errorText: String?
+
+    private var canManage: Bool { role == "owner" || role == "manager" }
+
+    var body: some View {
+        Screen {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+
+                    HStack(spacing: 16) {
+                        logo
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(club?.name ?? "Your club")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(.white)
+                                .lineLimit(2)
+                            if let c = club, !c.city.isEmpty {
+                                Text(c.city)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
+                            Text(roleLabel)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.outlyBlue)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 6)
+
+                    VStack(spacing: 12) {
+                        if canManage {
+                            Button { showCreate = true } label: {
+                                vrstica(icon: "plus.circle", title: "Create event", action: "Create")
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                BusinessEventsView(clubId: club?.id, clubName: club?.name)
+                            } label: {
+                                vrstica(icon: "calendar", title: "View events", action: "View")
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        NavigationLink {
+                            QRScannerView()
+                        } label: {
+                            vrstica(icon: "qrcode.viewfinder", title: "Scan ticket", action: "Scan")
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if let errorText {
+                        Text(errorText).font(.system(size: 13)).foregroundColor(.red)
+                    }
+
+                    Spacer(minLength: 60)
+
+                    if role != "owner" {
+                        Button { showLeave = true } label: {
+                            Text("Leave the team")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.red.opacity(0.9))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.red.opacity(0.10))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .confirmationDialog("Leave the team?", isPresented: $showLeave, titleVisibility: .visible) {
+                            Button("Leave team", role: .destructive) { Task { await leave() } }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("You lose access to the club tools. The club can invite you again.")
+                        }
+                    }
+                }
+                .padding(.bottom, 40)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showCreate) {
+            if let id = club?.id {
+                EventFormView(clubId: id, existing: nil) { _ in }
+                    .environmentObject(session)
+            }
+        }
+    }
+
+    private var roleLabel: String {
+        switch role {
+        case "owner": return "Owner"
+        case "manager": return "Manager"
+        default: return "Door staff"
+        }
+    }
+
+    private var logo: some View {
+        Group {
+            if let s = club?.logoUrl, !s.isEmpty, let u = URL(string: s) {
+                Color.clear
+                    .overlay(
+                        AsyncImage(url: u) { img in
+                            img.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(Color.white.opacity(0.1))
+                        }
+                    )
+                    .clipped()
+            } else {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.outlyBlue.opacity(0.2))
+                    .overlay(Image(systemName: "building.2").font(.system(size: 26)).foregroundColor(.outlyBlue))
+            }
+        }
+        .frame(width: 84, height: 84)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    /// Vrstica z dejanjem desno (Figma 382:1015–1027: "Create", "View", "Scan").
+    private func vrstica(icon: String, title: String, action: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+            Spacer()
+            Text(action)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.outlyBlue)
+        }
+        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity)
+        .frame(height: 60)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+    }
+
+    private func leave() async {
+        do {
+            try await APIClient.shared.leaveTeam(token: session.token)
+            await session.refreshMe()
+            dismiss()
         } catch {
             errorText = error.userMessage
         }

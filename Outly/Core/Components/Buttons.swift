@@ -30,6 +30,8 @@ struct OutlyMenuRowButton: View {
     let icon: String
     let title: String
     var height: CGFloat = 60
+    /// Rdeca znacka desno (npr. stevilo cakajocih vabil pri "My Clubs"); 0 = brez.
+    var badge: Int = 0
 
     var body: some View {
         HStack(spacing: 14) {
@@ -42,6 +44,15 @@ struct OutlyMenuRowButton: View {
                 .foregroundColor(.white)
 
             Spacer()
+
+            if badge > 0 {
+                Text("\(badge)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 7)
+                    .frame(minWidth: 20, minHeight: 20)
+                    .background(Capsule().fill(Color(red: 1, green: 0.30, blue: 0.30)))
+            }
         }
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity)

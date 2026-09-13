@@ -163,11 +163,29 @@ struct ProfileView: View {
                             OutlyMenuRowButton(icon: "gearshape", title: "Settings")
                         }
 
+                        // Tudi lastnik/manager je uporabnik: racun (brisanje racuna — Apple 5.1.1(v)),
+                        // vstopnice (kupi jih lahko) in About (pogoji, zasebnost). Prej ni imel poti do tega.
+                        NavigationLink(destination: MyAccountView()) {
+                            OutlyMenuRowButton(icon: "person", title: "My Account")
+                        }
+
+                        NavigationLink(destination: TicketsView()) {
+                            OutlyMenuRowButton(icon: "ticket", title: "Tickets")
+                        }
+
+                        NavigationLink(destination: AboutView()) {
+                            OutlyMenuRowButton(icon: "info.circle", title: "About")
+                        }
+
                     } else if user?.clubRole == "doorman" {
 
-                        // Vratar: samo skener; ostalo ima kot navaden uporabnik.
+                        // Vratar: skener in svoj klub (My Clubs po Figmi); ostalo ima kot navaden uporabnik.
                         NavigationLink(destination: QRScannerView()) {
                             OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan tickets")
+                        }
+
+                        NavigationLink(destination: MyClubsView()) {
+                            OutlyMenuRowButton(icon: "building.2", title: "My Clubs")
                         }
 
                         NavigationLink(destination: TicketsView()) {
@@ -178,10 +196,15 @@ struct ProfileView: View {
                             OutlyMenuRowButton(icon: "questionmark.circle", title: "Support")
                         }
 
+                        NavigationLink(destination: AboutView()) {
+                            OutlyMenuRowButton(icon: "info.circle", title: "About")
+                        }
+
                     } else {
 
+                        // My Clubs (Figma): klub, v katerem delam, in zvonec z vabili v ekipo.
                         NavigationLink(destination: MyClubsView()) {
-                            OutlyMenuRowButton(icon: "building.2", title: "My Clubs")
+                            OutlyMenuRowButton(icon: "building.2", title: "My Clubs", badge: user?.pendingInvites ?? 0)
                         }
 
                         NavigationLink(destination: TicketsView()) {
@@ -216,7 +239,7 @@ struct ProfileView: View {
                         Button("Leave team", role: .destructive) { Task { await leaveTeam() } }
                         Button("Cancel", role: .cancel) {}
                     } message: {
-                        Text("You lose access to the club tools. The owner can add you again.")
+                        Text("You lose access to the club tools. The club can invite you again.")
                     }
                 }
 
@@ -232,10 +255,7 @@ struct ProfileView: View {
             .padding()
             .navigationTitle("")
         }
-        .task {
-            await loadProfile()
-            await loadBusinessClubIfNeeded()
-        }
+        // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me in 2x /business/clubs/me).
         .onAppear {
             Task {
                 await loadProfile()

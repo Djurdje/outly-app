@@ -19,6 +19,7 @@ struct EventFormView: View {
     @State private var endAt = Date().addingTimeInterval(7 * 24 * 3600 + 5 * 3600)
     @State private var minAge = 18
     @State private var priceText = ""
+    @State private var capacityText = ""
     @State private var ticketUrl = ""
     @State private var posterUrl = ""
     @State private var isPublished = true
@@ -82,11 +83,25 @@ struct EventFormView: View {
                     HStack {
                         Text("Price (EUR)")
                         Spacer()
-                        TextField("free", text: $priceText)
+                        TextField("0.00", text: $priceText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(maxWidth: 120)
                     }
+                    Text("Leave empty if tickets are not sold on Outly. 0 = free entry.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    HStack {
+                        Text("Capacity")
+                        Spacer()
+                        TextField("unlimited", text: $capacityText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 120)
+                    }
+                    Text("Number of tickets available. Shows “N left” and “Sold out” to guests.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     TextField("External ticket link (optional)", text: $ticketUrl)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
@@ -168,6 +183,7 @@ struct EventFormView: View {
         minAge = e.minAge
         selectedGenres = Set(e.genres)
         if let c = e.ticketPriceCents { priceText = Self.euros(fromCents: c) }
+        if let cap = e.capacity { capacityText = String(cap) }
         ticketUrl = e.ticketUrl ?? ""
         posterUrl = e.posterUrl
         isPublished = (e.status == "published")
@@ -211,7 +227,17 @@ struct EventFormView: View {
             return
         }
 
-        let draft = APIClient.EventDraft(
+        let capTrim = capacityText.trimmingCharacters(in: .whitespaces)
+        var capacity: Int? = nil
+        if !capTrim.isEmpty {
+            guard let c = Int(capTrim), c >= 1, c <= 100000 else {
+                message = "Capacity must be a whole number between 1 and 100000."
+                return
+            }
+            capacity = c
+        }
+
+        var draft = APIClient.EventDraft(
             title: cleanTitle,
             description: description,
             startAt: startAt,
@@ -223,6 +249,7 @@ struct EventFormView: View {
             posterUrl: posterUrl,
             status: existing?.status == "cancelled" ? "cancelled" : (isPublished ? "published" : "draft")
         )
+        draft.capacity = capacity
 
         isSaving = true
         defer { isSaving = false }

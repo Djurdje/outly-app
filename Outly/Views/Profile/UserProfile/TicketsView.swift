@@ -130,11 +130,9 @@ struct TicketsView: View {
                 Text("\(t.clubName) · \(datum(t))")
                     .font(.subheadline).foregroundColor(.gray).lineLimit(1)
                 HStack(spacing: 6) {
-                    if t.isUsed {
-                        Text("USED").font(.caption.weight(.bold)).foregroundColor(.gray)
-                    } else {
-                        Text("VALID").font(.caption.weight(.bold)).foregroundColor(.outlyBlue)
-                    }
+                    Text(t.statusLabel)
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(t.statusLabel == "VALID" ? .outlyBlue : .gray)
                     Text(t.publicRef).font(.caption).foregroundColor(.gray)
                     if t.transferred && !t.buyerUsername.isEmpty {
                         Text("· from \(t.buyerUsername)").font(.caption).foregroundColor(.gray)
@@ -283,7 +281,7 @@ struct WalletTicketCard: View {
                         .tracking(1.2)
                         .foregroundColor(.white.opacity(0.85))
                     Spacer()
-                    Text(ticket.isUsed ? "USED" : "VALID")
+                    Text(ticket.statusLabel)
                         .font(.system(size: 10, weight: .heavy))
                         .tracking(0.8)
                         .foregroundColor(ticket.isUsed ? .white : .black)

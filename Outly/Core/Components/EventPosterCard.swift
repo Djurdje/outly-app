@@ -34,7 +34,7 @@ struct EventPosterCard: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Text(event.isSoldOut ? "—" : (event.displayPrice ?? "Free"))
+                        Text(event.priceLabel)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 9).padding(.vertical, 5)

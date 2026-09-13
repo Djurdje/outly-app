@@ -33,6 +33,8 @@ extension APIClient {
         var ticketUrl: String
         var posterUrl: String
         var status: String   // "draft" | "published" | "cancelled"
+        /// Zaloga (Figma "Create event": Capacity). nil = brez omejitve.
+        var capacity: Int? = nil
 
         static let isoOut: ISO8601DateFormatter = {
             let f = ISO8601DateFormatter()
@@ -54,6 +56,7 @@ extension APIClient {
             ]
             if let endAt { j["endAt"] = Self.isoOut.string(from: endAt) } else { j["endAt"] = NSNull() }
             if let ticketPriceCents { j["ticketPriceCents"] = ticketPriceCents } else { j["ticketPriceCents"] = NSNull() }
+            if let capacity { j["capacity"] = capacity } else { j["capacity"] = NSNull() }
             return j
         }
     }

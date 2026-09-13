@@ -90,7 +90,7 @@ struct ClubInfoView: View {
 
                                     Image(systemName: "plus")
                                         .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.white)
                                 }
                             }
                             Spacer()
@@ -157,17 +157,22 @@ struct ClubInfoView: View {
                 )
 
                 if let url = URL(string: clubBannerUrl), !clubBannerUrl.isEmpty {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable().scaledToFill()
-                        default:
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.white.opacity(0.06))
-                        }
-                    }
-                    .frame(height: 160)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    // Past 12: scaledToFill brez okvirja po sirini raztegne cel zaslon.
+                    Color.clear
+                        .overlay(
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable().scaledToFill()
+                                default:
+                                    Rectangle().fill(Color.white.opacity(0.06))
+                                }
+                            }
+                        )
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 160)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
 
                 if isLoading {
@@ -190,14 +195,7 @@ struct ClubInfoView: View {
         .navigationTitle("Club info")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.blue)
-                }
-            }
-        }
+        // Pogled je potisnjen: sistemski gumb nazaj ze obstaja (prej sta bila dva).
         .task { await loadClub() }
         .sheet(item: $activeEdit) { field in editSheet(field) }
 
