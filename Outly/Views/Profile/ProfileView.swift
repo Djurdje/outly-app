@@ -157,11 +157,8 @@ struct ProfileView: View {
                             }
                         }
 
-                        // BusinessSettingsView (hardcoded "Cirkus", nedelujoce vrstice, Withdraw)
-                        // je v _staro/; "Settings" vodi na isti zaslon kot "Edit your page".
-                        NavigationLink(destination: EditBusinessPageView(clubId: businessClub?.id)) {
-                            OutlyMenuRowButton(icon: "gearshape", title: "Settings")
-                        }
+                        // "Settings" odstranjen (Martin 14. 9.): vodil je na isti zaslon kot
+                        // "Edit your page" v glavi. BusinessSettingsView je v _staro/.
 
                         // Tudi lastnik/manager je uporabnik: racun (brisanje racuna — Apple 5.1.1(v)),
                         // vstopnice (kupi jih lahko) in About (pogoji, zasebnost). Prej ni imel poti do tega.

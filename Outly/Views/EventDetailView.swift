@@ -9,6 +9,7 @@ struct EventDetailView: View {
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var showBuy = false
+    @State private var showBarPrices = false
     @EnvironmentObject private var session: SessionStore
     /// Srcek (Liked events na domacem zaslonu). Prej na zaslonu dogodka ni bilo srcka.
     @EnvironmentObject private var favorites: FavoritesStore
@@ -22,15 +23,17 @@ struct EventDetailView: View {
         ScrollView {
             VStack(spacing: 14) {
 
-                headerPoster
+                // Martin (14. 9.): pasica DOGODKA cez cel vrh; na njej naslov, kdaj in gumb za nakup.
+                hero
 
-                titleBlock
+                // Logo in ime kluba (vodi na stran kluba)
+                clubRow
 
-                whenCard
-
-                ticketBar
-
+                // Naslov, kontakt, zemljevid
                 infoBlock
+
+                // Cenik bara (migracija 014)
+                barPricesButton
 
                 aboutBlock
 
@@ -44,89 +47,140 @@ struct EventDetailView: View {
             BuyTicketsView(event: event, clubName: club?.name ?? "Club")
                 .environmentObject(session)
         }
+        .sheet(isPresented: $showBarPrices) {
+            BarPricesView(clubName: club?.name ?? "Club", items: club?.barPrices ?? [])
+        }
     }
 
-    // MARK: - Header: slika KLUBA (pasica), ne plakat. Martin: plakat je poljuben in
-    // pogosto nosi datum/uro v sliki; ozadje naj bo cisto, podatki pa v besedilu spodaj.
+    // MARK: - Hero: pasica dogodka (plakat), cez njo naslov, kdaj in vrstica z vstopnicami.
+    // Prej je bilo ozadje pasica kluba, kartice pa pod sliko. Martin (14. 9.): slika do
+    // konca bloka z vstopnicami, kartici sredinsko na sliki, malo dvignjeni od dna.
     private var headerImageUrl: String {
-        if let b = club?.bannerUrl, !b.isEmpty { return b }
-        return event.posterUrl
+        if !event.posterUrl.isEmpty { return event.posterUrl }
+        return club?.bannerUrl ?? ""
     }
 
-    private var headerPoster: some View {
-        ZStack {
-            if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
-                AsyncImage(url: url) { img in
-                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-                } placeholder: {
-                    Rectangle().opacity(0.12)
+    private var hero: some View {
+        ZStack(alignment: .bottom) {
+            ZStack {
+                if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
+                    AsyncImage(url: url) { img in
+                        Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                    } placeholder: {
+                        Rectangle().opacity(0.12)
+                    }
+                } else {
+                    Color(white: 0.14)
                 }
-            } else {
-                Color(white: 0.14)
+
+                // Temnenje proti dnu, da sta kartici in naslov berljivi na vsakem plakatu.
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.35), location: 0),
+                        .init(color: .clear, location: 0.22),
+                        .init(color: .clear, location: 0.45),
+                        .init(color: .black.opacity(0.88), location: 0.78),
+                        .init(color: .black.opacity(0.97), location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
             }
 
-            // Mehak prehod v crno podlago strani
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.95)],
-                startPoint: .init(x: 0.5, y: 0.45),
-                endPoint: .bottom
-            )
+            VStack(spacing: 12) {
+                titleBlock
+                whenCard
+                ticketBar
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 18)
         }
-        .frame(height: 300)
+        .frame(height: heroHeight)
         .clipped()
     }
 
-    // MARK: - Naslov + klub (nad vrstico s ceno, brez prekrivanja slike)
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
-                Text(event.title)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 4)
-                if session.isLoggedIn {
-                    Button {
-                        favorites.toggle(event.id, token: session.token)
-                    } label: {
-                        Image(systemName: favorites.contains(event.id) ? "heart.fill" : "heart")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.8))
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.white.opacity(0.10)))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events")
-                }
-            }
+    /// Slika sega priblizno do 62 % visine zaslona (na iPhonu 14 Pro ~530 pt) — do
+    /// spodnjega roba vrstice z vstopnicami, kot je Martin oznacil na posnetku.
+    private var heroHeight: CGFloat {
+        max(460, min(600, UIScreen.main.bounds.height * 0.62))
+    }
 
-            HStack(spacing: 10) {
+    // MARK: - Naslov + srcek (na sliki)
+    private var titleBlock: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(event.title)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.6), radius: 8, y: 2)
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 4)
+            if session.isLoggedIn {
+                Button {
+                    favorites.toggle(event.id, token: session.token)
+                } label: {
+                    Image(systemName: favorites.contains(event.id) ? "heart.fill" : "heart")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.9))
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(Color.black.opacity(0.35)))
+                        .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Klub: logo, ime, 18+ -> stran kluba
+    private var clubRow: some View {
+        NavigationLink {
+            ClubDetailView(clubId: event.clubId)
+        } label: {
+            HStack(spacing: 12) {
                 if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
                     AsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: { Circle().opacity(0.12) }
-                    .frame(width: 28, height: 28)
+                    .frame(width: 44, height: 44)
                     .clipShape(Circle())
+                } else {
+                    Circle().fill(Color.white.opacity(0.10))
+                        .frame(width: 44, height: 44)
+                        .overlay(Image(systemName: "building.2").foregroundStyle(.white.opacity(0.7)))
                 }
-                Text((club?.name ?? "Club").uppercased())
-                    .font(.system(size: 12, weight: .bold))
-                    .tracking(1.2)
-                    .foregroundStyle(.white.opacity(0.7))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(club?.name ?? "Club")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text("View club")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+
+                Spacer()
+
                 if event.minAge > 0 {
                     Text("\(event.minAge)+")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.white.opacity(0.12))
                         .clipShape(Capsule())
                 }
-                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.4))
             }
+            .padding(14)
+            .background(Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.horizontal, 16)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.top, -40) // naslov seze v spodnji, temni del slike
+        .buttonStyle(.plain)
     }
 
     // MARK: - Kdaj: datum in ura, jasno in na enem mestu
@@ -163,17 +217,17 @@ struct EventDetailView: View {
                     .font(.system(size: 11, weight: .bold))
                     .lineLimit(1)
                     .fixedSize()
-                    .foregroundStyle(rel == "TONIGHT" ? .black : .white.opacity(0.8))
+                    .foregroundStyle(rel == "TONIGHT" ? Color.black : Color.white.opacity(0.8))
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(rel == "TONIGHT" ? Color.white : Color.white.opacity(0.10))
                     .clipShape(Capsule())
             }
         }
         .padding(14)
-        .background(Color(white: 0.11))
+        // Na sliki: poltemna podlaga, da se bere na vsakem plakatu.
+        .background(Color.black.opacity(0.55))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
-        .padding(.horizontal, 16)
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
     }
 
     private var monthShort: String {
@@ -277,15 +331,13 @@ struct EventDetailView: View {
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
         // Martin (10. 9.): modra kot v Figmi (Kups karto), ne temna. Neaktivna stanja ostanejo temna.
-        .background(active ? Color.outlyBlue : Color(white: 0.11))
+        .background(active ? Color.outlyBlue : Color.black.opacity(0.55))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(active ? 0 : 0.10), lineWidth: 1)
+                .stroke(Color.white.opacity(active ? 0 : 0.14), lineWidth: 1)
         )
         .shadow(color: active ? Color.outlyBlue.opacity(0.35) : .black.opacity(0.35), radius: 16, y: 6)
-        .padding(.horizontal, 16)
-        .padding(.top, -28) // rahlo cez spodnji rob plakata
         .contentShape(Rectangle())
         .onTapGesture {
             guard active else { return }
@@ -347,34 +399,55 @@ struct EventDetailView: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: - About (+ plakat, ki ga je izbral ustvarjalec, kot kartica in ne kot ozadje)
-    private var aboutBlock: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("ABOUT")
-                .font(.system(size: 11, weight: .bold))
-                .tracking(1.2)
-                .foregroundStyle(.white.opacity(0.5))
-
-            Text(event.description.isEmpty ? "No description yet." : event.description)
-                .font(.system(size: 15))
-                .foregroundStyle(.white.opacity(0.85))
-                .fixedSize(horizontal: false, vertical: true)
-
-            if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
-                AsyncImage(url: url) { img in
-                    img.resizable().scaledToFit()
-                } placeholder: {
-                    Rectangle().opacity(0.08).frame(height: 200)
-                }
-                .frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
-                .padding(.top, 6)
+    // MARK: - Cenik bara (gumb odpre seznam; Martin 14. 9.)
+    private var barPricesButton: some View {
+        Button {
+            showBarPrices = true
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "wineglass")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                Text("Bar prices")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(.white)
+                Spacer()
+                let n = club?.barPrices.count ?? 0
+                Text(n == 0 ? "Not added yet" : "\(n) items")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.5))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.4))
             }
+            .padding(.horizontal, 18)
+            .frame(maxWidth: .infinity)
+            .frame(height: 60)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white.opacity(0.08)))
+            .padding(.horizontal, 16)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - About (opis; plakat je zdaj pasica na vrhu, zato tu ni vec kartice s sliko)
+    @ViewBuilder
+    private var aboutBlock: some View {
+        if !event.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("ABOUT")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(.white.opacity(0.5))
+
+                Text(event.description)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+        }
     }
 
     private func labeled(_ title: String, _ value: String) -> some View {

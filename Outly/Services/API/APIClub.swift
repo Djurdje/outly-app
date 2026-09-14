@@ -31,6 +31,9 @@ struct APIClub: Identifiable, Decodable {
     let genres: [String]
     let createdAt: String?
 
+    /// Cenik bara (migracija 014). Prazen seznam = klub ga se ni vnesel.
+    let barPrices: [BarPriceItem]
+
     enum CodingKeys: String, CodingKey {
         case id
         case ownerUserId = "owner_user_id"
@@ -49,6 +52,7 @@ struct APIClub: Identifiable, Decodable {
         case minAge = "min_age"
         case genres
         case createdAt = "created_at"
+        case barPrices = "bar_prices"
     }
 
     /// Obrambno dekodiranje: shema ima NOT NULL DEFAULT '' na besedilih, a ce bi
@@ -73,5 +77,44 @@ struct APIClub: Identifiable, Decodable {
         minAge       = try c.decodeIfPresent(Int.self, forKey: .minAge) ?? 18
         genres       = try c.decodeIfPresent([String].self, forKey: .genres) ?? []
         createdAt    = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        // Star backend brez stolpca ali pokvarjena postavka ne sme podreti kluba.
+        barPrices    = (try? c.decodeIfPresent([BarPriceItem].self, forKey: .barPrices)) ?? []
+    }
+}
+
+/// Ena postavka cenika bara: ime, cena v centih, neobvezna kategorija (npr. "Beer").
+struct BarPriceItem: Identifiable, Codable, Equatable {
+    var name: String
+    var priceCents: Int
+    var category: String?
+
+    /// Lokalen id za sezname v SwiftUI; backend postavk ne oznacuje.
+    var id: String { "\(name)|\(priceCents)|\(category ?? "")" }
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case priceCents = "price_cents"
+        case category
+    }
+
+    init(name: String, priceCents: Int, category: String? = nil) {
+        self.name = name
+        self.priceCents = priceCents
+        self.category = category
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name       = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        priceCents = try c.decodeIfPresent(Int.self, forKey: .priceCents) ?? 0
+        let cat    = try c.decodeIfPresent(String.self, forKey: .category)?.trimmingCharacters(in: .whitespaces)
+        category   = (cat?.isEmpty ?? true) ? nil : cat
+    }
+
+    /// Slovar za PATCH /business/clubs/me (bar_prices).
+    var json: [String: Any] {
+        var d: [String: Any] = ["name": name, "price_cents": priceCents]
+        if let category, !category.isEmpty { d["category"] = category }
+        return d
     }
 }

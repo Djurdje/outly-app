@@ -29,6 +29,8 @@ struct ClubInfoView: View {
     @State private var clubLng: Double?
     @State private var clubLogoUrl = ""
     @State private var clubBannerUrl = ""
+    @State private var clubBarPrices: [BarPriceItem] = []
+    @State private var showBarPricesEditor = false
 
     // edit sheet
     @State private var activeEdit: EditField?
@@ -156,6 +158,15 @@ struct ClubInfoView: View {
                     }
                 )
 
+                // ===== CENIK BARA (migracija 014) =====
+                OutlyInfoCardButton(
+                    icon: "wineglass",
+                    title: "Bar prices",
+                    value: clubBarPrices.isEmpty ? "Not added yet" : "\(clubBarPrices.count) items",
+                    description: "Guests see the list under \"Bar prices\" on every event of your club.",
+                    onAction: { showBarPricesEditor = true }
+                )
+
                 if let url = URL(string: clubBannerUrl), !clubBannerUrl.isEmpty {
                     // Past 12: scaledToFill brez okvirja po sirini raztegne cel zaslon.
                     Color.clear
@@ -198,6 +209,9 @@ struct ClubInfoView: View {
         // Pogled je potisnjen: sistemski gumb nazaj ze obstaja (prej sta bila dva).
         .task { await loadClub() }
         .sheet(item: $activeEdit) { field in editSheet(field) }
+        .navigationDestination(isPresented: $showBarPricesEditor) {
+            BarPricesEditorView(items: clubBarPrices) { clubBarPrices = $0 }
+        }
 
         // ✅ these are the key: presented PhotosPicker
         .photosPicker(isPresented: $showLogoPicker, selection: $pickedLogoItem, matching: .images)
@@ -345,6 +359,7 @@ struct ClubInfoView: View {
         clubLng = club.lng
         clubLogoUrl = club.logoUrl
         clubBannerUrl = club.bannerUrl
+        clubBarPrices = club.barPrices
     }
 
     /// Shrani spremenjeno polje. Pri naslovu/mestu najprej poisce koordinate.
