@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import AVKit
 
 struct ClubDetailView: View {
     let clubId: Int
@@ -18,10 +19,13 @@ struct ClubDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
 
-                // 1) Banner + ime (kot zdaj)
+                // Vrstni red po Lukovih navodilih (14. 9. 2026):
+                // 1) Slideshow (do 3 slike) + ime kluba cez sliko
                 header
 
-                // Optional: error/loading status (ne spremeni dizajna)
+                // 2) Logo, mesto, zanri, min age — takoj pod slideshowom
+                infoBlock
+
                 if isLoading {
                     ProgressView().padding(.horizontal, 16)
                 }
@@ -29,20 +33,23 @@ struct ClubDetailView: View {
                     Text(errorText).foregroundStyle(.red).padding(.horizontal, 16)
                 }
 
-                // 2) Popular events
+                // 3) Popular
                 eventsSection(title: "Popular", events: popular)
 
-                // 3) Info block (logo, mesto, država, žanri, min age)
-                infoBlock
+                // 4) Predstavitveni video (na mestu, kjer je bil prej opis)
+                videoBlock
 
-                // 4) Coming Soon
+                // 5) Coming Soon
                 eventsSection(title: "Coming Soon", events: comingSoon)
 
-                // 5) Mapa brez naslova "Location"
+                // 6) Mapa + naslov
                 mapBlock
 
-                // 6) Kontakti čisto na koncu
+                // 7) Kontakti
                 contactBlock
+
+                // 8) Opis kluba cisto na koncu
+                descriptionBlock
 
                 // da se ne odreže pod tab bar
                 Spacer(minLength: 0)
@@ -55,39 +62,77 @@ struct ClubDetailView: View {
         .task { await load() }
     }
 
-    // MARK: - 1) Header
-    // Slike so povsod ovite v Color.clear.overlay(...).clipped(): AsyncImage s
-    // scaledToFill brez okvirja prevzame naravno velikost slike (1600 px) in
-    // razsiri celoten zaslon v desno — vsebina je bila odrezana, dotiki na
-    // domaci strani pa so zgresili kartice. Color.clear vzame le prostor starsa.
+    // MARK: - 1) Header: slideshow do treh slik, ime kluba cez sliko
+    // Slike so povsod ovite v Color.clear.overlay(...).clipped() (past 12).
     private var header: some View {
         ZStack(alignment: .bottomLeading) {
-            if let banner = club?.bannerUrl, !banner.isEmpty, let url = URL(string: banner) {
-                AsyncImage(url: url) { img in
-                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-                } placeholder: {
-                    Rectangle().opacity(0.15)
-                }
-            } else {
-                Rectangle().opacity(0.12)
-            }
+            ClubSlideshow(urls: club?.slideshowUrls ?? [])
 
             LinearGradient(
                 colors: [.clear, .black.opacity(0.85)],
                 startPoint: .center,
                 endPoint: .bottom
             )
+            .allowsHitTesting(false)
 
             Text(club?.name ?? "Club")
                 .font(.system(size: 40, weight: .bold))
                 .padding(.horizontal, 16)
                 .padding(.bottom, 14)
+                .allowsHitTesting(false)
         }
         .frame(height: 260)
         .clipped()
     }
 
-    // MARK: - 3) Info block (logo + mesto/država/žanri/min age)
+    // MARK: - 4) Predstavitveni video kluba (iste sirine kot vsebina, visina kot prejsnji opis)
+    @ViewBuilder
+    private var videoBlock: some View {
+        if let v = club?.videoUrl, !v.isEmpty, let url = URL(string: v) {
+            ClubVideoPlayer(url: url)
+                .frame(maxWidth: .infinity)
+                .frame(height: 230)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
+                .padding(.horizontal, 16)
+        } else if club != nil {
+            // Okvir je na mestu tudi brez videa, da klub vidi, kam sodi (Luka: "okvir za video").
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
+                .overlay(
+                    VStack(spacing: 8) {
+                        Image(systemName: "play.circle")
+                            .font(.system(size: 34))
+                            .foregroundStyle(.white.opacity(0.35))
+                        Text("Club video coming soon")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                )
+                .frame(height: 230)
+                .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - 8) Opis kluba (pod mapo in kontakti)
+    @ViewBuilder
+    private var descriptionBlock: some View {
+        if let d = club?.description.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("About")
+                    .font(.headline)
+                Text(d)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        }
+    }
+
+    // MARK: - 2) Info block (logo + mesto/država/žanri/min age)
     private var infoBlock: some View {
         HStack(alignment: .top, spacing: 12) {
             if let logo = club?.logoUrl, !logo.isEmpty, let url = URL(string: logo) {
@@ -119,16 +164,6 @@ struct ClubDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-
-                // Opis kluba (lastnik ga ureja v Club info; prej ni bil nikjer prikazan).
-                if let d = club?.description.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty {
-                    Text(d)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.85))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 4)
-                }
-
             }
 
             Spacer()
@@ -255,5 +290,105 @@ private struct ContactRow: View {
                 .truncationMode(.middle)
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Slideshow (do 3 slike, samodejno menjavanje, pike spodaj)
+private struct ClubSlideshow: View {
+    let urls: [String]
+    @State private var index = 0
+
+    var body: some View {
+        Group {
+            if urls.isEmpty {
+                Rectangle().opacity(0.12)
+            } else if urls.count == 1 {
+                slika(urls[0])
+            } else {
+                TabView(selection: $index) {
+                    ForEach(Array(urls.enumerated()), id: \.offset) { i, u in
+                        slika(u).tag(i)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .indexViewStyle(.page(backgroundDisplayMode: .never))
+                // Samodejno menjavanje na 4 s. .task se ob izginotju pogleda preklice sam;
+                // stabilnejse kot Timer.publish v stored property (ta se ob vsakem izrisu starsa ponastavi).
+                .task(id: urls.count) {
+                    while !Task.isCancelled {
+                        try? await Task.sleep(nanoseconds: 4_000_000_000)
+                        if Task.isCancelled { break }
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            index = (index + 1) % max(urls.count, 1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func slika(_ u: String) -> some View {
+        Group {
+            if let url = URL(string: u) {
+                AsyncImage(url: url) { img in
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                } placeholder: {
+                    Rectangle().opacity(0.15)
+                }
+            } else {
+                Rectangle().opacity(0.12)
+            }
+        }
+    }
+}
+
+// MARK: - Video: tiho, v zanki, brez kontrol; dotik vklopi/izklopi zvok
+private struct ClubVideoPlayer: View {
+    let url: URL
+    @State private var player: AVPlayer?
+    @State private var muted = true
+    @State private var endObserver: NSObjectProtocol?
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            if let player {
+                VideoPlayer(player: player)
+                    .disabled(true) // brez sistemskih kontrol; predvaja se samo
+                    .onDisappear {
+                        player.pause()
+                        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+                        endObserver = nil
+                    }
+            } else {
+                Rectangle().fill(Color.white.opacity(0.06))
+            }
+
+            Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Color.black.opacity(0.5)))
+                .padding(10)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            muted.toggle()
+            player?.isMuted = muted
+        }
+        .onAppear {
+            if player == nil {
+                let p = AVPlayer(url: url)
+                p.isMuted = true
+                p.actionAtItemEnd = .none
+                player = p
+            }
+            if endObserver == nil, let p = player {
+                endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: p.currentItem, queue: .main) { [weak p] _ in
+                    p?.seek(to: .zero)
+                    p?.play()
+                }
+            }
+            player?.play()
+        }
     }
 }

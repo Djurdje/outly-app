@@ -33,6 +33,10 @@ struct APIClub: Identifiable, Decodable {
 
     /// Cenik bara (migracija 014). Prazen seznam = klub ga se ni vnesel.
     let barPrices: [BarPriceItem]
+    /// Slideshow na strani kluba, do 3 slike (migracija 015). Prazno -> bannerUrl.
+    let galleryUrls: [String]
+    /// Predstavitveni video kluba (migracija 015). Prazen niz = brez videa.
+    let videoUrl: String
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -53,6 +57,8 @@ struct APIClub: Identifiable, Decodable {
         case genres
         case createdAt = "created_at"
         case barPrices = "bar_prices"
+        case galleryUrls = "gallery_urls"
+        case videoUrl = "video_url"
     }
 
     /// Obrambno dekodiranje: shema ima NOT NULL DEFAULT '' na besedilih, a ce bi
@@ -79,6 +85,14 @@ struct APIClub: Identifiable, Decodable {
         createdAt    = try c.decodeIfPresent(String.self, forKey: .createdAt)
         // Star backend brez stolpca ali pokvarjena postavka ne sme podreti kluba.
         barPrices    = (try? c.decodeIfPresent([BarPriceItem].self, forKey: .barPrices)) ?? []
+        galleryUrls  = ((try? c.decodeIfPresent([String].self, forKey: .galleryUrls)) ?? []).filter { !$0.isEmpty }
+        videoUrl     = (try? c.decodeIfPresent(String.self, forKey: .videoUrl)) ?? ""
+    }
+
+    /// Slike za slideshow: galerija, sicer pasica (da stari klubi ostanejo enaki).
+    var slideshowUrls: [String] {
+        if !galleryUrls.isEmpty { return galleryUrls }
+        return bannerUrl.isEmpty ? [] : [bannerUrl]
     }
 }
 

@@ -32,6 +32,16 @@ struct ClubInfoView: View {
     @State private var clubBarPrices: [BarPriceItem] = []
     @State private var showBarPricesEditor = false
 
+    // Slideshow (do 3 slike) in video (migracija 015)
+    @State private var clubGalleryUrls: [String] = []
+    @State private var clubVideoUrl = ""
+    @State private var showGalleryPicker = false
+    @State private var pickedGalleryItems: [PhotosPickerItem] = []
+    @State private var isUploadingGallery = false
+    @State private var showVideoPicker = false
+    @State private var pickedVideoItem: PhotosPickerItem?
+    @State private var isUploadingVideo = false
+
     // edit sheet
     @State private var activeEdit: EditField?
     @State private var editText = ""
@@ -158,6 +168,76 @@ struct ClubInfoView: View {
                     }
                 )
 
+                // ===== SLIDESHOW (migracija 015) =====
+                OutlyInfoCardButton(
+                    icon: "photo.stack",
+                    title: "Slideshow",
+                    value: clubGalleryUrls.isEmpty ? "Using the profile banner" : "\(clubGalleryUrls.count) of 3 photos",
+                    description: "Up to 3 photos shown at the top of your club page (recommended 1200x800). Without them the banner is used.",
+                    actionTitle: isUploadingGallery ? "Uploading..." : "Choose photos",
+                    onAction: {
+                        guard !isUploadingGallery, !authToken.isEmpty else { return }
+                        pickedGalleryItems = []
+                        showGalleryPicker = true
+                    }
+                )
+
+                if !clubGalleryUrls.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(Array(clubGalleryUrls.enumerated()), id: \.offset) { i, u in
+                            ZStack(alignment: .topTrailing) {
+                                Color.clear
+                                    .overlay(
+                                        AsyncImage(url: URL(string: u)) { phase in
+                                            switch phase {
+                                            case .success(let image): image.resizable().scaledToFill()
+                                            default: Rectangle().fill(Color.white.opacity(0.06))
+                                            }
+                                        }
+                                    )
+                                    .frame(height: 90)
+                                    .clipped()
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                Button {
+                                    clubGalleryUrls.remove(at: i)
+                                    Task { await saveGalleryAndVideo() }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(.white, Color.black.opacity(0.6))
+                                        .padding(4)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+
+                // ===== VIDEO (migracija 015) =====
+                OutlyInfoCardButton(
+                    icon: "play.rectangle",
+                    title: "Club video",
+                    value: clubVideoUrl.isEmpty ? "No video yet" : "Video uploaded",
+                    description: "Short intro video shown on your club page (up to 100 MB, plays muted in a loop).",
+                    actionTitle: isUploadingVideo ? "Uploading..." : (clubVideoUrl.isEmpty ? "Upload" : "Replace"),
+                    onAction: {
+                        guard !isUploadingVideo, !authToken.isEmpty else { return }
+                        showVideoPicker = true
+                    }
+                )
+
+                if !clubVideoUrl.isEmpty {
+                    Button {
+                        clubVideoUrl = ""
+                        Task { await saveGalleryAndVideo() }
+                    } label: {
+                        Text("Remove video")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(red: 1, green: 0.35, blue: 0.35))
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 // ===== CENIK BARA (migracija 014) =====
                 OutlyInfoCardButton(
                     icon: "wineglass",
@@ -216,6 +296,16 @@ struct ClubInfoView: View {
         // ✅ these are the key: presented PhotosPicker
         .photosPicker(isPresented: $showLogoPicker, selection: $pickedLogoItem, matching: .images)
         .photosPicker(isPresented: $showBannerPicker, selection: $pickedBannerItem, matching: .images)
+        .photosPicker(isPresented: $showGalleryPicker, selection: $pickedGalleryItems, maxSelectionCount: 3, matching: .images)
+        .photosPicker(isPresented: $showVideoPicker, selection: $pickedVideoItem, matching: .videos)
+        .onChange(of: pickedGalleryItems) { _, items in
+            guard !items.isEmpty else { return }
+            Task { await uploadGallery(items) }
+        }
+        .onChange(of: pickedVideoItem) { _, newItem in
+            guard let newItem else { return }
+            Task { await uploadVideo(newItem) }
+        }
 
         .onChange(of: pickedLogoItem) { _, newItem in
             guard let newItem else { return }
@@ -360,6 +450,65 @@ struct ClubInfoView: View {
         clubLogoUrl = club.logoUrl
         clubBannerUrl = club.bannerUrl
         clubBarPrices = club.barPrices
+        clubGalleryUrls = club.galleryUrls
+        clubVideoUrl = club.videoUrl
+    }
+
+    /// Slideshow in video se shranita posebej (samo ti dve polji), da ne prepiseta drugega.
+    private func saveGalleryAndVideo() async {
+        guard !authToken.isEmpty else { return }
+        errorMessage = nil
+        do {
+            let club = try await APIClient.shared.updateMyBusinessClub(
+                token: authToken,
+                fields: ["gallery_urls": clubGalleryUrls, "video_url": clubVideoUrl]
+            )
+            apply(club)
+        } catch {
+            errorMessage = error.userMessage
+        }
+    }
+
+    /// Izbrane slike ZAMENJAJO slideshow (najvec 3).
+    private func uploadGallery(_ items: [PhotosPickerItem]) async {
+        guard !authToken.isEmpty else { return }
+        await MainActor.run { isUploadingGallery = true; errorMessage = nil }
+        defer { Task { @MainActor in isUploadingGallery = false } }
+        do {
+            var urls: [String] = []
+            for item in items.prefix(3) {
+                guard let data = try await item.loadTransferable(type: Data.self) else { continue }
+                let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
+                let url = try await APIClient.shared.uploadImageToCloudinary(imageData: data, fileName: "club_gallery.jpg", signature: sig)
+                urls.append(url)
+            }
+            guard !urls.isEmpty else { return }
+            await MainActor.run { clubGalleryUrls = urls }
+            await saveGalleryAndVideo()
+        } catch {
+            await MainActor.run { errorMessage = "Photo upload failed. \(error.userMessage)" }
+        }
+    }
+
+    private func uploadVideo(_ item: PhotosPickerItem) async {
+        guard !authToken.isEmpty else { return }
+        await MainActor.run { isUploadingVideo = true; errorMessage = nil }
+        defer { Task { @MainActor in isUploadingVideo = false } }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                throw NSError(domain: "ClubInfo", code: 5, userInfo: [NSLocalizedDescriptionKey: "Failed to read the selected video."])
+            }
+            // Cloudinary (brezplacni paket) sprejme videe do 100 MB.
+            if data.count > 100 * 1024 * 1024 {
+                throw NSError(domain: "ClubInfo", code: 6, userInfo: [NSLocalizedDescriptionKey: "The video is larger than 100 MB. Please pick a shorter one."])
+            }
+            let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
+            let url = try await APIClient.shared.uploadVideoToCloudinary(videoData: data, fileName: "club_video.mp4", signature: sig)
+            await MainActor.run { clubVideoUrl = url }
+            await saveGalleryAndVideo()
+        } catch {
+            await MainActor.run { errorMessage = "Video upload failed. \(error.userMessage)" }
+        }
     }
 
     /// Shrani spremenjeno polje. Pri naslovu/mestu najprej poisce koordinate.

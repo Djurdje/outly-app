@@ -84,13 +84,33 @@ struct CloudinaryUploadResponse: Decodable {
 // Nalaganje na Cloudinary gre na TUJ streznik (api.cloudinary.com), ne na nas backend,
 // zato ne gre skozi send().
 extension APIClient {
+    /// Video kluba (migracija 015). Isti podpis kot za slike (podpisani so folder,
+    /// public_id, timestamp — resource_type ni del podpisa), druga pot: /video/upload.
+    func uploadVideoToCloudinary(
+        videoData: Data,
+        fileName: String,
+        signature: CloudinarySignature
+    ) async throws -> String {
+        try await uploadToCloudinary(data: videoData, fileName: fileName, contentType: "video/mp4", resourceType: "video", signature: signature)
+    }
+
     func uploadImageToCloudinary(
         imageData: Data,
         fileName: String,
         signature: CloudinarySignature
     ) async throws -> String {
+        try await uploadToCloudinary(data: imageData, fileName: fileName, contentType: "image/jpeg", resourceType: "image", signature: signature)
+    }
 
-        let url = URL(string: "https://api.cloudinary.com/v1_1/\(signature.cloudName)/image/upload")!
+    private func uploadToCloudinary(
+        data payload: Data,
+        fileName: String,
+        contentType: String,
+        resourceType: String,
+        signature: CloudinarySignature
+    ) async throws -> String {
+
+        let url = URL(string: "https://api.cloudinary.com/v1_1/\(signature.cloudName)/\(resourceType)/upload")!
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
 
@@ -108,7 +128,7 @@ extension APIClient {
         func addFile(_ name: String, _ filename: String, _ data: Data) {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
             body.append(data)
             body.append("\r\n".data(using: .utf8)!)
         }
@@ -119,7 +139,7 @@ extension APIClient {
         addField("public_id", signature.publicId)
         addField("signature", signature.signature)
 
-        addFile("file", fileName, imageData)
+        addFile("file", fileName, payload)
 
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body

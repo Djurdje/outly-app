@@ -23,11 +23,17 @@ struct EventDetailView: View {
         ScrollView {
             VStack(spacing: 14) {
 
-                // Martin (14. 9.): pasica DOGODKA cez cel vrh; na njej naslov, kdaj in gumb za nakup.
+                // Pasica DOGODKA; na njej samo vrstica z vstopnicami (Luka 14. 9.).
                 hero
+
+                // Ime dogodka + srcek pod pasico
+                titleBlock
 
                 // Logo in ime kluba (vodi na stran kluba)
                 clubRow
+
+                // Kdaj (med klubom in naslovom)
+                whenCard
 
                 // Naslov, kontakt, zemljevid
                 infoBlock
@@ -52,9 +58,8 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - Hero: pasica dogodka (plakat), cez njo naslov, kdaj in vrstica z vstopnicami.
-    // Prej je bilo ozadje pasica kluba, kartice pa pod sliko. Martin (14. 9.): slika do
-    // konca bloka z vstopnicami, kartici sredinsko na sliki, malo dvignjeni od dna.
+    // MARK: - Hero: pasica dogodka (plakat); na njej samo vrstica z vstopnicami, sredinsko,
+    // malo dvignjena od dna. Naslov in kdaj sta pod sliko (Lukov popravek 14. 9. zvecer).
     private var headerImageUrl: String {
         if !event.posterUrl.isEmpty { return event.posterUrl }
         return club?.bannerUrl ?? ""
@@ -74,44 +79,38 @@ struct EventDetailView: View {
                 }
 
                 // Temnenje proti dnu, da sta kartici in naslov berljivi na vsakem plakatu.
+                // Rahlo temnenje proti dnu, da se vrstica z vstopnicami loci od plakata.
                 LinearGradient(
                     stops: [
-                        .init(color: .black.opacity(0.35), location: 0),
-                        .init(color: .clear, location: 0.22),
-                        .init(color: .clear, location: 0.45),
-                        .init(color: .black.opacity(0.88), location: 0.78),
-                        .init(color: .black.opacity(0.97), location: 1)
+                        .init(color: .black.opacity(0.30), location: 0),
+                        .init(color: .clear, location: 0.20),
+                        .init(color: .clear, location: 0.62),
+                        .init(color: .black.opacity(0.75), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
             }
 
-            VStack(spacing: 12) {
-                titleBlock
-                whenCard
-                ticketBar
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 18)
+            ticketBar
+                .padding(.horizontal, 16)
+                .padding(.bottom, 18)
         }
         .frame(height: heroHeight)
         .clipped()
     }
 
-    /// Slika sega priblizno do 62 % visine zaslona (na iPhonu 14 Pro ~530 pt) — do
-    /// spodnjega roba vrstice z vstopnicami, kot je Martin oznacil na posnetku.
+    /// Plakat cez priblizno polovico zaslona (na iPhonu 14 Pro ~470 pt).
     private var heroHeight: CGFloat {
-        max(460, min(600, UIScreen.main.bounds.height * 0.62))
+        max(400, min(540, UIScreen.main.bounds.height * 0.55))
     }
 
-    // MARK: - Naslov + srcek (na sliki)
+    // MARK: - Naslov + srcek (pod sliko)
     private var titleBlock: some View {
         HStack(alignment: .top, spacing: 12) {
             Text(event.title)
                 .font(.system(size: 30, weight: .bold))
                 .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.6), radius: 8, y: 2)
                 .lineLimit(3)
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
@@ -123,14 +122,15 @@ struct EventDetailView: View {
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.9))
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(Color.black.opacity(0.35)))
-                        .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 1))
+                        .background(Circle().fill(Color.white.opacity(0.10)))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.top, 2)
     }
 
     // MARK: - Klub: logo, ime, 18+ -> stran kluba
@@ -224,10 +224,10 @@ struct EventDetailView: View {
             }
         }
         .padding(14)
-        // Na sliki: poltemna podlaga, da se bere na vsakem plakatu.
-        .background(Color.black.opacity(0.55))
+        .background(Color(white: 0.11))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
+        .padding(.horizontal, 16)
     }
 
     private var monthShort: String {
@@ -330,8 +330,8 @@ struct EventDetailView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
-        // Martin (10. 9.): modra kot v Figmi (Kups karto), ne temna. Neaktivna stanja ostanejo temna.
-        .background(active ? Color.outlyBlue : Color.black.opacity(0.55))
+        // Modra kot v Figmi, malo prosojna (Luka 14. 9.), ker lezi na plakatu. Neaktivna stanja temna.
+        .background(active ? Color.outlyBlue.opacity(0.82) : Color.black.opacity(0.55))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
