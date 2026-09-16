@@ -137,6 +137,10 @@ struct LoginView: View {
                 }
                 .padding(.top, 10)
 
+                // Preklop jezika se pred prijavo.
+                JezikGumb()
+                    .padding(.top, 14)
+
                 Spacer()
             }
             .padding(.horizontal, 24)

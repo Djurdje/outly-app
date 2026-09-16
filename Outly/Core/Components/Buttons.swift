@@ -14,7 +14,7 @@ struct OutlyPrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 if isLoading { ProgressView().tint(.white) }
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.system(size: 16, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
@@ -39,7 +39,7 @@ struct OutlyMenuRowButton: View {
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.white)
 
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
 
@@ -74,7 +74,7 @@ struct OutlyInfoCardButton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.white)
 
@@ -93,14 +93,14 @@ struct OutlyInfoCardButton: View {
                 // Prazen actionTitle = samo prikaz, brez gumba (npr. e-naslov, ki ga ni mogoce urejati).
                 if !actionTitle.isEmpty {
                     Button(action: onAction) {
-                        Text(actionTitle)
+                        Text(LocalizedStringKey(actionTitle))
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.blackColor)
                     }
                 }
             }
 
-            Text(description)
+            Text(LocalizedStringKey(description))
                 .font(.system(size: 12, weight: .light))
                 .foregroundColor(.white.opacity(0.55))
                 .fixedSize(horizontal: false, vertical: true)

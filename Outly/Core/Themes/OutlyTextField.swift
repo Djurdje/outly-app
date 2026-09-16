@@ -5,7 +5,7 @@ struct OutlyTextField: View {
     @Binding var text: String
 
     var body: some View {
-        TextField(placeholder, text: $text)
+        TextField(LocalizedStringKey(placeholder), text: $text)
             .font(.system(size: 16, weight: .medium))
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
@@ -22,7 +22,7 @@ struct OutlySecureField: View {
     @Binding var text: String
 
     var body: some View {
-        SecureField(placeholder, text: $text)
+        SecureField(LocalizedStringKey(placeholder), text: $text)
             .font(.system(size: 16, weight: .medium))
             .padding(.vertical, 14)
             .padding(.horizontal, 16)

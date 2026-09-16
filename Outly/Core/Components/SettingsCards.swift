@@ -18,7 +18,7 @@ struct OutlySettingsCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 2)
@@ -46,12 +46,12 @@ struct OutlySettingsRow: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 24)
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                     Spacer()
                     if let action {
-                        Text(action)
+                        Text(LocalizedStringKey(action))
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(actionColor)
                     }
@@ -66,7 +66,7 @@ struct OutlySettingsRow: View {
             .disabled(onTap == nil)
 
             if let footnote {
-                Text(footnote)
+                Text(LocalizedStringKey(footnote))
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.55))
                     .padding(.horizontal, 4)
@@ -83,7 +83,7 @@ struct OutlySettingsToggleRow: View {
 
     var body: some View {
         Toggle(isOn: $isOn) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
         }
@@ -106,10 +106,10 @@ struct OutlyDarkSecureField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.55))
-                SecureField(placeholder, text: $text)
+                SecureField(LocalizedStringKey(placeholder), text: $text)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white)
                     .tint(.outlyBlue)
@@ -121,7 +121,7 @@ struct OutlyDarkSecureField: View {
             .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.08)))
 
             if let hint {
-                Text(hint)
+                Text(LocalizedStringKey(hint))
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.55))
                     .padding(.horizontal, 4)

@@ -15,12 +15,12 @@ struct TicketRow: View {
                 .cornerRadius(12)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
 
-                Text(subtitle)
+                Text(LocalizedStringKey(subtitle))
                     .font(.subheadline)
                     .foregroundColor(.gray)
 

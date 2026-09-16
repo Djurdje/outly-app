@@ -7,7 +7,7 @@ struct SectionHeader: View {
     var size: CGFloat = 20
 
     var body: some View {
-        Text(title)
+        Text(LocalizedStringKey(title))
             .foregroundColor(.white)
             .font(.system(size: size, weight: .bold))
             .lineLimit(1)
