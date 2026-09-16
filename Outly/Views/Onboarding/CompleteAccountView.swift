@@ -126,7 +126,7 @@ struct CompleteAccountView: View {
                     }
                 } label: {
                     HStack {
-                        Text(Countries.name(for: countryCode) ?? "Country")
+                        Text(Countries.name(for: countryCode) ?? String(localized: "Country"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.black.opacity(0.75))
                         Spacer()

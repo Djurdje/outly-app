@@ -61,7 +61,7 @@ struct PasswordSecurityView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .navigationDestination(isPresented: $showChange) {
-            PasswordChangeView { success = "Password changed. Other devices were signed out." }
+            PasswordChangeView { success = String(localized: "Password changed. Other devices were signed out.") }
         }
         .confirmationDialog("Sign out of all devices?", isPresented: $showLogoutAllConfirm, titleVisibility: .visible) {
             Button("Sign out everywhere", role: .destructive) { Task { await logoutEverywhere() } }
@@ -168,10 +168,10 @@ struct PasswordChangeView: View {
 
     private func change() async {
         message = nil
-        guard newPassword == confirm else { message = "New passwords do not match."; return }
-        guard newPassword != current else { message = "New password must be different from the current one."; return }
+        guard newPassword == confirm else { message = String(localized: "New passwords do not match."); return }
+        guard newPassword != current else { message = String(localized: "New password must be different from the current one."); return }
         guard let email = session.me?.email, !email.isEmpty else {
-            message = "Your profile is still loading. Please try again."
+            message = String(localized: "Your profile is still loading. Please try again.")
             return
         }
         isSaving = true
@@ -184,7 +184,7 @@ struct PasswordChangeView: View {
             dismiss()
         } catch let sb as SupabaseAuthError {
             if sb.code == "invalid_credentials" || sb.message.lowercased().contains("invalid login credentials") {
-                message = "Current password is wrong."
+                message = String(localized: "Current password is wrong.")
                 return
             }
             message = sb.userMessage

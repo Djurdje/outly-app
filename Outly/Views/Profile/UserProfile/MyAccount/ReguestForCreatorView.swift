@@ -103,10 +103,16 @@ struct ReguestForCreatorView: View {
         } else {
             VStack(alignment: .leading, spacing: 12) {
                 if let lastRejected {
-                    Text("Your previous application for \"\(lastRejected.businessName)\" was not approved\(lastRejected.decisionNote.isEmpty ? "." : ": \(lastRejected.decisionNote)") You can apply again.")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.7))
-                        .fixedSize(horizontal: false, vertical: true)
+                    Group {
+                        if lastRejected.decisionNote.isEmpty {
+                            Text("Your previous application for \"\(lastRejected.businessName)\" was not approved. You can apply again.")
+                        } else {
+                            Text("Your previous application for \"\(lastRejected.businessName)\" was not approved: \(lastRejected.decisionNote) You can apply again.")
+                        }
+                    }
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
                 }
                 NavigationLink {
                     CreatorApplicationFormView()
@@ -146,7 +152,7 @@ private struct BulletRow: View {
                 .font(.system(size: 16, weight: .semibold))
                 .padding(.top, 1)
 
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.system(size: 14, weight: .regular))
         }
     }
@@ -194,7 +200,7 @@ struct CreatorApplicationFormView: View {
                         OutlyTextField(placeholder: "Role / position", text: $form.contactRole)
                         OutlyTextField(placeholder: "Phone number, e.g. +386 41 123 456", text: $form.phone)
                             .keyboardType(.phonePad)
-                        Text("We will reply to \(session.me?.email ?? "your account email").")
+                        Text("We will reply to \(session.me?.email ?? String(localized: "your account email")).")
                             .font(.system(size: 12))
                             .foregroundColor(.white.opacity(0.55))
                     }
@@ -240,7 +246,7 @@ struct CreatorApplicationFormView: View {
     @ViewBuilder
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
             content()

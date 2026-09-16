@@ -34,7 +34,7 @@ struct HelpCenterView: View {
 
                     SearchBar(text: $search, placeholder: "Search help")
 
-                    Text(search.isEmpty ? "Popular articles" : "Results")
+                    Text(LocalizedStringKey(search.isEmpty ? "Popular articles" : "Results"))
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)

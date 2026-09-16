@@ -33,10 +33,10 @@ struct PersonalInfoView: View {
         var id: String { "\(self)" }
         var title: String {
             switch self {
-            case .username: return "Username"
-            case .phone: return "Phone number"
-            case .birthDate: return "Date of birth"
-            case .country: return "Country"
+            case .username: return String(localized: "Username")
+            case .phone: return String(localized: "Phone number")
+            case .birthDate: return String(localized: "Date of birth")
+            case .country: return String(localized: "Country")
             }
         }
     }
@@ -207,8 +207,12 @@ struct PersonalInfoView: View {
                     Button("Cancel") { activeEdit = nil }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isSaving ? "Saving..." : "Save") { Task { await save(field) } }
-                        .disabled(isSaving)
+                    Button {
+                        Task { await save(field) }
+                    } label: {
+                        Text(LocalizedStringKey(isSaving ? "Saving..." : "Save"))
+                    }
+                    .disabled(isSaving)
                 }
             }
             .preferredColorScheme(.dark)
@@ -222,7 +226,7 @@ struct PersonalInfoView: View {
         switch field {
         case .username:
             let u = editText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard u.count >= 3 else { editError = "Username must be at least 3 characters."; return }
+            guard u.count >= 3 else { editError = String(localized: "Username must be at least 3 characters."); return }
             update.username = u
         case .phone:
             let digits = editText.filter { $0.isNumber }
@@ -230,14 +234,14 @@ struct PersonalInfoView: View {
                 update.phone = .some(nil)
             } else {
                 guard editText.trimmingCharacters(in: .whitespaces).hasPrefix("+") else {
-                    editError = "Start with the country code, e.g. +386."
+                    editError = String(localized: "Start with the country code, e.g. +386.")
                     return
                 }
                 update.phone = .some("+" + digits)
             }
         case .birthDate:
             let years = Calendar.current.dateComponents([.year], from: editDate, to: Date()).year ?? 0
-            guard years >= 15 else { editError = "You must be at least 15 years old to use Outly."; return }
+            guard years >= 15 else { editError = String(localized: "You must be at least 15 years old to use Outly."); return }
             update.dateOfBirth = Self.format(editDate)
         case .country:
             update.country = editCountry

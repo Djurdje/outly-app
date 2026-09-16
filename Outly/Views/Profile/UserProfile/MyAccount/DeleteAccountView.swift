@@ -48,7 +48,7 @@ struct DeleteAccountView: View {
                 } label: {
                     HStack(spacing: 10) {
                         if isLoading { ProgressView().tint(.white) }
-                        Text(isLoading ? "Deleting..." : "Delete Account")
+                        Text(LocalizedStringKey(isLoading ? "Deleting..." : "Delete Account"))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .frame(maxWidth: .infinity)
@@ -81,7 +81,7 @@ struct DeleteAccountView: View {
 
     private func deleteAccount() async {
         message = nil
-        guard !password.isEmpty else { message = "Enter your password to continue."; return }
+        guard !password.isEmpty else { message = String(localized: "Enter your password to continue."); return }
         isLoading = true
         defer { isLoading = false }
         do {
@@ -92,7 +92,7 @@ struct DeleteAccountView: View {
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 {
                 // 401 tu pomeni napacno geslo (streznik vrne "Invalid credentials"), NE potekle seje.
-                message = "Wrong password."
+                message = String(localized: "Wrong password.")
                 return
             }
             message = api.userMessage

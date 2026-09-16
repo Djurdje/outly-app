@@ -74,7 +74,7 @@ struct VerifyEmailView: View {
                 } label: {
                     HStack(spacing: 10) {
                         if isLoading { ProgressView().tint(.white) }
-                        Text(isLoading ? "Verifying..." : "Verify")
+                        Text(LocalizedStringKey(isLoading ? "Verifying..." : "Verify"))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .frame(maxWidth: .infinity)
@@ -161,7 +161,7 @@ struct VerifyEmailView: View {
         do {
             try await SupabaseAuth.shared.resend(email: pendingEmail, type: "signup")
             await MainActor.run {
-                message = "Code sent again. Check your email."
+                message = String(localized: "Code sent again. Check your email.")
             }
         } catch {
             await MainActor.run {

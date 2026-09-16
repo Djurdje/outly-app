@@ -95,7 +95,7 @@ struct MyClubsView: View {
                     .offset(x: 3, y: -2)
             }
         }
-        .accessibilityLabel(pendingCount > 0 ? "\(pendingCount) invitations" : "Notifications")
+        .accessibilityLabel(pendingCount > 0 ? String(localized: "\(pendingCount) invitations") : String(localized: "Notifications"))
     }
 
     /// Vrstica kluba (Figma 382:805): logo, ime, vloga, desno "View".
@@ -107,7 +107,7 @@ struct MyClubsView: View {
                 logo(club?.logoUrl, size: 56, radius: 12)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(club?.name ?? "Your club")
+                    Text(club?.name ?? String(localized: "Your club"))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .lineLimit(1)
@@ -240,9 +240,9 @@ struct MyClubsView: View {
 
     private func roleLabel(_ role: String) -> String {
         switch role {
-        case "owner": return "Owner"
-        case "manager": return "Manager"
-        default: return "Door staff"
+        case "owner": return String(localized: "Owner")
+        case "manager": return String(localized: "Manager")
+        default: return String(localized: "Door staff")
         }
     }
 
@@ -295,7 +295,7 @@ struct MyClubDetailView: View {
                     HStack(spacing: 16) {
                         logo
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(club?.name ?? "Your club")
+                            Text(club?.name ?? String(localized: "Your club"))
                                 .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(.white)
                                 .lineLimit(2)
@@ -376,9 +376,9 @@ struct MyClubDetailView: View {
 
     private var roleLabel: String {
         switch role {
-        case "owner": return "Owner"
-        case "manager": return "Manager"
-        default: return "Door staff"
+        case "owner": return String(localized: "Owner")
+        case "manager": return String(localized: "Manager")
+        default: return String(localized: "Door staff")
         }
     }
 
@@ -410,11 +410,11 @@ struct MyClubDetailView: View {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.white)
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
             Spacer()
-            Text(action)
+            Text(LocalizedStringKey(action))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.outlyBlue)
         }
