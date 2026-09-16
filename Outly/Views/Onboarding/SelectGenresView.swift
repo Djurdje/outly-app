@@ -39,7 +39,7 @@ struct SelectGenresView: View {
                                 .padding(.vertical, 30)
                         } else if genres.isEmpty {
                             VStack(spacing: 10) {
-                                Text(message ?? "Could not load genres.")
+                                Text(message ?? String(localized: "Could not load genres."))
                                     .font(.system(size: 13))
                                     .foregroundColor(.red)
                                 Button("Try again") { Task { await loadGenres() } }
@@ -103,7 +103,7 @@ struct SelectGenresView: View {
 
     private func save() async {
         message = nil
-        guard !selected.isEmpty else { message = "Select at least one genre."; return }
+        guard !selected.isEmpty else { message = String(localized: "Select at least one genre."); return }
         isSaving = true
         defer { isSaving = false }
         do {
@@ -115,7 +115,7 @@ struct SelectGenresView: View {
             if !me.isOnboarded {
                 // Streznik zahteva datum rojstva + vsaj en zanr. Ce se vedno ni dokoncano,
                 // manjka datum rojstva (uporabnik je prisel sem po drugi poti).
-                message = "Please fill in your date of birth on the previous step."
+                message = String(localized: "Please fill in your date of birth on the previous step.")
             }
             // Ce je isOnboarded, AuthGateView sam preklopi na MainTabView.
         } catch let api as APIError {

@@ -80,7 +80,7 @@ struct ProfileView: View {
                         if let user = user {
 
                             if user.isBusiness {
-                                Text(businessClub?.name ?? "Your club")
+                                Text(businessClub?.name ?? String(localized: "Your club"))
                                     .font(.title2)
                                 // Clan ekipe vidi svojo vlogo in svoje ime; lastnik samo klub.
                                 if user.clubRole != nil && user.clubRole != "owner", let vloga = user.clubRoleLabel {
@@ -228,7 +228,7 @@ struct ProfileView: View {
                     Button {
                         showLeave = true
                     } label: {
-                        Text("Leave \(businessClub?.name ?? "club") team")
+                        Text("Leave \(businessClub?.name ?? String(localized: "club")) team")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }

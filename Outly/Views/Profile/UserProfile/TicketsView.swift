@@ -360,7 +360,7 @@ struct WalletTicketCard: View {
 
     private func polje(_ naslov: String, _ vrednost: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(naslov)
+            Text(LocalizedStringKey(naslov))
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1)
                 .foregroundColor(.white.opacity(0.45))
@@ -373,7 +373,7 @@ struct WalletTicketCard: View {
 
     private var datum: String {
         guard let d = ticket.startDate else { return "—" }
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.dateFormat = "EEE, d MMM"
+        let f = DateFormatter(); f.locale = Jezik.shared.locale; f.dateFormat = "EEE, d MMM"
         return f.string(from: d)
     }
 
@@ -402,7 +402,7 @@ struct SearchBar: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.white)
 
-            TextField(placeholder, text: $text)
+            TextField(LocalizedStringKey(placeholder), text: $text)
                 .foregroundColor(.white)
         }
         .padding(12)

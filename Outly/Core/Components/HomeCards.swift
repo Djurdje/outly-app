@@ -48,7 +48,7 @@ struct HitCard: View {
                 .frame(width: 40, height: 40)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(label.uppercased())
+                    Text(LocalizedStringKey(label.uppercased()))
                         .font(.system(size: 10, weight: .heavy))
                         .tracking(0.8)
                         .foregroundColor(.white.opacity(0.75))
@@ -149,7 +149,7 @@ struct HeroEventCard: View {
                         .foregroundColor(.white.opacity(0.85))
                         .lineLimit(1)
                     Spacer()
-                    Text(event.isSoldOut ? "Sold out" : (event.displayPrice ?? (event.ticketUrl?.isEmpty == false ? "Tickets" : "Free")))
+                    Text(ticketBadgeText)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -163,6 +163,15 @@ struct HeroEventCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 1))
         .contentShape(Rectangle())
+    }
+
+    /// Besedilo modrega znacka spodaj desno; loceno od View-ja, ker je bila gnezdena
+    /// ternarka niz (Text(String)) in se ni prevajala.
+    private var ticketBadgeText: String {
+        if event.isSoldOut { return String(localized: "Sold out") }
+        if let price = event.displayPrice { return price }
+        if event.ticketUrl?.isEmpty == false { return String(localized: "Tickets") }
+        return String(localized: "Free")
     }
 }
 
@@ -195,9 +204,15 @@ struct GenreRow: View {
                     .foregroundColor(.white)
                 Spacer()
                 if count > 0 {
-                    Text(count == 1 ? "1 event" : "\(count) events")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.85))
+                    Group {
+                        if count == 1 {
+                            Text("1 event")
+                        } else {
+                            Text("\(count) events")
+                        }
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.85))
                 }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .bold))

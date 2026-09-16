@@ -182,7 +182,7 @@ struct SearchView: View {
         let n = events.filter { $0.clubId == c.id }.count
         var parts: [String] = []
         if !c.city.isEmpty { parts.append(c.city) }
-        if n > 0 { parts.append(n == 1 ? "1 upcoming event" : "\(n) upcoming events") }
+        if n > 0 { parts.append(String(localized: "\(n) upcoming events")) }
         return parts.joined(separator: " · ")
     }
 

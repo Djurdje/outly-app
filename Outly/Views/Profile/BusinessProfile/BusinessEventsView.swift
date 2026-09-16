@@ -125,9 +125,9 @@ private struct BusinessEventRow: View {
 
     private var statusText: String {
         switch event.status {
-        case "cancelled": return "Cancelled"
-        case "draft":     return "Draft"
-        default:          return event.isPast ? "Ended" : "Upcoming"
+        case "cancelled": return String(localized: "Cancelled")
+        case "draft":     return String(localized: "Draft")
+        default:          return event.isPast ? String(localized: "Ended") : String(localized: "Upcoming")
         }
     }
 

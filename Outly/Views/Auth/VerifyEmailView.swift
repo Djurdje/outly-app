@@ -140,7 +140,7 @@ struct VerifyEmailView: View {
                     authStage = "main"
                 } else {
                     // Zaslon se zamenja, zato obvestilo pokaze LoginView (loginNotice).
-                    loginNotice = "Email verified. Log in with your email and password."
+                    loginNotice = String(localized: "Email verified. Log in with your email and password.")
                     authStage = "login"
                 }
             }

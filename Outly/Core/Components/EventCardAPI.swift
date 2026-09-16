@@ -136,7 +136,7 @@ struct EventCardAPI: View {
 
             // desni "banner" (visok kot gumb)
             VStack {
-                Text(event.displayPrice ?? "BUY")
+                Text(event.displayPrice ?? String(localized: "BUY"))
                     .font(.subheadline.bold())
                     .foregroundStyle(event.isPast ? Color.white.opacity(0.7) : .black)
                     .padding(.horizontal, 14)

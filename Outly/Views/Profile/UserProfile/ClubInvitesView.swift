@@ -115,7 +115,7 @@ struct ClubInvitesView: View {
                 if busy {
                     ProgressView().tint(.white)
                 } else {
-                    Text(naslov)
+                    Text(LocalizedStringKey(naslov))
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                 }

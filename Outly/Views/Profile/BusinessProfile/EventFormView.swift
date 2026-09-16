@@ -118,7 +118,7 @@ struct EventFormView: View {
                         PhotosPicker(selection: $pickedPoster, matching: .images) {
                             HStack(spacing: 8) {
                                 if isUploadingPoster { ProgressView() }
-                                Text(posterUrl.isEmpty ? "Choose poster" : "Change poster")
+                                Text(LocalizedStringKey(posterUrl.isEmpty ? "Choose poster" : "Change poster"))
                             }
                         }
                         .disabled(isUploadingPoster)
@@ -146,15 +146,19 @@ struct EventFormView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.black)
-            .navigationTitle(isEditing ? "Edit event" : "New event")
+            .navigationTitle(LocalizedStringKey(isEditing ? "Edit event" : "New event"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isSaving ? "Saving..." : "Save") { Task { await save() } }
-                        .disabled(isSaving || isUploadingPoster || title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        Text(LocalizedStringKey(isSaving ? "Saving..." : "Save"))
+                    }
+                    .disabled(isSaving || isUploadingPoster || title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("Remove this event?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
@@ -215,15 +219,15 @@ struct EventFormView: View {
     private func save() async {
         message = nil
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanTitle.isEmpty else { message = "Enter a title."; return }
+        guard !cleanTitle.isEmpty else { message = String(localized: "Enter a title."); return }
         guard let centsOpt = Self.cents(from: priceText) else {
-            message = "Enter the price as a number, e.g. 12.50."
+            message = String(localized: "Enter the price as a number, e.g. 12.50.")
             return
         }
-        if hasEnd, endAt < startAt { message = "End time must be after start time."; return }
+        if hasEnd, endAt < startAt { message = String(localized: "End time must be after start time."); return }
         let url = ticketUrl.trimmingCharacters(in: .whitespaces)
         if !url.isEmpty, !(url.hasPrefix("http://") || url.hasPrefix("https://")) {
-            message = "Ticket link must start with http:// or https://."
+            message = String(localized: "Ticket link must start with http:// or https://.")
             return
         }
 
@@ -231,7 +235,7 @@ struct EventFormView: View {
         var capacity: Int? = nil
         if !capTrim.isEmpty {
             guard let c = Int(capTrim), c >= 1, c <= 100000 else {
-                message = "Capacity must be a whole number between 1 and 100000."
+                message = String(localized: "Capacity must be a whole number between 1 and 100000.")
                 return
             }
             capacity = c

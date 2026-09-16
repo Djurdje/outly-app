@@ -62,13 +62,13 @@ struct ClubInfoView: View {
 
         var title: String {
             switch self {
-            case .name: return "Club name"
-            case .phone: return "Phone number"
-            case .website: return "Website"
-            case .email: return "Email"
-            case .description: return "About club"
-            case .address: return "Address"
-            case .city: return "City"
+            case .name: return String(localized: "Club name")
+            case .phone: return String(localized: "Phone number")
+            case .website: return String(localized: "Website")
+            case .email: return String(localized: "Email")
+            case .description: return String(localized: "About club")
+            case .address: return String(localized: "Address")
+            case .city: return String(localized: "City")
             }
         }
 
@@ -159,7 +159,7 @@ struct ClubInfoView: View {
                 OutlyInfoCardButton(
                     icon: "photo.on.rectangle",
                     title: "Profile banner",
-                    value: clubBannerUrl.isEmpty ? "Upload banner image" : "Banner uploaded",
+                    value: clubBannerUrl.isEmpty ? String(localized: "Upload banner image") : String(localized: "Banner uploaded"),
                     description: "Recommended size: 393x220px",
                     actionTitle: isUploadingBanner ? "Uploading..." : "Upload",
                     onAction: {
@@ -172,7 +172,7 @@ struct ClubInfoView: View {
                 OutlyInfoCardButton(
                     icon: "photo.stack",
                     title: "Slideshow",
-                    value: clubGalleryUrls.isEmpty ? "Using the profile banner" : "\(clubGalleryUrls.count) of 3 photos",
+                    value: clubGalleryUrls.isEmpty ? String(localized: "Using the profile banner") : String(localized: "\(clubGalleryUrls.count) of 3 photos"),
                     description: "Up to 3 photos shown at the top of your club page (recommended 1200x800). Without them the banner is used.",
                     actionTitle: isUploadingGallery ? "Uploading..." : "Choose photos",
                     onAction: {
@@ -217,7 +217,7 @@ struct ClubInfoView: View {
                 OutlyInfoCardButton(
                     icon: "play.rectangle",
                     title: "Club video",
-                    value: clubVideoUrl.isEmpty ? "No video yet" : "Video uploaded",
+                    value: clubVideoUrl.isEmpty ? String(localized: "No video yet") : String(localized: "Video uploaded"),
                     description: "Short intro video shown on your club page (up to 100 MB, plays muted in a loop).",
                     actionTitle: isUploadingVideo ? "Uploading..." : (clubVideoUrl.isEmpty ? "Upload" : "Replace"),
                     onAction: {
@@ -242,7 +242,7 @@ struct ClubInfoView: View {
                 OutlyInfoCardButton(
                     icon: "wineglass",
                     title: "Bar prices",
-                    value: clubBarPrices.isEmpty ? "Not added yet" : "\(clubBarPrices.count) items",
+                    value: clubBarPrices.isEmpty ? String(localized: "Not added yet") : String(localized: "\(clubBarPrices.count) items"),
                     description: "Guests see the list under \"Bar prices\" on every event of your club.",
                     onAction: { showBarPricesEditor = true }
                 )
@@ -356,7 +356,7 @@ struct ClubInfoView: View {
         OutlyInfoCardButton(
             icon: icon,
             title: title,
-            value: value.isEmpty ? "Not set" : value,
+            value: value.isEmpty ? String(localized: "Not set") : value,
             description: description,
             onAction: {
                 editText = value
@@ -428,7 +428,7 @@ struct ClubInfoView: View {
             apply(club)
         } catch let api as APIError {
             if case let .requestFailed(code, raw) = api, code == 404, raw.lowercased().contains("club") {
-                errorMessage = "Your club is not set up yet. Contact luka@outly.si to get it created."
+                errorMessage = String(localized: "Your club is not set up yet. Contact luka@outly.si to get it created.")
             } else {
                 errorMessage = api.userMessage
             }
@@ -486,7 +486,7 @@ struct ClubInfoView: View {
             await MainActor.run { clubGalleryUrls = urls }
             await saveGalleryAndVideo()
         } catch {
-            await MainActor.run { errorMessage = "Photo upload failed. \(error.userMessage)" }
+            await MainActor.run { errorMessage = String(localized: "Photo upload failed. \(error.userMessage)") }
         }
     }
 
@@ -496,18 +496,18 @@ struct ClubInfoView: View {
         defer { Task { @MainActor in isUploadingVideo = false } }
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else {
-                throw NSError(domain: "ClubInfo", code: 5, userInfo: [NSLocalizedDescriptionKey: "Failed to read the selected video."])
+                throw NSError(domain: "ClubInfo", code: 5, userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to read the selected video.")])
             }
             // Cloudinary (brezplacni paket) sprejme videe do 100 MB.
             if data.count > 100 * 1024 * 1024 {
-                throw NSError(domain: "ClubInfo", code: 6, userInfo: [NSLocalizedDescriptionKey: "The video is larger than 100 MB. Please pick a shorter one."])
+                throw NSError(domain: "ClubInfo", code: 6, userInfo: [NSLocalizedDescriptionKey: String(localized: "The video is larger than 100 MB. Please pick a shorter one.")])
             }
             let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
             let url = try await APIClient.shared.uploadVideoToCloudinary(videoData: data, fileName: "club_video.mp4", signature: sig)
             await MainActor.run { clubVideoUrl = url }
             await saveGalleryAndVideo()
         } catch {
-            await MainActor.run { errorMessage = "Video upload failed. \(error.userMessage)" }
+            await MainActor.run { errorMessage = String(localized: "Video upload failed. \(error.userMessage)") }
         }
     }
 
@@ -573,7 +573,7 @@ struct ClubInfoView: View {
 
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else {
-                throw NSError(domain: "ClubInfo", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to read selected image data."])
+                throw NSError(domain: "ClubInfo", code: 3, userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to read selected image data.")])
             }
 
             let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
@@ -586,7 +586,7 @@ struct ClubInfoView: View {
             await MainActor.run { clubLogoUrl = imageUrl }
             await saveClub()
         } catch {
-            await MainActor.run { errorMessage = "Logo upload failed. \(error.userMessage)" }
+            await MainActor.run { errorMessage = String(localized: "Logo upload failed. \(error.userMessage)") }
         }
     }
 
@@ -601,7 +601,7 @@ struct ClubInfoView: View {
 
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else {
-                throw NSError(domain: "ClubInfo", code: 4, userInfo: [NSLocalizedDescriptionKey: "Failed to read selected image data."])
+                throw NSError(domain: "ClubInfo", code: 4, userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to read selected image data.")])
             }
 
             let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
@@ -614,7 +614,7 @@ struct ClubInfoView: View {
             await MainActor.run { clubBannerUrl = imageUrl }
             await saveClub()
         } catch {
-            await MainActor.run { errorMessage = "Banner upload failed. \(error.userMessage)" }
+            await MainActor.run { errorMessage = String(localized: "Banner upload failed. \(error.userMessage)") }
         }
     }
 }

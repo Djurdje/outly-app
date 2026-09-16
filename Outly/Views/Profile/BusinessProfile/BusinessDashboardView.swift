@@ -89,7 +89,7 @@ struct BusinessDashboardView: View {
         }
     }
 
-    private func kartica(_ naslov: String, _ vrednost: String, _ opis: String) -> some View {
+    private func kartica(_ naslov: LocalizedStringKey, _ vrednost: String, _ opis: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(naslov)
                 .font(.footnote)
@@ -222,10 +222,14 @@ struct BusinessDashboardView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(e.title)
                     .font(.headline).foregroundColor(.white).lineLimit(1)
-                Text(datum(e.startDate) + (e.status != "published" ? " · \(e.status)" : ""))
+                Text(datum(e.startDate) + (e.status != "published" ? " · \(eventStatusLabel(e.status))" : ""))
                     .font(.caption).foregroundColor(.white.opacity(0.55))
                 HStack(spacing: 8) {
-                    Text("\(e.ticketsSold)\(e.capacity.map { "/\($0)" } ?? "") sold")
+                    if let cap = e.capacity {
+                        Text("\(e.ticketsSold)/\(cap) sold")
+                    } else {
+                        Text("\(e.ticketsSold) sold")
+                    }
                     Text("·")
                     Text("\(e.checkedIn) in")
                 }
@@ -274,7 +278,7 @@ struct BusinessDashboardView: View {
                             VStack(alignment: .trailing, spacing: 3) {
                                 Text(Denar.evri(o.totalCents, koda: o.currency))
                                     .font(.subheadline.weight(.semibold)).foregroundColor(.white)
-                                Text(cas(o.createdDate) + (o.status == "paid" ? "" : " · \(o.status)"))
+                                Text(cas(o.createdDate) + (o.status == "paid" ? "" : " · \(orderStatusLabel(o.status))"))
                                     .font(.caption).foregroundColor(.white.opacity(0.45))
                             }
                         }
@@ -286,6 +290,27 @@ struct BusinessDashboardView: View {
                 .background(Color.white.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
+        }
+    }
+
+    /// Napis statusa dogodka za prikaz (vrednost "published"/"draft"/"cancelled" ostane za API).
+    private func eventStatusLabel(_ status: String) -> String {
+        switch status {
+        case "cancelled": return String(localized: "cancelled")
+        case "draft": return String(localized: "draft")
+        default: return status
+        }
+    }
+
+    /// Napis statusa narocila za prikaz (vrednost ostane za API/primerjave).
+    private func orderStatusLabel(_ status: String) -> String {
+        switch status {
+        case "pending": return String(localized: "pending")
+        case "failed": return String(localized: "failed")
+        case "cancelled": return String(localized: "cancelled")
+        case "refunded": return String(localized: "refunded")
+        case "partially_refunded": return String(localized: "partially refunded")
+        default: return status
         }
     }
 
@@ -429,7 +454,7 @@ struct EventTicketsView: View {
         .onAppear { Task { await load() } }
     }
 
-    private func stevilka(_ v: String, _ n: String) -> some View {
+    private func stevilka(_ v: String, _ n: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(v).font(.system(size: 22, weight: .bold)).foregroundColor(.white)
             Text(n).font(.caption).foregroundColor(.white.opacity(0.55))

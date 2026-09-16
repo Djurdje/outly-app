@@ -205,11 +205,11 @@ struct CompleteAccountView: View {
         // Starostna meja: pod 15 let v Sloveniji ni veljavne privolitve (ZVOP-2, 8. clen).
         let years = Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
         guard years >= 15 else {
-            message = "You must be at least 15 years old to use Outly."
+            message = String(localized: "You must be at least 15 years old to use Outly.")
             return
         }
         guard Countries.name(for: countryCode) != nil else {
-            message = "Choose your country."
+            message = String(localized: "Choose your country.")
             return
         }
 
@@ -221,7 +221,7 @@ struct CompleteAccountView: View {
         if !digits.isEmpty {
             let dial = dialCode.filter { $0.isNumber }
             guard !dial.isEmpty else {
-                message = "Choose the country code for your phone number."
+                message = String(localized: "Choose the country code for your phone number.")
                 return
             }
             update.phone = .some("+" + dial + digits)
