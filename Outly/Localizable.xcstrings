@@ -93,6 +93,24 @@
     "%lld events": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld event"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld events"
+                }
+              }
+            }
+          }
+        },
         "sl": {
           "stringUnit": {
             "state": "translated",
@@ -126,6 +144,24 @@
     "%lld invitations": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld invitation"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld invitations"
+                }
+              }
+            }
+          }
+        },
         "sl": {
           "variations": {
             "plural": {
@@ -216,6 +252,24 @@
     "%lld tickets": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld ticket"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld tickets"
+                }
+              }
+            }
+          }
+        },
         "sl": {
           "variations": {
             "plural": {
@@ -251,6 +305,24 @@
     "%lld upcoming events": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld upcoming event"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld upcoming events"
+                }
+              }
+            }
+          }
+        },
         "sl": {
           "variations": {
             "plural": {
