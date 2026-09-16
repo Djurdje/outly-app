@@ -74,7 +74,8 @@ struct SavedView: View {
                         Spacer(minLength: 30)
                     }
                 }
-                .refreshable { await favorites.load(token: session.token) }
+                // Samostojna naloga: SwiftUI sicer prekine osvezitev ob spremembi stanja (glej HomeView).
+                .refreshable { await Task { await favorites.load(token: session.token) }.value }
             }
             .task {
                 if !favorites.loaded { await favorites.load(token: session.token) }

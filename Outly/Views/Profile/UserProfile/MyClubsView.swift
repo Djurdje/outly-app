@@ -58,7 +58,8 @@ struct MyClubsView: View {
                 }
                 .padding(.bottom, 40)
             }
-            .refreshable { await load() }
+            // Samostojna naloga: SwiftUI sicer prekine osvezitev ob spremembi stanja (glej HomeView).
+            .refreshable { await Task { await load() }.value }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

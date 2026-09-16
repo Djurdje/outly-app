@@ -62,7 +62,8 @@ struct BusinessDashboardView: View {
         .background(Color.black.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .refreshable { await load() }
+        // Samostojna naloga: SwiftUI sicer prekine osvezitev ob spremembi stanja (glej HomeView).
+        .refreshable { await Task { await load() }.value }
         .onAppear { Task { await load() } }
     }
 
