@@ -12,7 +12,13 @@ import Combine
 /// Privzeto: jezik naprave (slovenscina -> "sl", vse ostalo -> "en"). Izbira je v UserDefaults.
 final class Jezik: ObservableObject {
     static let kljuc = "outly_jezik"
-    static let podprti = ["en", "sl"]
+    /// En vnos na jezik: koda + ime VEDNO v svojem jeziku (se ne prevaja). Nov jezik = nova vrstica tu,
+    /// zaslon Language (MyAccount) in privzeti() ju uporabita samodejno.
+    static let seznam: [(koda: String, ime: String)] = [
+        ("en", "English"),
+        ("sl", "Slovenščina"),
+    ]
+    static var podprti: [String] { seznam.map(\.koda) }
     static let shared = Jezik()
 
     @Published private(set) var koda: String
@@ -40,6 +46,9 @@ final class Jezik: ObservableObject {
     var locale: Locale { Locale(identifier: koda == "sl" ? "sl_SI" : "en_GB") }
 
     var jeSlovenscina: Bool { koda == "sl" }
+
+    /// Ime trenutnega jezika v njegovem jeziku (za prikaz v Nastavitve -> Language).
+    var ime: String { Jezik.seznam.first { $0.koda == koda }?.ime ?? koda }
 
     /// Zamenja jezik. `zavihek`: na kateri zavihek naj se aplikacija postavi po ponovni gradnji.
     func nastavi(_ nova: String, zavihek: Int? = nil) {
@@ -79,29 +88,6 @@ private final class JezikovniBundle: Bundle {
 }
 
 // MARK: - Pogledi za preklop
-
-/// Segmentni preklop English | Slovenscina (Profil). Imeni jezikov sta vedno v svojem jeziku.
-struct JezikPreklop: View {
-    @EnvironmentObject private var jezik: Jezik
-    /// Zavihek, kamor naj se aplikacija vrne po preklopu (Profil = 3).
-    var zavihek: Int? = 3
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "globe")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.gray)
-            Picker("Language", selection: Binding(
-                get: { jezik.koda },
-                set: { jezik.nastavi($0, zavihek: zavihek) }
-            )) {
-                Text(verbatim: "English").tag("en")
-                Text(verbatim: "Slovenščina").tag("sl")
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-}
 
 /// Majhen tekstovni gumb (prijava/registracija): pokaze DRUGI jezik, klik preklopi.
 struct JezikGumb: View {

@@ -32,6 +32,9 @@ struct OutlyMenuRowButton: View {
     var height: CGFloat = 60
     /// Rdeca znacka desno (npr. stevilo cakajocih vabil pri "My Clubs"); 0 = brez.
     var badge: Int = 0
+    /// Siva vrednost desno (npr. trenutni jezik pri "Language"); besedila SE NE prevaja
+    /// (klicatelj poda ze koncno besedilo, npr. ime jezika v njegovem jeziku).
+    var value: String? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -44,6 +47,12 @@ struct OutlyMenuRowButton: View {
                 .foregroundColor(.white)
 
             Spacer()
+
+            if let value {
+                Text(verbatim: value)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.5))
+            }
 
             if badge > 0 {
                 Text("\(badge)")
