@@ -16,8 +16,9 @@ Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-bac
 - Testerji dobijo build prek TestFlighta (~5–15 min po zelenem Actions). **Vsak merge v master = nov build pri testerjih.**
   Zato v `master` samo, kar je preverjeno; polovične stvari ostanejo na veji.
 - »Dela« pomeni: zelen Actions **in** Martin preveril na napravi. Dokler tega ni, piši »preverjeno s parse + pregledom tipov, na napravi ne«.
-- Nikoli ne potiskaj neposredno v `master` — veja + PR + zelen Actions + merge. (GitHub zaščite na tem zasebnem repu ne uveljavlja
-  tehnično — to je dogovor, ne varovalo.)
+- Nikoli ne potiskaj neposredno v `master` — veja + PR + zelen Actions (prevod) + `type-checker` → **PR sam mergaj**
+  (`gh pr merge --squash --delete-branch`; odločeno 16. 9. 2026, človeka vmes ni). Merge sproži TestFlight build – v PR opis napiši,
+  kaj naj Martin preveri na telefonu. (GitHub zaščite na tem zasebnem repu ne uveljavlja tehnično — to je dogovor, ne varovalo.)
 - Ne spreminjaj `runs-on: macos-26`, `MARKETING_VERSION` ali podpisovanja brez Martina. Apple od aprila 2026 sprejema samo iOS 26 SDK.
 
 ## Pred vsakim PR-jem (obvezno, ker ni Xcoda)
