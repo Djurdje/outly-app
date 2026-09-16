@@ -4,13 +4,21 @@ SwiftUI aplikacija (iOS 17+), Xcode 16 format s **sinhronizirano mapo** (`object
 Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-backend`: `docs/DECISIONS.md`, `docs/STATE.md`,
 `docs/ARCHITECTURE.md` — preberi jih (ali zahtevaj vsebino), preden spreminjaš karkoli, kar se dotika API-ja, vlog ali plačil.
 
-## Kako pride gradnja na telefon (ni Maca!)
+## Kako pride gradnja na telefon (ni Maca!) — TestFlight od 16. 9. 2026
 
-- Veja `master` = izvor gradenj. Potisk sproži GitHub Actions `Gradnja iOS` (`.github/workflows/gradnja.yml`, macOS runner, ~3 min):
-  prevede, arhivira, priloži `Outly-nepodpisan.ipa` in `Outly-simulator-app`. **Rdeč Actions = napake prevajalnika.** Ne vsiljuj različice Xcoda.
+- Veja `master` = izvor gradenj. Vsak potisk v `master` sproži GitHub Actions `Gradnja iOS` (`.github/workflows/gradnja.yml`,
+  runner `macos-26` = Xcode 26 / iOS 26 SDK, ~8–10 min): (1) prevod za simulator brez podpisa → artefakt `Outly-simulator-app`
+  (appetize.io), (2) **podpisan arhiv s cloud signing in upload na TestFlight** (App Store Connect API ključ iz GitHub secrets
+  `APPLE_TEAM_ID`, `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_KEY_P8`; nič se ne hrani v repu). Številka gradnje = številka zagona workflowa.
+- Na **pull request** teče samo prevod za simulator (TestFlight se preskoči) — rdeč PR se ne sme združiti.
+- Bundle ID `si.outly.app`, aplikacija v App Store Connect »Outly - Nightlife« (ime »Outly« je zasedeno), Martinov Individual
+  Apple Developer račun; pozneje App Transfer na NEXT DIMENSIONS. `DEVELOPMENT_TEAM` je v projektu prazen — poda ga CI.
+- Testerji dobijo build prek TestFlighta (~5–15 min po zelenem Actions). **Vsak merge v master = nov build pri testerjih.**
+  Zato v `master` samo, kar je preverjeno; polovične stvari ostanejo na veji.
 - »Dela« pomeni: zelen Actions **in** Martin preveril na napravi. Dokler tega ni, piši »preverjeno s parse + pregledom tipov, na napravi ne«.
-- Nikoli ne potiskaj neposredno v `master` — veja + PR + zelen Actions + merge.
-- Cilj: TestFlight (Apple Developer račun obstaja od 16. 9. 2026; ASC API ključ kot GitHub secrets vpiše Martin).
+- Nikoli ne potiskaj neposredno v `master` — veja + PR + zelen Actions + merge. (GitHub zaščite na tem zasebnem repu ne uveljavlja
+  tehnično — to je dogovor, ne varovalo.)
+- Ne spreminjaj `runs-on: macos-26`, `MARKETING_VERSION` ali podpisovanja brez Martina. Apple od aprila 2026 sprejema samo iOS 26 SDK.
 
 ## Pred vsakim PR-jem (obvezno, ker ni Xcoda)
 
