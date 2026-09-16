@@ -97,7 +97,7 @@ struct TeamView: View {
             .environmentObject(session)
         }
         .confirmationDialog(
-            removing.map { LocalizedStringKey("Remove \($0.username) from the team?") } ?? "",
+            removing.map { (m) -> LocalizedStringKey in "Remove \(m.username) from the team?" } ?? "",
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
             titleVisibility: .visible
         ) {
@@ -109,7 +109,7 @@ struct TeamView: View {
             Text("They lose access to the club tools right away.")
         }
         .confirmationDialog(
-            cancelling.map { LocalizedStringKey("Cancel the invitation for \($0.username.isEmpty ? $0.email : $0.username)?") } ?? "",
+            cancelling.map { (v) -> LocalizedStringKey in "Cancel the invitation for \(v.username.isEmpty ? v.email : v.username)?" } ?? "",
             isPresented: Binding(get: { cancelling != nil }, set: { if !$0 { cancelling = nil } }),
             titleVisibility: .visible
         ) {
