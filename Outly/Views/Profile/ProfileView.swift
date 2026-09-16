@@ -240,11 +240,6 @@ struct ProfileView: View {
                     }
                 }
 
-                // Jezik aplikacije: preklop takoj, aplikacija ostane na Profilu.
-                JezikPreklop(zavihek: 3)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 4)
-
                 Button {
                     session.logout()
                     authStage = "login"

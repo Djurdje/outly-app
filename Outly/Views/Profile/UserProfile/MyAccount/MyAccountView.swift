@@ -9,6 +9,7 @@ struct MyAccountView: View {
     @State private var user: Me?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @EnvironmentObject private var jezik: Jezik
 
     private var userAvatarURL: URL? {
         guard let s = user?.avatarUrl, !s.isEmpty else { return nil }
@@ -83,6 +84,10 @@ struct MyAccountView: View {
 
                     NavigationLink(destination: ReguestForCreatorView()) {
                         OutlyMenuRowButton(icon: "chart.line.uptrend.xyaxis", title: "Request for creator")
+                    }
+
+                    NavigationLink(destination: LanguageView()) {
+                        OutlyMenuRowButton(icon: "globe", title: "Language", value: jezik.ime)
                     }
 
                     Divider()
