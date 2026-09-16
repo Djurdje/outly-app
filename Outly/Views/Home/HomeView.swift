@@ -281,7 +281,10 @@ struct HomeView: View {
             }
             .background(homeBackground)
             .navigationTitle("")
-            .refreshable { await loadAll() }
+            // Osvezitev tece v samostojni nalogi: SwiftUI prekine nalogo .refreshable, ce se
+            // stanje pogleda spremeni pred koncem klicev (isLoading, me, lokacija), in
+            // URLSession bi vrgel "cancelled" -> "Connection problem". Task {} tega ne deduje.
+            .refreshable { await Task { await loadAll() }.value }
         }
         .preferredColorScheme(.dark)
         .task {
@@ -447,6 +450,10 @@ struct HomeView: View {
             await loadMe()
             // Liked events: osvezimo tudi priljubljene (pull-to-refresh), napaka tu ni kriticna.
             await favorites.load(token: authToken)
+        } catch is CancellationError {
+            // Prekinitev naloge (SwiftUI) ni napaka za uporabnika.
+        } catch let url as URLError where url.code == .cancelled {
+            // Isto: URLSession sporoci prekinitev kot URLError.cancelled (-999).
         } catch {
             self.errorText = error.userMessage
         }
