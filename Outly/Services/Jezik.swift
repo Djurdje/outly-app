@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import Combine
 
 /// Jezik aplikacije: "en" ali "sl". Preklop deluje takoj, brez ponovnega zagona.
 ///
