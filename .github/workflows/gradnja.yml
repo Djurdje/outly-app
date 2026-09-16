@@ -69,6 +69,25 @@ jobs:
             | grep -E "error:|warning: .*(deprecated|unused)|BUILD (SUCCEEDED|FAILED)|Compiling|Ld " || true
           grep -q "BUILD SUCCEEDED" build/sim.log
 
+      - name: Testi (simulator)
+        # OutlyTests (XCTest, brez UI/omreznih klicev) -- tece tudi na pull_request,
+        # ker je to isti job kot zgornji korak. "generic/platform=iOS Simulator" (kot
+        # zgoraj) za `test` ne velja -- xcodebuild zahteva konkreten simulator, zato ga
+        # dobimo dinamicno (da se korak ne podre, ko runner spremeni privzeti seznam naprav).
+        run: |
+          set -o pipefail
+          DEST_NAME=$(xcrun simctl list devices available | grep -m1 -oE '^ *iPhone [0-9A-Za-z ]+' | sed -e 's/^ *//' -e 's/ *$//')
+          test -n "$DEST_NAME"
+          echo "Simulator za teste: $DEST_NAME"
+          xcodebuild test \
+            -project Outly.xcodeproj \
+            -scheme Outly \
+            -destination "platform=iOS Simulator,name=$DEST_NAME" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build/test.log \
+            | grep -E "error:|Test Case|Test Suite|\*\* TEST (SUCCEEDED|FAILED) \*\*" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" build/test.log
+
       - name: Sestavi simulatorsko .app (za Appetize.io / simulator na Macu)
         run: |
           APP=$(find build/sim/Build/Products -name "Outly.app" -type d | head -1)
