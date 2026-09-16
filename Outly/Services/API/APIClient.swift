@@ -8,11 +8,11 @@ enum APIError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL."
+            return String(localized: "Invalid URL.")
         case .requestFailed(let code, let msg):
-            return "Request failed (\(code)): \(msg)"
+            return String(localized: "Request failed (\(code)): \(msg)")
         case .decodingFailed:
-            return "Failed to decode response."
+            return String(localized: "Failed to decode response.")
         }
     }
 }

@@ -26,7 +26,7 @@ final class Jezik: ObservableObject {
         let zacetna = (shranjen.flatMap { Jezik.podprti.contains($0) ? $0 : nil }) ?? Jezik.privzeti()
         koda = zacetna
         Jezik.nastaviBundle(za: zacetna)
-        object_setClass(Bundle.main, JezikovniBundle.self)
+        _ = object_setClass(Bundle.main, JezikovniBundle.self)
     }
 
     /// Jezik naprave: "sl" samo, ce je prvi jezik uporabnika slovenscina.
@@ -70,7 +70,7 @@ final class Jezik: ObservableObject {
 }
 
 /// Podrazred, ki ga ob zagonu dobi Bundle.main (object_setClass). Ne ustvarjaj ga sam.
-private final class JezikovniBundle: Bundle, @unchecked Sendable {
+private final class JezikovniBundle: Bundle {
     override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
         if let s = Jezik.lokaliziraj(key, value: value, table: tableName) { return s }
         return super.localizedString(forKey: key, value: value, table: tableName)

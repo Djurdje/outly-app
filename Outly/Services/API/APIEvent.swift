@@ -173,8 +173,8 @@ extension APIEvent {
     var priceLabel: String {
         if isSoldOut { return "—" }
         if let p = displayPrice { return p }
-        if let u = ticketUrl, !u.isEmpty { return "Tickets" }
-        return "At the door"
+        if let u = ticketUrl, !u.isEmpty { return String(localized: "Tickets") }
+        return String(localized: "At the door")
     }
     var isFewLeft: Bool { availability == "few_left" }
     var ticketsLeft: Int? { capacity.map { max(0, $0 - soldCount) } }
@@ -182,10 +182,10 @@ extension APIEvent {
     /// Kratka oznaka za kartico ali nil, ce ni nic posebnega.
     var badgeText: String? {
         if isPast { return nil }
-        if isSoldOut { return "SOLD OUT" }
-        if isFewLeft, let n = ticketsLeft { return n == 1 ? "LAST ONE" : "\(n) LEFT" }
+        if isSoldOut { return String(localized: "SOLD OUT") }
+        if isFewLeft, let n = ticketsLeft { return n == 1 ? String(localized: "LAST ONE") : String(localized: "\(n) LEFT") }
         if ticketPriceCents == nil, let u = ticketUrl, !u.isEmpty { return nil }
-        if ticketPriceCents == 0 { return "FREE" }
+        if ticketPriceCents == 0 { return String(localized: "FREE") }
         return nil
     }
 
@@ -207,7 +207,7 @@ extension APIEvent {
     var displayDayTime: String {
         guard let d = startDate else { return "" }
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_GB")
+        f.locale = Jezik.shared.locale
         f.dateFormat = "EEE d MMM · HH:mm"
         return f.string(from: d)
     }

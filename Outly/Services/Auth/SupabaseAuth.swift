@@ -31,23 +31,23 @@ struct SupabaseAuthError: Error, Sendable {
 
     var userMessage: String {
         switch code {
-        case "invalid_credentials":            return "Wrong email or password."
-        case "email_not_confirmed":            return "Your email is not verified yet."
-        case "user_already_exists", "email_exists": return "That email is already registered. Sign in instead."
-        case "weak_password":                  return "Password must be at least 8 characters."
-        case "otp_expired", "otp_disabled":    return "The code is wrong or has expired. Request a new one."
+        case "invalid_credentials":            return String(localized: "Wrong email or password.")
+        case "email_not_confirmed":            return String(localized: "Your email is not verified yet.")
+        case "user_already_exists", "email_exists": return String(localized: "That email is already registered. Sign in instead.")
+        case "weak_password":                  return String(localized: "Password must be at least 8 characters.")
+        case "otp_expired", "otp_disabled":    return String(localized: "The code is wrong or has expired. Request a new one.")
         case "over_email_send_rate_limit", "over_request_rate_limit":
-            return "Too many attempts. Please wait a minute and try again."
-        case "same_password":                  return "New password must be different from the current one."
+            return String(localized: "Too many attempts. Please wait a minute and try again.")
+        case "same_password":                  return String(localized: "New password must be different from the current one.")
         case "session_expired", "refresh_token_not_found", "refresh_token_already_used", "bad_jwt":
-            return "Your session has expired. Please log in again."
-        case "user_not_found":                 return "No account with this email."
-        case "validation_failed":              return "Please check what you entered and try again."
+            return String(localized: "Your session has expired. Please log in again.")
+        case "user_not_found":                 return String(localized: "No account with this email.")
+        case "validation_failed":              return String(localized: "Please check what you entered and try again.")
         default:
-            if status >= 500 { return "The server is having trouble. Please try again later." }
-            if message.lowercased().contains("invalid login credentials") { return "Wrong email or password." }
-            if message.lowercased().contains("already registered") { return "That email is already registered. Sign in instead." }
-            return "Something went wrong. Please try again."
+            if status >= 500 { return String(localized: "The server is having trouble. Please try again later.") }
+            if message.lowercased().contains("invalid login credentials") { return String(localized: "Wrong email or password.") }
+            if message.lowercased().contains("already registered") { return String(localized: "That email is already registered. Sign in instead.") }
+            return String(localized: "Something went wrong. Please try again.")
         }
     }
 }
