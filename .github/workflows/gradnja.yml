@@ -32,15 +32,17 @@ concurrency:
 jobs:
   gradnja:
     name: Prevajanje in TestFlight
-    runs-on: macos-15
+    # macos-26: Xcode 26 / iOS 26 SDK. Apple od aprila 2026 na TestFlight/App Store
+    # sprejema samo gradnje z iOS 26 SDK (macos-15 ima Xcode 16.4 = iOS 18.5 SDK -> zavrnjeno).
+    runs-on: macos-26
     timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Xcode na runnerju
-        # Privzeti Xcode runnerja: ima ujemajoc simulatorski runtime. Rocna izbira
-        # Xcode 16.2 je padla, ker runner nima simulatorja iOS 18.2.
+        # Privzeti Xcode runnerja: ima ujemajoc simulatorski runtime. Rocne izbire
+        # druge razlicice NE delaj (runner nima ujemajocega simulatorja).
         run: |
           xcodebuild -version
           swift --version
