@@ -77,7 +77,7 @@ struct ResetPasswordView: View {
                     Button {
                         Task { await resend() }
                     } label: {
-                        Text(resent ? "Code sent again" : "Resend code")
+                        Text(LocalizedStringKey(resent ? "Code sent again" : "Resend code"))
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.white.opacity(0.85))
                             .padding(.top, 8)
@@ -101,9 +101,9 @@ struct ResetPasswordView: View {
 
     private func save() async {
         message = nil
-        guard (6...10).contains(code.count) else { message = "Enter the code from the email."; return }
-        guard password.count >= 8 else { message = "Password must be at least 8 characters."; return }
-        guard password == confirm else { message = "Passwords do not match."; return }
+        guard (6...10).contains(code.count) else { message = String(localized: "Enter the code from the email."); return }
+        guard password.count >= 8 else { message = String(localized: "Password must be at least 8 characters."); return }
+        guard password == confirm else { message = String(localized: "Passwords do not match."); return }
 
         isLoading = true
         defer { isLoading = false }
@@ -117,7 +117,7 @@ struct ResetPasswordView: View {
             // kar je prav: uporabnik se prijavi z novim geslom.
             // ForgotPasswordView opazuje loginNotice in se sam umakne na prijavo
             // (skupaj s tem zaslonom). Tukaj NE klicemo dismiss(), da ni dvojnega pop-a.
-            loginNotice = "Password updated. Log in with your new password."
+            loginNotice = String(localized: "Password updated. Log in with your new password.")
             authStage = "login"
         } catch {
             message = error.userMessage

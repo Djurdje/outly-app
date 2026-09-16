@@ -97,7 +97,7 @@ struct TeamView: View {
             .environmentObject(session)
         }
         .confirmationDialog(
-            removing.map { "Remove \($0.username) from the team?" } ?? "",
+            removing.map { (m) -> LocalizedStringKey in "Remove \(m.username) from the team?" } ?? "",
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
             titleVisibility: .visible
         ) {
@@ -109,7 +109,7 @@ struct TeamView: View {
             Text("They lose access to the club tools right away.")
         }
         .confirmationDialog(
-            cancelling.map { "Cancel the invitation for \($0.username.isEmpty ? $0.email : $0.username)?" } ?? "",
+            cancelling.map { (v) -> LocalizedStringKey in "Cancel the invitation for \(v.username.isEmpty ? v.email : v.username)?" } ?? "",
             isPresented: Binding(get: { cancelling != nil }, set: { if !$0 { cancelling = nil } }),
             titleVisibility: .visible
         ) {
@@ -272,7 +272,7 @@ struct TeamView: View {
         .padding(.top, 10)
     }
 
-    private func vloga(icon: String, title: String, text: String) -> some View {
+    private func vloga(icon: String, title: LocalizedStringKey, text: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .semibold))
@@ -415,7 +415,7 @@ struct AddTeamMemberView: View {
         .interactiveDismissDisabled(isSending)
     }
 
-    private func izbira(value: String, icon: String, title: String, text: String) -> some View {
+    private func izbira(value: String, icon: String, title: LocalizedStringKey, text: LocalizedStringKey) -> some View {
         let on = role == value
         return Button {
             role = value

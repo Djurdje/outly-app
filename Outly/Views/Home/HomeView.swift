@@ -117,9 +117,9 @@ struct HomeView: View {
         let teden = Date().addingTimeInterval(-7 * 24 * 3600)
         if let p = popularEvents.filter({ $0.soldCount > 0 && ($0.startDate ?? .distantPast) >= teden })
             .max(by: { $0.soldCount < $1.soldCount }) {
-            return (p, "Last week's biggest hit")
+            return (p, String(localized: "Last week's biggest hit"))
         }
-        if let t = trending.first { return (t, "Trending right now") }
+        if let t = trending.first { return (t, String(localized: "Trending right now")) }
         return nil
     }
 
@@ -148,14 +148,14 @@ struct HomeView: View {
 
     private var greeting: String {
         let h = Calendar.current.component(.hour, from: Date())
-        let pozdrav = h < 12 ? "Good morning" : (h < 18 ? "Good afternoon" : "Good evening")
+        let pozdrav = h < 12 ? String(localized: "Good morning") : (h < 18 ? String(localized: "Good afternoon") : String(localized: "Good evening"))
         if let name = me?.username, !name.isEmpty { return "\(pozdrav), \(name)" }
         return pozdrav
     }
 
     private var todayLine: String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_GB")
+        f.locale = Jezik.shared.locale
         f.dateFormat = "EEEE, d MMMM"
         return f.string(from: Date())
     }

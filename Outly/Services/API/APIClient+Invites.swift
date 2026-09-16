@@ -31,7 +31,7 @@ struct MyInvite: Decodable, Identifiable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(Int.self, forKey: .id)
         clubId = try c.decodeIfPresent(Int.self, forKey: .clubId) ?? 0
-        clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? "A club"
+        clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? String(localized: "A club")
         clubLogoUrl = try c.decodeIfPresent(String.self, forKey: .clubLogoUrl) ?? ""
         clubCity = try c.decodeIfPresent(String.self, forKey: .clubCity) ?? ""
         role = try c.decodeIfPresent(String.self, forKey: .role) ?? "doorman"
@@ -39,13 +39,13 @@ struct MyInvite: Decodable, Identifiable {
         invitedByUsername = try c.decodeIfPresent(String.self, forKey: .invitedByUsername)
     }
 
-    var roleLabel: String { role == "manager" ? "Manager" : "Door staff" }
+    var roleLabel: String { role == "manager" ? String(localized: "Manager") : String(localized: "Door staff") }
 
     /// Kaj vloga prinese (besedilo na kartici vabila, Figma 370:1050).
     var roleDescription: String {
         role == "manager"
-            ? "event management, sales and ticket scanning"
-            : "ticket scanning at the door"
+            ? String(localized: "event management, sales and ticket scanning")
+            : String(localized: "ticket scanning at the door")
     }
 }
 

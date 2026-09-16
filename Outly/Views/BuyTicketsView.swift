@@ -47,13 +47,17 @@ struct BuyTicketsView: View {
             .background(ozadje.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(purchase == nil ? "Checkout" : "Your tickets")
+                    Text(LocalizedStringKey(purchase == nil ? "Checkout" : "Your tickets"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(purchase == nil ? "Cancel" : "Done") { dismiss() }
-                        .foregroundColor(.white.opacity(0.85))
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(LocalizedStringKey(purchase == nil ? "Cancel" : "Done"))
+                    }
+                    .foregroundColor(.white.opacity(0.85))
                 }
             }
             .toolbarBackground(ozadje, for: .navigationBar)
@@ -147,13 +151,19 @@ struct BuyTicketsView: View {
                         .foregroundColor(.white.opacity(0.45))
                     Spacer()
                     if let r = remaining, r <= 20 {
-                        Text(r == 0 ? "SOLD OUT" : "\(r) LEFT")
-                            .font(.system(size: 10, weight: .heavy))
-                            .tracking(0.8)
-                            .foregroundColor(r == 0 ? .white : .black)
-                            .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(r == 0 ? Color.white.opacity(0.25) : Color.white)
-                            .clipShape(Capsule())
+                        Group {
+                            if r == 0 {
+                                Text("SOLD OUT")
+                            } else {
+                                Text("\(r) LEFT")
+                            }
+                        }
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(0.8)
+                        .foregroundColor(r == 0 ? .white : .black)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(r == 0 ? Color.white.opacity(0.25) : Color.white)
+                        .clipShape(Capsule())
                     }
                 }
 
@@ -161,7 +171,7 @@ struct BuyTicketsView: View {
                     izbiraKolicine
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(isFree ? "Free" : Denar.evri(unitCents, koda: koda))
+                        Text(isFree ? String(localized: "Free") : Denar.evri(unitCents, koda: koda))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.white)
                         Text("per ticket")
@@ -182,7 +192,7 @@ struct BuyTicketsView: View {
                         .foregroundColor(.white.opacity(0.75))
                         .lineLimit(1)
                     Spacer(minLength: 12)
-                    Text(isFree ? "Free" : Denar.evri(totalCents, koda: koda))
+                    Text(isFree ? String(localized: "Free") : Denar.evri(totalCents, koda: koda))
                         .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.9))
                 }
@@ -293,13 +303,12 @@ struct BuyTicketsView: View {
 
     private var gumbPlacaj: some View {
         let soldOut = event.isSoldOut || remaining == 0
-        let naslov = soldOut ? "Sold out" : (isFree ? "Get \(quantity == 1 ? "ticket" : "tickets")" : "Pay \(Denar.evri(totalCents, koda: koda))")
         return Button {
             Task { await kupi() }
         } label: {
             HStack(spacing: 10) {
                 if isBuying { ProgressView().tint(.white) }
-                Text(naslov)
+                Text(naslovGumbaPlacaj(soldOut: soldOut))
                     .font(.system(size: 17, weight: .semibold))
                     .contentTransition(.numericText())
             }
@@ -312,6 +321,13 @@ struct BuyTicketsView: View {
         .buttonStyle(.plain)
         .disabled(isBuying || soldOut)
         .animation(.snappy, value: totalCents)
+    }
+
+    /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.
+    private func naslovGumbaPlacaj(soldOut: Bool) -> String {
+        if soldOut { return String(localized: "Sold out") }
+        if isFree { return quantity == 1 ? String(localized: "Get ticket") : String(localized: "Get tickets") }
+        return String(localized: "Pay \(Denar.evri(totalCents, koda: koda))")
     }
 
     // MARK: - Uspeh
@@ -331,7 +347,7 @@ struct BuyTicketsView: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
 
-                Text("Order \(p.order.publicRef) · \(p.tickets.count) ticket\(p.tickets.count == 1 ? "" : "s") · \(Denar.evri(p.order.totalCents, koda: p.order.currency))")
+                Text(povzetekNarocila(p))
                     .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
@@ -375,6 +391,15 @@ struct BuyTicketsView: View {
         }
     }
 
+    /// Povzetek narocila pod "You're in!": loceni kljuci za narocilo in stevilo vstopnic,
+    /// namesto enega niza z rocno mnozino (prevod nastavi mnozinsko obliko).
+    private func povzetekNarocila(_ p: PurchaseResponse) -> String {
+        let narocilo = String(localized: "Order \(p.order.publicRef)")
+        let vstopnice = String(localized: "\(p.tickets.count) tickets")
+        let znesek = Denar.evri(p.order.totalCents, koda: p.order.currency)
+        return "\(narocilo) · \(vstopnice) · \(znesek)"
+    }
+
     // Kupljena vstopnica: plakat z naslovom, perforacija, QR.
     private func karticaVstopnice(_ t: APITicket, index: Int, count: Int) -> some View {
         VStack(spacing: 0) {
@@ -413,11 +438,11 @@ struct BuyTicketsView: View {
 
             VStack(spacing: 10) {
                 HStack(alignment: .top) {
-                    polje("DATE", event.displayDateShort)
+                    polje(String(localized: "DATE"), event.displayDateShort)
                     Spacer()
-                    polje("TIME", event.displayTimeShort)
+                    polje(String(localized: "TIME"), event.displayTimeShort)
                     Spacer()
-                    polje("TICKET", String(t.serial.prefix(8)).uppercased())
+                    polje(String(localized: "TICKET"), String(t.serial.prefix(8)).uppercased())
                 }
                 QRCodeView(content: t.qr, size: 180)
                     .padding(.top, 4)

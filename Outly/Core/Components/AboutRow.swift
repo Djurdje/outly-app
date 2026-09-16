@@ -7,7 +7,7 @@ struct AboutRow: View {
     var body: some View {
         HStack {
             Image(systemName: icon)
-            Text(title)
+            Text(LocalizedStringKey(title))
             Spacer()
         }
         .padding()

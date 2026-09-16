@@ -1,0 +1,7081 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    " employee. With this role you will get access to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " zaposlen(a). S to vlogo dobiš dostop do %@."
+          }
+        }
+      }
+    },
+    "%@ has sent you an invitation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ti je poslal vabilo"
+          }
+        }
+      }
+    },
+    "%@ has sent you an invitation to work as a ": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ti je poslal vabilo, da delaš kot "
+          }
+        }
+      }
+    },
+    "%@ hasn't shared its bar prices in Outly yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ svojega cenika bara na Outlyju še ni delil."
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "extractionState": "manual"
+    },
+    "%@ · %lld × %@": {
+      "extractionState": "manual"
+    },
+    "%@:": {
+      "extractionState": "manual"
+    },
+    "%lld": {
+      "extractionState": "manual"
+    },
+    "%lld % of gross": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld % bruto zneska"
+          }
+        }
+      }
+    },
+    "%lld LEFT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ŠE %lld"
+          }
+        }
+      }
+    },
+    "%lld OF %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld OD %lld"
+          }
+        }
+      }
+    },
+    "%lld events": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld event"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld events"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dogodkov"
+          }
+        }
+      }
+    },
+    "%lld going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gre jih %lld"
+          }
+        }
+      }
+    },
+    "%lld in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopilo: %lld"
+          }
+        }
+      }
+    },
+    "%lld invitations": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld invitation"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld invitations"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vabila"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vabilo"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vabil"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vabili"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld items": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld postavk"
+          }
+        }
+      }
+    },
+    "%lld of 3 photos": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld od 3 fotografij"
+          }
+        }
+      }
+    },
+    "%lld orders · %lld buyers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld naročil · %lld kupcev"
+          }
+        }
+      }
+    },
+    "%lld refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrnjeno: %lld"
+          }
+        }
+      }
+    },
+    "%lld sold": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld prodanih"
+          }
+        }
+      }
+    },
+    "%lld tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld ticket"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld tickets"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vstopnice"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vstopnica"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vstopnic"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld vstopnici"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld upcoming events": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld upcoming event"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld upcoming events"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prihajajoči dogodki"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prihajajoč dogodek"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prihajajočih dogodkov"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prihajajoča dogodka"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld × %@": {
+      "extractionState": "manual"
+    },
+    "%lld+": {
+      "extractionState": "manual"
+    },
+    "%lld+ · ID at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld+ · osebni dokument pri vhodu"
+          }
+        }
+      }
+    },
+    "%lld+ · ID checked at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld+ · osebni dokument pri vhodu"
+          }
+        }
+      }
+    },
+    "%lld/%lld sold": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld/%lld prodanih"
+          }
+        }
+      }
+    },
+    "+386 41 123 456": {
+      "extractionState": "manual"
+    },
+    "0,00": {
+      "extractionState": "manual"
+    },
+    "0.00": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0,00"
+          }
+        }
+      }
+    },
+    "1 event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 dogodek"
+          }
+        }
+      }
+    },
+    "3–20 characters: letters, numbers, underscore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3–20 znakov: črke, števke, podčrtaj."
+          }
+        }
+      }
+    },
+    "41 123 456": {
+      "extractionState": "manual"
+    },
+    "A club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klub"
+          }
+        }
+      }
+    },
+    "ABOUT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O DOGODKU"
+          }
+        }
+      }
+    },
+    "ADDRESS": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NASLOV"
+          }
+        }
+      }
+    },
+    "ALREADY SCANNED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ŽE SKENIRANO"
+          }
+        }
+      }
+    },
+    "ALREADY USED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ŽE UPORABLJENO"
+          }
+        }
+      }
+    },
+    "About": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O aplikaciji"
+          }
+        }
+      }
+    },
+    "About Outly": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Outlyju"
+          }
+        }
+      }
+    },
+    "About club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O klubu"
+          }
+        }
+      }
+    },
+    "About the club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O klubu"
+          }
+        }
+      }
+    },
+    "About us": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O nas"
+          }
+        }
+      }
+    },
+    "Accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprejmi"
+          }
+        }
+      }
+    },
+    "Account  >  Delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun  >  Izbris"
+          }
+        }
+      }
+    },
+    "Account created. Check your email for the code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun ustvarjen. Preveri e-pošto za kodo."
+          }
+        }
+      }
+    },
+    "Add a profile photo so friends can\nrecognise you": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj profilno sliko, da te prijatelji\nprepoznajo"
+          }
+        }
+      }
+    },
+    "Add a profile photo so people can\nrecognise you": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj profilno sliko, da te ljudje\nprepoznajo"
+          }
+        }
+      }
+    },
+    "Add event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj dogodek"
+          }
+        }
+      }
+    },
+    "Add item": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj postavko"
+          }
+        }
+      }
+    },
+    "Add to liked events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj med všečkane dogodke"
+          }
+        }
+      }
+    },
+    "Add your club to Outly": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj svoj klub na Outly"
+          }
+        }
+      }
+    },
+    "Add your date of birth in Personal info to buy tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nakup vstopnic v Osebnih podatkih dodaj datum rojstva."
+          }
+        }
+      }
+    },
+    "Address": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslov"
+          }
+        }
+      }
+    },
+    "After changing your password, all other devices are signed out. This one stays signed in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po spremembi gesla so vse druge naprave odjavljene. Ta ostane prijavljena."
+          }
+        }
+      }
+    },
+    "Age limits": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starostne omejitve"
+          }
+        }
+      }
+    },
+    "Allow the camera in Settings → Outly to scan tickets at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dovoli kamero v Nastavitvah → Outly za skeniranje vstopnic pri vhodu."
+          }
+        }
+      }
+    },
+    "Already confirmed? Sign in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že potrjeno? Prijava"
+          }
+        }
+      }
+    },
+    "Already happened": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že minilo"
+          }
+        }
+      }
+    },
+    "An account with this email or username already exists.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun s tem e-naslovom ali uporabniškim imenom že obstaja."
+          }
+        }
+      }
+    },
+    "Anything else?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še kaj?"
+          }
+        }
+      }
+    },
+    "App & account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplikacija in račun"
+          }
+        }
+      }
+    },
+    "App updates & announcements": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posodobitve in novice o aplikaciji"
+          }
+        }
+      }
+    },
+    "Application form": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obrazec za prošnjo"
+          }
+        }
+      }
+    },
+    "Application sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prošnja poslana"
+          }
+        }
+      }
+    },
+    "Approved": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odobreno"
+          }
+        }
+      }
+    },
+    "Are you sure you want to delete your account?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ali res želiš izbrisati svoj račun?"
+          }
+        }
+      }
+    },
+    "Asking for camera access…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prosim za dostop do kamere …"
+          }
+        }
+      }
+    },
+    "At least 8 characters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsaj 8 znakov"
+          }
+        }
+      }
+    },
+    "At the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na vratih"
+          }
+        }
+      }
+    },
+    "BIG EVENT COMING UP": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VELIK DOGODEK PRIHAJA"
+          }
+        }
+      }
+    },
+    "BUY": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KUPI"
+          }
+        }
+      }
+    },
+    "Banner upload failed. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalaganje naslovne slike ni uspelo. %@"
+          }
+        }
+      }
+    },
+    "Banner uploaded": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslovna slika naložena"
+          }
+        }
+      }
+    },
+    "Bar prices": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cenik bara"
+          }
+        }
+      }
+    },
+    "Bars with live music": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bari z živo glasbo"
+          }
+        }
+      }
+    },
+    "Big events coming up": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veliki dogodki, ki prihajajo"
+          }
+        }
+      }
+    },
+    "Bought tickets for the whole group? Open a ticket and tap Send to a friend, then enter your friend's Outly email.\n\nThe ticket moves to their account with a new QR code — your old code stops working. Your friend needs an Outly account with a confirmed email and must meet the event's age limit.\n\nTickets can be sent until the event starts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si kupil(a) vstopnice za celo druščino? Odpri vstopnico in tapni Send to a friend (pošlji prijatelju), nato vnesi e-pošto prijateljevega Outly računa.\n\nVstopnica se prenese na njegov/njen račun z novo kodo QR — tvoja stara koda preneha delovati. Prijatelj potrebuje Outly račun s potrjeno e-pošto in mora izpolnjevati starostno omejitev dogodka.\n\nVstopnice lahko pošiljaš do začetka dogodka."
+          }
+        }
+      }
+    },
+    "Browse by genre": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prebrskaj po žanru"
+          }
+        }
+      }
+    },
+    "Business": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podjetje"
+          }
+        }
+      }
+    },
+    "Business account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslovni račun"
+          }
+        }
+      }
+    },
+    "Business address": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslov podjetja"
+          }
+        }
+      }
+    },
+    "Business licence / registration ID": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslovna licenca / matična številka"
+          }
+        }
+      }
+    },
+    "Business type (club, bar, promoter…)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrsta dejavnosti (klub, bar, promotor …)"
+          }
+        }
+      }
+    },
+    "By accepting, you will become a ": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če sprejmeš, boš postal(a) "
+          }
+        }
+      }
+    },
+    "By clicking continue, you agree to our": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S klikom na naprej se strinjaš z"
+          }
+        }
+      }
+    },
+    "By submitting you agree to our Terms and Privacy Policy. Your data is used only to review this application.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z oddajo se strinjaš s Pogoji uporabe in Politiko zasebnosti. Tvoji podatki se uporabijo samo za pregled te prošnje."
+          }
+        }
+      }
+    },
+    "Camera access is off": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostop do kamere je izklopljen"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prekliči"
+          }
+        }
+      }
+    },
+    "Cancel invitation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prekliči vabilo"
+          }
+        }
+      }
+    },
+    "Cancel or delete event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prekliči ali izbriši dogodek"
+          }
+        }
+      }
+    },
+    "Cancel the invitation for %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preklicati vabilo za %@?"
+          }
+        }
+      }
+    },
+    "Cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preklicano"
+          }
+        }
+      }
+    },
+    "Capacity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapaciteta"
+          }
+        }
+      }
+    },
+    "Capacity must be a whole number between 1 and 100000.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapaciteta mora biti celo število med 1 in 100000."
+          }
+        }
+      }
+    },
+    "Category (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kategorija (neobvezno)"
+          }
+        }
+      }
+    },
+    "Change email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremeni e-pošto"
+          }
+        }
+      }
+    },
+    "Change password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremeni geslo"
+          }
+        }
+      }
+    },
+    "Change poster": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjaj plakat"
+          }
+        }
+      }
+    },
+    "Check back soon.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveri znova kmalu."
+          }
+        }
+      }
+    },
+    "Check in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavi vstop"
+          }
+        }
+      }
+    },
+    "Checking your application…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preverjamo tvojo prošnjo …"
+          }
+        }
+      }
+    },
+    "Checking…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preverjam …"
+          }
+        }
+      }
+    },
+    "Checkout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blagajna"
+          }
+        }
+      }
+    },
+    "Choose between 1 and 10 tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi med 1 in 10 vstopnic."
+          }
+        }
+      }
+    },
+    "Choose photos": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi fotografije"
+          }
+        }
+      }
+    },
+    "Choose poster": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi plakat"
+          }
+        }
+      }
+    },
+    "Choose the country code for your phone number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi klicno kodo za svojo telefonsko številko."
+          }
+        }
+      }
+    },
+    "Choose your country.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi svojo državo."
+          }
+        }
+      }
+    },
+    "City": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesto"
+          }
+        }
+      }
+    },
+    "Close": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapri"
+          }
+        }
+      }
+    },
+    "Club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klub"
+          }
+        }
+      }
+    },
+    "Club info": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podatki o klubu"
+          }
+        }
+      }
+    },
+    "Club name": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ime kluba"
+          }
+        }
+      }
+    },
+    "Club video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video kluba"
+          }
+        }
+      }
+    },
+    "Club video coming soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video kluba kmalu na voljo"
+          }
+        }
+      }
+    },
+    "Clubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klubi"
+          }
+        }
+      }
+    },
+    "Clubs  >  List your club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klubi  >  Dodaj svoj klub"
+          }
+        }
+      }
+    },
+    "Clubs and events are suggested by the genres you pick.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klube in dogodke predlagamo glede na izbrane žanre."
+          }
+        }
+      }
+    },
+    "Clubs and events will show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klubi in dogodki bodo prikazani tukaj."
+          }
+        }
+      }
+    },
+    "Code sent again": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koda znova poslana"
+          }
+        }
+      }
+    },
+    "Code sent again. Check your email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koda znova poslana. Preveri e-pošto."
+          }
+        }
+      }
+    },
+    "Coming Soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kmalu na sporedu"
+          }
+        }
+      }
+    },
+    "Coming up": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihaja"
+          }
+        }
+      }
+    },
+    "Complete": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokončaj"
+          }
+        }
+      }
+    },
+    "Complete your account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokončaj svoj račun"
+          }
+        }
+      }
+    },
+    "Confirm password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi geslo"
+          }
+        }
+      }
+    },
+    "Congratulations, you have become a %@ employee.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čestitke, postal(a) si zaposlen(a) v %@."
+          }
+        }
+      }
+    },
+    "Connection problem. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Težava s povezavo. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Contact": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontakt"
+          }
+        }
+      }
+    },
+    "Contact person": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontaktna oseba"
+          }
+        }
+      }
+    },
+    "Contact us": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontaktiraj nas"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naprej"
+          }
+        }
+      }
+    },
+    "Continue...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadaljujem …"
+          }
+        }
+      }
+    },
+    "Could not delete the account right now. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Računa trenutno ni bilo mogoče izbrisati. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Could not load genres.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Žanrov ni bilo mogoče naložiti."
+          }
+        }
+      }
+    },
+    "Could not save your session on this device. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seje ni bilo mogoče shraniti na tej napravi. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Country": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Država"
+          }
+        }
+      }
+    },
+    "Create": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari"
+          }
+        }
+      }
+    },
+    "Create an account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari račun"
+          }
+        }
+      }
+    },
+    "Create event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari dogodek"
+          }
+        }
+      }
+    },
+    "Creating an account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvarjanje računa"
+          }
+        }
+      }
+    },
+    "Current password is wrong.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenutno geslo je napačno."
+          }
+        }
+      }
+    },
+    "DATE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DATUM"
+          }
+        }
+      }
+    },
+    "Dashboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pregled"
+          }
+        }
+      }
+    },
+    "Date of birth": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum rojstva"
+          }
+        }
+      }
+    },
+    "Date of birth cannot be in the future.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum rojstva ne more biti v prihodnosti."
+          }
+        }
+      }
+    },
+    "Delete Account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši račun"
+          }
+        }
+      }
+    },
+    "Delete account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši račun"
+          }
+        }
+      }
+    },
+    "Delete event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši dogodek"
+          }
+        }
+      }
+    },
+    "Delete your account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši svoj račun"
+          }
+        }
+      }
+    },
+    "Deleting...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brišem …"
+          }
+        }
+      }
+    },
+    "Description": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opis"
+          }
+        }
+      }
+    },
+    "Discover your genre": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrij svoj žanr"
+          }
+        }
+      }
+    },
+    "Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Končano"
+          }
+        }
+      }
+    },
+    "Door check-in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstop pri vratih"
+          }
+        }
+      }
+    },
+    "Door staff": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vratar"
+          }
+        }
+      }
+    },
+    "Double check that you entered the password correctly": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveri, da si geslo pravilno vnesel(a)"
+          }
+        }
+      }
+    },
+    "Draft": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Osnutek"
+          }
+        }
+      }
+    },
+    "ENDED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KONČANO"
+          }
+        }
+      }
+    },
+    "EXPIRED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "POTEKLA"
+          }
+        }
+      }
+    },
+    "Edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi"
+          }
+        }
+      }
+    },
+    "Edit event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi dogodek"
+          }
+        }
+      }
+    },
+    "Edit your page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi svojo stran"
+          }
+        }
+      }
+    },
+    "Email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošta"
+          }
+        }
+      }
+    },
+    "Email used for customer support and contact.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošta za podporo in stik s strankami."
+          }
+        }
+      }
+    },
+    "Email verified. Log in with your email and password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošta potrjena. Prijavi se z e-pošto in geslom."
+          }
+        }
+      }
+    },
+    "End time must be after start time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čas zaključka mora biti za časom začetka."
+          }
+        }
+      }
+    },
+    "Ended": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Končano"
+          }
+        }
+      }
+    },
+    "Ends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konec"
+          }
+        }
+      }
+    },
+    "Enter a title.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi naslov."
+          }
+        }
+      }
+    },
+    "Enter a valid date of birth.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi veljaven datum rojstva."
+          }
+        }
+      }
+    },
+    "Enter a valid email address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi veljaven e-poštni naslov."
+          }
+        }
+      }
+    },
+    "Enter a valid end date.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi veljaven datum konca."
+          }
+        }
+      }
+    },
+    "Enter a valid phone number, e.g. +386 41 123 456.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi veljavno telefonsko številko, npr. +386 41 123 456."
+          }
+        }
+      }
+    },
+    "Enter a valid start date.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi veljaven datum začetka."
+          }
+        }
+      }
+    },
+    "Enter new password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi novo geslo"
+          }
+        }
+      }
+    },
+    "Enter the business name (at least 2 characters).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi ime podjetja (vsaj 2 znaka)."
+          }
+        }
+      }
+    },
+    "Enter the club name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi ime kluba."
+          }
+        }
+      }
+    },
+    "Enter the code from the email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi kodo iz e-pošte."
+          }
+        }
+      }
+    },
+    "Enter the contact person's name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi ime kontaktne osebe."
+          }
+        }
+      }
+    },
+    "Enter the current password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi trenutno geslo"
+          }
+        }
+      }
+    },
+    "Enter the current password for security reasons": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iz varnostnih razlogov vnesi trenutno geslo"
+          }
+        }
+      }
+    },
+    "Enter the phone number with country code, e.g. +386 41 123 456.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi telefonsko številko s klicno kodo, npr. +386 41 123 456."
+          }
+        }
+      }
+    },
+    "Enter the price as a number, e.g. 12.50.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi ceno kot številko, npr. 12,50."
+          }
+        }
+      }
+    },
+    "Enter your friend's email address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi e-naslov svojega prijatelja."
+          }
+        }
+      }
+    },
+    "Enter your password to confirm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za potrditev vnesi geslo."
+          }
+        }
+      }
+    },
+    "Enter your password to continue.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nadaljevanje vnesi geslo."
+          }
+        }
+      }
+    },
+    "Enter your password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi svoje geslo."
+          }
+        }
+      }
+    },
+    "Event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek"
+          }
+        }
+      }
+    },
+    "Event organizers & promoters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organizatorji dogodkov in promotorji"
+          }
+        }
+      }
+    },
+    "Event performance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uspešnost dogodkov"
+          }
+        }
+      }
+    },
+    "Event reminders": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opomniki za dogodke"
+          }
+        }
+      }
+    },
+    "Event updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posodobitve dogodkov"
+          }
+        }
+      }
+    },
+    "Events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki"
+          }
+        }
+      }
+    },
+    "Events  >  Age limits": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki  >  Starostne omejitve"
+          }
+        }
+      }
+    },
+    "Events, sales, club page and door staff.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki, prodaja, stran kluba in vratarji."
+          }
+        }
+      }
+    },
+    "Events, sales, club page and door staff. Can't add other managers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki, prodaja, stran kluba in vratarji. Ne more dodajati drugih upraviteljev."
+          }
+        }
+      }
+    },
+    "External ticket link (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zunanja povezava do vstopnic (neobvezno)"
+          }
+        }
+      }
+    },
+    "FREE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BREZPLAČNO"
+          }
+        }
+      }
+    },
+    "Failed to decode response.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odgovora ni bilo mogoče razčleniti."
+          }
+        }
+      }
+    },
+    "Failed to read selected image data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbrane slike ni bilo mogoče prebrati."
+          }
+        }
+      }
+    },
+    "Failed to read the selected video.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbranega videa ni bilo mogoče prebrati."
+          }
+        }
+      }
+    },
+    "Festivals and special nightlife events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Festivali in posebni dogodki nočnega življenja"
+          }
+        }
+      }
+    },
+    "Fill your application form": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izpolni obrazec prošnje"
+          }
+        }
+      }
+    },
+    "Forgot password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pozabljeno geslo"
+          }
+        }
+      }
+    },
+    "Forgot password?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pozabljeno geslo?"
+          }
+        }
+      }
+    },
+    "Free": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brezplačno"
+          }
+        }
+      }
+    },
+    "Full name *": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Polno ime *"
+          }
+        }
+      }
+    },
+    "Get ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupi vstopnico"
+          }
+        }
+      }
+    },
+    "Get tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupi vstopnice"
+          }
+        }
+      }
+    },
+    "Getting started  >  Account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prvi koraki  >  Račun"
+          }
+        }
+      }
+    },
+    "Go to My Account > Delete account. Your personal data is removed; records of past purchases are kept anonymised, as required for accounting.\n\nValid tickets on a deleted account cannot be recovered, so use them or send them to a friend first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pojdi na Moj račun > Izbriši račun. Tvoji osebni podatki bodo izbrisani; zapisi preteklih nakupov ostanejo anonimizirani, kot to zahteva računovodstvo.\n\nVeljavnih vstopnic na izbrisanem računu ni mogoče obnoviti, zato jih najprej uporabi ali pošlji prijatelju."
+          }
+        }
+      }
+    },
+    "Go to My Account > Request for creator and fill in the short form. We review requests by hand — you can follow the status on the same screen.\n\nOnce approved, your profile switches to the business view: Dashboard, Events, Scan tickets and Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pojdi na Moj račun > Prošnja za ustvarjalca in izpolni kratek obrazec. Prošnje pregledamo ročno — stanje lahko spremljaš na istem zaslonu.\n\nKo je odobrena, se tvoj profil preklopi na poslovni pogled: Pregled, Dogodki, Skeniraj vstopnice in Nastavitve."
+          }
+        }
+      }
+    },
+    "Good afternoon": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dober dan"
+          }
+        }
+      }
+    },
+    "Good evening": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dober večer"
+          }
+        }
+      }
+    },
+    "Good morning": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dobro jutro"
+          }
+        }
+      }
+    },
+    "Guests see the list under \"Bar prices\" on every event of your club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostje seznam vidijo pod \"Cenik bara\" na vsakem dogodku kluba."
+          }
+        }
+      }
+    },
+    "Guests see this list on every event of your club. Category is optional (e.g. Beer, Cocktails).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostje ta seznam vidijo pri vsakem dogodku tvojega kluba. Kategorija ni obvezna (npr. Pivo, Kokteli)."
+          }
+        }
+      }
+    },
+    "Has end time": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ima čas zaključka"
+          }
+        }
+      }
+    },
+    "Help Center": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Center za pomoč"
+          }
+        }
+      }
+    },
+    "Hi, how can we help?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Živjo, kako lahko pomagamo?"
+          }
+        }
+      }
+    },
+    "Home": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domov"
+          }
+        }
+      }
+    },
+    "How to buy a ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kako kupiti vstopnico"
+          }
+        }
+      }
+    },
+    "IN": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOTRI"
+          }
+        }
+      }
+    },
+    "IN %lld DAYS": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ČEZ %lld DNI"
+          }
+        }
+      }
+    },
+    "If tickets were already sold, the event will be cancelled instead of deleted so buyers keep proof of purchase.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če so bile vstopnice že prodane, se dogodek namesto izbrisa prekliče, da kupci obdržijo dokazilo o nakupu."
+          }
+        }
+      }
+    },
+    "In your area": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V tvoji bližini"
+          }
+        }
+      }
+    },
+    "Instagram": {
+      "extractionState": "manual"
+    },
+    "Invalid URL.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neveljaven URL."
+          }
+        }
+      }
+    },
+    "Invalid event status.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neveljavno stanje dogodka."
+          }
+        }
+      }
+    },
+    "Invitations from clubs to join their team\nwill show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vabila klubov, da se pridružiš ekipi,\nse prikažejo tukaj."
+          }
+        }
+      }
+    },
+    "Invite member": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi člana"
+          }
+        }
+      }
+    },
+    "Invite to team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi v ekipo"
+          }
+        }
+      }
+    },
+    "Invited as %@ · waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabljen(a) kot %@ · čaka"
+          }
+        }
+      }
+    },
+    "Invited by %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabil te je %@"
+          }
+        }
+      }
+    },
+    "It will show up under Tickets in their app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikazala se bo pod Vstopnice v njegovi/njeni aplikaciji."
+          }
+        }
+      }
+    },
+    "Item %lld (%@): enter a price like 4,50.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postavka %lld (%@): vnesi ceno, npr. 4,50."
+          }
+        }
+      }
+    },
+    "Item %lld: name is missing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postavka %lld: manjka ime."
+          }
+        }
+      }
+    },
+    "Item %lld: name is too long (max 60).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postavka %lld: ime je predolgo (največ 60)."
+          }
+        }
+      }
+    },
+    "Item (e.g. Beer 0.5 l)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postavka (npr. Pivo 0,5 l)"
+          }
+        }
+      }
+    },
+    "Join our platform and promote your club, bar, or event to thousands of tourists and locals. With a business account, you can publish events, sell tickets directly through the app, and connect with your audience in real time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridruži se platformi in promoviraj svoj klub, bar ali dogodek tisočim turistom in domačinom. S poslovnim računom lahko objavljaš dogodke, prodajaš vstopnice neposredno prek aplikacije in se v realnem času povezuješ s svojim občinstvom."
+          }
+        }
+      }
+    },
+    "Keep event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obdrži dogodek"
+          }
+        }
+      }
+    },
+    "Keep it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obdrži"
+          }
+        }
+      }
+    },
+    "LAST ONE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ZADNJA"
+          }
+        }
+      }
+    },
+    "LAST WEEK'S BIGGEST HIT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAJVEČJI HIT PRETEKLEGA TEDNA"
+          }
+        }
+      }
+    },
+    "Language": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jezik"
+          }
+        }
+      }
+    },
+    "Last 7 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadnjih 7 dni"
+          }
+        }
+      }
+    },
+    "Last week's biggest hit": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hit prejšnjega tedna"
+          }
+        }
+      }
+    },
+    "Last week's biggest hits": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Največji hiti prejšnjega tedna"
+          }
+        }
+      }
+    },
+    "Leave %@ team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapusti ekipo – %@"
+          }
+        }
+      }
+    },
+    "Leave empty if tickets are not sold on Outly. 0 = free entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pusti prazno, če vstopnic ne prodajaš na Outlyju. 0 = brezplačen vstop."
+          }
+        }
+      }
+    },
+    "Leave empty to remove the number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pusti prazno, če želiš odstraniti številko."
+          }
+        }
+      }
+    },
+    "Leave team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapusti ekipo"
+          }
+        }
+      }
+    },
+    "Leave the team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapusti ekipo"
+          }
+        }
+      }
+    },
+    "Leave the team?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapustiš ekipo?"
+          }
+        }
+      }
+    },
+    "Legal business name *": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uradno ime podjetja *"
+          }
+        }
+      }
+    },
+    "Liked events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Všečkani dogodki"
+          }
+        }
+      }
+    },
+    "Loading genres...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalaganje žanrov …"
+          }
+        }
+      }
+    },
+    "Loading...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalaganje …"
+          }
+        }
+      }
+    },
+    "Location could not be saved. Try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokacije ni bilo mogoče shraniti. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Log out": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjava"
+          }
+        }
+      }
+    },
+    "Login": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijava"
+          }
+        }
+      }
+    },
+    "Login & Passwords  >  Reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijava in gesla  >  Ponastavitev"
+          }
+        }
+      }
+    },
+    "Logo upload failed. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalaganje logotipa ni uspelo. %@"
+          }
+        }
+      }
+    },
+    "Manager": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upravitelj"
+          }
+        }
+      }
+    },
+    "Map": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zemljevid"
+          }
+        }
+      }
+    },
+    "Message (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sporočilo (neobvezno)"
+          }
+        }
+      }
+    },
+    "Min age: %lld+": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najnižja starost: %lld+"
+          }
+        }
+      }
+    },
+    "Minimum age must be between 0 and 99.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najnižja starost mora biti med 0 in 99."
+          }
+        }
+      }
+    },
+    "Minimum age: %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najnižja starost: %lld"
+          }
+        }
+      }
+    },
+    "Music genres": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glasbeni žanri"
+          }
+        }
+      }
+    },
+    "My Account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moj račun"
+          }
+        }
+      }
+    },
+    "My Clubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moji klubi"
+          }
+        }
+      }
+    },
+    "My clubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moji klubi"
+          }
+        }
+      }
+    },
+    "NEXT DIMENSIONS, družba za marketing, d.o.o.\nTrebče 81, 3256 Bistrica ob Sotli, Slovenia": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEXT DIMENSIONS, družba za marketing, d.o.o.\nTrebče 81, 3256 Bistrica ob Sotli, Slovenija"
+          }
+        }
+      }
+    },
+    "NOT PAID": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEPLAČANO"
+          }
+        }
+      }
+    },
+    "New event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nov dogodek"
+          }
+        }
+      }
+    },
+    "New events in my city": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novi dogodki v mojem mestu"
+          }
+        }
+      }
+    },
+    "New password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo geslo"
+          }
+        }
+      }
+    },
+    "New password must be different from the current one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo geslo mora biti drugačno od trenutnega."
+          }
+        }
+      }
+    },
+    "New passwords do not match.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novi gesli se ne ujemata."
+          }
+        }
+      }
+    },
+    "Next": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naprej"
+          }
+        }
+      }
+    },
+    "Nightclubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nočni klubi"
+          }
+        }
+      }
+    },
+    "No %@ events yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenutno ni dogodkov žanra %@"
+          }
+        }
+      }
+    },
+    "No Outly account with this email. Ask your friend to sign up first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S tem e-naslovom ni Outly računa. Prijatelj naj se najprej registrira."
+          }
+        }
+      }
+    },
+    "No account with this email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S tem e-naslovom ni računa."
+          }
+        }
+      }
+    },
+    "No bar prices yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cenika bara še ni"
+          }
+        }
+      }
+    },
+    "No clubs on the map yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zemljevidu še ni klubov."
+          }
+        }
+      }
+    },
+    "No daily data yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni dnevnih podatkov."
+          }
+        }
+      }
+    },
+    "No events yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni dogodkov"
+          }
+        }
+      }
+    },
+    "No events yet. Add one under Events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni dogodkov. Dodaj enega pod Dogodki."
+          }
+        }
+      }
+    },
+    "No events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni dogodkov."
+          }
+        }
+      }
+    },
+    "No internet connection. Check your network and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni internetne povezave. Preveri omrežje in poskusi znova."
+          }
+        }
+      }
+    },
+    "No liked events yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni všečkanih dogodkov"
+          }
+        }
+      }
+    },
+    "No new notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni novih obvestil"
+          }
+        }
+      }
+    },
+    "No response from the server. Check your connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik se ne odziva. Preveri povezavo."
+          }
+        }
+      }
+    },
+    "No results for \"%@\".": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni rezultatov za »%@«."
+          }
+        }
+      }
+    },
+    "No sales yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni prodaje."
+          }
+        }
+      }
+    },
+    "No tickets sold for this event yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za ta dogodek še ni prodanih vstopnic."
+          }
+        }
+      }
+    },
+    "No tickets yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni vstopnic"
+          }
+        }
+      }
+    },
+    "No video yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni videa"
+          }
+        }
+      }
+    },
+    "Not added yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni dodano"
+          }
+        }
+      }
+    },
+    "Not enough tickets left.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni dovolj vstopnic."
+          }
+        }
+      }
+    },
+    "Not found.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni najdeno."
+          }
+        }
+      }
+    },
+    "Not on the map yet — set the address and city.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni na zemljevidu — nastavi naslov in mesto."
+          }
+        }
+      }
+    },
+    "Not set": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni nastavljeno"
+          }
+        }
+      }
+    },
+    "Nothing found. Try another word or contact us below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nič ni bilo najdeno. Poskusi drugo besedo ali nas kontaktiraj spodaj."
+          }
+        }
+      }
+    },
+    "Nothing on yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še nič na sporedu"
+          }
+        }
+      }
+    },
+    "Nothing to save.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni sprememb za shraniti."
+          }
+        }
+      }
+    },
+    "Notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestila"
+          }
+        }
+      }
+    },
+    "Number of tickets available. Shows “N left” and “Sold out” to guests.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Število razpoložljivih vstopnic. Gostom prikaže “Še N” in “Razprodano”."
+          }
+        }
+      }
+    },
+    "OK": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V redu"
+          }
+        }
+      }
+    },
+    "ORDER": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAROČILO"
+          }
+        }
+      }
+    },
+    "Offers from clubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponudbe klubov"
+          }
+        }
+      }
+    },
+    "On the login screen tap Forgot password and enter your email. We send you a code; enter it together with a new password.\n\nIf you are logged in, go to My Account > Password and security to change your password. This logs you out on all other devices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zaslonu za prijavo tapni Forgot password (pozabljeno geslo) in vnesi e-pošto. Pošljemo ti kodo; vnesi jo skupaj z novim geslom.\n\nČe si prijavljen(a), pojdi na Moj račun > Geslo in varnost, da spremeniš geslo. To te odjavi na vseh drugih napravah."
+          }
+        }
+      }
+    },
+    "On the map ✓": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zemljevidu ✓"
+          }
+        }
+      }
+    },
+    "One of the selected genres is not available. Reload and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eden od izbranih žanrov ni na voljo. Osveži in poskusi znova."
+          }
+        }
+      }
+    },
+    "Only the club owner can do that.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To lahko naredi samo lastnik kluba."
+          }
+        }
+      }
+    },
+    "Open": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri"
+          }
+        }
+      }
+    },
+    "Open Profile > Tickets and tap the ticket. Show the QR code to the staff at the entrance — they scan it with Outly.\n\nA ticket can be scanned only once. Screenshots work, but keep your brightness up so the code is readable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Vstopnice in tapni vstopnico. Kodo QR pokaži osebju pri vhodu — skenirajo jo z Outlyjem.\n\nVstopnico je mogoče skenirati samo enkrat. Posnetek zaslona deluje, a naj bo osvetlitev dovolj visoka, da je koda berljiva."
+          }
+        }
+      }
+    },
+    "Open Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri nastavitve"
+          }
+        }
+      }
+    },
+    "Open an event and tap the price bar under the poster. Choose how many tickets you want and confirm.\n\nYour tickets appear under Profile > Tickets right away. Each ticket has its own QR code.\n\nEvents marked 18+ require a date of birth in your profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri dogodek in tapni cenovno vrstico pod plakatom. Izberi, koliko vstopnic želiš, in potrdi.\n\nVstopnice se takoj prikažejo pod Profil > Vstopnice. Vsaka vstopnica ima svojo kodo QR.\n\nDogodki z oznako 18+ zahtevajo datum rojstva v tvojem profilu."
+          }
+        }
+      }
+    },
+    "Open it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri"
+          }
+        }
+      }
+    },
+    "Optional. Used for account recovery and important notifications. Include the country code, e.g. +386.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neobvezno. Uporabimo ga za obnovitev računa in pomembna obvestila. Vpiši s klicno kodo države, npr. +386."
+          }
+        }
+      }
+    },
+    "Order %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naročilo %@"
+          }
+        }
+      }
+    },
+    "Other": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drugo"
+          }
+        }
+      }
+    },
+    "Outly fee": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provizija Outly"
+          }
+        }
+      }
+    },
+    "Outly helps you find where to go tonight: clubs, events and tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outly ti pomaga najti, kam nocoj: klube, dogodke in vstopnice."
+          }
+        }
+      }
+    },
+    "Owner": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastnik"
+          }
+        }
+      }
+    },
+    "PHONE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TELEFON"
+          }
+        }
+      }
+    },
+    "Partner with Outly and reach more nightlife lovers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sodeluj z Outlyjem in dosezi več ljubiteljev nočnega življenja"
+          }
+        }
+      }
+    },
+    "Password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geslo"
+          }
+        }
+      }
+    },
+    "Password and security": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geslo in varnost"
+          }
+        }
+      }
+    },
+    "Password change": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprememba gesla"
+          }
+        }
+      }
+    },
+    "Password changed. Other devices were signed out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geslo spremenjeno. Druge naprave so bile odjavljene."
+          }
+        }
+      }
+    },
+    "Password must be at least 8 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geslo mora imeti vsaj 8 znakov."
+          }
+        }
+      }
+    },
+    "Password updated. Log in with your new password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geslo posodobljeno. Prijavi se z novim geslom."
+          }
+        }
+      }
+    },
+    "Passwords do not match.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesli se ne ujemata."
+          }
+        }
+      }
+    },
+    "Past": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pretekle"
+          }
+        }
+      }
+    },
+    "Pay %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačaj %@"
+          }
+        }
+      }
+    },
+    "Payment": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo"
+          }
+        }
+      }
+    },
+    "Payments are not available yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačila še niso na voljo."
+          }
+        }
+      }
+    },
+    "Personal info": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Osebni podatki"
+          }
+        }
+      }
+    },
+    "Phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefon"
+          }
+        }
+      }
+    },
+    "Phone number": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonska številka"
+          }
+        }
+      }
+    },
+    "Phone number (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonska številka (neobvezno)"
+          }
+        }
+      }
+    },
+    "Phone number, e.g. +386 41 123 456": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonska številka, npr. +386 41 123 456"
+          }
+        }
+      }
+    },
+    "Photo upload failed. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalaganje fotografije ni uspelo. %@"
+          }
+        }
+      }
+    },
+    "Please check what you entered and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveri, kaj si vnesel, in poskusi znova."
+          }
+        }
+      }
+    },
+    "Please enter your email address to receive\na verification code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi svoj e-poštni naslov, da prejmeš\nkodo za potrditev."
+          }
+        }
+      }
+    },
+    "Please fill in your date of birth on the previous step.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na prejšnjem koraku vnesi datum rojstva."
+          }
+        }
+      }
+    },
+    "Please sign out and sign in again, then retry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjavi se in se znova prijavi, nato poskusi še enkrat."
+          }
+        }
+      }
+    },
+    "Point the camera at the ticket's QR code": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usmeri kamero v QR kodo vstopnice"
+          }
+        }
+      }
+    },
+    "Popular": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priljubljeno"
+          }
+        }
+      }
+    },
+    "Popular articles": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priljubljeni članki"
+          }
+        }
+      }
+    },
+    "Poster": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plakat"
+          }
+        }
+      }
+    },
+    "Price (EUR)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cena (EUR)"
+          }
+        }
+      }
+    },
+    "Prices are set by the club and may change.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cene določa klub in se lahko spremenijo."
+          }
+        }
+      }
+    },
+    "Prices include VAT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cene vključujejo DDV"
+          }
+        }
+      }
+    },
+    "Privacy Policy": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Politika zasebnosti"
+          }
+        }
+      }
+    },
+    "Profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
+          }
+        }
+      }
+    },
+    "Profile banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslovna slika"
+          }
+        }
+      }
+    },
+    "Published (visible to everyone)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objavljeno (vidno vsem)"
+          }
+        }
+      }
+    },
+    "Push notifications are coming soon — your choices are saved. Sign-up and password codes always arrive by email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potisna obvestila prihajajo kmalu — tvoje izbire so shranjene. Kode za registracijo in geslo vedno prejmeš po e-pošti."
+          }
+        }
+      }
+    },
+    "REFUSED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ZAVRNJENO"
+          }
+        }
+      }
+    },
+    "Rate this app": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oceni aplikacijo"
+          }
+        }
+      }
+    },
+    "Recent sales": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedavna prodaja"
+          }
+        }
+      }
+    },
+    "Recommended size: 393x220px": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priporočena velikost: 393x220px"
+          }
+        }
+      }
+    },
+    "Refunds and cancellations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vračila in odpovedi"
+          }
+        }
+      }
+    },
+    "Refunds and cancelled events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vračila in odpovedani dogodki"
+          }
+        }
+      }
+    },
+    "Reject": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrni"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani"
+          }
+        }
+      }
+    },
+    "Remove %@ from the team?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstraniti %@ iz ekipe?"
+          }
+        }
+      }
+    },
+    "Remove from liked events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani iz všečkanih dogodkov"
+          }
+        }
+      }
+    },
+    "Remove this event?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstranim ta dogodek?"
+          }
+        }
+      }
+    },
+    "Remove video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani video"
+          }
+        }
+      }
+    },
+    "Repeat new password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponovi novo geslo"
+          }
+        }
+      }
+    },
+    "Replace": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjaj"
+          }
+        }
+      }
+    },
+    "Request a Business Account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prošnja za poslovni račun"
+          }
+        }
+      }
+    },
+    "Request failed (%lld): %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahteva ni uspela (%lld): %@"
+          }
+        }
+      }
+    },
+    "Request for creator": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prošnja za ustvarjalca"
+          }
+        }
+      }
+    },
+    "Resend code": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Znova pošlji kodo"
+          }
+        }
+      }
+    },
+    "Reset your password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponastavi geslo"
+          }
+        }
+      }
+    },
+    "Results": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezultati"
+          }
+        }
+      }
+    },
+    "Role": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vloga"
+          }
+        }
+      }
+    },
+    "Role / position": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vloga / položaj"
+          }
+        }
+      }
+    },
+    "SOLD OUT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RAZPRODANO"
+          }
+        }
+      }
+    },
+    "Sales, last 14 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja, zadnjih 14 dni"
+          }
+        }
+      }
+    },
+    "Save": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shrani"
+          }
+        }
+      }
+    },
+    "Saved under Profile → Tickets. Show the QR code at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shranjeno je v Profil → Vstopnice. Kodo QR pokaži pri vhodu."
+          }
+        }
+      }
+    },
+    "Saving...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shranjujem …"
+          }
+        }
+      }
+    },
+    "Scan": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeniraj"
+          }
+        }
+      }
+    },
+    "Scan ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeniraj vstopnico"
+          }
+        }
+      }
+    },
+    "Scan tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeniraj vstopnice"
+          }
+        }
+      }
+    },
+    "Scans tickets at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenira vstopnice pri vhodu."
+          }
+        }
+      }
+    },
+    "Scans tickets at the door. Nothing else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenira vstopnice pri vhodu. Nič drugega."
+          }
+        }
+      }
+    },
+    "Search": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iskanje"
+          }
+        }
+      }
+    },
+    "Search clubs or events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Išči klube ali dogodke"
+          }
+        }
+      }
+    },
+    "Search for a club or an event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči klub ali dogodek."
+          }
+        }
+      }
+    },
+    "Search help": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Išči pomoč"
+          }
+        }
+      }
+    },
+    "Secure checkout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varno plačilo"
+          }
+        }
+      }
+    },
+    "Security alerts": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varnostna opozorila"
+          }
+        }
+      }
+    },
+    "See all": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikaži vse"
+          }
+        }
+      }
+    },
+    "See all events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikaži vse dogodke"
+          }
+        }
+      }
+    },
+    "Select at least one genre.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi vsaj en žanr."
+          }
+        }
+      }
+    },
+    "Select your genre": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi svoj žanr"
+          }
+        }
+      }
+    },
+    "Send": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji"
+          }
+        }
+      }
+    },
+    "Send a ticket to a friend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji vstopnico prijatelju"
+          }
+        }
+      }
+    },
+    "Send invite": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji vabilo"
+          }
+        }
+      }
+    },
+    "Send ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji vstopnico"
+          }
+        }
+      }
+    },
+    "Send to a friend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji prijatelju"
+          }
+        }
+      }
+    },
+    "Sending...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošiljam …"
+          }
+        }
+      }
+    },
+    "Sent to you by %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslal(a) ti jo je %@"
+          }
+        }
+      }
+    },
+    "Sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seje"
+          }
+        }
+      }
+    },
+    "Short description shown on your club page.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kratek opis, prikazan na strani kluba."
+          }
+        }
+      }
+    },
+    "Short intro video shown on your club page (up to 100 MB, plays muted in a loop).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kratek predstavitveni video na strani kluba (do 100 MB, predvaja se brez zvoka v zanki)."
+          }
+        }
+      }
+    },
+    "Show this code at the entrance. A screenshot works too — the code is signed and valid only once.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To kodo pokaži pri vhodu. Deluje tudi posnetek zaslona — koda je podpisana in velja samo enkrat."
+          }
+        }
+      }
+    },
+    "Sign in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijava"
+          }
+        }
+      }
+    },
+    "Sign in with your email and password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavi se z e-pošto in geslom"
+          }
+        }
+      }
+    },
+    "Sign out": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjava"
+          }
+        }
+      }
+    },
+    "Sign out everywhere": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjavi povsod"
+          }
+        }
+      }
+    },
+    "Sign out of all devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjava iz vseh naprav"
+          }
+        }
+      }
+    },
+    "Sign out of all devices?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjava iz vseh naprav?"
+          }
+        }
+      }
+    },
+    "Sign up": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registracija"
+          }
+        }
+      }
+    },
+    "Sign-in service is temporarily unavailable. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijava trenutno ni na voljo. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Signed in somewhere you don't recognise? Sign out everywhere, including this device.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavljen si nekje, kar ne prepoznaš? Odjavi se povsod, tudi na tej napravi."
+          }
+        }
+      }
+    },
+    "Signing out…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjavljam …"
+          }
+        }
+      }
+    },
+    "Signing up...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvarjam račun …"
+          }
+        }
+      }
+    },
+    "Slideshow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Galerija"
+          }
+        }
+      }
+    },
+    "Sold out": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razprodano"
+          }
+        }
+      }
+    },
+    "Some club data is out of range. Check the values and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekateri podatki o klubu so izven dovoljenega obsega. Preveri vrednosti in poskusi znova."
+          }
+        }
+      }
+    },
+    "Something went wrong. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekaj je šlo narobe. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Special offers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posebne ponudbe"
+          }
+        }
+      }
+    },
+    "Start with the country code, e.g. +386.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začni s klicno kodo države, npr. +386."
+          }
+        }
+      }
+    },
+    "Starts": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začetek"
+          }
+        }
+      }
+    },
+    "Starts at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začetek ob %@"
+          }
+        }
+      }
+    },
+    "Still need help?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še vedno potrebuješ pomoč?"
+          }
+        }
+      }
+    },
+    "Street and number. Together with the city this places your club on the map.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ulica in hišna številka. Skupaj z mestom klub umesti na zemljevid."
+          }
+        }
+      }
+    },
+    "Submit Application": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oddaj prošnjo"
+          }
+        }
+      }
+    },
+    "Suggestions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predlogi"
+          }
+        }
+      }
+    },
+    "Support": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pomoč"
+          }
+        }
+      }
+    },
+    "TEST": {
+      "extractionState": "manual"
+    },
+    "TICKET": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VSTOPNICA"
+          }
+        }
+      }
+    },
+    "TICKETS": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VSTOPNICE"
+          }
+        }
+      }
+    },
+    "TIME": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URA"
+          }
+        }
+      }
+    },
+    "TOMORROW": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JUTRI"
+          }
+        }
+      }
+    },
+    "TONIGHT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NOCOJ"
+          }
+        }
+      }
+    },
+    "TRENDING RIGHT NOW": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TRENUTNO V TRENDU"
+          }
+        }
+      }
+    },
+    "Tap \"Add event\" to publish your first one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni \"Dodaj dogodek\" za objavo prvega."
+          }
+        }
+      }
+    },
+    "Tap Sign up, enter your username, email and a password. We send a code (6–10 digits) to your email — type it in to confirm your address.\n\nThen complete your profile: date of birth, country and the music you like. Your date of birth is used only to check age limits on events.\n\nYou must be at least 15 to use Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Sign up (registracija), vnesi uporabniško ime, e-pošto in geslo. Na e-pošto ti pošljemo kodo (6–10 števk) — vpiši jo, da potrdiš naslov.\n\nNato dokončaj profil: datum rojstva, državo in glasbo, ki jo imaš rad(a). Datum rojstva uporabimo samo za preverjanje starostnih omejitev pri dogodkih.\n\nZa uporabo Outlyja moraš imeti vsaj 15 let."
+          }
+        }
+      }
+    },
+    "Tap the heart on any event and it will show up here and on your home screen — on every device you log in to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni srček na katerem koli dogodku in prikazal se bo tukaj ter na domačem zaslonu — na vsaki napravi, v katero se prijaviš."
+          }
+        }
+      }
+    },
+    "Tap to open": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni za odpiranje"
+          }
+        }
+      }
+    },
+    "Team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipa"
+          }
+        }
+      }
+    },
+    "Tell us about your venue. We usually reply within a few days.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povej nam nekaj o svojem lokalu. Običajno odgovorimo v nekaj dneh."
+          }
+        }
+      }
+    },
+    "Terms of Service": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pogoji uporabe"
+          }
+        }
+      }
+    },
+    "Test mode — nothing is charged": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testni način — nič se ne zaračuna"
+          }
+        }
+      }
+    },
+    "Test mode: purchases are simulated, no money moves. Numbers show how the real dashboard will look.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testni način: nakupi so simulirani, denar se ne premika. Številke kažejo, kako bo videti pravi pregled."
+          }
+        }
+      }
+    },
+    "Test purchase — nothing was charged": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testni nakup — nič ni bilo zaračunano"
+          }
+        }
+      }
+    },
+    "Thanks! We will review it and email you when it is approved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvala! Pregledali jo bomo in ti pisali po e-pošti, ko bo odobrena."
+          }
+        }
+      }
+    },
+    "That date of birth does not look right.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta datum rojstva ni videti pravilen."
+          }
+        }
+      }
+    },
+    "That email is already registered. Sign in instead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta e-naslov je že registriran. Prijavi se."
+          }
+        }
+      }
+    },
+    "That is your own email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je tvoj lastni e-naslov."
+          }
+        }
+      }
+    },
+    "That phone number is already used by another account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To telefonsko številko že uporablja drug račun."
+          }
+        }
+      }
+    },
+    "That username is already taken.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To uporabniško ime je že zasedeno."
+          }
+        }
+      }
+    },
+    "The QR on each ticket is signed by the server; scanning it twice is refused. Use Scan tickets in your profile for the camera scanner.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR kodo vsake vstopnice podpiše strežnik; dvojno skeniranje je zavrnjeno. Za skener s kamero uporabi Skeniraj vstopnice v profilu."
+          }
+        }
+      }
+    },
+    "The code is wrong or has expired. Request a new one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koda je napačna ali je potekla. Zahtevaj novo."
+          }
+        }
+      }
+    },
+    "The server is having trouble. Please try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik ima trenutno težave. Poskusi znova pozneje."
+          }
+        }
+      }
+    },
+    "The server took too long to respond. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik se ni odzval pravočasno. Poskusi znova."
+          }
+        }
+      }
+    },
+    "The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account and must be %lld+.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica se prenese na prijateljev račun z novo kodo QR. Tvoja kopija preneha delovati. Prijatelj potrebuje Outly račun in mora biti star %lld+."
+          }
+        }
+      }
+    },
+    "The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica se prenese na prijateljev račun z novo kodo QR. Tvoja kopija preneha delovati. Prijatelj potrebuje Outly račun."
+          }
+        }
+      }
+    },
+    "The video is larger than 100 MB. Please pick a shorter one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video je večji od 100 MB. Izberi krajšega."
+          }
+        }
+      }
+    },
+    "Their Outly email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Njihov Outly e-poštni naslov"
+          }
+        }
+      }
+    },
+    "They lose access to the club tools right away.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takoj izgubijo dostop do orodij za klub."
+          }
+        }
+      }
+    },
+    "They need an Outly account with this email. They get the invitation in the app (Profile → My clubs) and join once they accept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrebujejo Outly račun s tem e-poštnim naslovom. Vabilo dobijo v aplikaciji (Profil → Moji klubi) in se pridružijo, ko ga sprejmejo."
+          }
+        }
+      }
+    },
+    "This action is permanent. It will remove your account, liked events and personal data. Tickets you have already bought stay valid, but they will no longer be linked to you and cannot be recovered in the app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To dejanje je dokončno. Izbrisali bomo tvoj račun, všečkane dogodke in osebne podatke. Že kupljene vstopnice ostanejo veljavne, a ne bodo več povezane s tabo in jih v aplikaciji ne moreš obnoviti."
+          }
+        }
+      }
+    },
+    "This event has already started.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek se je že začel."
+          }
+        }
+      }
+    },
+    "This event is cancelled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek je preklican."
+          }
+        }
+      }
+    },
+    "This event is not on sale.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za ta dogodek prodaja ni odprta."
+          }
+        }
+      }
+    },
+    "This event no longer exists.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek ne obstaja več."
+          }
+        }
+      }
+    },
+    "This includes your club’s phone number used for customer inquiries and support.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonska številka kluba za povpraševanja in podporo strankam."
+          }
+        }
+      }
+    },
+    "This invitation is no longer available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To vabilo ni več na voljo."
+          }
+        }
+      }
+    },
+    "This is already in use.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je že v uporabi."
+          }
+        }
+      }
+    },
+    "This is the official name of your club shown to users and on all published events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je uradno ime kluba, ki ga vidijo uporabniki in ki je prikazano na vseh objavljenih dogodkih."
+          }
+        }
+      }
+    },
+    "This is your display name shown on your profile and used when managing events or teams.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je prikazno ime na tvojem profilu, uporabljeno tudi pri upravljanju dogodkov ali ekipe."
+          }
+        }
+      }
+    },
+    "This person already has a pending invitation from your club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta oseba že ima čakajoče vabilo od tvojega kluba."
+          }
+        }
+      }
+    },
+    "This person is already in a club team.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta oseba je že v ekipi nekega kluba."
+          }
+        }
+      }
+    },
+    "This person owns a club and can't join a team.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta oseba je lastnik kluba in se ne more pridružiti ekipi."
+          }
+        }
+      }
+    },
+    "This ticket is no longer valid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica ni več veljavna."
+          }
+        }
+      }
+    },
+    "This ticket is not available anymore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica ni več na voljo."
+          }
+        }
+      }
+    },
+    "This ticket was already used.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica je bila že uporabljena."
+          }
+        }
+      }
+    },
+    "This week": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta teden"
+          }
+        }
+      }
+    },
+    "This weekend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vikend"
+          }
+        }
+      }
+    },
+    "Ticket link must start with http:// or https://.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povezava do vstopnic se mora začeti z http:// ali https://."
+          }
+        }
+      }
+    },
+    "Ticket purchase confirmation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrditev nakupa vstopnice"
+          }
+        }
+      }
+    },
+    "Ticket reminders": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opomniki za vstopnice"
+          }
+        }
+      }
+    },
+    "Ticket sales are closed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja vstopnic je zaprta."
+          }
+        }
+      }
+    },
+    "Ticket sales have not opened yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja vstopnic se še ni začela."
+          }
+        }
+      }
+    },
+    "Tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice"
+          }
+        }
+      }
+    },
+    "Tickets  >  At the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice  >  Pri vhodu"
+          }
+        }
+      }
+    },
+    "Tickets  >  Buying": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice  >  Nakup"
+          }
+        }
+      }
+    },
+    "Tickets  >  Friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice  >  Prijatelji"
+          }
+        }
+      }
+    },
+    "Tickets are paid at checkout. Payments are processed by Stripe; Outly never sees or stores your card details, and the app does not hold a balance.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice plačaš ob nakupu. Plačila obdeluje Stripe; Outly nikoli ne vidi ali shranjuje podatkov tvoje kartice, aplikacija pa ne vodi stanja denarnice."
+          }
+        }
+      }
+    },
+    "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.\n\nIf the club cancels an event, you are entitled to a refund from the club, to your original payment method.\n\nFor anything else, contact the club or write to luka@outly.si with your ticket number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice prodaja klub; Outly je tržnica. Ker je vstopnica vezana na določen datum, po nakupu ni 14-dnevne pravice do odstopa.\n\nČe klub odpove dogodek, imaš pravico do vračila denarja s strani kluba na izvirni način plačila.\n\nZa vse ostalo se obrni na klub ali piši na luka@outly.si s številko svoje vstopnice."
+          }
+        }
+      }
+    },
+    "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnic za dogodek z določenim datumom po nakupu ni mogoče vrniti (ZVPot-1, 135/12). Prodajalec je klub; Outly je posrednik."
+          }
+        }
+      }
+    },
+    "Tickets for this event are not sold on Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice za ta dogodek se ne prodajajo na Outlyju."
+          }
+        }
+      }
+    },
+    "Tickets sold": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodane vstopnice"
+          }
+        }
+      }
+    },
+    "Tickets were already sold, so the event was cancelled instead of deleted.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice so bile že prodane, zato je bil dogodek odpovedan namesto izbrisan."
+          }
+        }
+      }
+    },
+    "Tickets you buy through Outly\nwill show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice, ki jih kupiš prek Outlyja,\nse prikažejo tukaj."
+          }
+        }
+      }
+    },
+    "Title": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslov"
+          }
+        }
+      }
+    },
+    "Tonight": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nocoj"
+          }
+        }
+      }
+    },
+    "Too many attempts. Please wait a minute and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveč poskusov. Počakaj minuto in poskusi znova."
+          }
+        }
+      }
+    },
+    "Too many attempts. Please wait a while and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveč poskusov. Počakaj malo in poskusi znova."
+          }
+        }
+      }
+    },
+    "Too many failed logins. Try again in 15 minutes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveč neuspešnih prijav. Poskusi znova čez 15 minut."
+          }
+        }
+      }
+    },
+    "Too many wrong attempts. Request a new code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveč napačnih poskusov. Zahtevaj novo kodo."
+          }
+        }
+      }
+    },
+    "Total": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skupaj"
+          }
+        }
+      }
+    },
+    "Total revenue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skupni prihodek"
+          }
+        }
+      }
+    },
+    "Trending now": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V trendu"
+          }
+        }
+      }
+    },
+    "Trending right now": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenutno v trendu"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poskusi znova"
+          }
+        }
+      }
+    },
+    "Type at least 2 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi vsaj 2 znaka."
+          }
+        }
+      }
+    },
+    "UNKNOWN TICKET": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEZNANA VSTOPNICA"
+          }
+        }
+      }
+    },
+    "USED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UPORABLJENA"
+          }
+        }
+      }
+    },
+    "Unexpected response from the server. Please try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepričakovan odgovor strežnika. Poskusi znova pozneje."
+          }
+        }
+      }
+    },
+    "Unknown user": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neznan uporabnik"
+          }
+        }
+      }
+    },
+    "Up to 3 photos shown at the top of your club page (recommended 1200x800). Without them the banner is used.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do 3 fotografije na vrhu strani kluba (priporočeno 1200x800). Brez njih se uporabi naslovna slika."
+          }
+        }
+      }
+    },
+    "Upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihajajoče"
+          }
+        }
+      }
+    },
+    "Upload": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naloži"
+          }
+        }
+      }
+    },
+    "Upload banner image": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naloži naslovno sliko"
+          }
+        }
+      }
+    },
+    "Uploading...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalagam …"
+          }
+        }
+      }
+    },
+    "Used tickets (%lld)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabljene vstopnice (%lld)"
+          }
+        }
+      }
+    },
+    "Used to hide events you are too young for. This is not an age verification — that happens at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabimo ga, da ti skrijemo dogodke, za katere si premlad(a). To ni preverjanje starosti — to se zgodi pri vhodu."
+          }
+        }
+      }
+    },
+    "Username": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabniško ime"
+          }
+        }
+      }
+    },
+    "Username can contain only letters, numbers and underscore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabniško ime lahko vsebuje samo črke, števke in podčrtaj."
+          }
+        }
+      }
+    },
+    "Username can have at most 20 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabniško ime ima lahko največ 20 znakov."
+          }
+        }
+      }
+    },
+    "Username must be at least 3 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabniško ime mora imeti vsaj 3 znake."
+          }
+        }
+      }
+    },
+    "Using the profile banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporablja se naslovna slika"
+          }
+        }
+      }
+    },
+    "Using your ticket at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporaba vstopnice pri vhodu"
+          }
+        }
+      }
+    },
+    "VALID": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VELJAVNA"
+          }
+        }
+      }
+    },
+    "VENUE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LOKACIJA"
+          }
+        }
+      }
+    },
+    "Verify": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi"
+          }
+        }
+      }
+    },
+    "Verify your email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi e-pošto"
+          }
+        }
+      }
+    },
+    "Verifying...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preverjam …"
+          }
+        }
+      }
+    },
+    "Video upload failed. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalaganje videa ni uspelo. %@"
+          }
+        }
+      }
+    },
+    "Video uploaded": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video naložen"
+          }
+        }
+      }
+    },
+    "View": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikaži"
+          }
+        }
+      }
+    },
+    "View club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej klub"
+          }
+        }
+      }
+    },
+    "View details": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podrobnosti"
+          }
+        }
+      }
+    },
+    "View events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikaži dogodke"
+          }
+        }
+      }
+    },
+    "Visibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vidnost"
+          }
+        }
+      }
+    },
+    "WELCOME IN": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DOBRODOŠLI"
+          }
+        }
+      }
+    },
+    "WRONG CLUB": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAPAČEN KLUB"
+          }
+        }
+      }
+    },
+    "Waiting for reply": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čaka na odgovor"
+          }
+        }
+      }
+    },
+    "We are reviewing your application. You will get an email when it is approved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvojo prošnjo pregledujemo. Ko bo odobrena, ti pošljemo e-pošto."
+          }
+        }
+      }
+    },
+    "We sent a code to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kodo smo poslali na %@."
+          }
+        }
+      }
+    },
+    "We sent a verification code to:": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kodo za potrditev smo poslali na:"
+          }
+        }
+      }
+    },
+    "We will reply to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odgovorili bomo na %@."
+          }
+        }
+      }
+    },
+    "We're sorry to see you go! This is permanent: your account and personal data will be removed, and tickets you bought will no longer be linked to you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Škoda, da odhajaš! To je dokončno: tvoj račun in osebni podatki bodo izbrisani, kupljene vstopnice pa ne bodo več povezane s tabo."
+          }
+        }
+      }
+    },
+    "Website": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spletna stran"
+          }
+        }
+      }
+    },
+    "When": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kdaj"
+          }
+        }
+      }
+    },
+    "Where to?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kam gremo?"
+          }
+        }
+      }
+    },
+    "Who": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kdo"
+          }
+        }
+      }
+    },
+    "Who can apply?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kdo lahko zaprosi?"
+          }
+        }
+      }
+    },
+    "Wrong email or password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napačen e-naslov ali geslo."
+          }
+        }
+      }
+    },
+    "Wrong password or your session has expired.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napačno geslo ali pa je tvoja seja potekla."
+          }
+        }
+      }
+    },
+    "Wrong password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napačno geslo."
+          }
+        }
+      }
+    },
+    "You already have an application waiting for review.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že imaš prošnjo, ki čaka na pregled."
+          }
+        }
+      }
+    },
+    "You are already in a club team. Leave it first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že si v ekipi kluba. Najprej jo zapusti."
+          }
+        }
+      }
+    },
+    "You are currently not working\nfor any club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenutno ne delaš\nza noben klub"
+          }
+        }
+      }
+    },
+    "You are not in a club team.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nisi v ekipi nobenega kluba."
+          }
+        }
+      }
+    },
+    "You can change your password at any time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geslo lahko spremeniš kadar koli."
+          }
+        }
+      }
+    },
+    "You can only manage events of your own club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Urejaš lahko samo dogodke lastnega kluba."
+          }
+        }
+      }
+    },
+    "You do not have permission to do that.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za to nimaš dovoljenja."
+          }
+        }
+      }
+    },
+    "You lose access to the club tools. The club can invite you again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izgubiš dostop do orodij za klub. Klub te lahko znova povabi."
+          }
+        }
+      }
+    },
+    "You must be 15 or older to use Outly. Some events are 18+ — this is shown on the event and you need a date of birth in your profile to buy tickets for them.\n\nThe club may ask for an ID at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za uporabo Outlyja moraš imeti vsaj 15 let. Nekateri dogodki so 18+ — to je označeno pri dogodku, za nakup vstopnic pa potrebuješ datum rojstva v profilu.\n\nKlub lahko pri vhodu zahteva osebni dokument."
+          }
+        }
+      }
+    },
+    "You must be at least 15 years old to use Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za uporabo Outlyja moraš biti star vsaj 15 let."
+          }
+        }
+      }
+    },
+    "You own a club, so you can't join another team.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastnik si kluba, zato se ne moreš pridružiti drugi ekipi."
+          }
+        }
+      }
+    },
+    "You will be signed out on this device too.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjavljen boš tudi na tej napravi."
+          }
+        }
+      }
+    },
+    "You're in!": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice so tvoje!"
+          }
+        }
+      }
+    },
+    "Your application was approved. Log out and log in again to switch to your business account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja prošnja je bila odobrena. Odjavi se in se znova prijavi, da preklopiš na poslovni račun."
+          }
+        }
+      }
+    },
+    "Your business account is active. Manage your club and events from your profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj poslovni račun je aktiven. Klub in dogodke upravljaj v svojem profilu."
+          }
+        }
+      }
+    },
+    "Your club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj klub"
+          }
+        }
+      }
+    },
+    "Your club has sold tickets. Transfer club ownership before deleting your account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj klub je prodal vstopnice. Pred brisanjem računa predaj lastništvo kluba."
+          }
+        }
+      }
+    },
+    "Your club is not set up yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj klub še ni nastavljen."
+          }
+        }
+      }
+    },
+    "Your club is not set up yet. Contact luka@outly.si to get it created.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj klub še ni ustvarjen. Piši na luka@outly.si, da ga uredimo."
+          }
+        }
+      }
+    },
+    "Your club is not set up yet. Fill in the club info first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj klub še ni urejen. Najprej izpolni podatke o klubu."
+          }
+        }
+      }
+    },
+    "Your email is not verified yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj e-naslov še ni potrjen."
+          }
+        }
+      }
+    },
+    "Your email is used for login and important notifications. To change it, contact luka@outly.si.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošto uporabljaš za prijavo in pomembna obvestila. Za spremembo piši na luka@outly.si."
+          }
+        }
+      }
+    },
+    "Your friend is too young for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelj je premlad za ta dogodek."
+          }
+        }
+      }
+    },
+    "Your friend must add a date of birth in the app before receiving this ticket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelj mora v aplikaciji vnesti datum rojstva, preden prejme to vstopnico."
+          }
+        }
+      }
+    },
+    "Your friend's Outly email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošta prijateljevega Outly računa"
+          }
+        }
+      }
+    },
+    "Your friend's account is not verified yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijateljev račun še ni potrjen."
+          }
+        }
+      }
+    },
+    "Your home country.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja matična država."
+          }
+        }
+      }
+    },
+    "Your new password must be different from the\npreviously used password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoje novo geslo se mora razlikovati od\nprejšnjega gesla."
+          }
+        }
+      }
+    },
+    "Your official website link.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povezava do uradne spletne strani."
+          }
+        }
+      }
+    },
+    "Your payout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoje izplačilo"
+          }
+        }
+      }
+    },
+    "Your previous application for \"%@\" was not approved. You can apply again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja prejšnja prošnja za \"%@\" ni bila odobrena. Lahko zaprosiš znova."
+          }
+        }
+      }
+    },
+    "Your previous application for \"%@\" was not approved: %@ You can apply again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja prejšnja prošnja za \"%@\" ni bila odobrena: %@ Lahko zaprosiš znova."
+          }
+        }
+      }
+    },
+    "Your profile is still loading. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj profil se še nalaga. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Your session has expired. Please log in again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja seja je potekla. Prijavi se znova."
+          }
+        }
+      }
+    },
+    "Your tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoje vstopnice"
+          }
+        }
+      }
+    },
+    "after fee and refunds": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "po proviziji in vračilih"
+          }
+        }
+      }
+    },
+    "and": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in"
+          }
+        }
+      }
+    },
+    "at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "na vhodu"
+          }
+        }
+      }
+    },
+    "cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "preklican"
+          }
+        }
+      }
+    },
+    "checked in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vstopili"
+          }
+        }
+      }
+    },
+    "club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "klub"
+          }
+        }
+      }
+    },
+    "code": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "koda"
+          }
+        }
+      }
+    },
+    "code from the email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "koda iz e-pošte"
+          }
+        }
+      }
+    },
+    "confirm password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ponovi geslo"
+          }
+        }
+      }
+    },
+    "confirm password...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ponovi geslo …"
+          }
+        }
+      }
+    },
+    "draft": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "osnutek"
+          }
+        }
+      }
+    },
+    "email@domain.com": {
+      "extractionState": "manual"
+    },
+    "event is over": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dogodek je mimo"
+          }
+        }
+      }
+    },
+    "event management, sales and ticket scanning": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "upravljanje dogodkov, prodaja in skeniranje vstopnic"
+          }
+        }
+      }
+    },
+    "expected": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pričakovanih"
+          }
+        }
+      }
+    },
+    "failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "neuspešno"
+          }
+        }
+      }
+    },
+    "free entry": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prost vstop"
+          }
+        }
+      }
+    },
+    "friend@email.com": {
+      "extractionState": "manual"
+    },
+    "gross, all events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bruto, vsi dogodki"
+          }
+        }
+      }
+    },
+    "last ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "zadnja vstopnica"
+          }
+        }
+      }
+    },
+    "luka@outly.si — we usually reply within a day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "luka@outly.si — običajno odgovorimo v enem dnevu."
+          }
+        }
+      }
+    },
+    "name@email.com": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ime@email.com"
+          }
+        }
+      }
+    },
+    "new password...": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "novo geslo …"
+          }
+        }
+      }
+    },
+    "only %lld left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "samo še %lld"
+          }
+        }
+      }
+    },
+    "partially refunded": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "delno vrnjeno"
+          }
+        }
+      }
+    },
+    "password": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "geslo"
+          }
+        }
+      }
+    },
+    "pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v obdelavi"
+          }
+        }
+      }
+    },
+    "per ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "na vstopnico"
+          }
+        }
+      }
+    },
+    "refunded": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vrnjeno"
+          }
+        }
+      }
+    },
+    "sold": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prodanih"
+          }
+        }
+      }
+    },
+    "sold by the club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prodaja klub"
+          }
+        }
+      }
+    },
+    "sold out": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "razprodano"
+          }
+        }
+      }
+    },
+    "tap the bell above\nto see invitations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tapni zvonec zgoraj,\nda vidiš vabila"
+          }
+        }
+      }
+    },
+    "ticket scanning at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "skeniranje vstopnic pri vhodu"
+          }
+        }
+      }
+    },
+    "unlimited": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "neomejeno"
+          }
+        }
+      }
+    },
+    "username": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "uporabniško ime"
+          }
+        }
+      }
+    },
+    "your account email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e-pošto tvojega računa"
+          }
+        }
+      }
+    },
+    "·": {
+      "extractionState": "manual"
+    },
+    "· from %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· od %@"
+          }
+        }
+      }
+    },
+    "€": {
+      "extractionState": "manual"
+    }
+  },
+  "version": "1.0"
+}

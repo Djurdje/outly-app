@@ -24,8 +24,8 @@ struct EventView: View {
                             .padding(.vertical, 4)
                     }
 
-                    section(title: "Popular", events: popular)
-                    section(title: "Coming Soon", events: comingSoon)
+                    section(title: String(localized: "Popular"), events: popular)
+                    section(title: String(localized: "Coming Soon"), events: comingSoon)
 
                 }
                 .padding()

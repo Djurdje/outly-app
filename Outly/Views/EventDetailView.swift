@@ -50,11 +50,11 @@ struct EventDetailView: View {
         .preferredColorScheme(.dark)
         .task { await loadClub() }
         .sheet(isPresented: $showBuy) {
-            BuyTicketsView(event: event, clubName: club?.name ?? "Club")
+            BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"))
                 .environmentObject(session)
         }
         .sheet(isPresented: $showBarPrices) {
-            BarPricesView(clubName: club?.name ?? "Club", items: club?.barPrices ?? [])
+            BarPricesView(clubName: club?.name ?? String(localized: "Club"), items: club?.barPrices ?? [])
         }
     }
 
@@ -125,7 +125,7 @@ struct EventDetailView: View {
                         .background(Circle().fill(Color.white.opacity(0.10)))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events")
+                .accessibilityLabel(String(localized: favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events"))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -152,7 +152,7 @@ struct EventDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(club?.name ?? "Club")
+                    Text(club?.name ?? String(localized: "Club"))
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -212,14 +212,15 @@ struct EventDetailView: View {
 
             Spacer()
 
-            if let rel = relativeLabel {
-                Text(rel)
+            if let badge = relativeBadge {
+                let isTonight: Bool = { if case .tonight = badge { return true }; return false }()
+                Text(relativeBadgeText(badge))
                     .font(.system(size: 11, weight: .bold))
                     .lineLimit(1)
                     .fixedSize()
-                    .foregroundStyle(rel == "TONIGHT" ? Color.black : Color.white.opacity(0.8))
+                    .foregroundStyle(isTonight ? Color.black : Color.white.opacity(0.8))
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(rel == "TONIGHT" ? Color.white : Color.white.opacity(0.10))
+                    .background(isTonight ? Color.white : Color.white.opacity(0.10))
                     .clipShape(Capsule())
             }
         }
@@ -232,7 +233,7 @@ struct EventDetailView: View {
 
     private var monthShort: String {
         guard let d = event.startDate else { return "" }
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.dateFormat = "MMM"
+        let f = DateFormatter(); f.locale = Jezik.shared.locale; f.dateFormat = "MMM"
         return f.string(from: d)
     }
     private var dayNumber: String {
@@ -241,7 +242,7 @@ struct EventDetailView: View {
     }
     private var dayLong: String {
         guard let d = event.startDate else { return event.startAt }
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.dateFormat = "EEEE, d MMMM"
+        let f = DateFormatter(); f.locale = Jezik.shared.locale; f.dateFormat = "EEEE, d MMMM"
         return f.string(from: d)
     }
     private var timeRange: String {
@@ -250,17 +251,31 @@ struct EventDetailView: View {
         if let e = event.endDate {
             return "\(t) – \(DateParsing.shortTime.string(from: e))"
         }
-        return "Starts at \(t)"
+        return String(localized: "Starts at \(t)")
     }
-    private var relativeLabel: String? {
+
+    /// Znacka "Tonight"/"Ended"/... ob strani datuma. Loceno od besedila (relativeBadgeText),
+    /// da primerjava za belo/modro stanje ne razpade, ko je besedilo prevedeno (prej rel == "TONIGHT").
+    private enum RelativeBadge { case ended, tonight, tomorrow, inDays(Int) }
+
+    private var relativeBadge: RelativeBadge? {
         guard let d = event.startDate else { return nil }
         let cal = Calendar.current
-        if event.isPast { return "ENDED" }
-        if cal.isDateInToday(d) { return "TONIGHT" }
-        if cal.isDateInTomorrow(d) { return "TOMORROW" }
+        if event.isPast { return .ended }
+        if cal.isDateInToday(d) { return .tonight }
+        if cal.isDateInTomorrow(d) { return .tomorrow }
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: d)).day ?? 0
-        if days > 0 && days <= 14 { return "IN \(days) DAYS" }
+        if days > 0 && days <= 14 { return .inDays(days) }
         return nil
+    }
+
+    private func relativeBadgeText(_ badge: RelativeBadge) -> String {
+        switch badge {
+        case .ended: return String(localized: "ENDED")
+        case .tonight: return String(localized: "TONIGHT")
+        case .tomorrow: return String(localized: "TOMORROW")
+        case .inDays(let days): return String(localized: "IN \(days) DAYS")
+        }
     }
 
     // MARK: - Vrstica z vstopnicami: temna kartica, cena levo, bel gumb desno (Martin: modra tu ne pase)
@@ -279,17 +294,17 @@ struct EventDetailView: View {
 
     private var ticketBar: some View {
         let state = ticketState
-        let price = event.displayPrice ?? "Tickets"
+        let price = event.displayPrice ?? String(localized: "Tickets")
 
         let (top, sub, button): (String, String, String?) = {
             switch state {
-            case .buy:          return (price, "per ticket", "Get tickets")
-            case .free:         return ("FREE", "free entry", "Get tickets")
-            case .fewLeft(let n): return (price, n == 1 ? "last ticket" : "only \(n) left", "Get tickets")
-            case .external:     return ("Tickets", "sold by the club", "Open")
-            case .door:         return ("Tickets", "at the door", nil)
-            case .soldOut:      return (price, "sold out", nil)
-            case .ended:        return ("Ended", "event is over", nil)
+            case .buy:          return (price, String(localized: "per ticket"), String(localized: "Get tickets"))
+            case .free:         return (String(localized: "FREE"), String(localized: "free entry"), String(localized: "Get tickets"))
+            case .fewLeft(let n): return (price, n == 1 ? String(localized: "last ticket") : String(localized: "only \(n) left"), String(localized: "Get tickets"))
+            case .external:     return (String(localized: "Tickets"), String(localized: "sold by the club"), String(localized: "Open"))
+            case .door:         return (String(localized: "Tickets"), String(localized: "at the door"), nil)
+            case .soldOut:      return (price, String(localized: "sold out"), nil)
+            case .ended:        return (String(localized: "Ended"), String(localized: "event is over"), nil)
             }
         }()
 
@@ -359,8 +374,8 @@ struct EventDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 10) {
-                    labeled("ADDRESS", club?.addressFull ?? "-")
-                    labeled("PHONE", club?.contactPhone.isEmpty == false ? club!.contactPhone : "-")
+                    labeled(String(localized: "ADDRESS"), club?.addressFull ?? "-")
+                    labeled(String(localized: "PHONE"), club?.contactPhone.isEmpty == false ? club!.contactPhone : "-")
                 }
 
                 Spacer(minLength: 0)
@@ -413,9 +428,15 @@ struct EventDetailView: View {
                     .foregroundStyle(.white)
                 Spacer()
                 let n = club?.barPrices.count ?? 0
-                Text(n == 0 ? "Not added yet" : "\(n) items")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.5))
+                Group {
+                    if n == 0 {
+                        Text("Not added yet")
+                    } else {
+                        Text("\(n) items")
+                    }
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.5))
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white.opacity(0.4))

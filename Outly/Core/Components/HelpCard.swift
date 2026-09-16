@@ -13,11 +13,11 @@ struct HelpCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(topLine)
+            Text(LocalizedStringKey(topLine))
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.7))
 
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.headline)
                 .foregroundColor(.white)
         }

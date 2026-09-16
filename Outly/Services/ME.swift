@@ -79,9 +79,9 @@ struct Me: Decodable {
     /// Napis vloge za profil: "Owner", "Manager", "Door staff".
     var clubRoleLabel: String? {
         switch clubRole {
-        case "owner": return "Owner"
-        case "manager": return "Manager"
-        case "doorman": return "Door staff"
+        case "owner": return String(localized: "Owner")
+        case "manager": return String(localized: "Manager")
+        case "doorman": return String(localized: "Door staff")
         default: return nil
         }
     }

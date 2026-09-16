@@ -12,6 +12,7 @@ struct MainTabView: View {
     @State private var zavihek = 0
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var favorites: FavoritesStore
+    @EnvironmentObject private var jezik: Jezik
 
     var body: some View {
         TabView(selection: $zavihek) {
@@ -45,5 +46,9 @@ struct MainTabView: View {
         .accentColor(.blackColor)
         // Priljubljeni s streznika ob prijavi (in ob menjavi seje).
         .task(id: session.token) { await favorites.load(token: session.token) }
+        // Po preklopu jezika (koren dobi nov .id) se vrni na zavihek, kjer je bil preklop.
+        .onAppear {
+            if let z = jezik.zavihekPoPreklopu { zavihek = z; jezik.zavihekPoPreklopu = nil }
+        }
     }
 }

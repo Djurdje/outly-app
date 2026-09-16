@@ -102,7 +102,7 @@ struct QRScannerView: View {
                     .font(.system(size: 32))
                     .foregroundColor(ok ? .green : .red)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(ok ? "WELCOME IN" : naslovNapake(r.result))
+                    Text(LocalizedStringKey(ok ? "WELCOME IN" : naslovNapake(r.result)))
                         .font(.headline).foregroundColor(.white)
                     Text(r.message).font(.subheadline).foregroundColor(.white.opacity(0.8))
                 }

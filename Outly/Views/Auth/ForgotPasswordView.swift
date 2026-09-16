@@ -79,7 +79,7 @@ struct ForgotPasswordView: View {
         message = nil
         let e = cleanEmail
         guard e.contains("@"), e.contains("."), e.count >= 5 else {
-            message = "Enter a valid email address."
+            message = String(localized: "Enter a valid email address.")
             return
         }
         isLoading = true

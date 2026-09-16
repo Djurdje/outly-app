@@ -70,7 +70,7 @@ struct EditBusinessPageView: View {
                 .frame(width: 54, height: 54)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(clubName.isEmpty ? "Your club" : clubName)
+                Text(clubName.isEmpty ? String(localized: "Your club") : clubName)
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)

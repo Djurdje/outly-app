@@ -34,13 +34,13 @@ struct ClubDetailView: View {
                 }
 
                 // 3) Popular
-                eventsSection(title: "Popular", events: popular)
+                eventsSection(title: String(localized: "Popular"), events: popular)
 
                 // 4) Predstavitveni video (na mestu, kjer je bil prej opis)
                 videoBlock
 
                 // 5) Coming Soon
-                eventsSection(title: "Coming Soon", events: comingSoon)
+                eventsSection(title: String(localized: "Coming Soon"), events: comingSoon)
 
                 // 6) Mapa + naslov
                 mapBlock
@@ -75,7 +75,7 @@ struct ClubDetailView: View {
             )
             .allowsHitTesting(false)
 
-            Text(club?.name ?? "Club")
+            Text(club?.name ?? String(localized: "Club"))
                 .font(.system(size: 40, weight: .bold))
                 .padding(.horizontal, 16)
                 .padding(.bottom, 14)
@@ -120,7 +120,8 @@ struct ClubDetailView: View {
     private var descriptionBlock: some View {
         if let d = club?.description.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("About")
+                // Loceno besedilo od "About" v profilu (drug kljuc, da prevod ne trci s Settings > About).
+                Text("About the club")
                     .font(.headline)
                 Text(d)
                     .font(.subheadline)
@@ -215,10 +216,10 @@ struct ClubDetailView: View {
             Text("Contact")
                 .font(.headline)
 
-            ContactRow(label: "Email", value: club?.contactEmail)
-            ContactRow(label: "Phone", value: club?.contactPhone)
-            ContactRow(label: "Instagram", value: club?.instagram)
-            ContactRow(label: "Website", value: club?.website)
+            ContactRow(label: String(localized: "Email"), value: club?.contactEmail)
+            ContactRow(label: String(localized: "Phone"), value: club?.contactPhone)
+            ContactRow(label: String(localized: "Instagram"), value: club?.instagram)
+            ContactRow(label: String(localized: "Website"), value: club?.website)
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)

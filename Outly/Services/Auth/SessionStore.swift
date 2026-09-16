@@ -93,7 +93,7 @@ final class SessionStore: ObservableObject {
     }
 
     /// Streznik je sejo zavrnil (npr. po ponastavitvi gesla na drugi napravi).
-    func sessionRejected(message: String = "Your session has expired. Please log in again.") {
+    func sessionRejected(message: String = String(localized: "Your session has expired. Please log in again.")) {
         clearLocalSession()
         sessionExpiredNotice = message
     }

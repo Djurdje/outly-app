@@ -24,7 +24,7 @@ private func skupine(_ items: [BarPriceItem]) -> [(naslov: String, postavke: [Ba
         kopija[i].postavke += brezKategorije
         return kopija
     }
-    return zKategorijo + [(naslov: "Other", postavke: brezKategorije)]
+    return zKategorijo + [(naslov: String(localized: "Other"), postavke: brezKategorije)]
 }
 
 struct BarPricesView: View {
@@ -241,9 +241,9 @@ struct BarPricesEditorView: View {
             let cat = v.category.trimmingCharacters(in: .whitespacesAndNewlines)
             // Prazna vrstica (brez imena in cene) se preskoci.
             if name.isEmpty && v.price.trimmingCharacters(in: .whitespaces).isEmpty { continue }
-            if name.isEmpty { throw VnosNapaka(msg: "Item \(i + 1): name is missing.") }
-            if name.count > 60 { throw VnosNapaka(msg: "Item \(i + 1): name is too long (max 60).") }
-            guard let c = Self.centi(iz: v.price) else { throw VnosNapaka(msg: "Item \(i + 1) (\(name)): enter a price like 4,50.") }
+            if name.isEmpty { throw VnosNapaka(msg: String(localized: "Item \(i + 1): name is missing.")) }
+            if name.count > 60 { throw VnosNapaka(msg: String(localized: "Item \(i + 1): name is too long (max 60).")) }
+            guard let c = Self.centi(iz: v.price) else { throw VnosNapaka(msg: String(localized: "Item \(i + 1) (\(name)): enter a price like 4,50.")) }
             items.append(BarPriceItem(name: name, priceCents: c, category: cat.isEmpty ? nil : String(cat.prefix(30))))
         }
         return items

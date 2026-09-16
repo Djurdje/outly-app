@@ -102,7 +102,7 @@ struct LoginView: View {
                 } label: {
                     HStack(spacing: 10) {
                         if isLoading { ProgressView().tint(.white) }
-                        Text(isLoading ? "Continue..." : "Continue")
+                        Text(LocalizedStringKey(isLoading ? "Continue..." : "Continue"))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .frame(maxWidth: .infinity)
@@ -137,6 +137,10 @@ struct LoginView: View {
                 }
                 .padding(.top, 10)
 
+                // Preklop jezika se pred prijavo.
+                JezikGumb()
+                    .padding(.top, 14)
+
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -150,11 +154,11 @@ struct LoginView: View {
         let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         guard cleanEmail.contains("@") else {
-            message = "Enter a valid email address."
+            message = String(localized: "Enter a valid email address.")
             return
         }
         guard !password.isEmpty else {
-            message = "Enter your password."
+            message = String(localized: "Enter your password.")
             return
         }
 
@@ -169,7 +173,7 @@ struct LoginView: View {
             session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
             guard session.isLoggedIn else {
                 // Keychain je zavrnil zapis (redko; npr. naprava se ni odklenjena po zagonu).
-                message = "Could not save your session on this device. Please try again."
+                message = String(localized: "Could not save your session on this device. Please try again.")
                 return
             }
             // GET /me naredi SessionLoadingView takoj po preklopu na "main".

@@ -7,6 +7,9 @@ struct RegisterView: View {
     @State private var confirmPassword = ""
     @State private var isLoading = false
     @State private var message: String?
+    /// Barva sporocila: true = uspeh (zeleno). Message je zdaj lokaliziran, zato barve
+    /// ne moremo vec ugotoviti iz besed v besedilu (kot prej).
+    @State private var messageIsSuccess = false
 
     @AppStorage("authStage") private var authStage: String = "register"
     @AppStorage("pendingEmail") private var pendingEmail: String = ""   // ✅ DODANO
@@ -48,10 +51,7 @@ struct RegisterView: View {
                 if let message = message {
                     Text(message)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(
-                            message.lowercased().contains("created") || message.lowercased().contains("check your email")
-                            ? .green : .red
-                        )
+                        .foregroundColor(messageIsSuccess ? .green : .red)
                         .multilineTextAlignment(.center)
                         .padding(.top, 4)
                         .padding(.horizontal, 18)
@@ -63,7 +63,7 @@ struct RegisterView: View {
                     } label: {
                         HStack(spacing: 10) {
                             if isLoading { ProgressView().tint(.white) }
-                            Text(isLoading ? "Signing up..." : "Sign up")
+                            Text(LocalizedStringKey(isLoading ? "Signing up..." : "Sign up"))
                                 .font(.system(size: 16, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity)
@@ -121,33 +121,34 @@ struct RegisterView: View {
         let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard trimmedUsername.count >= 3 else {
-            message = "Username must be at least 3 characters."
+            message = String(localized: "Username must be at least 3 characters.")
             return
         }
         guard trimmedUsername.count <= 20 else {
-            message = "Username can have at most 20 characters."
+            message = String(localized: "Username can have at most 20 characters.")
             return
         }
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
         guard trimmedUsername.unicodeScalars.allSatisfy({ allowed.contains($0) }) else {
-            message = "Username can contain only letters, numbers and underscore."
+            message = String(localized: "Username can contain only letters, numbers and underscore.")
             return
         }
 
         let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard cleanEmail.contains("@") else {
-            message = "Enter a valid email address."
+            message = String(localized: "Enter a valid email address.")
             return
         }
         guard password.count >= 8 else {
-            message = "Password must be at least 8 characters."
+            message = String(localized: "Password must be at least 8 characters.")
             return
         }
         guard password == confirmPassword else {
-            message = "Passwords do not match."
+            message = String(localized: "Passwords do not match.")
             return
         }
 
+        messageIsSuccess = false
         isLoading = true
         defer { isLoading = false }
 
@@ -160,10 +161,11 @@ struct RegisterView: View {
             await MainActor.run {
                 if ustvarjen {
                     pendingEmail = cleanEmail
-                    message = "Account created. Check your email for the code."
+                    messageIsSuccess = true
+                    message = String(localized: "Account created. Check your email for the code.")
                     authStage = "verifyEmail"
                 } else {
-                    message = "That email is already registered. Sign in instead."
+                    message = String(localized: "That email is already registered. Sign in instead.")
                 }
             }
         } catch {

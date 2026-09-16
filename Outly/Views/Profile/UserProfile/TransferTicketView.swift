@@ -52,9 +52,11 @@ struct TransferTicketView: View {
             .background(Color.black.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(doneMessage == nil ? "Cancel" : "Done") {
+                    Button {
                         dismiss()
                         if doneMessage != nil { onTransferred() }
+                    } label: {
+                        Text(LocalizedStringKey(doneMessage == nil ? "Cancel" : "Done"))
                     }
                     .foregroundColor(.white)
                 }
@@ -75,9 +77,15 @@ struct TransferTicketView: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
 
-            Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account\(ticket.minAge > 0 ? " and must be \(ticket.minAge)+" : "").")
-                .font(.system(size: 12))
-                .foregroundColor(.white.opacity(0.5))
+            Group {
+                if ticket.minAge > 0 {
+                    Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account and must be \(ticket.minAge)+.")
+                } else {
+                    Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account.")
+                }
+            }
+            .font(.system(size: 12))
+            .foregroundColor(.white.opacity(0.5))
 
             if let errorMessage {
                 Text(errorMessage)

@@ -40,9 +40,9 @@ struct TeamMember: Decodable, Identifiable {
 
     var roleLabel: String {
         switch role {
-        case "owner": return "Owner"
-        case "manager": return "Manager"
-        default: return "Door staff"
+        case "owner": return String(localized: "Owner")
+        case "manager": return String(localized: "Manager")
+        default: return String(localized: "Door staff")
         }
     }
 
@@ -83,7 +83,7 @@ struct TeamInvite: Decodable, Identifiable {
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
     }
 
-    var roleLabel: String { role == "manager" ? "Manager" : "Door staff" }
+    var roleLabel: String { role == "manager" ? String(localized: "Manager") : String(localized: "Door staff") }
 }
 
 /// Odgovor GET/POST/DELETE /business/team.
