@@ -1,14 +1,20 @@
 # Gradnja iOS aplikacije brez Maca: GitHub Actions na macOS runnerju.
 #
-# Ob vsakem potisku na main (in rocno prek "Run workflow"):
-#   1. prevede projekt za simulator (brez podpisa) -> ce se ne prevede, je
-#      workflow rdec in v dnevniku so napake prevajalnika;
-#   2. naredi NEPODPISAN Outly.ipa in ga prilozi kot artefakt -> na Windowsu ga
-#      AltServer podpise z navadnim Apple ID-jem in nalozi na iPhone (velja 7 dni).
+# Ob vsakem potisku na master (in rocno prek "Run workflow"):
+#   1. prevede projekt za simulator (brez podpisa) -> ce se ne prevede, je workflow
+#      rdec in v dnevniku so napake prevajalnika; simulatorska .app gre kot artefakt
+#      (appetize.io);
+#   2. naredi PODPISAN arhiv z Applovim "cloud signing" (App Store Connect API kljuc
+#      iz GitHub secrets: APPLE_TEAM_ID, ASC_ISSUER_ID, ASC_KEY_ID, ASC_KEY_P8) in ga
+#      NALOZI NA TESTFLIGHT. Certifikat in profil ustvari Xcode sam
+#      (-allowProvisioningUpdates); nic se ne hrani v repozitoriju.
+#      Stevilka gradnje (CFBundleVersion) = stevilka zagona workflowa, zato je vsak
+#      upload nov build. Verzija (1.0) je MARKETING_VERSION v projektu.
 #
-# Poraba: macOS-minute stejejo 10x; ena gradnja je ~5-10 min = 50-100 "minut" od
-# 2000 brezplacnih na mesec za zasebni repo. Zato se ne pozene ob vsakem
-# commitu na drugih vejah, samo na main in rocno.
+# Ce secrets manjkajo (fork, testna veja), se korak za TestFlight preskoci.
+#
+# Poraba: macOS-minute stejejo 10x; ena gradnja je ~8-10 min = 80-100 "minut" od
+# 2000 brezplacnih na mesec za zasebni repo (~20 potiskov na mesec).
 name: Gradnja iOS
 
 on:
@@ -25,9 +31,9 @@ concurrency:
 
 jobs:
   gradnja:
-    name: Prevajanje in IPA
+    name: Prevajanje in TestFlight
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +44,6 @@ jobs:
         run: |
           xcodebuild -version
           swift --version
-          xcrun simctl list runtimes | head -20
 
       - name: Prevedi za simulator (brez podpisa)
         run: |
@@ -59,7 +64,6 @@ jobs:
           grep -q "BUILD SUCCEEDED" build/sim.log
 
       - name: Sestavi simulatorsko .app (za Appetize.io / simulator na Macu)
-        # Martin nima Maca: .app za simulator se nalozi na appetize.io in tece v brskalniku.
         run: |
           APP=$(find build/sim/Build/Products -name "Outly.app" -type d | head -1)
           test -n "$APP"
@@ -80,7 +84,42 @@ jobs:
           grep -E "error:" build/sim.log || true
           echo "::endgroup::"
 
-      - name: Arhiv za napravo (nepodpisan)
+      # ------------------------------------------------------------------
+      # TestFlight
+      # ------------------------------------------------------------------
+      - name: So secrets za TestFlight?
+        id: secrets
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          KEYID: ${{ secrets.ASC_KEY_ID }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -n "$TEAM" ] && [ -n "$ISSUER" ] && [ -n "$KEYID" ] && [ -n "$P8" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secrets APPLE_TEAM_ID / ASC_ISSUER_ID / ASC_KEY_ID / ASC_KEY_P8 manjkajo — TestFlight preskocen."
+          fi
+
+      - name: App Store Connect API kljuc
+        if: steps.secrets.outputs.ok == 'true' && github.event_name != 'pull_request'
+        env:
+          P8: ${{ secrets.ASC_KEY_P8 }}
+          KEYID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p "$HOME/private_keys"
+          printf '%s\n' "$P8" > "$HOME/private_keys/AuthKey_${KEYID}.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_${KEYID}.p8"
+          # Kljuc mora biti veljaven PEM (prva vrstica BEGIN PRIVATE KEY)
+          head -1 "$HOME/private_keys/AuthKey_${KEYID}.p8" | grep -q "BEGIN PRIVATE KEY"
+
+      - name: Podpisan arhiv (cloud signing)
+        if: steps.secrets.outputs.ok == 'true' && github.event_name != 'pull_request'
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          KEYID: ${{ secrets.ASC_KEY_ID }}
         run: |
           set -o pipefail
           xcodebuild archive \
@@ -90,26 +129,56 @@ jobs:
             -destination "generic/platform=iOS" \
             -configuration Release \
             -archivePath build/Outly.xcarchive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${KEYID}.p8" \
+            -authenticationKeyID "$KEYID" \
+            -authenticationKeyIssuerID "$ISSUER" \
+            DEVELOPMENT_TEAM="$TEAM" \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             | tee build/archive.log \
-            | grep -E "error:|ARCHIVE (SUCCEEDED|FAILED)" || true
+            | grep -E "error:|ARCHIVE (SUCCEEDED|FAILED)|Signing Identity|Provisioning Profile" || true
           grep -q "ARCHIVE SUCCEEDED" build/archive.log
 
-      - name: Sestavi Outly.ipa
+      - name: Nalozi na TestFlight
+        if: steps.secrets.outputs.ok == 'true' && github.event_name != 'pull_request'
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          KEYID: ${{ secrets.ASC_KEY_ID }}
         run: |
-          mkdir -p build/Payload
-          cp -R "build/Outly.xcarchive/Products/Applications/Outly.app" build/Payload/
-          (cd build && zip -qr Outly-nepodpisan.ipa Payload)
-          ls -la build/Outly-nepodpisan.ipa
+          set -o pipefail
+          cat > build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath build/Outly.xcarchive \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${KEYID}.p8" \
+            -authenticationKeyID "$KEYID" \
+            -authenticationKeyIssuerID "$ISSUER" \
+            | tee build/export.log \
+            | grep -E "error:|EXPORT (SUCCEEDED|FAILED)|Upload|upload" || true
+          grep -q "EXPORT SUCCEEDED" build/export.log
+          echo "Build $GITHUB_RUN_NUMBER nalozen na TestFlight (obdelava pri Applu traja ~5-15 min)."
 
-      - name: Prilozi IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: Outly-nepodpisan-ipa
-          path: build/Outly-nepodpisan.ipa
-          retention-days: 14
+      - name: Pocisti kljuc
+        if: always()
+        run: rm -rf "$HOME/private_keys"
 
       - name: Prilozi dnevnike
         if: always()
