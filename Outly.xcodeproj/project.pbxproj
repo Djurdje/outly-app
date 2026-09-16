@@ -8,12 +8,18 @@
 
 /* Begin PBXFileReference section */
 		1C8B37D32F0AEEAF006F3A33 /* Outly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Outly.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF29CB3DC890767A59C05308 /* OutlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OutlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1C8B37D52F0AEEAF006F3A33 /* Outly */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Outly;
+			sourceTree = "<group>";
+		};
+		AD64B6A299AADA078A276ADF /* OutlyTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OutlyTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,13 +32,39 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FADA32825E79BACEEA089ED9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		0C29DB7E4751E4784E6F23B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C8B37CB2F0AEEAF006F3A33 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1C8B37D22F0AEEAF006F3A33;
+			remoteInfo = Outly;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		294E56A33826485C7D0957CE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1C8B37D22F0AEEAF006F3A33 /* Outly */;
+			targetProxy = 0C29DB7E4751E4784E6F23B6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXGroup section */
 		1C8B37CA2F0AEEAF006F3A33 = {
 			isa = PBXGroup;
 			children = (
 				1C8B37D52F0AEEAF006F3A33 /* Outly */,
+				AD64B6A299AADA078A276ADF /* OutlyTests */,
 				1C8B37D42F0AEEAF006F3A33 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +73,7 @@
 			isa = PBXGroup;
 			children = (
 				1C8B37D32F0AEEAF006F3A33 /* Outly.app */,
+				DF29CB3DC890767A59C05308 /* OutlyTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +103,29 @@
 			productReference = 1C8B37D32F0AEEAF006F3A33 /* Outly.app */;
 			productType = "com.apple.product-type.application";
 		};
+		3123513D272DA3DE664FB4D0 /* OutlyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8834C0B6385442D8F6ED8F63 /* Build configuration list for PBXNativeTarget "OutlyTests" */;
+			buildPhases = (
+				A91ABCF932F0811FE5C17295 /* Sources */,
+				FADA32825E79BACEEA089ED9 /* Frameworks */,
+				78732058CB69A4E872288B46 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				294E56A33826485C7D0957CE /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AD64B6A299AADA078A276ADF /* OutlyTests */,
+			);
+			name = OutlyTests;
+			packageProductDependencies = (
+			);
+			productName = OutlyTests;
+			productReference = DF29CB3DC890767A59C05308 /* OutlyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +138,10 @@
 				TargetAttributes = {
 					1C8B37D22F0AEEAF006F3A33 = {
 						CreatedOnToolsVersion = 26.1.1;
+					};
+					3123513D272DA3DE664FB4D0 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = 1C8B37D22F0AEEAF006F3A33;
 					};
 				};
 			};
@@ -101,6 +161,7 @@
 			projectRoot = "";
 			targets = (
 				1C8B37D22F0AEEAF006F3A33 /* Outly */,
+				3123513D272DA3DE664FB4D0 /* OutlyTests */,
 			);
 		};
 /* End PBXProject section */
@@ -113,10 +174,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		78732058CB69A4E872288B46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1C8B37CF2F0AEEAF006F3A33 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A91ABCF932F0811FE5C17295 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -319,6 +394,57 @@
 			};
 			name = Release;
 		};
+		D327F258A5EE12E01529B15F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = si.outly.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Outly.app/Outly";
+			};
+			name = Debug;
+		};
+		A4E46FF1824E5628B8E616FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = si.outly.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Outly.app/Outly";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -336,6 +462,15 @@
 			buildConfigurations = (
 				1C8B37E12F0AEEB0006F3A33 /* Debug */,
 				1C8B37E22F0AEEB0006F3A33 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8834C0B6385442D8F6ED8F63 /* Build configuration list for PBXNativeTarget "OutlyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D327F258A5EE12E01529B15F /* Debug */,
+				A4E46FF1824E5628B8E616FC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
