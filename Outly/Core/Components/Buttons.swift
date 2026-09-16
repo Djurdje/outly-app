@@ -89,7 +89,7 @@ struct OutlyInfoCardButton: View {
 
             HStack(alignment: .center, spacing: 14) {
                 Image(systemName: icon)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
 
                 Text(value)
