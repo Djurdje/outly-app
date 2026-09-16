@@ -1,74 +1,59 @@
 import SwiftUI
 
-/// Obvestila: potisnih obvestil (APNs) se ni, zato zaslon pokaze, kaj uporabnik
-/// dobiva po e-posti, in prazno stanje za obvestila v aplikaciji.
-/// Ko pridejo APNs, tu pride seznam iz backenda.
+/// Obvestila — po Figmi "notification" (113:955): skupine s stikali.
+/// Potisnih obvestil (APNs) se ni; izbire se shranijo na napravi (@AppStorage) in bodo
+/// veljale, ko pridejo potisna obvestila. To uporabniku povemo v opombi spodaj.
 struct NotificationsView: View {
+    @AppStorage("notif.eventReminders")   private var eventReminders = true
+    @AppStorage("notif.newEventsInCity")  private var newEventsInCity = true
+    @AppStorage("notif.ticketPurchase")   private var ticketPurchase = true
+    @AppStorage("notif.ticketReminders")  private var ticketReminders = true
+    @AppStorage("notif.specialOffers")    private var specialOffers = false
+    @AppStorage("notif.appUpdates")       private var appUpdates = true
+    @AppStorage("notif.securityAlerts")   private var securityAlerts = true
+
     var body: some View {
-        Screen {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 22) {
 
-                    Text("Notifications")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.top, 6)
+                Text("Notifications")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.top, 6)
 
-                    VStack(spacing: 12) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 44, weight: .semibold))
-                            .foregroundColor(.outlyBlue)
-                        Text("No notifications yet")
-                            .font(.title3).fontWeight(.semibold).foregroundColor(.white)
-                        Text("Updates about your tickets and events\nwill show up here.")
-                            .font(.footnote).foregroundColor(.gray).multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 40)
-                    .padding(.bottom, 20)
-
-                    Text("What we email you")
-                        .font(.headline)
-                        .foregroundColor(.white.opacity(0.7))
-
-                    vrstica(icon: "checkmark.seal", title: "Account", text: "Confirmation code at sign-up and password reset codes.")
-
-                    Text("Coming soon")
-                        .font(.headline)
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(.top, 6)
-
-                    vrstica(icon: "ticket", title: "Tickets", text: "A ticket sent to you by a friend, cancelled events and refunds.")
-                    vrstica(icon: "building.2", title: "Creators", text: "The decision on your request to list a club.")
-                    vrstica(icon: "bell.badge", title: "Tonight", text: "Push notifications about events near you.")
-
-                    Text("You can always check your tickets under Profile > Tickets.")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .padding(.top, 6)
-
-                    Spacer(minLength: 40)
+                OutlySettingsCard("Event updates") {
+                    OutlySettingsToggleRow(title: "Event reminders", isOn: $eventReminders)
+                    OutlySettingsToggleRow(title: "New events in my city", isOn: $newEventsInCity)
                 }
-                .padding(.bottom, 40)
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-    }
 
-    private func vrstica(icon: String, title: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .foregroundColor(.outlyBlue)
-                .frame(width: 24)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.subheadline).fontWeight(.semibold).foregroundColor(.white)
-                Text(text).font(.caption).foregroundColor(.gray).fixedSize(horizontal: false, vertical: true)
+                OutlySettingsCard("Tickets") {
+                    OutlySettingsToggleRow(title: "Ticket purchase confirmation", isOn: $ticketPurchase)
+                    OutlySettingsToggleRow(title: "Ticket reminders", isOn: $ticketReminders)
+                }
+
+                OutlySettingsCard("Special offers") {
+                    OutlySettingsToggleRow(title: "Offers from clubs", isOn: $specialOffers)
+                }
+
+                OutlySettingsCard("App & account") {
+                    OutlySettingsToggleRow(title: "App updates & announcements", isOn: $appUpdates)
+                    OutlySettingsToggleRow(title: "Security alerts", isOn: $securityAlerts)
+                }
+
+                Text("Push notifications are coming soon — your choices are saved. Sign-up and password codes always arrive by email.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.45))
+                    .padding(.horizontal, 4)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 20)
             }
-            Spacer()
+            .padding(.horizontal, 18)
+            .padding(.bottom, 40)
         }
-        .padding(14)
-        .background(Color.gray.opacity(0.14))
-        .cornerRadius(16)
+        .background(Color.black.ignoresSafeArea())
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(.dark)
     }
 }

@@ -1,139 +1,73 @@
 import SwiftUI
 
-/// Geslo in varnost. Prej so bile tu tri vrstice brez delovanja (sprememba gesla,
-/// dvostopenjska potrditev, povezava z Applom). Dvostopenjske potrditve in Apple
-/// prijave backend nima, zato vrstic ni — Apple zavrne gumbe, ki ne delajo nic.
+/// Geslo in varnost — po Figmi "Pass and sec" (95:1403): naslov, kartica "Login" z vrstico
+/// "Change password → Edit" in opombo. Dvostopenjske potrditve in Google/Apple prijave
+/// backend nima, zato teh vrstic ni (Apple zavrne gumbe, ki ne delajo nic).
+/// Dodana kartica "Sessions" (odjava z vseh naprav) — ni v Figmi, a je varnostno potrebna.
 @MainActor
 struct PasswordSecurityView: View {
     @EnvironmentObject private var session: SessionStore
     @AppStorage("authStage") private var authStage: String = "main"
 
-    @State private var current = ""
-    @State private var newPassword = ""
-    @State private var confirm = ""
-    @State private var message: String?
-    @State private var success: String?
-    @State private var isSaving = false
+    @State private var showChange = false
     @State private var isLoggingOutAll = false
+    @State private var showLogoutAllConfirm = false
+    @State private var success: String?
 
     var body: some View {
-        // Ta pogled se POTISNE na obstojeci NavigationStack (ProfileView/MyAccountView);
-        // gnezden NavigationStack bi skril gumb nazaj in zlomil navigacijo.
-        Group {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 22) {
+        // Potisnjen na obstojeci NavigationStack; brez lastnega NavigationStacka.
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 22) {
 
-                    Text("Password and security")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.top, 6)
+                Text("Password and security")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.top, 6)
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Change password")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.white)
-
-                        OutlySecureField(placeholder: "current password", text: $current)
-                            .textContentType(.password)
-                        OutlySecureField(placeholder: "new password (min. 8 characters)", text: $newPassword)
-                            .textContentType(.newPassword)
-                        OutlySecureField(placeholder: "confirm new password", text: $confirm)
-                            .textContentType(.newPassword)
-
-                        Text("After changing your password, all other devices are signed out. This one stays signed in.")
-                            .font(.system(size: 12, weight: .light))
-                            .foregroundColor(.white.opacity(0.55))
-
-                        if let message {
-                            Text(message).font(.system(size: 14, weight: .medium)).foregroundColor(.red)
-                        }
-                        if let success {
-                            Text(success).font(.system(size: 14, weight: .medium)).foregroundColor(.green)
-                        }
-
-                        OutlyPrimaryButton(title: isSaving ? "Saving..." : "Change password", isLoading: isSaving) {
-                            Task { await change() }
-                        }
-                        .disabled(isSaving || !canSubmit)
-                        .opacity(canSubmit ? 1 : 0.6)
-                    }
-                    .padding(18)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color.white.opacity(0.06))
-                    )
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Sessions")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.white)
-                        Text("Signed in somewhere you don't recognise? Sign out everywhere, including this device.")
-                            .font(.system(size: 12, weight: .light))
-                            .foregroundColor(.white.opacity(0.55))
-                        Button {
-                            Task { await logoutEverywhere() }
-                        } label: {
-                            HStack(spacing: 10) {
-                                if isLoggingOutAll { ProgressView().tint(.white) }
-                                Text("Sign out of all devices")
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.white.opacity(0.1))
-                            .foregroundColor(.white)
-                            .cornerRadius(14)
-                        }
-                        .disabled(isLoggingOutAll)
-                    }
-                    .padding(18)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color.white.opacity(0.06))
-                    )
-
-                    Spacer(minLength: 20)
+                if let success {
+                    Text(success)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.green)
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 40)
+
+                OutlySettingsCard("Login") {
+                    OutlySettingsRow(
+                        icon: "lock",
+                        title: "Change password",
+                        action: "Edit",
+                        footnote: "You can change your password at any time.",
+                        onTap: { showChange = true }
+                    )
+                }
+
+                OutlySettingsCard("Sessions") {
+                    OutlySettingsRow(
+                        icon: "iphone.and.arrow.forward",
+                        title: "Sign out of all devices",
+                        action: isLoggingOutAll ? "Signing out…" : "Sign out",
+                        actionColor: Color(red: 1, green: 0.35, blue: 0.35),
+                        footnote: "Signed in somewhere you don't recognise? Sign out everywhere, including this device.",
+                        onTap: { showLogoutAllConfirm = true }
+                    )
+                }
+
+                Spacer(minLength: 20)
             }
-            .background(Color.black.ignoresSafeArea())
+            .padding(.horizontal, 18)
+            .padding(.bottom, 40)
         }
+        .background(Color.black.ignoresSafeArea())
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-    }
-
-    private var canSubmit: Bool {
-        !current.isEmpty && newPassword.count >= 8 && !confirm.isEmpty
-    }
-
-    private func change() async {
-        message = nil
-        success = nil
-        guard newPassword == confirm else { message = "New passwords do not match."; return }
-        guard newPassword != current else { message = "New password must be different from the current one."; return }
-        isSaving = true
-        defer { isSaving = false }
-        do {
-            // Trenutno geslo preverimo s ponovno prijavo pri Supabase (dobimo svezo sejo),
-            // nato z njo nastavimo novo geslo. Supabase ob tem odjavi DRUGE seje;
-            // ta naprava nadaljuje s svezo sejo.
-            guard let email = session.me?.email, !email.isEmpty else {
-                message = "Your profile is still loading. Please try again."
-                return
-            }
-            let seja = try await SupabaseAuth.shared.signIn(email: email, password: current)
-            try await SupabaseAuth.shared.updatePassword(token: seja.accessToken, newPassword: newPassword)
-            session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
-            current = ""; newPassword = ""; confirm = ""
-            success = "Password changed. Other devices were signed out."
-        } catch let sb as SupabaseAuthError {
-            if sb.code == "invalid_credentials" || sb.message.lowercased().contains("invalid login credentials") {
-                message = "Current password is wrong."
-                return
-            }
-            message = sb.userMessage
-        } catch {
-            message = error.userMessage
+        .navigationDestination(isPresented: $showChange) {
+            PasswordChangeView { success = "Password changed. Other devices were signed out." }
+        }
+        .confirmationDialog("Sign out of all devices?", isPresented: $showLogoutAllConfirm, titleVisibility: .visible) {
+            Button("Sign out everywhere", role: .destructive) { Task { await logoutEverywhere() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You will be signed out on this device too.")
         }
     }
 
@@ -147,5 +81,115 @@ struct PasswordSecurityView: View {
         }
         session.logout()
         authStage = "login"
+    }
+}
+
+/// Sprememba gesla — po Figmi "Pass change" (184:2333): naslov "Password change", "Done"
+/// desno zgoraj, tri temna polja z oznako in opombo. Trenutno geslo se preveri s ponovno
+/// prijavo pri Supabase, nato se z novo sejo nastavi novo geslo (druge naprave Supabase odjavi).
+@MainActor
+struct PasswordChangeView: View {
+    @EnvironmentObject private var session: SessionStore
+    @Environment(\.dismiss) private var dismiss
+    let onChanged: () -> Void
+
+    @State private var current = ""
+    @State private var newPassword = ""
+    @State private var confirm = ""
+    @State private var message: String?
+    @State private var isSaving = false
+
+    private var canSubmit: Bool {
+        !current.isEmpty && newPassword.count >= 8 && !confirm.isEmpty && !isSaving
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                OutlyDarkSecureField(
+                    label: "Password",
+                    placeholder: "Enter the current password",
+                    text: $current,
+                    hint: "Enter the current password for security reasons",
+                    contentType: .password
+                )
+                OutlyDarkSecureField(
+                    label: "New password",
+                    placeholder: "Enter new password",
+                    text: $newPassword,
+                    hint: "At least 8 characters",
+                    contentType: .newPassword
+                )
+                OutlyDarkSecureField(
+                    label: "Confirm password",
+                    placeholder: "Repeat new password",
+                    text: $confirm,
+                    hint: "Double check that you entered the password correctly",
+                    contentType: .newPassword
+                )
+
+                if let message {
+                    Text(message)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 4)
+                }
+
+                Text("After changing your password, all other devices are signed out. This one stays signed in.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.45))
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
+
+                Spacer(minLength: 30)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            .padding(.bottom, 40)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(Color.black.ignoresSafeArea())
+        .navigationTitle("Password change")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if isSaving {
+                    ProgressView().tint(.white)
+                } else {
+                    Button("Done") { Task { await change() } }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(canSubmit ? .white : .white.opacity(0.35))
+                        .disabled(!canSubmit)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func change() async {
+        message = nil
+        guard newPassword == confirm else { message = "New passwords do not match."; return }
+        guard newPassword != current else { message = "New password must be different from the current one."; return }
+        guard let email = session.me?.email, !email.isEmpty else {
+            message = "Your profile is still loading. Please try again."
+            return
+        }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let seja = try await SupabaseAuth.shared.signIn(email: email, password: current)
+            try await SupabaseAuth.shared.updatePassword(token: seja.accessToken, newPassword: newPassword)
+            session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
+            onChanged()
+            dismiss()
+        } catch let sb as SupabaseAuthError {
+            if sb.code == "invalid_credentials" || sb.message.lowercased().contains("invalid login credentials") {
+                message = "Current password is wrong."
+                return
+            }
+            message = sb.userMessage
+        } catch {
+            message = error.userMessage
+        }
     }
 }
