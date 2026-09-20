@@ -810,6 +810,17 @@
         }
       }
     },
+    "Apply filters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabi filtre"
+          }
+        }
+      }
+    },
     "Apply preferences from your profile": {
       "extractionState": "manual",
       "localizations": {
@@ -4395,6 +4406,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Znova pošlji kodo"
+          }
+        }
+      }
+    },
+    "Reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponastavi"
           }
         }
       }

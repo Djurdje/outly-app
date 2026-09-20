@@ -296,15 +296,15 @@ struct EventDetailView: View {
         let state = ticketState
         let price = event.displayPrice ?? String(localized: "Tickets")
 
-        let (top, sub, button): (String, String, String?) = {
+        let (top, sub): (String, String) = {
             switch state {
-            case .buy:          return (price, String(localized: "per ticket"), String(localized: "Get tickets"))
-            case .free:         return (String(localized: "FREE"), String(localized: "free entry"), String(localized: "Get tickets"))
-            case .fewLeft(let n): return (price, n == 1 ? String(localized: "last ticket") : String(localized: "only \(n) left"), String(localized: "Get tickets"))
-            case .external:     return (String(localized: "Tickets"), String(localized: "sold by the club"), String(localized: "Open"))
-            case .door:         return (String(localized: "Tickets"), String(localized: "at the door"), nil)
-            case .soldOut:      return (price, String(localized: "sold out"), nil)
-            case .ended:        return (String(localized: "Ended"), String(localized: "event is over"), nil)
+            case .buy:          return (price, String(localized: "per ticket"))
+            case .free:         return (String(localized: "FREE"), String(localized: "free entry"))
+            case .fewLeft(let n): return (price, n == 1 ? String(localized: "last ticket") : String(localized: "only \(n) left"))
+            case .external:     return (String(localized: "Tickets"), String(localized: "sold by the club"))
+            case .door:         return (String(localized: "Tickets"), String(localized: "at the door"))
+            case .soldOut:      return (price, String(localized: "sold out"))
+            case .ended:        return (String(localized: "Ended"), String(localized: "event is over"))
             }
         }()
 
@@ -316,58 +316,69 @@ struct EventDetailView: View {
             return false
         }()
 
-        return HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(top)
-                    .font(.system(size: 24, weight: .bold))
+        // Videz od 20. 9. (Martin): en kompakten, sredinski, zaobljen moder okvir (#4C76FF,
+        // samo ozadje 65 % prosojno, da plakat rahlo sije skozi), brez belega gumba "Get tickets".
+        // Cena: znak in cela stevilka velika, decimalke manjse in dvignjene (superscript),
+        // pod ceno majhen "per ticket". Ves tekst 100 % neprosojen. Neaktivna stanja temna.
+        // Polozaj na pasici in dotik (nakup / tuja povezava) sta nespremenjena.
+        return HStack {
+            Spacer(minLength: 0)
+            VStack(spacing: 2) {
+                if let deli = razdeljenaCena(top) {
+                    HStack(alignment: .top, spacing: 1) {
+                        Text(deli.glavni)
+                            .font(.system(size: 34, weight: .bold))
+                        Text(deli.decimalke)
+                            .font(.system(size: 14, weight: .bold))
+                            .padding(.top, 5)
+                    }
                     .foregroundStyle(.white)
-                Text(sub)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(active ? 0.8 : 0.55))
-            }
-
-            Spacer(minLength: 8)
-
-            if let button {
-                HStack(spacing: 6) {
-                    Text(button)
-                        .font(.system(size: 15, weight: .semibold))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                } else {
+                    Text(top)
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(.white)
                 }
-                .foregroundStyle(active ? Color.outlyBlue : Color.white.opacity(0.6))
-                .padding(.horizontal, 18)
-                .padding(.vertical, 11)
-                .background(active ? Color.white : Color.white.opacity(0.10))
-                .clipShape(Capsule())
+                Text(sub)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.white)
             }
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .frame(maxWidth: .infinity)
-        // Modra kot v Figmi, malo prosojna (Luka 14. 9.), ker lezi na plakatu. Neaktivna stanja temna.
-        .background(active ? Color.outlyBlue.opacity(0.82) : Color.black.opacity(0.55))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(active ? 0 : 0.14), lineWidth: 1)
-        )
-        .shadow(color: active ? Color.outlyBlue.opacity(0.35) : .black.opacity(0.35), radius: 16, y: 6)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard active else { return }
-            // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView, testni nacin do Stripa).
-            // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
-            if event.ticketPriceCents != nil {
-                showBuy = true
-            } else if let urlStr = event.ticketUrl,
-                      !urlStr.isEmpty,
-                      let url = URL(string: urlStr) {
-                UIApplication.shared.open(url)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(active ? Color.outlyBlue.opacity(0.65) : Color.black.opacity(0.55))
+                    .shadow(color: active ? Color.outlyBlue.opacity(0.25) : .black.opacity(0.35), radius: 14, y: 6)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(active ? 0 : 0.14), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .onTapGesture {
+                guard active else { return }
+                // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView, testni nacin do Stripa).
+                // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
+                if event.ticketPriceCents != nil {
+                    showBuy = true
+                } else if let urlStr = event.ticketUrl,
+                          !urlStr.isEmpty,
+                          let url = URL(string: urlStr) {
+                    UIApplication.shared.open(url)
+                }
             }
+            Spacer(minLength: 0)
         }
     }
 
+    /// "€26.00" -> ("€26", ".00"); nil, ce napis ni cena z decimalkami (npr. "Tickets", "FREE").
+    /// displayPrice vedno uporabi piko (String(format: "%.2f")), zato je pika zanesljivo locilo.
+    private func razdeljenaCena(_ napis: String) -> (glavni: String, decimalke: String)? {
+        guard napis == event.displayPrice, let pika = napis.lastIndex(of: ".") else { return nil }
+        let glavni = String(napis[..<pika])
+        let decimalke = String(napis[pika...])
+        guard !glavni.isEmpty, decimalke.count > 1 else { return nil }
+        return (glavni, decimalke)
+    }
 
     // MARK: - Info block (address/phone/map style)
     private var infoBlock: some View {

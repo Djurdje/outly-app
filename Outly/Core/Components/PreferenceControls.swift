@@ -93,4 +93,6 @@ enum PrefBesedila {
     static func km(_ v: Double) -> String { "\(Int(v)) km" }
     static func leta(_ v: Double) -> String { "\(Int(v))" }
     static func cena(_ centi: Int) -> String { centi == 0 ? String(localized: "Free") : Denar.evri(centi) }
+    /// Kratek napis pod rocajem drsnika cene v Filtrih ("5 €").
+    static func evriKratko(_ v: Double) -> String { "\(Int(v)) €" }
 }

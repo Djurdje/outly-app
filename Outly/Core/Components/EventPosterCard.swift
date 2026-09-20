@@ -4,9 +4,10 @@ import SwiftUI
 /// Oznaka zaloge (SOLD OUT, 3 LEFT, FREE) pride iz streznika (availability).
 ///
 /// Od 20. 9.: podatki niso vec pod plakatom, ampak v spodnjem prekrivnem pasu ZNOTRAJ
-/// plakata (levo temno zamegljeno: naslov + klub · cas; desno modro: cena; med njima
-/// tanko locilo). Kartica je zato nizja (samo plakat) in na zaslon gre vec dogodkov.
-/// Plakat sam se ne spreminja.
+/// plakata. Pas je v celoti temno prosojen (zamegljen); levo naslov, pod njim klub in
+/// datum/ura, desno cena v majhnem zaobljenem modrem gumbu (#4C76FF, bel tekst), med njima
+/// tanko locilo. Desni stolpec NI vec ves moder (Martin, 20. 9. zvecer). Kartica je nizja
+/// (samo plakat) in na zaslon gre vec dogodkov. Plakat sam se ne spreminja.
 struct EventPosterCard: View {
     let event: APIEvent
     let clubName: String?
@@ -15,9 +16,8 @@ struct EventPosterCard: View {
     private var height: CGFloat { width * 4 / 3 }
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 18, style: .continuous) }
 
-    private var subtitle: String {
-        [clubName ?? "", event.displayDayTime].filter { !$0.isEmpty }.joined(separator: " · ")
-    }
+    /// Visina spodnjega pasu (tri vrstice: naslov, klub, datum/ura).
+    private let barHeight: CGFloat = 58
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -52,40 +52,49 @@ struct EventPosterCard: View {
         .contentShape(Rectangle())
     }
 
-    /// Dvodelni spodnji pas: levo naslov + klub · cas na zamegljeni podlagi, desno cena na modri.
+    /// Spodnji pas: levo naslov + klub + datum/ura, desno cena v modrem gumbu; celoten pas
+    /// na eni prosojni temni podlagi.
     private var infoBar: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(event.title)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text(subtitle)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
-                    .lineLimit(1)
+                if let clubName, !clubName.isEmpty {
+                    Text(clubName)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1)
+                }
+                if !event.displayDayTime.isEmpty {
+                    Text(event.displayDayTime)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1)
+                }
             }
-            .padding(.horizontal, 10)
+            .padding(.leading, 10)
+            .padding(.trailing, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 44)
-            .background(.ultraThinMaterial)
-            .environment(\.colorScheme, .dark)
 
             Rectangle()
                 .fill(Color.white.opacity(0.18))
-                .frame(width: 1, height: 44)
+                .frame(width: 1, height: 30)
 
             Text(event.priceLabel)
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 11, weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
                 .padding(.horizontal, 9)
-                .frame(minWidth: 44)
-                .frame(height: 44)
-                .background(Color.outlyBlue)
+                .padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.outlyBlue))
+                .padding(.horizontal, 8)
         }
-        .frame(width: width, height: 44)
+        .frame(width: width, height: barHeight)
+        .background(.ultraThinMaterial)
+        .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder
