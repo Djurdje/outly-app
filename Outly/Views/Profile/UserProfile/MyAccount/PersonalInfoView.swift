@@ -95,19 +95,6 @@ struct PersonalInfoView: View {
                         description: "Your home country."
                     ) { open(.country) }
 
-                    NavigationLink {
-                        SelectGenresView(isEditing: true)
-                    } label: {
-                        OutlyInfoCardButton(
-                            icon: "music.note.list",
-                            title: "Music genres",
-                            value: genresText,
-                            description: "Clubs and events are suggested by the genres you pick.",
-                            actionTitle: ""
-                        ) {}
-                    }
-                    .buttonStyle(.plain)
-
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.caption)
@@ -139,13 +126,6 @@ struct PersonalInfoView: View {
         let f = DateFormatter()
         f.dateStyle = .long
         return f.string(from: d)
-    }
-
-    private var genresText: String {
-        let g = user?.genres ?? []
-        if g.isEmpty { return "Not set" }
-        let names = g.prefix(3).map(GenreNames.display)
-        return names.joined(separator: ", ") + (g.count > 3 ? " +\(g.count - 3)" : "")
     }
 
     // MARK: - Urejanje

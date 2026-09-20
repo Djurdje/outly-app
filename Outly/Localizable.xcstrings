@@ -3068,6 +3068,17 @@
         }
       }
     },
+    "Manage": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi"
+          }
+        }
+      }
+    },
     "Manager": {
       "extractionState": "manual",
       "localizations": {
