@@ -24,6 +24,11 @@ struct HomeView: View {
     @State private var suggestedOrder: [Int] = []
     /// "In your area": klub, ki je po prvem dotiku zatemnjen in kaze razdaljo (drugi dotik odpre klub).
     @State private var areaSelected: Int?
+    /// Filtri (desni del "Where to?"); privzeti = brez omejitev.
+    @State private var filters: EventFilters = .privzeti
+    @State private var showFilters = false
+    /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje.
+    @State private var scrollOffset: CGFloat = 0
 
     @EnvironmentObject private var session: SessionStore
     private var authToken: String { session.token }
@@ -59,8 +64,13 @@ struct HomeView: View {
                 if !clubSet.isEmpty && selected.isDisjoint(with: clubSet) { return false }
             }
             if let d = distanceKm(to: club), d > prefs.maxDistanceKm { return false }
-            return true
+            return filters.ustreza(club, razdaljaKm: distanceKm(to: club))
         }
+    }
+
+    /// Mesta klubov za zaslon Filtri (brez podvajanja, po abecedi).
+    private var cities: [String] {
+        Array(Set(clubs.map(\.city).filter { !$0.isEmpty })).sorted()
     }
 
     private var suggestedClubs: [APIClub] {
@@ -82,8 +92,17 @@ struct HomeView: View {
         return d
     }
 
+    /// Prihajajoci dogodki po casu, skozi Filtre (zanri, starost, cena; mesto/razdalja prek kluba).
     private var sortedUpcoming: [APIEvent] {
-        upcomingEvents.sorted { ($0.startDate ?? .distantFuture) < ($1.startDate ?? .distantFuture) }
+        upcomingEvents
+            .filter { e in
+                guard filters.ustreza(e) else { return false }
+                if let club = clubsById[e.clubId] {
+                    return filters.ustreza(club, razdaljaKm: distanceKm(to: club))
+                }
+                return true
+            }
+            .sorted { ($0.startDate ?? .distantFuture) < ($1.startDate ?? .distantFuture) }
     }
 
     private var tonight: [APIEvent] { sortedUpcoming.filter { $0.isToday } }
@@ -169,8 +188,7 @@ struct HomeView: View {
 
                     header
 
-                    Button(action: odpriIskanje) { WhereToField() }
-                        .buttonStyle(.plain)
+                    WhereToField(onSearch: odpriIskanje, onFilter: { showFilters = true }, filterActive: filters.jeAktiven)
 
                     if let errorText {
                         VStack(spacing: 8) {
@@ -278,9 +296,21 @@ struct HomeView: View {
                 .padding(.bottom, 40)
                 .contentShape(Rectangle())
                 .onTapGesture { if areaSelected != nil { withAnimation(.easeOut(duration: 0.15)) { areaSelected = nil } } }
+                // Odmik drsenja za ozadje (iOS 17: PreferenceKey; onScrollGeometryChange je sele iOS 18).
+                .background(
+                    GeometryReader { g in
+                        Color.clear.preference(key: HomeScrollOffsetKey.self,
+                                               value: -g.frame(in: .named("homeScroll")).minY)
+                    }
+                )
             }
+            .coordinateSpace(name: "homeScroll")
+            .onPreferenceChange(HomeScrollOffsetKey.self) { scrollOffset = $0 }
             .background(homeBackground)
             .navigationTitle("")
+            .sheet(isPresented: $showFilters) {
+                FiltersView(filters: $filters, cities: cities)
+            }
             // Osvezitev tece v samostojni nalogi: SwiftUI prekine nalogo .refreshable, ce se
             // stanje pogleda spremeni pred koncem klicev (isLoading, me, lokacija), in
             // URLSession bi vrgel "cancelled" -> "Connection problem". Task {} tega ne deduje.
@@ -355,28 +385,49 @@ struct HomeView: View {
 
     // MARK: - Deli
 
-    /// Ozadje domacega zaslona: Outlyjeva modra kot mehak sij zgoraj, ki prehaja v crno
-    /// (kot outly.si / Revolut). Samo tu — ostali zasloni ostanejo crni.
+    /// Delez drsenja 0…1 (1400 pt drsenja = poln premik sijev).
+    private var scrollT: CGFloat { min(max(scrollOffset / 1400, 0), 1) }
+
+    /// Ozadje domacega zaslona (od 20. 9.): temno mornariski preliv z dvema mehkima
+    /// modrima sijema, ki se ob drsenju pocasi premikata in spreminjata moc — zgornji
+    /// pojenja in gre desno-gor, spodnji se krepi in leze navzgor. Brez ostrih robov,
+    /// brez oblik. Samo tu — ostali zasloni ostanejo crni.
     private var homeBackground: some View {
-        ZStack {
-            Color.black
+        let t = scrollT
+        return ZStack {
             LinearGradient(
                 stops: [
-                    .init(color: Color.outlyBlue.opacity(0.42), location: 0),
-                    .init(color: Color.outlyBlue.opacity(0.14), location: 0.28),
-                    .init(color: .black, location: 0.62)
+                    .init(color: Color(red: 13/255, green: 18/255, blue: 38/255), location: 0),
+                    .init(color: Color(red: 10/255, green: 12/255, blue: 20/255), location: 0.46),
+                    .init(color: Color(red: 8/255, green: 9/255, blue: 15/255), location: 1)
                 ],
                 startPoint: .top, endPoint: .bottom
             )
-            RadialGradient(
-                colors: [Color.outlyBlue.opacity(0.35), .clear],
-                center: .init(x: 0.5, y: -0.1), startRadius: 0, endRadius: 420
-            )
+            // Sij A (zgoraj levo): 55 % -> pojenja.
+            RadialGradient(colors: [Color.outlyBlue.opacity(0.55), .clear],
+                           center: .center, startRadius: 0, endRadius: 310)
+                .frame(width: 620, height: 620)
+                .blur(radius: 40)
+                .offset(x: -100 + 120 * t, y: -260 - 160 * t)
+                .opacity(0.95 - 0.55 * t)
+            // Sij B (spodaj desno): 30 % -> se krepi in leze navzgor.
+            RadialGradient(colors: [Color.outlyBlue.opacity(0.30), .clear],
+                           center: .center, startRadius: 0, endRadius: 260)
+                .frame(width: 520, height: 520)
+                .blur(radius: 60)
+                .offset(x: 140 - 90 * t, y: 260 - 240 * t)
+                .opacity(0.35 + 0.6 * t)
         }
+        .animation(.linear(duration: 0.9), value: t)
         .ignoresSafeArea()
     }
 
-    /// Figma 239:804: avatar levo, logo Outly na sredini. Pozdrav je pod logom, majhen.
+    /// Stevilo obvestil za zvonec: zaenkrat cakajoca vabila v ekipo kluba (Me.pendingInvites),
+    /// ker drugih obvestil (APNs) se ni. 0 = samo zvonec, 1 = "1", 2+ = "1+".
+    private var notificationCount: Int { me?.pendingInvites ?? 0 }
+
+    /// Figma 239:804: avatar levo, logo Outly na sredini, zvonec desno (od 20. 9.).
+    /// Pozdrav je pod logom, majhen. Oba gumba sta 36 pt, zato logo ostane v sredini.
     private var header: some View {
         VStack(spacing: 2) {
             ZStack {
@@ -395,6 +446,11 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     Spacer()
+                    NavigationLink { MyClubsView() } label: {
+                        bellButton
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Notifications"))
                 }
             }
             Text(greeting)
@@ -403,6 +459,31 @@ struct HomeView: View {
                 .lineLimit(1)
         }
         .padding(.top, 2)
+    }
+
+    /// Zvonec v krogu 36 pt (kot avatar) z modro znacko: "1" ali "1+".
+    private var bellButton: some View {
+        ZStack(alignment: .topTrailing) {
+            Circle()
+                .fill(Color.white.opacity(0.08))
+                .frame(width: 36, height: 36)
+            Image(systemName: "bell")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(.white)
+                .frame(width: 36, height: 36)
+            if notificationCount > 0 {
+                Text(notificationCount >= 2 ? "1+" : "1")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 5)
+                    .frame(minWidth: 18, minHeight: 18)
+                    .background(Capsule().fill(Color.outlyBlue))
+                    .overlay(Capsule().stroke(Color(red: 13/255, green: 18/255, blue: 38/255), lineWidth: 2))
+                    .offset(x: 3, y: -3)
+            }
+        }
+        .frame(width: 36, height: 36)
+        .contentShape(Circle())
     }
 
     private func sekcija<Content: View>(_ naslov: String, podnaslov: String?, @ViewBuilder content: () -> Content) -> some View {
@@ -465,4 +546,10 @@ struct HomeView: View {
         _ = await session.refreshMe()
         self.me = session.me
     }
+}
+
+/// Odmik drsenja domacega zaslona (za ozadje, ki se odziva na drsenje).
+private struct HomeScrollOffsetKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }

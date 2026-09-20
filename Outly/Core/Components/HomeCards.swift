@@ -226,23 +226,58 @@ struct GenreRow: View {
     }
 }
 
-/// Iskalno polje "Where to?" po Figmi (37:122): temno, tanek rob, lupa levo.
+/// Iskalno polje "Where to?" (Figma 37:122), od 20. 9. dvodelno: levo lupa + "Where to?"
+/// (odpre iskanje), desno ikona filtra (odpre Filtre). Isti okvir, isto ozadje in obroba,
+/// med deloma samo tanko navpicno locilo — filter NI videti kot loceni gumb.
+/// Barve kot vrstice nastavitev (bela 8 %, obroba 14 %, radij 14), ne vec polna siva #2F2E2E.
 struct WhereToField: View {
+    var onSearch: () -> Void = {}
+    var onFilter: () -> Void = {}
+    /// true = filtri so nastavljeni (modra pika ob ikoni).
+    var filterActive: Bool = false
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white.opacity(0.7))
-            Text("Where to?")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(red: 0.51, green: 0.51, blue: 0.51))
-            Spacer()
+        HStack(spacing: 0) {
+            Button(action: onSearch) {
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white.opacity(0.7))
+                    Text("Where to?")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.white.opacity(0.55))
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.14))
+                .frame(width: 1)
+                .padding(.vertical, 12)
+
+            Button(action: onFilter) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
+                    .overlay(alignment: .topTrailing) {
+                        if filterActive {
+                            Circle().fill(Color.outlyBlue).frame(width: 7, height: 7).offset(x: 4, y: -3)
+                        }
+                    }
+                    .frame(width: 52, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Filters"))
         }
-        .padding(.horizontal, 16)
-        .frame(height: 44)
-        .background(Color(red: 47/255, green: 46/255, blue: 46/255).opacity(0.95))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.white.opacity(0.35), lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .contentShape(Rectangle())
+        .frame(height: 48)
+        .background(Color.white.opacity(0.08))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }

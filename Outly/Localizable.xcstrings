@@ -689,6 +689,28 @@
         }
       }
     },
+    "Age range": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starost"
+          }
+        }
+      }
+    },
+    "All cities": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsa mesta"
+          }
+        }
+      }
+    },
     "Allow the camera in Settings → Outly to scan tickets at the door.": {
       "extractionState": "manual",
       "localizations": {
@@ -784,6 +806,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prošnja poslana"
+          }
+        }
+      }
+    },
+    "Apply preferences from your profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabi nastavitve iz tvojega profila"
           }
         }
       }
@@ -1767,6 +1800,17 @@
         }
       }
     },
+    "Distance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razdalja"
+          }
+        }
+      }
+    },
     "Done": {
       "extractionState": "manual",
       "localizations": {
@@ -2152,6 +2196,17 @@
         }
       }
     },
+    "Entry price": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cena vstopnice"
+          }
+        }
+      }
+    },
     "Event": {
       "extractionState": "manual",
       "localizations": {
@@ -2328,6 +2383,17 @@
         }
       }
     },
+    "Filters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtri"
+          }
+        }
+      }
+    },
     "Forgot password": {
       "extractionState": "manual",
       "localizations": {
@@ -2357,6 +2423,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brezplačno"
+          }
+        }
+      }
+    },
+    "From": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Od"
           }
         }
       }
@@ -3002,6 +3079,17 @@
         }
       }
     },
+    "Max distance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Največja razdalja"
+          }
+        }
+      }
+    },
     "Message (optional)": {
       "extractionState": "manual",
       "localizations": {
@@ -3086,6 +3174,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Moji klubi"
+          }
+        }
+      }
+    },
+    "My preferences": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moje nastavitve"
+          }
+        }
+      }
+    },
+    "My preferences are used by “Use my preferences” in Filters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moje nastavitve uporablja »Uporabi moje nastavitve« v Filtrih."
           }
         }
       }
@@ -3992,6 +4102,17 @@
         }
       }
     },
+    "Preferences": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavitve"
+          }
+        }
+      }
+    },
     "Price (EUR)": {
       "extractionState": "manual",
       "localizations": {
@@ -4278,6 +4399,17 @@
         }
       }
     },
+    "Reset filters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponastavi filtre"
+          }
+        }
+      }
+    },
     "Reset your password": {
       "extractionState": "manual",
       "localizations": {
@@ -4351,6 +4483,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shrani"
+          }
+        }
+      }
+    },
+    "Saved on this device. Turn on “Use my preferences” in Filters to apply them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shranjeno na tej napravi. V Filtrih vklopi »Uporabi moje nastavitve«, da veljajo."
           }
         }
       }
@@ -4648,6 +4791,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kratek predstavitveni video na strani kluba (do 100 MB, predvaja se brez zvoka v zanki)."
+          }
+        }
+      }
+    },
+    "Show results": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaži rezultate"
           }
         }
       }
@@ -5667,6 +5821,17 @@
         }
       }
     },
+    "To": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do"
+          }
+        }
+      }
+    },
     "Tonight": {
       "extractionState": "manual",
       "localizations": {
@@ -5883,6 +6048,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nalagam …"
+          }
+        }
+      }
+    },
+    "Use my preferences": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabi moje nastavitve"
           }
         }
       }
