@@ -27,6 +27,13 @@ struct HomeView: View {
     /// Filtri (desni del "Where to?"); privzeti = brez omejitev.
     @State private var filters: EventFilters = .privzeti
     @State private var showFilters = false
+    /// Spustni meni obvestil pod zvoncem (od 20. 9.; prej je zvonec vodil na My Clubs).
+    @State private var showNotifications = false
+    @State private var invites: [MyInvite] = []
+    @State private var friendRequests: [FriendRequest] = []
+    @State private var notificationsLoading = false
+    /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
+    @State private var friendPlans: [FriendPlan] = []
     /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje.
     @State private var scrollOffset: CGFloat = 0
 
@@ -242,6 +249,12 @@ struct HomeView: View {
                             }
                         }
 
+                        // 4b. Your friends' plans (Martin, 20. 9.): krogi prijateljev + Invite more + View.
+                        // Samo prijavljeni; brez nacrtov ostane kot namig, da dodas prijatelje.
+                        if session.isLoggedIn {
+                            FriendsPlansSection(plans: friendPlans, clubsById: clubsById)
+                        }
+
                         // 5. Big events coming up (Figma 51:111) — velik plakat
                         if let e = bigComingUp {
                             sekcija("Big events coming up", podnaslov: nil) {
@@ -307,6 +320,9 @@ struct HomeView: View {
             .coordinateSpace(name: "homeScroll")
             .onPreferenceChange(HomeScrollOffsetKey.self) { scrollOffset = $0 }
             .background(homeBackground)
+            .overlay {
+                if showNotifications { notificationsOverlay }
+            }
             .navigationTitle("")
             .sheet(isPresented: $showFilters) {
                 FiltersView(filters: $filters, cities: cities,
@@ -424,9 +440,40 @@ struct HomeView: View {
         .ignoresSafeArea()
     }
 
-    /// Stevilo obvestil za zvonec: zaenkrat cakajoca vabila v ekipo kluba (Me.pendingInvites),
-    /// ker drugih obvestil (APNs) se ni. 0 = samo zvonec, 1 = "1", 2+ = "1+".
-    private var notificationCount: Int { me?.pendingInvites ?? 0 }
+    /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites) in prosnje
+    /// za prijateljstvo (Me.pendingFriendRequests); drugih obvestil (APNs) se ni.
+    /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
+    private var notificationCount: Int { (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0) }
+
+    /// Meni obvestil cez domaci zaslon: zatemnjeno ozadje (dotik zapre) + kartica pod zvoncem.
+    private var notificationsOverlay: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { zapriObvestila() }
+            NotificationsMenuView(invites: $invites, friendRequests: friendRequests, isLoading: notificationsLoading,
+                                  onClose: { zapriObvestila() },
+                                  onJoined: { _ in Task { await loadMe() } })
+                .padding(.top, 50)
+                .padding(.trailing, 16)
+                .transition(.scale(scale: 0.92, anchor: .topTrailing).combined(with: .opacity))
+        }
+    }
+
+    private func zapriObvestila() {
+        withAnimation(.easeOut(duration: 0.18)) { showNotifications = false }
+    }
+
+    private func loadNotifications() async {
+        guard !authToken.isEmpty else { return }
+        notificationsLoading = true
+        defer { notificationsLoading = false }
+        async let v = APIClient.shared.fetchMyInvites(token: authToken)
+        async let f = APIClient.shared.fetchMyFriends(token: authToken)
+        if let vabila = try? await v { invites = vabila }
+        if let prijatelji = try? await f { friendRequests = prijatelji.requestsIn }
+        await loadMe()
+    }
 
     /// Figma 239:804: avatar levo, logo Outly na sredini, zvonec desno (od 20. 9.).
     /// Pozdrav je pod logom, majhen. Oba gumba sta 36 pt, zato logo ostane v sredini.
@@ -448,7 +495,14 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     Spacer()
-                    NavigationLink { MyClubsView() } label: {
+                    Button {
+                        if showNotifications {
+                            zapriObvestila()
+                        } else {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { showNotifications = true }
+                            Task { await loadNotifications() }
+                        }
+                    } label: {
                         bellButton
                     }
                     .buttonStyle(.plain)
@@ -533,6 +587,10 @@ struct HomeView: View {
             await loadMe()
             // Liked events: osvezimo tudi priljubljene (pull-to-refresh), napaka tu ni kriticna.
             await favorites.load(token: authToken)
+            // Nacrti prijateljev: napaka (npr. star backend brez poti) ni kriticna -> prazen razdelek.
+            if !authToken.isEmpty {
+                friendPlans = (try? await APIClient.shared.fetchFriendsPlans(token: authToken)) ?? []
+            }
         } catch is CancellationError {
             // Prekinitev naloge (SwiftUI) ni napaka za uporabnika.
         } catch let url as URLError where url.code == .cancelled {

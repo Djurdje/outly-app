@@ -130,6 +130,8 @@ extension APIClient {
         var dateOfBirth: String? = nil   // "YYYY-MM-DD"
         var country: String? = nil       // "SI"
         var genres: [String]? = nil
+        /// Prijatelji vidijo moje nacrte (migracija 016).
+        var sharePlansWithFriends: Bool? = nil
 
         var json: [String: Any] {
             var j: [String: Any] = [:]
@@ -140,6 +142,7 @@ extension APIClient {
             if let dateOfBirth { j["dateOfBirth"] = dateOfBirth }
             if let country { j["country"] = country }
             if let genres { j["genres"] = genres }
+            if let sharePlansWithFriends { j["share_plans_with_friends"] = sharePlansWithFriends }
             return j
         }
     }

@@ -45,11 +45,55 @@
         }
       }
     },
+    "%@ invited you to work as %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ te vabi na delo kot %2$@"
+          }
+        }
+      }
+    },
+    "%@ is going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gre"
+          }
+        }
+      }
+    },
+    "%@ wants to be your friend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ želi biti tvoj prijatelj"
+          }
+        }
+      }
+    },
     "%@ · %@": {
       "extractionState": "manual"
     },
     "%@ · %lld × %@": {
       "extractionState": "manual"
+    },
+    "%@'s plans": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načrti: %@"
+          }
+        }
+      }
     },
     "%@:": {
       "extractionState": "manual"
@@ -115,6 +159,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld dogodkov"
+          }
+        }
+      }
+    },
+    "%lld friends going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld prijateljev gre"
           }
         }
       }
@@ -579,6 +634,17 @@
         }
       }
     },
+    "Add": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj"
+          }
+        }
+      }
+    },
     "Add a profile photo so friends can\nrecognise you": {
       "extractionState": "manual",
       "localizations": {
@@ -608,6 +674,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dodaj dogodek"
+          }
+        }
+      }
+    },
+    "Add friends to see where they're going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj prijatelje in vidi, kam gredo"
           }
         }
       }
@@ -1261,6 +1338,17 @@
         }
       }
     },
+    "Choose a friend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi prijatelja"
+          }
+        }
+      }
+    },
     "Choose between 1 and 10 tickets.": {
       "extractionState": "manual",
       "localizations": {
@@ -1268,6 +1356,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Izberi med 1 in 10 vstopnic."
+          }
+        }
+      }
+    },
+    "Choose from my friends instead": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raje izberi med mojimi prijatelji"
           }
         }
       }
@@ -1730,6 +1829,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datum rojstva ne more biti v prihodnosti."
+          }
+        }
+      }
+    },
+    "Decline": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrni"
           }
         }
       }
@@ -2438,6 +2548,39 @@
         }
       }
     },
+    "Friend requests": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prošnje za prijateljstvo"
+          }
+        }
+      }
+    },
+    "Friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji"
+          }
+        }
+      }
+    },
+    "Friends can see my plans": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji vidijo moje načrte"
+          }
+        }
+      }
+    },
     "From": {
       "extractionState": "manual",
       "localizations": {
@@ -2705,6 +2848,17 @@
         }
       }
     },
+    "Invite\nmore": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi\nveč"
+          }
+        }
+      }
+    },
     "Invite member": {
       "extractionState": "manual",
       "localizations": {
@@ -2800,6 +2954,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Postavka (npr. Pivo 0,5 l)"
+          }
+        }
+      }
+    },
+    "Join me on Outly — see where we're going out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridruži se mi na Outlyju – vidiš, kam gremo ven."
           }
         }
       }
@@ -3189,6 +3354,17 @@
         }
       }
     },
+    "My Friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moji prijatelji"
+          }
+        }
+      }
+    },
     "My clubs": {
       "extractionState": "manual",
       "localizations": {
@@ -3196,6 +3372,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Moji klubi"
+          }
+        }
+      }
+    },
+    "My friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moji prijatelji"
           }
         }
       }
@@ -3420,6 +3607,17 @@
         }
       }
     },
+    "No friends yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še brez prijateljev"
+          }
+        }
+      }
+    },
     "No internet connection. Check your network and try again.": {
       "extractionState": "manual",
       "localizations": {
@@ -3449,6 +3647,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ni novih obvestil"
+          }
+        }
+      }
+    },
+    "No one with that username.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nikogar s tem uporabniškim imenom."
+          }
+        }
+      }
+    },
+    "No plans yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še brez načrtov"
           }
         }
       }
@@ -3717,6 +3937,17 @@
         }
       }
     },
+    "Open My friends to accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Moje prijatelje za sprejem"
+          }
+        }
+      }
+    },
     "Open Profile > Tickets and tap the ticket. Show the QR code to the staff at the entrance — they scan it with Outly.\n\nA ticket can be scanned only once. Screenshots work, but keep your brightness up so the code is readable.": {
       "extractionState": "manual",
       "localizations": {
@@ -3757,6 +3988,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpri"
+          }
+        }
+      }
+    },
+    "Open to accept or reject": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri za sprejem ali zavrnitev"
           }
         }
       }
@@ -4322,6 +4564,28 @@
         }
       }
     },
+    "Remove friend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani prijatelja"
+          }
+        }
+      }
+    },
+    "Remove friend?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstranim prijatelja?"
+          }
+        }
+      }
+    },
     "Remove from liked events": {
       "extractionState": "manual",
       "localizations": {
@@ -4406,6 +4670,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prošnja za ustvarjalca"
+          }
+        }
+      }
+    },
+    "Requested": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslano"
           }
         }
       }
@@ -4619,6 +4894,28 @@
         }
       }
     },
+    "Search by username": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Išči po uporabniškem imenu"
+          }
+        }
+      }
+    },
+    "Search by username to add someone. Friends can see which events you're going to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči po uporabniškem imenu in dodaj koga. Prijatelji vidijo, na katere dogodke greš."
+          }
+        }
+      }
+    },
     "Search clubs or events": {
       "extractionState": "manual",
       "localizations": {
@@ -4740,6 +5037,17 @@
         }
       }
     },
+    "Send by email instead": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raje pošlji po e-pošti"
+          }
+        }
+      }
+    },
     "Send invite": {
       "extractionState": "manual",
       "localizations": {
@@ -4780,6 +5088,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pošiljam …"
+          }
+        }
+      }
+    },
+    "Sent requests": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslane prošnje"
           }
         }
       }
@@ -6426,6 +6745,28 @@
         }
       }
     },
+    "When a friend gets a ticket, the event shows up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko prijatelj dobi vstopnico, se dogodek pokaže tukaj."
+          }
+        }
+      }
+    },
+    "When on, your friends see which events you have a ticket for under “Your friends' plans”. Only friends, never anyone else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko je vklopljeno, prijatelji pod »Načrti prijateljev« vidijo, za katere dogodke imaš vstopnico. Samo prijatelji, nikoli kdo drug."
+          }
+        }
+      }
+    },
     "Where to?": {
       "extractionState": "manual",
       "localizations": {
@@ -6624,6 +6965,17 @@
         }
       }
     },
+    "You will no longer see each other's plans. You can add them again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne bosta več videla načrtov drug drugega. Lahko ga dodaš znova."
+          }
+        }
+      }
+    },
     "You're in!": {
       "extractionState": "manual",
       "localizations": {
@@ -6774,6 +7126,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prijateljev račun še ni potrjen."
+          }
+        }
+      }
+    },
+    "Your friends' plans": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načrti prijateljev"
           }
         }
       }
@@ -7180,6 +7543,17 @@
         }
       }
     },
+    "request sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prošnja poslana"
+          }
+        }
+      }
+    },
     "sold": {
       "extractionState": "manual",
       "localizations": {
@@ -7253,6 +7627,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "uporabniško ime"
+          }
+        }
+      }
+    },
+    "wants to be your friend": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "želi biti tvoj prijatelj"
           }
         }
       }

@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Posiljanje vstopnice prijatelju (sheet iz TicketDetailView).
-/// Prijatelj mora imeti Outly racun; vpisemo e-naslov njegovega racuna.
+/// Od 20. 9. (Martin): najprej izbira prijatelja iz seznama (GET /me/friends, prenos po
+/// user_id); vpis e-naslova ostane kot druga pot (za nekoga, ki se ni prijatelj).
 /// Po uspehu vstopnica izgine iz mojih (nov QR dobi prijatelj), zato zapremo tudi detajl.
 @MainActor
 struct TransferTicketView: View {
@@ -12,6 +13,11 @@ struct TransferTicketView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionStore
 
+    @State private var friends: [FriendUser] = []
+    @State private var friendsLoading = true
+    @State private var selected: FriendUser?
+    /// true = vpis e-naslova (tudi ce ima uporabnik prijatelje).
+    @State private var byEmail = false
     @State private var email = ""
     @State private var isSending = false
     @State private var errorMessage: String?
@@ -21,6 +27,10 @@ struct TransferTicketView: View {
         let e = email.trimmingCharacters(in: .whitespacesAndNewlines)
         return e.contains("@") && e.contains(".") && e.count >= 6
     }
+
+    /// Prikaz e-naslova: uporabnik ga je izbral ali pa nima prijateljev.
+    private var kazeEmail: Bool { byEmail || (!friendsLoading && friends.isEmpty) }
+    private var lahkoPoslje: Bool { kazeEmail ? emailOk : selected != nil }
 
     var body: some View {
         NavigationStack {
@@ -64,18 +74,64 @@ struct TransferTicketView: View {
         }
         .preferredColorScheme(.dark)
         .interactiveDismissDisabled(isSending)
+        .task { await loadFriends() }
     }
 
     private var obrazec: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Your friend's Outly email")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white.opacity(0.7))
+            if friendsLoading {
+                HStack { Spacer(); ProgressView().tint(.white); Spacer() }
+                    .frame(height: 52)
+            } else if kazeEmail {
+                Text("Your friend's Outly email")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
 
-            OutlyTextField(placeholder: "friend@email.com", text: $email)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+                OutlyTextField(placeholder: "friend@email.com", text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                if !friends.isEmpty {
+                    preklop("Choose from my friends instead") { byEmail = false }
+                }
+            } else {
+                Text("Choose a friend")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
+
+                VStack(spacing: 8) {
+                    ForEach(friends) { f in
+                        Button { selected = (selected?.id == f.id) ? nil : f } label: {
+                            HStack(spacing: 12) {
+                                OutlyAvatarView(avatarUrlString: f.avatarUrl, size: 40)
+                                Text(f.username)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                                Spacer()
+                                Image(systemName: selected?.id == f.id ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(selected?.id == f.id ? .outlyBlue : .white.opacity(0.35))
+                            }
+                            .padding(.horizontal, 14)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color.white.opacity(selected?.id == f.id ? 0.12 : 0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(selected?.id == f.id ? Color.outlyBlue : Color.clear, lineWidth: 1.5)
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                preklop("Send by email instead") { byEmail = true; selected = nil }
+            }
 
             Group {
                 if ticket.minAge > 0 {
@@ -96,10 +152,20 @@ struct TransferTicketView: View {
             OutlyPrimaryButton(title: "Send ticket", isLoading: isSending) {
                 Task { await posli() }
             }
-            .disabled(!emailOk || isSending)
-            .opacity(emailOk ? 1 : 0.5)
+            .disabled(!lahkoPoslje || isSending)
+            .opacity(lahkoPoslje ? 1 : 0.5)
             .padding(.top, 6)
         }
+    }
+
+    private func preklop(_ naslov: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(LocalizedStringKey(naslov))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.outlyBlue)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 4)
     }
 
     private func uspeh(_ msg: String) -> some View {
@@ -124,14 +190,28 @@ struct TransferTicketView: View {
         .padding(.top, 30)
     }
 
+    private func loadFriends() async {
+        friendsLoading = true
+        defer { friendsLoading = false }
+        // Napaka pri nalaganju prijateljev ni ovira: pade se nazaj na vpis e-naslova.
+        if let r = try? await APIClient.shared.fetchMyFriends(token: session.token) {
+            friends = r.friends
+        }
+    }
+
     private func posli() async {
         errorMessage = nil
         isSending = true
         defer { isSending = false }
         do {
-            let r = try await APIClient.shared.transferTicket(
-                token: session.token, ticketId: ticket.id,
-                email: email.trimmingCharacters(in: .whitespacesAndNewlines))
+            let r: TransferResponse
+            if !kazeEmail, let f = selected {
+                r = try await APIClient.shared.transferTicket(token: session.token, ticketId: ticket.id, userId: f.id)
+            } else {
+                r = try await APIClient.shared.transferTicket(
+                    token: session.token, ticketId: ticket.id,
+                    email: email.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
             doneMessage = r.message
         } catch {
             errorMessage = error.userMessage
