@@ -317,9 +317,10 @@ struct EventDetailView: View {
         }()
 
         // Videz od 20. 9. (Martin): en kompakten, sredinski, zaobljen moder okvir (#4C76FF,
-        // samo ozadje 65 % prosojno, da plakat rahlo sije skozi), brez belega gumba "Get tickets".
-        // Cena: znak in cela stevilka velika, decimalke manjse in dvignjene (superscript),
-        // pod ceno majhen "per ticket". Ves tekst 100 % neprosojen. Neaktivna stanja temna.
+        // samo ozadje 65 % prosojno, da plakat rahlo sije skozi), brez belega gumba "Get tickets",
+        // z belo obrobo. Cena: znak in cela stevilka velika, decimalke manjse in dvignjene
+        // (superscript), pod ceno majhen "per ticket". Ves tekst 100 % neprosojen.
+        // Neaktivna stanja temna, obroba bledejsa. Malenkost vecji od prve razlicice (20. 9. zvecer).
         // Polozaj na pasici in dotik (nakup / tuja povezava) sta nespremenjena.
         return HStack {
             Spacer(minLength: 0)
@@ -327,23 +328,23 @@ struct EventDetailView: View {
                 if let deli = razdeljenaCena(top) {
                     HStack(alignment: .top, spacing: 1) {
                         Text(deli.glavni)
-                            .font(.system(size: 34, weight: .bold))
+                            .font(.system(size: 36, weight: .bold))
                         Text(deli.decimalke)
-                            .font(.system(size: 14, weight: .bold))
-                            .padding(.top, 5)
+                            .font(.system(size: 15, weight: .bold))
+                            .padding(.top, 6)
                     }
                     .foregroundStyle(.white)
                 } else {
                     Text(top)
-                        .font(.system(size: 26, weight: .bold))
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
                 }
                 Text(sub)
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(.white)
             }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(active ? Color.outlyBlue.opacity(0.65) : Color.black.opacity(0.55))
@@ -351,7 +352,7 @@ struct EventDetailView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(active ? 0 : 0.14), lineWidth: 1)
+                    .stroke(Color.white.opacity(active ? 0.9 : 0.16), lineWidth: 1.5)
             )
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .onTapGesture {

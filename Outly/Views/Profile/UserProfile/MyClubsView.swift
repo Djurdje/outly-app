@@ -1,11 +1,17 @@
 import SwiftUI
 
 /// "My clubs" po Figmi (370:735 prazno, 382:805 s klubom, 370:849 z vabilom,
-/// 370:1303 po sprejemu): pokaze SAMO klub, v katerem uporabnik dela (lastnik,
-/// manager ali vratar) — ne vseh klubov. Desno zgoraj je zvonec z znacko:
-/// tam uporabnik prejme vabilo v ekipo in ga sprejme ali zavrne (ClubInvitesView).
+/// 370:1303 po sprejemu): SEZNAM klubov, katerih ekipe je uporabnik clan — vsak
+/// klub svoja kartica (logo, ime, vloga, "View"). Backend danes dovoljuje
+/// clanstvo v najvec eni ekipi hkrati (docs/DECISIONS.md, "En klub na poslovni
+/// racun"), zato je `memberships` danes dolg 0 ali 1 — prikaz je pripravljen na
+/// vec kartic, ce se ta odlocitev kdaj spremeni. Zaposlitev je popolnoma locena
+/// od osebnega profila (ProfileView): vse klubske funkcije (Dashboard, Scan
+/// tickets, Events, Team, Edit page) so tu, znotraj izbranega kluba, ne globalno.
+/// Desno zgoraj je zvonec z znacko: tam uporabnik prejme vabilo v ekipo in ga
+/// sprejme ali zavrne (ClubInvitesView).
 /// Podatki: GET /me (club_id, club_role, pending_invites), GET /business/clubs/me,
-/// GET /me/invites. Martin, 13. 9. 2026.
+/// GET /me/invites. Martin, 13. 9. 2026 (seznam kartic: 20. 9. 2026).
 @MainActor
 struct MyClubsView: View {
     @EnvironmentObject private var session: SessionStore
@@ -19,6 +25,18 @@ struct MyClubsView: View {
 
     private var me: Me? { session.me }
     private var pendingCount: Int { max(invites.count, me?.pendingInvites ?? 0) }
+
+    /// Klub + vloga za vsako clanstvo. Danes je backend omejen na eno hkrati (glej
+    /// dokumentacijski komentar zgoraj), zato je seznam 0 ali 1 dolg.
+    private struct Membership: Identifiable {
+        let club: APIClub?
+        let role: String
+        var id: Int { club?.id ?? -1 }
+    }
+    private var memberships: [Membership] {
+        guard let role = me?.clubRole else { return [] }
+        return [Membership(club: club, role: role)]
+    }
 
     var body: some View {
         Screen {
@@ -37,8 +55,12 @@ struct MyClubsView: View {
                             cestitka(justJoined)
                         }
 
-                        if let role = me?.clubRole {
-                            klubVrstica(role: role)
+                        if !memberships.isEmpty {
+                            VStack(spacing: 12) {
+                                ForEach(memberships) { m in
+                                    klubVrstica(club: m.club, role: m.role)
+                                }
+                            }
                         } else {
                             if let first = invites.first {
                                 vabiloNamig(first)
@@ -98,8 +120,8 @@ struct MyClubsView: View {
         .accessibilityLabel(pendingCount > 0 ? String(localized: "\(pendingCount) invitations") : String(localized: "Notifications"))
     }
 
-    /// Vrstica kluba (Figma 382:805): logo, ime, vloga, desno "View".
-    private func klubVrstica(role: String) -> some View {
+    /// Kartica kluba (Figma 382:805): logo, ime, vloga, desno "View". Ena na clanstvo.
+    private func klubVrstica(club: APIClub?, role: String) -> some View {
         NavigationLink {
             MyClubDetailView(club: club, role: role)
         } label: {
@@ -312,8 +334,22 @@ struct MyClubDetailView: View {
                     }
                     .padding(.top, 6)
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: 10) {
                         if canManage {
+                            NavigationLink {
+                                EditBusinessPageView(clubId: club?.id)
+                            } label: {
+                                vrstica(icon: "pencil", title: "Edit your page", action: "Edit")
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                BusinessDashboardView(clubName: club?.name)
+                            } label: {
+                                vrstica(icon: "chart.bar", title: "Dashboard", action: "View")
+                            }
+                            .buttonStyle(.plain)
+
                             Button { showCreate = true } label: {
                                 vrstica(icon: "plus.circle", title: "Create event", action: "Create")
                             }
@@ -323,6 +359,14 @@ struct MyClubDetailView: View {
                                 BusinessEventsView(clubId: club?.id, clubName: club?.name)
                             } label: {
                                 vrstica(icon: "calendar", title: "View events", action: "View")
+                            }
+                            .buttonStyle(.plain)
+
+                            // Ekipo (migracija 009) ureja lastnik in manager, isto kot canManage.
+                            NavigationLink {
+                                TeamView(clubName: club?.name)
+                            } label: {
+                                vrstica(icon: "person.2", title: "Team", action: "Manage")
                             }
                             .buttonStyle(.plain)
                         }
@@ -344,12 +388,12 @@ struct MyClubDetailView: View {
                     if role != "owner" {
                         Button { showLeave = true } label: {
                             Text("Leave the team")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.red.opacity(0.9))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
+                                .padding(.vertical, 12)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
                                         .fill(Color.red.opacity(0.10))
                                 )
                         }
@@ -405,24 +449,25 @@ struct MyClubDetailView: View {
     }
 
     /// Vrstica z dejanjem desno (Figma 382:1015–1027: "Create", "View", "Scan").
+    /// Malenkost manjsa (Martin, 20. 9.), kot ostali elementi na tem zaslonu.
     private func vrstica(icon: String, title: String, action: String) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundColor(.white)
             Text(LocalizedStringKey(title))
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(.white)
             Spacer()
             Text(LocalizedStringKey(action))
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.outlyBlue)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
-        .frame(height: 60)
+        .frame(height: 52)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color.white.opacity(0.08))
         )
     }

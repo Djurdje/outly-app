@@ -16,8 +16,9 @@ struct EventPosterCard: View {
     private var height: CGFloat { width * 4 / 3 }
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 18, style: .continuous) }
 
-    /// Visina spodnjega pasu (tri vrstice: naslov, klub, datum/ura).
-    private let barHeight: CGFloat = 58
+    /// Visina spodnjega pasu (tri vrstice: naslov, klub, datum/ura). Malenkost nizji
+    /// in bolj prosojen (Martin, 20. 9. zvecer) kot prvotna razlicica.
+    private let barHeight: CGFloat = 50
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -53,47 +54,48 @@ struct EventPosterCard: View {
     }
 
     /// Spodnji pas: levo naslov + klub + datum/ura, desno cena v modrem gumbu; celoten pas
-    /// na eni prosojni temni podlagi.
+    /// na eni prosojni temni podlagi. Material ima znizano prosojnost (`.opacity` na
+    /// `ShapeStyle`, ne na celotnem pasu) — plakat bolj sije skozi, tekst ostane 100 % viden.
     private var infoBar: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(event.title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 if let clubName, !clubName.isEmpty {
                     Text(clubName)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
                 }
                 if !event.displayDayTime.isEmpty {
                     Text(event.displayDayTime)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
                 }
             }
-            .padding(.leading, 10)
-            .padding(.trailing, 8)
+            .padding(.leading, 9)
+            .padding(.trailing, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Rectangle()
                 .fill(Color.white.opacity(0.18))
-                .frame(width: 1, height: 30)
+                .frame(width: 1, height: 26)
 
             Text(event.priceLabel)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 7)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.outlyBlue))
                 .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.outlyBlue))
+                .padding(.horizontal, 7)
         }
         .frame(width: width, height: barHeight)
-        .background(.ultraThinMaterial)
+        .background(.ultraThinMaterial.opacity(0.55))
         .environment(\.colorScheme, .dark)
     }
 

@@ -1,12 +1,12 @@
 import SwiftUI
 
-struct BusinessClub: Decodable {
-    let id: Int
-    let owner_user_id: Int
-    let name: String
-    let logo_url: String?
-}
-
+/// Glavni zaslon Profila (Martin, 20. 9.): zgornji del je VEDNO osebni profil —
+/// uporabnikova slika, uporabnisko ime, "My Account" — ne glede na to, ali je
+/// uporabnik zaposlen v klubu. Osebni profil in zaposlitev v klubu sta popolnoma
+/// locena: klub, vloga in klubske funkcije (Dashboard, Scan tickets, Events, Team,
+/// Edit page) zivijo pod "My Clubs" (MyClubsView -> MyClubDetailView) in se
+/// pokazejo sele, ko uporabnik izbere konkreten klub ("View"). Meni je zato enak
+/// za vsakogar — uporabnika, vratarja, managerja ali lastnika.
 @MainActor
 struct ProfileView: View {
     @AppStorage("authStage") private var authStage: String = "main"
@@ -15,8 +15,6 @@ struct ProfileView: View {
     @State private var user: Me?
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var businessClub: BusinessClub?
-    @State private var showLeave = false
 
     private var userAvatarURL: URL? {
         guard let s = user?.avatarUrl, !s.isEmpty else { return nil }
@@ -25,33 +23,14 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 40) {
+            // Scrollable (Martin, 20. 9.): "Log out" se je pri daljsem poslovnem meniju
+            // skril pod plavajoco spodnjo vrstico. Meni je zdaj za vse enak in krajsi,
+            // a ScrollView ostane, da je gumb dosegljiv tudi na manjsih zaslonih.
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 32) {
 
-                // ===== HEADER =====
-                HStack(spacing: 25) {
-
-                    // Business: pokaži club logo (kot prej)
-                    if user?.isBusiness == true,
-                       let logo = businessClub?.logo_url,
-                       let url = URL(string: logo) {
-
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            default:
-                                Image(systemName: "building.2.crop.circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .foregroundColor(.blackColor)
-                            }
-                        }
-                        .frame(width: 60, height: 60)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                    } else {
+                    // ===== HEADER: vedno osebni profil, nikoli klub =====
+                    HStack(spacing: 25) {
                         if let url = userAvatarURL {
                             AsyncImage(url: url) { phase in
                                 switch phase {
@@ -74,132 +53,43 @@ struct ProfileView: View {
                                 .frame(width: 60, height: 60)
                                 .foregroundColor(.blackColor)
                         }
-                    }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        if let user = user {
-
-                            if user.isBusiness {
-                                Text(businessClub?.name ?? String(localized: "Your club"))
-                                    .font(.title2)
-                                // Clan ekipe vidi svojo vlogo in svoje ime; lastnik samo klub.
-                                if user.clubRole != nil && user.clubRole != "owner", let vloga = user.clubRoleLabel {
-                                    Text("\(vloga) · \(user.username)")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                            } else {
+                        VStack(alignment: .leading, spacing: 6) {
+                            if let user = user {
                                 Text(user.username)
                                     .font(.title2)
+                            } else if isLoading {
+                                Text("Loading...")
+                                    .font(.title2)
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Unknown user")
+                                    .font(.title2)
+                                    .foregroundColor(.gray)
                             }
 
-                        } else if isLoading {
-                            Text("Loading...")
-                                .font(.title2)
-                                .foregroundColor(.gray)
-                        } else {
-                            Text("Unknown user")
-                                .font(.title2)
-                                .foregroundColor(.gray)
-                        }
-
-                        if let errorMessage = errorMessage {
-                            Text(errorMessage)
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        }
-
-                        if user?.canManageClub == true {
-                            NavigationLink(destination: EditBusinessPageView(clubId: businessClub?.id)) {
-                                Text("Edit your page")
-                                    .foregroundColor(.blackColor)
+                            if let errorMessage = errorMessage {
+                                Text(errorMessage)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
                             }
-                        } else {
+
                             NavigationLink(destination: MyAccountView()) {
                                 Text("My Account")
                                     .foregroundColor(.blackColor)
                             }
                         }
+
+                        Spacer()
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 16)
 
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+                    Divider()
+                        .background(Color.gray)
 
-                Divider()
-                    .background(Color.gray)
-                    .padding(.horizontal, 15)
-
-                // ===== MENU =====
-                VStack(spacing: 12) {
-
-                    if user?.canManageClub == true {
-
-                        // Lastnik in manager: vse. Dashboard s pravimi podatki (GET /business/sales).
-                        NavigationLink(destination: BusinessDashboardView(clubName: businessClub?.name)) {
-                            OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
-                        }
-
-                        NavigationLink(destination: QRScannerView()) {
-                            OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan tickets")
-                        }
-
-                        NavigationLink(destination: BusinessEventsView(clubId: businessClub?.id, clubName: businessClub?.name)) {
-                            OutlyMenuRowButton(icon: "calendar", title: "Events")
-                        }
-
-                        // Ekipa (migracija 009): lastnik dodaja managerje in vratarje, manager samo vratarje.
-                        if user?.canSeeTeam == true {
-                            NavigationLink(destination: TeamView(clubName: businessClub?.name)) {
-                                OutlyMenuRowButton(icon: "person.2", title: "Team")
-                            }
-                        }
-
-                        // "Settings" odstranjen (Martin 14. 9.): vodil je na isti zaslon kot
-                        // "Edit your page" v glavi. BusinessSettingsView je v _staro/.
-
-                        // Tudi lastnik/manager je uporabnik: racun (brisanje racuna — Apple 5.1.1(v)),
-                        // vstopnice (kupi jih lahko) in About (pogoji, zasebnost). Prej ni imel poti do tega.
-                        NavigationLink(destination: MyAccountView()) {
-                            OutlyMenuRowButton(icon: "person", title: "My Account")
-                        }
-
-                        NavigationLink(destination: TicketsView()) {
-                            OutlyMenuRowButton(icon: "ticket", title: "Tickets")
-                        }
-
-                        NavigationLink(destination: AboutView()) {
-                            OutlyMenuRowButton(icon: "info.circle", title: "About")
-                        }
-
-                    } else if user?.clubRole == "doorman" {
-
-                        // Vratar: skener in svoj klub (My Clubs po Figmi); ostalo ima kot navaden uporabnik.
-                        NavigationLink(destination: QRScannerView()) {
-                            OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan tickets")
-                        }
-
-                        NavigationLink(destination: MyClubsView()) {
-                            OutlyMenuRowButton(icon: "building.2", title: "My Clubs")
-                        }
-
-                        NavigationLink(destination: TicketsView()) {
-                            OutlyMenuRowButton(icon: "ticket", title: "Tickets")
-                        }
-
-                        NavigationLink(destination: HelpCenterView()) {
-                            OutlyMenuRowButton(icon: "questionmark.circle", title: "Support")
-                        }
-
-                        NavigationLink(destination: AboutView()) {
-                            OutlyMenuRowButton(icon: "info.circle", title: "About")
-                        }
-
-                    } else {
-
-                        // My Clubs (Figma): klub, v katerem delam, in zvonec z vabili v ekipo.
+                    // ===== MENU: isti za vsakogar; klubske funkcije so pod My Clubs =====
+                    VStack(spacing: 12) {
                         NavigationLink(destination: MyClubsView()) {
                             OutlyMenuRowButton(icon: "building.2", title: "My Clubs", badge: user?.pendingInvites ?? 0)
                         }
@@ -220,44 +110,26 @@ struct ProfileView: View {
                             OutlyMenuRowButton(icon: "info.circle", title: "About")
                         }
                     }
-                }
 
-                Spacer()
+                    Spacer(minLength: 20)
 
-                if let role = user?.clubRole, role != "owner" {
                     Button {
-                        showLeave = true
+                        session.logout()
+                        authStage = "login"
                     } label: {
-                        Text("Leave \(businessClub?.name ?? String(localized: "club")) team")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                        Text("Log out")
+                            .foregroundColor(.red)
                     }
-                    .confirmationDialog("Leave the team?", isPresented: $showLeave, titleVisibility: .visible) {
-                        Button("Leave team", role: .destructive) { Task { await leaveTeam() } }
-                        Button("Cancel", role: .cancel) {}
-                    } message: {
-                        Text("You lose access to the club tools. The club can invite you again.")
-                    }
+                    // Spodnji odmik zaradi plavajoce spodnje vrstice (trdo pravilo 6).
+                    .padding(.bottom, 40)
                 }
-
-                Button {
-                    session.logout()
-                    authStage = "login"
-                } label: {
-                    Text("Log out")
-                        .foregroundColor(.red)
-                }
-
+                .padding(.horizontal, 20)
             }
-            .padding()
             .navigationTitle("")
         }
-        // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me in 2x /business/clubs/me).
+        // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me).
         .onAppear {
-            Task {
-                await loadProfile()
-                await loadBusinessClubIfNeeded()
-            }
+            Task { await loadProfile() }
         }
         .preferredColorScheme(.dark)
     }
@@ -296,37 +168,6 @@ struct ProfileView: View {
             await MainActor.run {
                 errorMessage = error.userMessage
                 isLoading = false
-            }
-        }
-    }
-
-    func leaveTeam() async {
-        do {
-            try await APIClient.shared.leaveTeam(token: authToken)
-            await MainActor.run { businessClub = nil }
-            await loadProfile()
-        } catch {
-            await MainActor.run { errorMessage = error.userMessage }
-        }
-    }
-
-    func loadBusinessClubIfNeeded() async {
-        guard let user = user, user.isBusiness else { return }
-
-        do {
-            // Prej: javni /clubs in iskanje po owner_user_id — skrit klub (migracija 006)
-            // tam ni, in klic je sel mimo APIClient. Zdaj lastna pot.
-            let c = try await APIClient.shared.fetchMyBusinessClub(token: authToken)
-            await MainActor.run {
-                self.businessClub = BusinessClub(id: c.id, owner_user_id: user.id, name: c.name, logo_url: c.logoUrl)
-            }
-        } catch let apiErr as APIError {
-            // 404 = klub se ni ustvarjen; to ni napaka za uporabnika.
-            if case let .requestFailed(code, _) = apiErr, code == 404 { return }
-            await MainActor.run { self.errorMessage = apiErr.userMessage }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = error.userMessage
             }
         }
     }
