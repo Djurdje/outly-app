@@ -4,10 +4,16 @@
 #   1. prevede projekt za simulator (brez podpisa) -> ce se ne prevede, je workflow
 #      rdec in v dnevniku so napake prevajalnika; simulatorska .app gre kot artefakt
 #      (appetize.io);
-#   2. naredi PODPISAN arhiv z Applovim "cloud signing" (App Store Connect API kljuc
-#      iz GitHub secrets: APPLE_TEAM_ID, ASC_ISSUER_ID, ASC_KEY_ID, ASC_KEY_P8) in ga
-#      NALOZI NA TESTFLIGHT. Certifikat in profil ustvari Xcode sam
-#      (-allowProvisioningUpdates); nic se ne hrani v repozitoriju.
+#   2. naredi PODPISAN arhiv in ga NALOZI NA TESTFLIGHT. Podpis: razvojni certifikat
+#      (Apple Development) pride iz GitHub secrets IOS_DEV_CERT_P12 (base64 .p12) in
+#      IOS_DEV_CERT_PASSWORD in se uvozi v zacasen keychain; profil in distribucijski
+#      (cloud-managed) podpis uredi Xcode prek App Store Connect API kljuca
+#      (APPLE_TEAM_ID, ASC_ISSUER_ID, ASC_KEY_ID, ASC_KEY_P8, -allowProvisioningUpdates).
+#      Nic se ne hrani v repozitoriju.
+#      Zakaj .p12 (20. 9. 2026): brez njega je Xcode na vsakem svezem runnerju ustvaril
+#      NOV razvojni certifikat (zasebni kljuc ostane na runnerju in se izgubi), Apple pa
+#      ima omejitev stevila certifikatov -> "maximum number of certificates" +
+#      "No profiles for 'si.outly.app'". Glej outly-backend docs/INCIDENTI.md 2026-09-20.
 #      Stevilka gradnje (CFBundleVersion) = stevilka zagona workflowa, zato je vsak
 #      upload nov build. Verzija (1.0) je MARKETING_VERSION v projektu.
 #
@@ -119,12 +125,17 @@ jobs:
           ISSUER: ${{ secrets.ASC_ISSUER_ID }}
           KEYID: ${{ secrets.ASC_KEY_ID }}
           P8: ${{ secrets.ASC_KEY_P8 }}
+          CERT: ${{ secrets.IOS_DEV_CERT_P12 }}
+          CERTPW: ${{ secrets.IOS_DEV_CERT_PASSWORD }}
         run: |
-          if [ -n "$TEAM" ] && [ -n "$ISSUER" ] && [ -n "$KEYID" ] && [ -n "$P8" ]; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "$TEAM" ] || [ -z "$ISSUER" ] || [ -z "$KEYID" ] || [ -z "$P8" ]; then
             echo "ok=false" >> "$GITHUB_OUTPUT"
             echo "::warning::Secrets APPLE_TEAM_ID / ASC_ISSUER_ID / ASC_KEY_ID / ASC_KEY_P8 manjkajo — TestFlight preskocen."
+          elif [ -z "$CERT" ] || [ -z "$CERTPW" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secrets IOS_DEV_CERT_P12 / IOS_DEV_CERT_PASSWORD manjkajo — TestFlight preskocen (brez certifikata bi Xcode ustvaril novega in zadel Applovo omejitev)."
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: App Store Connect API kljuc
@@ -139,7 +150,30 @@ jobs:
           # Kljuc mora biti veljaven PEM (prva vrstica BEGIN PRIVATE KEY)
           head -1 "$HOME/private_keys/AuthKey_${KEYID}.p8" | grep -q "BEGIN PRIVATE KEY"
 
-      - name: Podpisan arhiv (cloud signing)
+      - name: Uvozi razvojni certifikat v zacasen keychain
+        if: steps.secrets.outputs.ok == 'true' && github.event_name != 'pull_request'
+        env:
+          CERT: ${{ secrets.IOS_DEV_CERT_P12 }}
+          CERTPW: ${{ secrets.IOS_DEV_CERT_PASSWORD }}
+        run: |
+          set -e
+          KC="$RUNNER_TEMP/outly-podpis.keychain-db"
+          KCPW=$(openssl rand -hex 24)
+          echo "$CERT" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          test -s "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERTPW" -A -t cert -f pkcs12
+          # Dovoli codesign/xcodebuild dostop do kljuca brez pogovornega okna.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" > /dev/null
+          security list-keychains -d user -s "$KC" "$HOME/Library/Keychains/login.keychain-db"
+          rm -f "$RUNNER_TEMP/cert.p12"
+          echo "Podpisne identitete v keychainu:"
+          security find-identity -v -p codesigning "$KC"
+          security find-identity -v -p codesigning "$KC" | grep -q "Apple Development"
+
+      - name: Podpisan arhiv
         if: steps.secrets.outputs.ok == 'true' && github.event_name != 'pull_request'
         env:
           TEAM: ${{ secrets.APPLE_TEAM_ID }}
@@ -201,9 +235,13 @@ jobs:
           grep -q "EXPORT SUCCEEDED" build/export.log
           echo "Build $GITHUB_RUN_NUMBER nalozen na TestFlight (obdelava pri Applu traja ~5-15 min)."
 
-      - name: Pocisti kljuc
+      - name: Pocisti kljuc in keychain
         if: always()
-        run: rm -rf "$HOME/private_keys"
+        run: |
+          rm -rf "$HOME/private_keys" "$RUNNER_TEMP/cert.p12"
+          if [ -f "$RUNNER_TEMP/outly-podpis.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/outly-podpis.keychain-db" || true
+          fi
 
       - name: Prilozi dnevnike
         if: always()
