@@ -8,8 +8,11 @@ Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-bac
 
 - Veja `master` = izvor gradenj. Vsak potisk v `master` sproži GitHub Actions `Gradnja iOS` (`.github/workflows/gradnja.yml`,
   runner `macos-26` = Xcode 26 / iOS 26 SDK, ~8–10 min): (1) prevod za simulator brez podpisa → artefakt `Outly-simulator-app`
-  (appetize.io), (2) **podpisan arhiv s cloud signing in upload na TestFlight** (App Store Connect API ključ iz GitHub secrets
-  `APPLE_TEAM_ID`, `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_KEY_P8`; nič se ne hrani v repu). Številka gradnje = številka zagona workflowa.
+  (appetize.io), (2) **podpisan arhiv in upload na TestFlight**: razvojni certifikat iz GitHub secrets `IOS_DEV_CERT_P12`
+  (base64 .p12) + `IOS_DEV_CERT_PASSWORD` se uvozi v začasen keychain, profil in distribucijski podpis uredi Xcode prek App Store
+  Connect API ključa (`APPLE_TEAM_ID`, `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_KEY_P8`); nič se ne hrani v repu. Brez `.p12` je Xcode
+  na vsakem runnerju ustvaril nov certifikat in zadel Applovo omejitev (od 20. 9. 2026, glej backend `docs/INCIDENTI.md`).
+  Če certifikat poteče ali ga kdo prekliče, TestFlight korak pade — nov `.p12` v secrets. Številka gradnje = številka zagona workflowa.
 - Na **pull request** teče samo prevod za simulator (TestFlight se preskoči) — rdeč PR se ne sme združiti.
 - Bundle ID `si.outly.app`, aplikacija v App Store Connect »Outly - Nightlife« (ime »Outly« je zasedeno), Martinov Individual
   Apple Developer račun; pozneje App Transfer na NEXT DIMENSIONS. `DEVELOPMENT_TEAM` je v projektu prazen — poda ga CI.
