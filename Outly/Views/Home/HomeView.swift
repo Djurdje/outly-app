@@ -32,6 +32,8 @@ struct HomeView: View {
     @State private var invites: [MyInvite] = []
     @State private var friendRequests: [FriendRequest] = []
     @State private var notificationsLoading = false
+    /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
+    @State private var friendPlans: [FriendPlan] = []
     /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje.
     @State private var scrollOffset: CGFloat = 0
 
@@ -245,6 +247,12 @@ struct HomeView: View {
                             sekcija("In your area", podnaslov: nearbyClubs.isEmpty ? "Clubs on Outly" : "Closest clubs first") {
                                 HorizontalClubsScrollAPI(clubs: areaClubs, variant: .area, distances: nearbyDistances, selected: $areaSelected)
                             }
+                        }
+
+                        // 4b. Your friends' plans (Martin, 20. 9.): krogi prijateljev + Invite more + View.
+                        // Samo prijavljeni; brez nacrtov ostane kot namig, da dodas prijatelje.
+                        if session.isLoggedIn {
+                            FriendsPlansSection(plans: friendPlans, clubsById: clubsById)
                         }
 
                         // 5. Big events coming up (Figma 51:111) — velik plakat
@@ -579,6 +587,10 @@ struct HomeView: View {
             await loadMe()
             // Liked events: osvezimo tudi priljubljene (pull-to-refresh), napaka tu ni kriticna.
             await favorites.load(token: authToken)
+            // Nacrti prijateljev: napaka (npr. star backend brez poti) ni kriticna -> prazen razdelek.
+            if !authToken.isEmpty {
+                friendPlans = (try? await APIClient.shared.fetchFriendsPlans(token: authToken)) ?? []
+            }
         } catch is CancellationError {
             // Prekinitev naloge (SwiftUI) ni napaka za uporabnika.
         } catch let url as URLError where url.code == .cancelled {
