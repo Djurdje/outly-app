@@ -86,17 +86,9 @@ struct MyAccountView: View {
                         OutlyMenuRowButton(icon: "chart.line.uptrend.xyaxis", title: "Request for creator")
                     }
 
-                    NavigationLink(destination: LanguageView()) {
-                        OutlyMenuRowButton(icon: "globe", title: "Language", value: jezik.ime)
-                    }
-
-                    Divider()
-                        .background(Color.gray)
-                        .padding(.horizontal, 15)
-                        .padding(.top, 8)
-
-                    NavigationLink(destination: NotificationsView()) {
-                        OutlyMenuRowButton(icon: "bell", title: "Notifications")
+                    // Language in Notifications sta od 20. 9. pod Preferences (skupaj z My preferences).
+                    NavigationLink(destination: PreferencesView()) {
+                        OutlyMenuRowButton(icon: "slider.horizontal.3", title: "Preferences")
                     }
 
                     Divider()

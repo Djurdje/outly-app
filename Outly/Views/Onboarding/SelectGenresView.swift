@@ -127,7 +127,8 @@ struct SelectGenresView: View {
     }
 }
 
-private struct GenreChip: View {
+/// Cip zanra (moder = izbran). Deljen s Filtri in My preferences, zato ni private.
+struct GenreChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
