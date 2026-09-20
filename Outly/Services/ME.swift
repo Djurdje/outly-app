@@ -28,6 +28,10 @@ struct Me: Decodable {
     let clubRole: String?
     /// Stevilo cakajocih vabil v ekipo kluba (migracija 013) — znacka na zvoncu v My clubs.
     let pendingInvites: Int
+    /// Stevilo cakajocih prosenj za prijateljstvo (migracija 016) — obvestila, My friends.
+    let pendingFriendRequests: Int
+    /// Ali prijatelji vidijo, na katere dogodke grem ("Your friends' plans"). Privzeto true.
+    let sharePlansWithFriends: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, email, username, role, phone, country, genres
@@ -40,6 +44,8 @@ struct Me: Decodable {
         case clubId = "club_id"
         case clubRole = "club_role"
         case pendingInvites = "pending_invites"
+        case pendingFriendRequests = "pending_friend_requests"
+        case sharePlansWithFriends = "share_plans_with_friends"
     }
 
     init(from decoder: Decoder) throws {
@@ -59,6 +65,8 @@ struct Me: Decodable {
         clubId = try c.decodeIfPresent(Int.self, forKey: .clubId)
         clubRole = try c.decodeIfPresent(String.self, forKey: .clubRole)
         pendingInvites = try c.decodeIfPresent(Int.self, forKey: .pendingInvites) ?? 0
+        pendingFriendRequests = try c.decodeIfPresent(Int.self, forKey: .pendingFriendRequests) ?? 0
+        sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
         // Postgres DATE pride kot "YYYY-MM-DD" ali kot ISO cas; obdrzimo prvih 10 znakov.
         if let raw = try c.decodeIfPresent(String.self, forKey: .dateOfBirth), raw.count >= 10 {
             dateOfBirth = String(raw.prefix(10))

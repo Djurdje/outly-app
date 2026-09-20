@@ -94,6 +94,11 @@ struct ProfileView: View {
                             OutlyMenuRowButton(icon: "building.2", title: "My Clubs", badge: user?.pendingInvites ?? 0)
                         }
 
+                        // Prijatelji (Martin, 20. 9.): iskanje, prosnje, seznam. Znacka = prejete prosnje.
+                        NavigationLink(destination: MyFriendsView()) {
+                            OutlyMenuRowButton(icon: "person.2", title: "My Friends", badge: user?.pendingFriendRequests ?? 0)
+                        }
+
                         NavigationLink(destination: TicketsView()) {
                             OutlyMenuRowButton(icon: "ticket", title: "Tickets")
                         }
