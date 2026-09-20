@@ -9,7 +9,6 @@ struct MyAccountView: View {
     @State private var user: Me?
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @EnvironmentObject private var jezik: Jezik
 
     private var userAvatarURL: URL? {
         guard let s = user?.avatarUrl, !s.isEmpty else { return nil }
