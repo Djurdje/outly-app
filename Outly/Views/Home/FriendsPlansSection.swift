@@ -281,7 +281,7 @@ struct FriendsPlansView: View {
 
             HStack(spacing: 10) {
                 NavigationLink {
-                    BuyTicketsView(event: p.event)
+                    BuyTicketsView(event: p.event, clubName: imeKluba.isEmpty ? String(localized: "Club") : imeKluba)
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "person.2.fill").font(.system(size: 15, weight: .semibold))
