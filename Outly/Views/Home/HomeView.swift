@@ -309,7 +309,9 @@ struct HomeView: View {
             .background(homeBackground)
             .navigationTitle("")
             .sheet(isPresented: $showFilters) {
-                FiltersView(filters: $filters, cities: cities)
+                FiltersView(filters: $filters, cities: cities,
+                            events: upcomingEvents, clubsById: clubsById,
+                            distanceKm: { distanceKm(to: $0) })
             }
             // Osvezitev tece v samostojni nalogi: SwiftUI prekine nalogo .refreshable, ce se
             // stanje pogleda spremeni pred koncem klicev (isLoading, me, lokacija), in
