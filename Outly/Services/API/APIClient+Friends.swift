@@ -8,6 +8,8 @@ import Foundation
 // DELETE /me/friends/:userId
 // GET  /me/friends/plans           -> { events: [FriendPlan] }  (samo prijatelji z vklopljenim deljenjem)
 // POST /tickets/:id/transfer { user_id }  (samo prijatelju)
+// GET  /me/tickets/received        -> { received: [ReceivedTicket] }  (neprebrana obvestila, migracija 017)
+// POST /me/tickets/received/:id/seen
 //
 // O tujem uporabniku backend vrne SAMO id, username in avatar_url (invarianta I11) —
 // modeli tu drugega ne pricakujejo. Vsa nova polja imajo privzete vrednosti (pravilo 2).
@@ -160,6 +162,44 @@ struct FriendPlan: Decodable, Identifiable {
     }
 }
 
+/// Obvestilo "X sent you a ticket" (GET /me/tickets/received, backend migracija 017).
+/// `id` je id prenosa (ne vstopnice); `from` je nil, ce je posiljatelj izbrisal racun.
+struct ReceivedTicket: Decodable, Identifiable {
+    let id: Int
+    let ticketId: Int
+    let eventId: Int
+    let eventTitle: String
+    let clubName: String
+    let from: FriendUser?
+
+    enum CodingKeys: String, CodingKey {
+        case id, from
+        case ticketId = "ticket_id"
+        case eventId = "event_id"
+        case eventTitle = "event_title"
+        case clubName = "club_name"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        ticketId = try c.decodeIfPresent(Int.self, forKey: .ticketId) ?? 0
+        eventId = try c.decodeIfPresent(Int.self, forKey: .eventId) ?? 0
+        eventTitle = try c.decodeIfPresent(String.self, forKey: .eventTitle) ?? ""
+        clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
+        from = try? c.decodeIfPresent(FriendUser.self, forKey: .from)
+    }
+}
+
+private struct ReceivedTicketsResponse: Decodable {
+    let received: [ReceivedTicket]
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        received = try c.decodeIfPresent([ReceivedTicket].self, forKey: .received) ?? []
+    }
+    enum CodingKeys: String, CodingKey { case received }
+}
+
 private struct FriendPlansResponse: Decodable {
     let events: [FriendPlan]
     init(from decoder: Decoder) throws {
@@ -211,6 +251,17 @@ extension APIClient {
     func fetchFriendsPlans(token: String) async throws -> [FriendPlan] {
         let data = try await send(path: "me/friends/plans", method: "GET", token: token)
         return try decode(FriendPlansResponse.self, from: data).events
+    }
+
+    /// GET /me/tickets/received — neprebrana obvestila o prejetih vstopnicah.
+    func fetchReceivedTickets(token: String) async throws -> [ReceivedTicket] {
+        let data = try await send(path: "me/tickets/received", method: "GET", token: token)
+        return try decode(ReceivedTicketsResponse.self, from: data).received
+    }
+
+    /// Obvestilo o prejeti vstopnici je prebrano (dotik v meniju). Idempotentno.
+    func markReceivedTicketSeen(token: String, id: Int) async throws {
+        _ = try await send(path: "me/tickets/received/\(id)/seen", method: "POST", token: token)
     }
 
     /// Prenos vstopnice prijatelju iz seznama (po id). Streznik dovoli samo prijatelju.

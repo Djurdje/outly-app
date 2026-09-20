@@ -2,20 +2,25 @@ import SwiftUI
 
 /// Spustni meni obvestil pod zvoncem na domacem zaslonu (Martin, 20. 9. 2026): prej je
 /// zvonec vodil na My Clubs, kar je bilo narobe. Meni lezi cez HomeView (overlay), zapre se
-/// z dotikom zunaj. Vsebina: vabila v ekipo kluba (-> ClubInvitesView, kjer se sprejme)
-/// in prosnje za prijateljstvo (-> MyFriendsView). Sprejem se ne zgodi tu — dejanje s
+/// z dotikom zunaj. Vsebina: vabila v ekipo kluba (-> ClubInvitesView, kjer se sprejme),
+/// prosnje za prijateljstvo (-> MyFriendsView) in prejete vstopnice (-> TicketsView; dotik
+/// obvestilo oznaci kot prebrano, backend migracija 017). Sprejem se ne zgodi tu — dejanje s
 /// posledicami ostane na zaslonu, ki ga ze ima. Potisnih obvestil (APNs) se ni.
+/// Spodnjih gumbov My Clubs / My Friends ni vec (Martin, 21. 9. 2026) — oba sta v profilu.
 /// Lezi znotraj NavigationStack domacega zaslona, zato NavigationLink dela.
 struct NotificationsMenuView: View {
     @Binding var invites: [MyInvite]
     let friendRequests: [FriendRequest]
+    let receivedTickets: [ReceivedTicket]
     let isLoading: Bool
     /// Zapre meni (pred navigacijo in ob dotiku zunaj).
     var onClose: () -> Void
     /// Po sprejemu vabila v ekipo (ime kluba) — HomeView osvezi profil.
     var onJoined: (String) -> Void
+    /// Dotik obvestila o prejeti vstopnici (id prenosa) — HomeView ga oznaci kot prebrano.
+    var onTicketSeen: (Int) -> Void
 
-    private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty }
+    private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty && receivedTickets.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -65,29 +70,22 @@ struct NotificationsMenuView: View {
                         .buttonStyle(.plain)
                         .simultaneousGesture(TapGesture().onEnded { onClose() })
                     }
+                    ForEach(receivedTickets) { t in
+                        NavigationLink {
+                            TicketsView()
+                        } label: {
+                            vrstica(slika: .oseba(t.from?.avatarUrl),
+                                    naslov: t.from.map { String(localized: "\($0.username) sent you a ticket for \(t.eventTitle)") }
+                                        ?? String(localized: "You received a ticket for \(t.eventTitle)"),
+                                    podnaslov: String(localized: "It's in your Tickets"))
+                        }
+                        .buttonStyle(.plain)
+                        .simultaneousGesture(TapGesture().onEnded { onTicketSeen(t.id); onClose() })
+                    }
                 }
                 .padding(.horizontal, 10)
-                .padding(.bottom, 8)
+                .padding(.bottom, 10)
             }
-
-            Divider().background(Color.white.opacity(0.12))
-
-            HStack(spacing: 0) {
-                NavigationLink { MyClubsView() } label: {
-                    noga("My Clubs", ikona: "building.2")
-                }
-                .buttonStyle(.plain)
-                .simultaneousGesture(TapGesture().onEnded { onClose() })
-
-                Rectangle().fill(Color.white.opacity(0.12)).frame(width: 1, height: 22)
-
-                NavigationLink { MyFriendsView() } label: {
-                    noga("My Friends", ikona: "person.2")
-                }
-                .buttonStyle(.plain)
-                .simultaneousGesture(TapGesture().onEnded { onClose() })
-            }
-            .frame(height: 44)
         }
         .frame(width: 300)
         .background(
@@ -142,16 +140,6 @@ struct NotificationsMenuView: View {
         }
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.06)))
-        .contentShape(Rectangle())
-    }
-
-    private func noga(_ naslov: String, ikona: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: ikona).font(.system(size: 12, weight: .semibold))
-            Text(LocalizedStringKey(naslov)).font(.system(size: 13, weight: .semibold))
-        }
-        .foregroundColor(.white.opacity(0.85))
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
     }
 }

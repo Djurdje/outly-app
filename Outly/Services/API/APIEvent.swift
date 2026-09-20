@@ -211,4 +211,13 @@ extension APIEvent {
         f.dateFormat = "EEE d MMM · HH:mm"
         return f.string(from: d)
     }
+
+    /// "Sat 26 Sep" (brez ure) — kartice nacrtov prijateljev.
+    var displayDayShort: String {
+        guard let d = startDate else { return "" }
+        let f = DateFormatter()
+        f.locale = Jezik.shared.locale
+        f.dateFormat = "EEE d MMM"
+        return f.string(from: d)
+    }
 }
