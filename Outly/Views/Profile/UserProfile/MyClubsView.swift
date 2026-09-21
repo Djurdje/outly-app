@@ -339,26 +339,26 @@ struct MyClubDetailView: View {
                             NavigationLink {
                                 EditBusinessPageView(clubId: club?.id)
                             } label: {
-                                vrstica(icon: "pencil", title: "Edit your page", action: "Edit")
+                                OutlyMenuRowButton(icon: "pencil", title: "Edit your page")
                             }
                             .buttonStyle(.plain)
 
                             NavigationLink {
                                 BusinessDashboardView(clubName: club?.name)
                             } label: {
-                                vrstica(icon: "chart.bar", title: "Dashboard", action: "View")
+                                OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
                             }
                             .buttonStyle(.plain)
 
                             Button { showCreate = true } label: {
-                                vrstica(icon: "plus.circle", title: "Create event", action: "Create")
+                                OutlyMenuRowButton(icon: "plus.circle", title: "Create event")
                             }
                             .buttonStyle(.plain)
 
                             NavigationLink {
                                 BusinessEventsView(clubId: club?.id, clubName: club?.name)
                             } label: {
-                                vrstica(icon: "calendar", title: "View events", action: "View")
+                                OutlyMenuRowButton(icon: "calendar", title: "View events")
                             }
                             .buttonStyle(.plain)
 
@@ -366,7 +366,7 @@ struct MyClubDetailView: View {
                             NavigationLink {
                                 TeamView(clubName: club?.name)
                             } label: {
-                                vrstica(icon: "person.2", title: "Team", action: "Manage")
+                                OutlyMenuRowButton(icon: "person.2", title: "Team")
                             }
                             .buttonStyle(.plain)
                         }
@@ -374,7 +374,7 @@ struct MyClubDetailView: View {
                         NavigationLink {
                             QRScannerView()
                         } label: {
-                            vrstica(icon: "qrcode.viewfinder", title: "Scan ticket", action: "Scan")
+                            OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan ticket")
                         }
                         .buttonStyle(.plain)
                     }
@@ -448,30 +448,6 @@ struct MyClubDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    /// Vrstica z dejanjem desno (Figma 382:1015–1027: "Create", "View", "Scan").
-    /// Malenkost manjsa (Martin, 20. 9.), kot ostali elementi na tem zaslonu.
-    private func vrstica(icon: String, title: String, action: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
-            Text(LocalizedStringKey(title))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.white)
-            Spacer()
-            Text(LocalizedStringKey(action))
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.outlyBlue)
-        }
-        .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity)
-        .frame(height: 52)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.08))
-        )
-    }
-
     private func leave() async {
         do {
             try await APIClient.shared.leaveTeam(token: session.token)
@@ -494,6 +470,6 @@ struct Screen<Content: View>: View {
         content
             .padding(.horizontal, 18)
             .padding(.top, 10)
-            .background(Color.black.ignoresSafeArea())
+            .outlyOzadje()
     }
 }

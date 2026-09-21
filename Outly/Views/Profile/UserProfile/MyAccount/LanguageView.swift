@@ -30,7 +30,7 @@ struct LanguageView: View {
             .padding()
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("Language")
         .preferredColorScheme(.dark)
     }

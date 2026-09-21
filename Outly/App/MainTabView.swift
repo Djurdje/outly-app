@@ -7,22 +7,38 @@
 
 import SwiftUI
 
+/// Sistemski TabView (Martin, 20. 9.: vrstica ostane sistemska). "Kot Revolut" (Luka, 21. 9.):
+/// ob preklopu z domacega zaslona na Search ali Profile se domaci zaslon posname, posnetek se
+/// zamegli in je ozadje teh dveh zavihkov (HomeSnapshotBackground); zasloni v njih so prosojni
+/// (okolje `prosojnoOzadje`, glej Ozadje.swift). Map ostane pravi zemljevid.
+/// Posnetek nastane PRED preklopom (lastni Binding), zato kaze tocno tisto, kar je bilo na zaslonu.
 struct MainTabView: View {
     // Izbran zavihek: domaci zaslon ("Where to?") preklopi na iskanje, avatar na profil.
     @State private var zavihek = 0
+    @State private var posnetekDoma: UIImage?
     @EnvironmentObject private var session: SessionStore
     @EnvironmentObject private var favorites: FavoritesStore
     @EnvironmentObject private var jezik: Jezik
 
+    /// Preklop zavihka: ce zapuscamo domaci zaslon, ga najprej posnamemo.
+    private var izbira: Binding<Int> {
+        Binding(get: { zavihek }, set: { nov in preklopi(na: nov) })
+    }
+
+    private func preklopi(na nov: Int) {
+        if zavihek == 0 && nov != 0 { posnetekDoma = UIApplication.shared.posnetekZaslona() }
+        zavihek = nov
+    }
+
     var body: some View {
-        TabView(selection: $zavihek) {
-            HomeView(odpriIskanje: { zavihek = 1 }, odpriProfil: { zavihek = 3 })
+        TabView(selection: izbira) {
+            HomeView(odpriIskanje: { preklopi(na: 1) }, odpriProfil: { preklopi(na: 3) })
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
 
-            SearchView()
+            nadPosnetkom { SearchView() }
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
@@ -37,7 +53,7 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
-            ProfileView()
+            nadPosnetkom { ProfileView() }
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
@@ -50,5 +66,14 @@ struct MainTabView: View {
         .onAppear {
             if let z = jezik.zavihekPoPreklopu { zavihek = z; jezik.zavihekPoPreklopu = nil }
         }
+    }
+
+    /// Zavihek nad zamegljenim posnetkom domacega zaslona; vsebina ne rise crnega ozadja.
+    private func nadPosnetkom<V: View>(@ViewBuilder _ vsebina: () -> V) -> some View {
+        ZStack {
+            HomeSnapshotBackground(slika: posnetekDoma)
+            vsebina()
+        }
+        .environment(\.prosojnoOzadje, true)
     }
 }

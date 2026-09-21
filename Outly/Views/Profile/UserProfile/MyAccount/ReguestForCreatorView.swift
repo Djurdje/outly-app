@@ -67,7 +67,7 @@ struct ReguestForCreatorView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 40)
             }
-            .background(Color.black.ignoresSafeArea())
+            .outlyOzadje()
             .navigationBarBackButtonHidden(false) // sistemski back
         }
         .preferredColorScheme(.dark)
@@ -232,7 +232,7 @@ struct CreatorApplicationFormView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 40)
             }
-            .background(Color.black.ignoresSafeArea())
+            .outlyOzadje()
             .navigationBarBackButtonHidden(false)
         }
         .preferredColorScheme(.dark)

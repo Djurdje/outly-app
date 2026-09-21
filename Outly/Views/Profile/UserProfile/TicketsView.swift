@@ -217,7 +217,7 @@ struct TicketDetailView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { prikazana = true } }
@@ -298,6 +298,7 @@ struct WalletTicketCard: View {
             .padding(18)
         }
         .frame(height: 210)
+        // Kartica (ne zaslon): ostane crna tudi nad zamegljenim Home — sicer posnetek preseva skozi robove.
         .background(Color.black)
     }
 

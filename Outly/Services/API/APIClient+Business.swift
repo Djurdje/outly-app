@@ -4,6 +4,13 @@ import Foundation
 
 extension APIClient {
 
+    /// POST /clubs — lastnik (vloga business) ustvari svoj klub (ob prvi prijavi po odobritvi).
+    /// Kljuci so camelCase, kot jih pot pricakuje (name, logoUrl, address, city, lat, lng, minAge, genres).
+    func createClub(token: String, fields: [String: Any]) async throws -> APIClub {
+        let data = try await send(path: "clubs", method: "POST", token: token, json: fields)
+        return try decode(APIClub.self, from: data)
+    }
+
     /// PATCH /business/clubs/me. Posljemo samo podane kljuce (snake_case, kot jih backend pricakuje).
     /// Vrne posodobljen klub.
     func updateMyBusinessClub(token: String, fields: [String: Any]) async throws -> APIClub {

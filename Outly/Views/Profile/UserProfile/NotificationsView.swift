@@ -51,7 +51,7 @@ struct NotificationsView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)

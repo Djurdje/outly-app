@@ -344,7 +344,7 @@ struct AddFriendsSheet: View {
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .onAppear { fokus = true }
         .onChange(of: query) { _, nova in isci(nova) }
     }

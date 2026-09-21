@@ -39,7 +39,7 @@ struct GenreEventsView: View {
             .padding(16)
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
     }

@@ -60,7 +60,7 @@ struct PreferencesView: View {
             .padding()
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)

@@ -148,8 +148,11 @@ struct FiltersView: View {
                             HStack { Spacer(); ProgressView().tint(.white); Spacer() }
                                 .frame(height: 56)
                         } else if genres.isEmpty {
-                            OutlySettingsRow(icon: "exclamationmark.triangle", title: genresError ?? String(localized: "Could not load genres."),
-                                             action: String(localized: "Try again"), onTap: { Task { await loadGenres() } })
+                            Button { Task { await loadGenres() } } label: {
+                                OutlyMenuRowButton(icon: "exclamationmark.triangle", title: genresError ?? String(localized: "Could not load genres."),
+                                                   value: String(localized: "Try again"))
+                            }
+                            .buttonStyle(.plain)
                         } else {
                             OutlyGenreGrid(genres: genres, selected: $osnutek.genres)
                         }
@@ -184,7 +187,7 @@ struct FiltersView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 40)
             }
-            .background(Color.black.ignoresSafeArea())
+            .outlyOzadje()
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
