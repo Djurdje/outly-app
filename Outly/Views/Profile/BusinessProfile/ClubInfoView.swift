@@ -289,8 +289,13 @@ struct ClubInfoView: View {
         // Pogled je potisnjen: sistemski gumb nazaj ze obstaja (prej sta bila dva).
         .task { await loadClub() }
         .sheet(item: $activeEdit) { field in editSheet(field) }
-        .navigationDestination(isPresented: $showBarPricesEditor) {
-            BarPricesEditorView(items: clubBarPrices) { clubBarPrices = $0 }
+        // List namesto navigationDestination(isPresented:): ta v potisnjenem pogledu v iOS 17
+        // vcasih potisne prazen zaslon (Luka, build 64: Club info "zasteka", podatki sele po Nazaj).
+        .sheet(isPresented: $showBarPricesEditor) {
+            NavigationStack {
+                BarPricesEditorView(items: clubBarPrices) { clubBarPrices = $0 }
+            }
+            .preferredColorScheme(.dark)
         }
 
         // ✅ these are the key: presented PhotosPicker

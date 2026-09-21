@@ -46,6 +46,7 @@ struct EventDetailView: View {
                 Spacer(minLength: 40)
             }
         }
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await loadClub() }

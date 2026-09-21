@@ -25,7 +25,7 @@ struct OwnerProfileView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 32) {
                 if brezKluba {
                     ClubSetupView { nov in
                         club = nov
@@ -60,6 +60,7 @@ struct OwnerProfileView: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
         }
+        .outlyOzadje()
         .navigationTitle("")
         .task { await load() }
         // Samostojna naloga: SwiftUI sicer prekine osvezitev ob spremembi stanja (glej HomeView).
@@ -69,18 +70,18 @@ struct OwnerProfileView: View {
     // MARK: - Glava: logo, ime, Edit your page
 
     private var glava: some View {
-        HStack(spacing: 18) {
+        // Iste mere kot osebni profil (ProfileView): slika 60, ime .title2, povezava navaden font.
+        HStack(spacing: 25) {
             logo
             VStack(alignment: .leading, spacing: 6) {
                 Text(club?.name ?? (isLoading ? String(localized: "Loading...") : String(localized: "Your club")))
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.title2)
                     .foregroundColor(.white)
                     .lineLimit(2)
                 NavigationLink {
                     EditBusinessPageView(clubId: club?.id)
                 } label: {
                     Text("Edit your page")
-                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.outlyBlue)
                 }
                 .buttonStyle(.plain)
@@ -98,13 +99,13 @@ struct OwnerProfileView: View {
                     Rectangle().fill(Color.white.opacity(0.1))
                 }
             } else {
-                RoundedRectangle(cornerRadius: 18)
+                RoundedRectangle(cornerRadius: 14)
                     .fill(Color.outlyBlue.opacity(0.2))
-                    .overlay(Image(systemName: "building.2").font(.system(size: 26)).foregroundColor(.outlyBlue))
+                    .overlay(Image(systemName: "building.2").font(.system(size: 20)).foregroundColor(.outlyBlue))
             }
         }
-        .frame(width: 84, height: 84)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(width: 60, height: 60)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: - Meni (isti gradnik kot osebni profil)

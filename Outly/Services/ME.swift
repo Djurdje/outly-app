@@ -34,6 +34,8 @@ struct Me: Decodable {
     let pendingReceivedTickets: Int
     /// Ali prijatelji vidijo, na katere dogodke grem ("Your friends' plans"). Privzeto true.
     let sharePlansWithFriends: Bool
+    /// Vsa clanstva (lastnistvo + ekipe; backend migracija 018, vec klubov na osebo). Star backend: [].
+    let clubs: [MeClub]
 
     enum CodingKeys: String, CodingKey {
         case id, email, username, role, phone, country, genres
@@ -49,6 +51,7 @@ struct Me: Decodable {
         case pendingFriendRequests = "pending_friend_requests"
         case pendingReceivedTickets = "pending_received_tickets"
         case sharePlansWithFriends = "share_plans_with_friends"
+        case clubs
     }
 
     init(from decoder: Decoder) throws {
@@ -71,6 +74,7 @@ struct Me: Decodable {
         pendingFriendRequests = try c.decodeIfPresent(Int.self, forKey: .pendingFriendRequests) ?? 0
         pendingReceivedTickets = try c.decodeIfPresent(Int.self, forKey: .pendingReceivedTickets) ?? 0
         sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
+        clubs = (try? c.decodeIfPresent([MeClub].self, forKey: .clubs)) ?? []
         // Postgres DATE pride kot "YYYY-MM-DD" ali kot ISO cas; obdrzimo prvih 10 znakov.
         if let raw = try c.decodeIfPresent(String.self, forKey: .dateOfBirth), raw.count >= 10 {
             dateOfBirth = String(raw.prefix(10))
@@ -111,5 +115,31 @@ struct Me: Decodable {
         f.dateFormat = "yyyy-MM-dd"
         guard let d = f.date(from: dob) else { return nil }
         return Calendar.current.dateComponents([.year], from: d, to: Date()).year
+    }
+}
+
+/// Eno clanstvo iz GET /me `clubs` (migracija 018): klub in moja vloga v njem.
+struct MeClub: Decodable, Identifiable {
+    let clubId: Int
+    let clubName: String
+    let clubLogoUrl: String
+    /// "owner" | "manager" | "doorman"
+    let role: String
+
+    var id: Int { clubId }
+
+    enum CodingKeys: String, CodingKey {
+        case role
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case clubLogoUrl = "club_logo_url"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        clubId = try c.decode(Int.self, forKey: .clubId)
+        clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
+        clubLogoUrl = try c.decodeIfPresent(String.self, forKey: .clubLogoUrl) ?? ""
+        role = try c.decodeIfPresent(String.self, forKey: .role) ?? "doorman"
     }
 }

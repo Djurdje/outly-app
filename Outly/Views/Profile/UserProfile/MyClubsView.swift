@@ -2,10 +2,9 @@ import SwiftUI
 
 /// "My clubs" po Figmi (370:735 prazno, 382:805 s klubom, 370:849 z vabilom,
 /// 370:1303 po sprejemu): SEZNAM klubov, katerih ekipe je uporabnik clan — vsak
-/// klub svoja kartica (logo, ime, vloga, "View"). Backend danes dovoljuje
-/// clanstvo v najvec eni ekipi hkrati (docs/DECISIONS.md, "En klub na poslovni
-/// racun"), zato je `memberships` danes dolg 0 ali 1 — prikaz je pripravljen na
-/// vec kartic, ce se ta odlocitev kdaj spremeni. Zaposlitev je popolnoma locena
+/// klub svoja kartica (logo, ime, vloga, "View"). Od backend migracije 018 (21. 9.)
+/// je oseba lahko v vec ekipah: seznam pride iz GET /me `clubs`; "View" nastavi
+/// IzbraniKlub (glava X-Outly-Club), da vsi klici veljajo za izbrani klub. Zaposlitev je popolnoma locena
 /// od osebnega profila (ProfileView): vse klubske funkcije (Dashboard, Scan
 /// tickets, Events, Team, Edit page) so tu, znotraj izbranega kluba, ne globalno.
 /// Desno zgoraj je zvonec z znacko: tam uporabnik prejme vabilo v ekipo in ga
@@ -26,16 +25,21 @@ struct MyClubsView: View {
     private var me: Me? { session.me }
     private var pendingCount: Int { max(invites.count, me?.pendingInvites ?? 0) }
 
-    /// Klub + vloga za vsako clanstvo. Danes je backend omejen na eno hkrati (glej
-    /// dokumentacijski komentar zgoraj), zato je seznam 0 ali 1 dolg.
+    /// Klub + vloga za vsako clanstvo. Od backend migracije 018 jih je lahko vec (GET /me `clubs`);
+    /// star backend seznama nima -> eno clanstvo iz club_id/club_role kot prej.
     private struct Membership: Identifiable {
-        let club: APIClub?
+        let clubId: Int
+        let ime: String
+        let logoUrl: String
         let role: String
-        var id: Int { club?.id ?? -1 }
+        var id: Int { clubId }
     }
     private var memberships: [Membership] {
-        guard let role = me?.clubRole else { return [] }
-        return [Membership(club: club, role: role)]
+        if let me, !me.clubs.isEmpty {
+            return me.clubs.map { Membership(clubId: $0.clubId, ime: $0.clubName, logoUrl: $0.clubLogoUrl, role: $0.role) }
+        }
+        guard let role = me?.clubRole, let id = me?.clubId else { return [] }
+        return [Membership(clubId: id, ime: club?.name ?? "", logoUrl: club?.logoUrl ?? "", role: role)]
     }
 
     var body: some View {
@@ -58,7 +62,7 @@ struct MyClubsView: View {
                         if !memberships.isEmpty {
                             VStack(spacing: 12) {
                                 ForEach(memberships) { m in
-                                    klubVrstica(club: m.club, role: m.role)
+                                    klubVrstica(m)
                                 }
                             }
                         } else {
@@ -121,19 +125,19 @@ struct MyClubsView: View {
     }
 
     /// Kartica kluba (Figma 382:805): logo, ime, vloga, desno "View". Ena na clanstvo.
-    private func klubVrstica(club: APIClub?, role: String) -> some View {
+    private func klubVrstica(_ m: Membership) -> some View {
         NavigationLink {
-            MyClubDetailView(club: club, role: role)
+            MyClubDetailView(clubId: m.clubId, ime: m.ime, logoUrl: m.logoUrl, role: m.role)
         } label: {
             HStack(spacing: 14) {
-                logo(club?.logoUrl, size: 56, radius: 12)
+                logo(m.logoUrl, size: 56, radius: 12)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(club?.name ?? String(localized: "Your club"))
+                    Text(m.ime.isEmpty ? String(localized: "Your club") : m.ime)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .lineLimit(1)
-                    Text(roleLabel(role))
+                    Text(roleLabel(m.role))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                 }
@@ -272,6 +276,8 @@ struct MyClubsView: View {
 
     private func load() async {
         guard session.isLoggedIn else { return }
+        // Seznam: noben klub ni izbran (glava X-Outly-Club se ne poslje).
+        IzbraniKlub.id = nil
         isLoading = true
         defer { isLoading = false }
         errorText = nil
@@ -298,11 +304,16 @@ struct MyClubsView: View {
 /// Vratar vidi samo skener (streznik mu ostalo zavrne s 403).
 @MainActor
 struct MyClubDetailView: View {
-    let club: APIClub?
+    let clubId: Int
+    /// Ime in logo iz seznama (GET /me clubs), da glava ni prazna, dokler se klub nalaga.
+    let ime: String
+    let logoUrl: String
     let role: String
 
     @EnvironmentObject private var session: SessionStore
     @Environment(\.dismiss) private var dismiss
+    /// Poln klub (GET /business/clubs/me z glavo X-Outly-Club za ta klub).
+    @State private var club: APIClub?
     @State private var showCreate = false
     @State private var showLeave = false
     @State private var errorText: String?
@@ -317,7 +328,7 @@ struct MyClubDetailView: View {
                     HStack(spacing: 16) {
                         logo
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(club?.name ?? String(localized: "Your club"))
+                            Text(club?.name ?? (ime.isEmpty ? String(localized: "Your club") : ime))
                                 .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(.white)
                                 .lineLimit(2)
@@ -337,7 +348,7 @@ struct MyClubDetailView: View {
                     VStack(spacing: 10) {
                         if canManage {
                             NavigationLink {
-                                EditBusinessPageView(clubId: club?.id)
+                                EditBusinessPageView(clubId: clubId)
                             } label: {
                                 OutlyMenuRowButton(icon: "pencil", title: "Edit your page")
                             }
@@ -356,7 +367,7 @@ struct MyClubDetailView: View {
                             .buttonStyle(.plain)
 
                             NavigationLink {
-                                BusinessEventsView(clubId: club?.id, clubName: club?.name)
+                                BusinessEventsView(clubId: clubId, clubName: club?.name ?? ime)
                             } label: {
                                 OutlyMenuRowButton(icon: "calendar", title: "View events")
                             }
@@ -410,11 +421,14 @@ struct MyClubDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            // Od tu naprej (Dashboard, Events, Team, Edit page ...) vsi klici veljajo za TA klub.
+            IzbraniKlub.id = clubId
+            club = try? await APIClient.shared.fetchMyBusinessClub(token: session.token)
+        }
         .sheet(isPresented: $showCreate) {
-            if let id = club?.id {
-                EventFormView(clubId: id, existing: nil) { _ in }
-                    .environmentObject(session)
-            }
+            EventFormView(clubId: clubId, existing: nil) { _ in }
+                .environmentObject(session)
         }
     }
 
@@ -428,7 +442,7 @@ struct MyClubDetailView: View {
 
     private var logo: some View {
         Group {
-            if let s = club?.logoUrl, !s.isEmpty, let u = URL(string: s) {
+            if let s = club?.logoUrl ?? (logoUrl.isEmpty ? nil : logoUrl), !s.isEmpty, let u = URL(string: s) {
                 Color.clear
                     .overlay(
                         AsyncImage(url: u) { img in

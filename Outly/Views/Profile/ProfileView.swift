@@ -150,6 +150,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 20)
             }
             .navigationTitle("")
+            .outlyOzadje()
     }
 
     func loadProfile() async {

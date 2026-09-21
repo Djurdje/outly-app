@@ -138,3 +138,11 @@ extension APIClient {
         _ = try await send(path: "business/team/me", method: "DELETE", token: token)
     }
 }
+
+/// Klub, ki ga uporabnik trenutno ureja (My Clubs -> View). Vsak klic APIClient.send doda glavo
+/// X-Outly-Club s to vrednostjo (backend 018: oseba je lahko v vec ekipah). nil = brez glave ->
+/// streznik vzame prvo clanstvo (in lastnikov klub), kot pred 018.
+/// MyClubsView (seznam) ga pobrise, MyClubDetailView ga nastavi; globlji zasloni ga podedujejo.
+enum IzbraniKlub {
+    nonisolated(unsafe) static var id: Int?
+}

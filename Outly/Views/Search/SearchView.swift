@@ -100,6 +100,7 @@ struct SearchView: View {
             }
             .padding()
             .navigationTitle("Search")
+            .outlyOzadje()
             .navigationDestination(isPresented: $showEvent) {
                 if let e = openEvent {
                     EventDetailView(event: e)
