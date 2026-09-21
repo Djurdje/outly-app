@@ -78,7 +78,7 @@ struct BusinessEventsView: View {
             .padding(.top, 12)
             .padding(.bottom, 40)   // odmik za spodnjo vrstico (past 8)
         }
-        .background(Color.black.opacity(0.98))
+        .outlyOzadje()
         .preferredColorScheme(.dark)
         .task { await load() }
         .sheet(isPresented: $showCreate) {

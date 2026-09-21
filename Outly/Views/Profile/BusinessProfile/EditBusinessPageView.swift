@@ -46,6 +46,7 @@ struct EditBusinessPageView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)
+            .outlyOzadje()
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Route.self) { route in
                 switch route {

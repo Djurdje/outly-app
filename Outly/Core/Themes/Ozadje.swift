@@ -1,38 +1,40 @@
 import SwiftUI
+import CoreImage
+import CoreImage.CIFilterBuiltins
 
-/// Ozadje zaslonov (Martin/Luka, 21. 9. 2026, "kot Revolut"): zavihka Search in Profile ne
-/// odpreta svojega crnega zaslona, ampak lezita nad zamegljenim, zamrznjenim posnetkom
-/// domacega zaslona (MainTabView ga posname ob preklopu zavihka). Zato vsak zaslon, ki je
-/// prej imel `.background(Color.black.ignoresSafeArea())`, uporabi `.outlyOzadje()`:
-/// v zavihku s posnetkom je prosojen (posnetek se vidi), sicer crn kot prej.
-/// Potisnjeni pogledi podedujejo okolje, zato velja tudi zanje (Revolut: cel sklad).
-private struct ProsojnoOzadjeKey: EnvironmentKey {
-    static let defaultValue = false
+/// Ozadje zaslonov (Luka, 21. 9. 2026, "kot Revolut"): zavihka Search in Profile ne odpreta
+/// svojega crnega zaslona, ampak lezita nad zamegljenim, zamrznjenim posnetkom domacega zaslona.
+/// MainTabView posnetek naredi ob preklopu zavihka in ga da v okolje (`posnetekDoma`).
+/// Vsak zaslon, ki je prej imel `.background(Color.black.ignoresSafeArea())`, uporabi `.outlyOzadje()`:
+/// s posnetkom v okolju narise posnetek, sicer crno. Ozadje rise VSAK zaslon sam (tudi potisnjeni),
+/// ker NavigationStack pod seboj ne pusti videti nicesar — prvi poskus z ZStackom pod
+/// NavigationStackom (build 64) je ostal crn.
+private struct PosnetekDomaKey: EnvironmentKey {
+    static let defaultValue: UIImage? = nil
 }
 
 extension EnvironmentValues {
-    /// true = zaslon lezi nad posnetkom domacega zaslona in ne sme risati crnega ozadja.
-    var prosojnoOzadje: Bool {
-        get { self[ProsojnoOzadjeKey.self] }
-        set { self[ProsojnoOzadjeKey.self] = newValue }
+    /// Ze zamegljen posnetek domacega zaslona; nil = navadno crno ozadje.
+    var posnetekDoma: UIImage? {
+        get { self[PosnetekDomaKey.self] }
+        set { self[PosnetekDomaKey.self] = newValue }
     }
 }
 
 private struct OutlyOzadjeModifier: ViewModifier {
-    @Environment(\.prosojnoOzadje) private var prosojno
+    @Environment(\.posnetekDoma) private var posnetek
 
     func body(content: Content) -> some View {
-        content.background((prosojno ? Color.clear : Color.black).ignoresSafeArea())
+        content.background(HomeSnapshotBackground(slika: posnetek))
     }
 }
 
 extension View {
-    /// Crno ozadje zaslona, ki se umakne posnetku domacega zaslona (glej ProsojnoOzadjeKey).
+    /// Crno ozadje zaslona oziroma zamegljen domaci zaslon, ce ga okolje ima (glej PosnetekDomaKey).
     func outlyOzadje() -> some View { modifier(OutlyOzadjeModifier()) }
 }
 
-/// Zamegljen, zatemnjen posnetek domacega zaslona kot ozadje zavihka (Search, Profile).
-/// Brez posnetka (prvi prikaz pred prvim preklopom) je crn.
+/// Zamegljen (ze ob zajemu), zatemnjen posnetek domacega zaslona; brez posnetka crno.
 struct HomeSnapshotBackground: View {
     let slika: UIImage?
 
@@ -43,8 +45,7 @@ struct HomeSnapshotBackground: View {
                 Image(uiImage: slika)
                     .resizable()
                     .scaledToFill()
-                    .blur(radius: 28, opaque: true)
-                    .overlay(Color.black.opacity(0.62))
+                    .overlay(Color.black.opacity(0.6))
             }
         }
         .ignoresSafeArea()
@@ -52,8 +53,9 @@ struct HomeSnapshotBackground: View {
 }
 
 extension UIApplication {
-    /// Posnetek trenutnega zaslona (kar uporabnik vidi zdaj) — klice se PRED preklopom zavihka,
-    /// da posnetek kaze domaci zaslon tam, kjer je uporabnik ostal.
+    /// Posnetek trenutnega zaslona, ze zamegljen (CIGaussianBlur) — klice se PRED preklopom
+    /// zavihka, da kaze domaci zaslon tam, kjer je uporabnik ostal. Zamegli se enkrat tu, ne na
+    /// vsakem zaslonu posebej.
     func posnetekZaslona() -> UIImage? {
         let okno = connectedScenes
             .compactMap { $0 as? UIWindowScene }
@@ -62,8 +64,21 @@ extension UIApplication {
         guard let okno else { return nil }
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1  // polovicna locljivost zadostuje, saj se slika zamegli
-        return UIGraphicsImageRenderer(bounds: okno.bounds, format: format).image { _ in
+        let surov = UIGraphicsImageRenderer(bounds: okno.bounds, format: format).image { _ in
             okno.drawHierarchy(in: okno.bounds, afterScreenUpdates: false)
         }
+        return Self.zamegli(surov) ?? surov
+    }
+
+    private static func zamegli(_ slika: UIImage) -> UIImage? {
+        guard let cg = slika.cgImage else { return nil }
+        let vhod = CIImage(cgImage: cg)
+        let filter = CIFilter.gaussianBlur()
+        filter.inputImage = vhod.clampedToExtent()
+        filter.radius = 22
+        guard let izhod = filter.outputImage?.cropped(to: vhod.extent) else { return nil }
+        let ctx = CIContext(options: nil)
+        guard let rezultat = ctx.createCGImage(izhod, from: vhod.extent) else { return nil }
+        return UIImage(cgImage: rezultat, scale: slika.scale, orientation: slika.imageOrientation)
     }
 }

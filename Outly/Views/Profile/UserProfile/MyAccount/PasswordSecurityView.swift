@@ -51,8 +51,12 @@ struct PasswordSecurityView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .navigationDestination(isPresented: $showChange) {
-            PasswordChangeView { success = String(localized: "Password changed. Other devices were signed out.") }
+        // List namesto navigationDestination(isPresented:) — isti razlog kot v ClubInfoView.
+        .sheet(isPresented: $showChange) {
+            NavigationStack {
+                PasswordChangeView { success = String(localized: "Password changed. Other devices were signed out.") }
+            }
+            .preferredColorScheme(.dark)
         }
         .confirmationDialog("Sign out of all devices?", isPresented: $showLogoutAllConfirm, titleVisibility: .visible) {
             Button("Sign out everywhere", role: .destructive) { Task { await logoutEverywhere() } }

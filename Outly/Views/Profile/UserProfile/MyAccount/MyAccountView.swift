@@ -125,6 +125,7 @@ struct MyAccountView: View {
             .padding()
             .navigationTitle("")
         }
+        .outlyOzadje()
         .preferredColorScheme(.dark)
         .task {
             await loadMe()

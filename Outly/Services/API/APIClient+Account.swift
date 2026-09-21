@@ -81,6 +81,11 @@ extension APIClient {
         if let token, !token.isEmpty {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
+        // Vec klubov na osebo (backend 018): kateri klub urejamo, pove glava; brez nje streznik
+        // vzame prvo clanstvo. Nastavi jo MyClubDetailView ob vstopu v klub (IzbraniKlub).
+        if let klub = IzbraniKlub.id {
+            req.setValue(String(klub), forHTTPHeaderField: "X-Outly-Club")
+        }
         if let json {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONSerialization.data(withJSONObject: json)

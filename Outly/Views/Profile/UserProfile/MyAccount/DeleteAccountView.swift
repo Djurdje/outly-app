@@ -16,8 +16,6 @@ struct DeleteAccountView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-
             VStack(alignment: .leading, spacing: 18) {
                 Text("Delete account")
                     .font(.system(size: 24, weight: .bold))
@@ -69,6 +67,7 @@ struct DeleteAccountView: View {
             }
             .padding(24)
         }
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .alert("Are you sure you want to delete your account?", isPresented: $showConfirm) {

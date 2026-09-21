@@ -57,6 +57,7 @@ struct ClubDetailView: View {
             .padding(.bottom, 90)
         }
         .navigationTitle("")
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await load() }

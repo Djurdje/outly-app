@@ -161,6 +161,8 @@ struct FriendsPlansView: View {
         }
     }
 
+    private var izbrani: FriendUser? { prijatelji.first { $0.id == izbran } }
+
     private var prikazani: [FriendPlan] {
         guard let izbran else { return vsi }
         return vsi.filter { p in p.friends.contains { $0.id == izbran } }
@@ -173,14 +175,15 @@ struct FriendsPlansView: View {
                     Text("Friends plans")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
-                    Text("See where your friends are going.")
+                    Text(izbrani.map { String(localized: "Where \($0.username) is going.") } ?? String(localized: "See where your friends are going."))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white.opacity(0.55))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)
 
-                if !prijatelji.isEmpty {
+                // Z enim prijateljem ni kaj filtrirati (All = ta prijatelj), zato gumbov ni.
+                if prijatelji.count >= 2 {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             gumbFiltra(String(localized: "All"), id: nil)

@@ -8,9 +8,9 @@
 import SwiftUI
 
 /// Sistemski TabView (Martin, 20. 9.: vrstica ostane sistemska). "Kot Revolut" (Luka, 21. 9.):
-/// ob preklopu z domacega zaslona na Search ali Profile se domaci zaslon posname, posnetek se
-/// zamegli in je ozadje teh dveh zavihkov (HomeSnapshotBackground); zasloni v njih so prosojni
-/// (okolje `prosojnoOzadje`, glej Ozadje.swift). Map ostane pravi zemljevid.
+/// ob preklopu z domacega zaslona na Search ali Profile se domaci zaslon posname in zamegli;
+/// posnetek gre v okolje (`posnetekDoma`) in vsak zaslon v teh dveh zavihkih ga narise kot svoje
+/// ozadje (`.outlyOzadje()`, glej Ozadje.swift). Map ostane pravi zemljevid.
 /// Posnetek nastane PRED preklopom (lastni Binding), zato kaze tocno tisto, kar je bilo na zaslonu.
 struct MainTabView: View {
     // Izbran zavihek: domaci zaslon ("Where to?") preklopi na iskanje, avatar na profil.
@@ -38,7 +38,8 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
-            nadPosnetkom { SearchView() }
+            SearchView()
+                .environment(\.posnetekDoma, posnetekDoma)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
@@ -53,7 +54,8 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
-            nadPosnetkom { ProfileView() }
+            ProfileView()
+                .environment(\.posnetekDoma, posnetekDoma)
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
@@ -66,14 +68,5 @@ struct MainTabView: View {
         .onAppear {
             if let z = jezik.zavihekPoPreklopu { zavihek = z; jezik.zavihekPoPreklopu = nil }
         }
-    }
-
-    /// Zavihek nad zamegljenim posnetkom domacega zaslona; vsebina ne rise crnega ozadja.
-    private func nadPosnetkom<V: View>(@ViewBuilder _ vsebina: () -> V) -> some View {
-        ZStack {
-            HomeSnapshotBackground(slika: posnetekDoma)
-            vsebina()
-        }
-        .environment(\.prosojnoOzadje, true)
     }
 }
