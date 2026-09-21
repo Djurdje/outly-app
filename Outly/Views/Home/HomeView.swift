@@ -31,6 +31,7 @@ struct HomeView: View {
     @State private var showNotifications = false
     @State private var invites: [MyInvite] = []
     @State private var friendRequests: [FriendRequest] = []
+    @State private var receivedTickets: [ReceivedTicket] = []
     @State private var notificationsLoading = false
     /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
     @State private var friendPlans: [FriendPlan] = []
@@ -440,10 +441,13 @@ struct HomeView: View {
         .ignoresSafeArea()
     }
 
-    /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites) in prosnje
-    /// za prijateljstvo (Me.pendingFriendRequests); drugih obvestil (APNs) se ni.
+    /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites), prosnje
+    /// za prijateljstvo (Me.pendingFriendRequests) in neprebrane prejete vstopnice
+    /// (Me.pendingReceivedTickets); drugih obvestil (APNs) se ni.
     /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
-    private var notificationCount: Int { (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0) }
+    private var notificationCount: Int {
+        (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0) + (me?.pendingReceivedTickets ?? 0)
+    }
 
     /// Meni obvestil cez domaci zaslon: zatemnjeno ozadje (dotik zapre) + kartica pod zvoncem.
     private var notificationsOverlay: some View {
@@ -451,9 +455,11 @@ struct HomeView: View {
             Color.black.opacity(0.35)
                 .ignoresSafeArea()
                 .onTapGesture { zapriObvestila() }
-            NotificationsMenuView(invites: $invites, friendRequests: friendRequests, isLoading: notificationsLoading,
+            NotificationsMenuView(invites: $invites, friendRequests: friendRequests, receivedTickets: receivedTickets,
+                                  isLoading: notificationsLoading,
                                   onClose: { zapriObvestila() },
-                                  onJoined: { _ in Task { await loadMe() } })
+                                  onJoined: { _ in Task { await loadMe() } },
+                                  onTicketSeen: { id in Task { await oznaciPrejetoVstopnico(id) } })
                 .padding(.top, 50)
                 .padding(.trailing, 16)
                 .transition(.scale(scale: 0.92, anchor: .topTrailing).combined(with: .opacity))
@@ -470,8 +476,20 @@ struct HomeView: View {
         defer { notificationsLoading = false }
         async let v = APIClient.shared.fetchMyInvites(token: authToken)
         async let f = APIClient.shared.fetchMyFriends(token: authToken)
+        async let p = APIClient.shared.fetchReceivedTickets(token: authToken)
         if let vabila = try? await v { invites = vabila }
         if let prijatelji = try? await f { friendRequests = prijatelji.requestsIn }
+        // Star backend brez poti -> napaka -> seznam ostane prazen (brez obvestila, ne pade).
+        if let prejete = try? await p { receivedTickets = prejete }
+        await loadMe()
+    }
+
+    /// Dotik obvestila "X sent you a ticket": lokalno takoj izgine, streznik ga oznaci kot prebrano,
+    /// nato se osvezi stevec na zvoncu. Napaka se ne kaze — ob naslednjem nalaganju se vrne.
+    private func oznaciPrejetoVstopnico(_ id: Int) async {
+        receivedTickets.removeAll { $0.id == id }
+        guard !authToken.isEmpty else { return }
+        try? await APIClient.shared.markReceivedTicketSeen(token: authToken, id: id)
         await loadMe()
     }
 
