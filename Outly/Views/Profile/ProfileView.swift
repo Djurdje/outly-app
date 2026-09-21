@@ -1,15 +1,16 @@
 import SwiftUI
 
-/// Glavni zaslon Profila (Martin, 20. 9.): zgornji del je VEDNO osebni profil —
-/// uporabnikova slika, uporabnisko ime, "My Account" — ne glede na to, ali je
-/// uporabnik zaposlen v klubu. Osebni profil in zaposlitev v klubu sta popolnoma
-/// locena: klub, vloga in klubske funkcije (Dashboard, Scan tickets, Events, Team,
-/// Edit page) zivijo pod "My Clubs" (MyClubsView -> MyClubDetailView) in se
-/// pokazejo sele, ko uporabnik izbere konkreten klub ("View"). Meni je zato enak
-/// za vsakogar — uporabnika, vratarja, managerja ali lastnika.
+/// Glavni zaslon Profila (Martin, 20. 9.): zgornji del je osebni profil — uporabnikova
+/// slika, uporabnisko ime, "My Account" — tudi ce je uporabnik zaposlen v klubu (vratar,
+/// manager). Zaposlitev je pod "My Clubs" (MyClubsView -> MyClubDetailView).
+/// Izjema (Luka, 21. 9.): LASTNIK kluba (vloga `business`) vidi klubski profil
+/// (OwnerProfileView: logo, ime, Edit your page, Dashboard, Events, My team, Settings),
+/// dokler v Settings ne preklopi na osebni racun (`profilObraz`, shranjeno na napravi).
 @MainActor
 struct ProfileView: View {
     @AppStorage("authStage") private var authStage: String = "main"
+    /// "club" = lastnik vidi klubski profil; "personal" = osebni. Velja samo za vlogo business.
+    @AppStorage("profilObraz") private var obraz: String = "club"
     @EnvironmentObject private var session: SessionStore
     private var authToken: String { session.token }
     @State private var user: Me?
@@ -21,8 +22,26 @@ struct ProfileView: View {
         return URL(string: s)
     }
 
+    /// Pred prvim GET /me vzamemo profil iz seje, da lastnik ne vidi najprej osebnega obraza.
+    private var trenutni: Me? { user ?? session.me }
+    private var jeLastnik: Bool { trenutni?.role == "business" && obraz == "club" }
+
     var body: some View {
         NavigationStack {
+            if jeLastnik, let trenutni {
+                OwnerProfileView(me: trenutni)
+            } else {
+                osebni
+            }
+        }
+        // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me).
+        .onAppear {
+            Task { await loadProfile() }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var osebni: some View {
             // Scrollable (Martin, 20. 9.): "Log out" se je pri daljsem poslovnem meniju
             // skril pod plavajoco spodnjo vrstico. Meni je zdaj za vse enak in krajsi,
             // a ScrollView ostane, da je gumb dosegljiv tudi na manjsih zaslonih.
@@ -131,12 +150,6 @@ struct ProfileView: View {
                 .padding(.horizontal, 20)
             }
             .navigationTitle("")
-        }
-        // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me).
-        .onAppear {
-            Task { await loadProfile() }
-        }
-        .preferredColorScheme(.dark)
     }
 
     func loadProfile() async {

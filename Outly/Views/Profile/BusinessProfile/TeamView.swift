@@ -84,7 +84,7 @@ struct TeamView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await load() }
@@ -404,7 +404,7 @@ struct AddTeamMemberView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
-            .background(Color.black.ignoresSafeArea())
+            .outlyOzadje()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }.foregroundColor(.white)

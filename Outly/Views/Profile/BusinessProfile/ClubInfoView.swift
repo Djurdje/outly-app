@@ -282,7 +282,7 @@ struct ClubInfoView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 30)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("Club info")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)

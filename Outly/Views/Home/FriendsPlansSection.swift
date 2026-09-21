@@ -15,11 +15,11 @@ struct FriendsPlansSection: View {
     private let velikostPovabi: CGFloat = 42
     private let najvecAvatarjev = 6
 
-    /// Prijatelji brez podvajanja, v vrstnem redu prvega dogodka.
+    /// Prijatelji brez podvajanja, v vrstnem redu prvega dogodka (samo prihodnji dogodki).
     private var prijatelji: [FriendUser] {
         var videni = Set<Int>()
         var seznam: [FriendUser] = []
-        for p in plans {
+        for p in plans where !p.event.isPast {
             for f in p.friends where !videni.contains(f.id) {
                 videni.insert(f.id)
                 seznam.append(f)
@@ -31,7 +31,7 @@ struct FriendsPlansSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeader(title: "Your friends' plans")
+                SectionHeader(title: "Your friends plans")
                 Spacer()
                 NavigationLink {
                     FriendsPlansView(plans: plans, clubsById: clubsById)
@@ -140,7 +140,7 @@ struct FriendsPlansView: View {
     private var prijatelji: [FriendUser] {
         var videni = Set<Int>()
         var seznam: [FriendUser] = []
-        for p in plans {
+        for p in vsi {
             for f in p.friends where !videni.contains(f.id) {
                 videni.insert(f.id)
                 seznam.append(f)
@@ -149,16 +149,28 @@ struct FriendsPlansView: View {
         return seznam
     }
 
+    /// Brez podvojenih dogodkov (isti id samo enkrat) in brez preteklih — varovalo v aplikaciji,
+    /// tudi ce bi streznik kdaj vrnil vec kot en zapis na dogodek. Podvojen id v ForEach sicer
+    /// SwiftUI zmede (dotik na drugi kartici ne dela).
+    private var vsi: [FriendPlan] {
+        var videni = Set<Int>()
+        return plans.filter { p in
+            guard !p.event.isPast, !videni.contains(p.event.id) else { return false }
+            videni.insert(p.event.id)
+            return true
+        }
+    }
+
     private var prikazani: [FriendPlan] {
-        guard let izbran else { return plans }
-        return plans.filter { p in p.friends.contains { $0.id == izbran } }
+        guard let izbran else { return vsi }
+        return vsi.filter { p in p.friends.contains { $0.id == izbran } }
     }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(spacing: 6) {
-                    Text("Friends' plans")
+                    Text("Friends plans")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                     Text("See where your friends are going.")
@@ -196,7 +208,7 @@ struct FriendsPlansView: View {
             .padding(16)
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .onAppear {

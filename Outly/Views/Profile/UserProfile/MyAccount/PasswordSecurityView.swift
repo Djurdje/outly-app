@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Geslo in varnost — po Figmi "Pass and sec" (95:1403): naslov, kartica "Login" z vrstico
-/// "Change password → Edit" in opombo. Dvostopenjske potrditve in Google/Apple prijave
+/// "Change password → Edit" in opombo (OutlyInfoCardButton, isti slog kot Personal info). Dvostopenjske potrditve in Google/Apple prijave
 /// backend nima, zato teh vrstic ni (Apple zavrne gumbe, ki ne delajo nic).
 /// Dodana kartica "Sessions" (odjava z vseh naprav) — ni v Figmi, a je varnostno potrebna.
 @MainActor
@@ -30,33 +30,24 @@ struct PasswordSecurityView: View {
                         .foregroundColor(.green)
                 }
 
-                OutlySettingsCard("Login") {
-                    OutlySettingsRow(
-                        icon: "lock",
-                        title: "Change password",
-                        action: "Edit",
-                        footnote: "You can change your password at any time.",
-                        onTap: { showChange = true }
-                    )
-                }
+                // Isti gradnik kot Personal info (Luka, 21. 9.: samo dva sloga vrstic v aplikaciji).
+                OutlyInfoCardButton(icon: "lock", title: "Login",
+                                    value: String(localized: "Change password"),
+                                    description: "You can change your password at any time.",
+                                    actionTitle: "Edit") { showChange = true }
 
-                OutlySettingsCard("Sessions") {
-                    OutlySettingsRow(
-                        icon: "iphone.and.arrow.forward",
-                        title: "Sign out of all devices",
-                        action: isLoggingOutAll ? "Signing out…" : "Sign out",
-                        actionColor: Color(red: 1, green: 0.35, blue: 0.35),
-                        footnote: "Signed in somewhere you don't recognise? Sign out everywhere, including this device.",
-                        onTap: { showLogoutAllConfirm = true }
-                    )
-                }
+                OutlyInfoCardButton(icon: "iphone.and.arrow.forward", title: "Sessions",
+                                    value: String(localized: "Sign out of all devices"),
+                                    description: "Signed in somewhere you don't recognise? Sign out everywhere, including this device.",
+                                    actionTitle: isLoggingOutAll ? "Signing out…" : "Sign out",
+                                    actionColor: Color(red: 1, green: 0.35, blue: 0.35)) { showLogoutAllConfirm = true }
 
                 Spacer(minLength: 20)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 40)
         }
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
@@ -148,7 +139,7 @@ struct PasswordChangeView: View {
             .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("Password change")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

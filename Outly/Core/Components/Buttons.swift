@@ -78,6 +78,8 @@ struct OutlyInfoCardButton: View {
     let value: String          // "getoglava" / "+386..."
     let description: String    // sivi opis spodaj
     var actionTitle: String = "Edit"
+    /// Barva dejanja: modra; rdeca za unicujoca dejanja ("Sign out").
+    var actionColor: Color = .outlyBlue
     var onAction: () -> Void
 
     var body: some View {
@@ -104,7 +106,7 @@ struct OutlyInfoCardButton: View {
                     Button(action: onAction) {
                         Text(LocalizedStringKey(actionTitle))
                             .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(.blackColor)
+                            .foregroundColor(actionColor)
                     }
                 }
             }

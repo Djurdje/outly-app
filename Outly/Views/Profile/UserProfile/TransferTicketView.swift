@@ -59,7 +59,7 @@ struct TransferTicketView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
-            .background(Color.black.ignoresSafeArea())
+            .outlyOzadje()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {

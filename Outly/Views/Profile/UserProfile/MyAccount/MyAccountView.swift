@@ -4,6 +4,8 @@ struct MyAccountView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("authStage") private var authStage: String = "main"
+    /// Lastnik kluba (vloga business) se od tu vrne na klubski profil (glej OwnerProfileView).
+    @AppStorage("profilObraz") private var obraz: String = "club"
     @EnvironmentObject private var session: SessionStore
     private var authToken: String { session.token }
     @State private var user: Me?
@@ -88,6 +90,16 @@ struct MyAccountView: View {
                     // Language in Notifications sta od 20. 9. pod Preferences (skupaj z My preferences).
                     NavigationLink(destination: PreferencesView()) {
                         OutlyMenuRowButton(icon: "slider.horizontal.3", title: "Preferences")
+                    }
+
+                    if (user?.role ?? session.me?.role) == "business" {
+                        Button {
+                            obraz = "club"
+                            dismiss()
+                        } label: {
+                            OutlyMenuRowButton(icon: "arrow.left.arrow.right", title: "Switch to club account")
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     Divider()

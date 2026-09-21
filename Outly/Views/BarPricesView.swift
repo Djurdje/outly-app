@@ -212,7 +212,7 @@ struct BarPricesEditorView: View {
             .padding(16)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Color.black.ignoresSafeArea())
+        .outlyOzadje()
         .navigationTitle("Bar prices")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
