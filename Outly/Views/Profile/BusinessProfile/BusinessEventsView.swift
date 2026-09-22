@@ -127,7 +127,8 @@ private struct BusinessEventRow: View {
         switch event.status {
         case "cancelled": return String(localized: "Cancelled")
         case "draft":     return String(localized: "Draft")
-        default:          return event.isPast ? String(localized: "Ended") : String(localized: "Upcoming")
+        // "Ended" po istem pravilu kot streznik (lifecycle, backend 019): konec, sicer zacetek + 8 h.
+        default:          return event.hasEnded ? String(localized: "Ended") : String(localized: "Upcoming")
         }
     }
 
@@ -135,7 +136,7 @@ private struct BusinessEventRow: View {
         switch event.status {
         case "cancelled": return .red
         case "draft":     return .orange
-        default:          return event.isPast ? .gray : .green
+        default:          return event.hasEnded ? .gray : .green
         }
     }
 
@@ -177,6 +178,16 @@ private struct BusinessEventRow: View {
                         Text(p)
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.6))
+                    }
+                    // Klub takoj vidi, kje je posnetek in kje ga sme dodati (backend 019).
+                    if !event.recapVideoUrl.isEmpty {
+                        Label("Video", systemImage: "play.rectangle.fill")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.outlyBlue)
+                    } else if event.recapAllowed {
+                        Label("Add video", systemImage: "plus.rectangle.on.folder")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.5))
                     }
                 }
             }

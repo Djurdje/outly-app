@@ -35,8 +35,11 @@ final class APIClient: Sendable {
         return try decode([APIClub].self, from: data)
     }
 
-    func fetchClub(id: Int) async throws -> APIClub {
-        let data = try await send(path: "clubs/\(id)", method: "GET")
+    /// GET /clubs/:id. Z zetonom odgovor vsebuje tudi `is_following` (backend 019) —
+    /// brez njega je gumb Follow ob odprtju vedno videti kot "Follow". Pot je javna,
+    /// zato je zeton neobvezen.
+    func fetchClub(id: Int, token: String? = nil) async throws -> APIClub {
+        let data = try await send(path: "clubs/\(id)", method: "GET", token: token)
         return try decode(APIClub.self, from: data)
     }
 

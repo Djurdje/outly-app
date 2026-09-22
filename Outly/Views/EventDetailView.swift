@@ -63,13 +63,18 @@ struct EventDetailView: View {
     // malo dvignjena od dna. Naslov in kdaj sta pod sliko (Lukov popravek 14. 9. zvecer).
     private var headerImageUrl: String {
         if !event.posterUrl.isEmpty { return event.posterUrl }
-        return club?.bannerUrl ?? ""
+        // Brez plakata vzamemo prvo sliko kluba (slideshow, sicer stara pasica).
+        return club?.slideshowUrls.first ?? ""
     }
 
     private var hero: some View {
         ZStack(alignment: .bottom) {
             ZStack {
-                if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
+                // Koncan dogodek s posnetkom (backend 019): video stopi NA MESTO plakata,
+                // da uporabnik vidi, kako je bilo. Prenese se sele ob dotiku (OutlyRecapVideo).
+                if let recap = event.recapVideoURL {
+                    OutlyRecapVideo(url: recap, posterUrl: headerImageUrl, playSize: 64)
+                } else if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
                     AsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: {
@@ -91,6 +96,8 @@ struct EventDetailView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
+                // Brez tega preliv prestreze dotik in posnetka ni mogoce zagnati.
+                .allowsHitTesting(false)
             }
 
             ticketBar

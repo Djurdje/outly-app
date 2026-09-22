@@ -32,6 +32,8 @@ struct Me: Decodable {
     let pendingFriendRequests: Int
     /// Stevilo neprebranih prejetih vstopnic (migracija 017) — obvestilo "X sent you a ticket".
     let pendingReceivedTickets: Int
+    /// Stevilo neprebranih obvestil "klub, ki mu sledis, je objavil dogodek" (migracija 019).
+    let pendingClubEvents: Int
     /// Ali prijatelji vidijo, na katere dogodke grem ("Your friends' plans"). Privzeto true.
     let sharePlansWithFriends: Bool
     /// Vsa clanstva (lastnistvo + ekipe; backend migracija 018, vec klubov na osebo). Star backend: [].
@@ -50,6 +52,7 @@ struct Me: Decodable {
         case pendingInvites = "pending_invites"
         case pendingFriendRequests = "pending_friend_requests"
         case pendingReceivedTickets = "pending_received_tickets"
+        case pendingClubEvents = "pending_club_events"
         case sharePlansWithFriends = "share_plans_with_friends"
         case clubs
     }
@@ -73,6 +76,7 @@ struct Me: Decodable {
         pendingInvites = try c.decodeIfPresent(Int.self, forKey: .pendingInvites) ?? 0
         pendingFriendRequests = try c.decodeIfPresent(Int.self, forKey: .pendingFriendRequests) ?? 0
         pendingReceivedTickets = try c.decodeIfPresent(Int.self, forKey: .pendingReceivedTickets) ?? 0
+        pendingClubEvents = try c.decodeIfPresent(Int.self, forKey: .pendingClubEvents) ?? 0
         sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
         clubs = (try? c.decodeIfPresent([MeClub].self, forKey: .clubs)) ?? []
         // Postgres DATE pride kot "YYYY-MM-DD" ali kot ISO cas; obdrzimo prvih 10 znakov.

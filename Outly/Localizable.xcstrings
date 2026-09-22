@@ -67,6 +67,17 @@
         }
       }
     },
+    "%@ posted a new event: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ je objavil nov dogodek: %2$@"
+          }
+        }
+      }
+    },
     "%@ wants to be your friend": {
       "extractionState": "manual",
       "localizations": {
@@ -707,6 +718,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dodaj med všečkane dogodke"
+          }
+        }
+      }
+    },
+    "Add video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj video"
           }
         }
       }
@@ -2383,6 +2405,17 @@
         }
       }
     },
+    "Event video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video dogodka"
+          }
+        }
+      }
+    },
     "Events": {
       "extractionState": "manual",
       "localizations": {
@@ -2511,6 +2544,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Filtri"
+          }
+        }
+      }
+    },
+    "Follow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sledi"
+          }
+        }
+      }
+    },
+    "Following": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sledim"
           }
         }
       }
@@ -2709,6 +2764,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gostje ta seznam vidijo pri vsakem dogodku tvojega kluba. Kategorija ni obvezna (npr. Pivo, Kokteli)."
+          }
+        }
+      }
+    },
+    "Guests see this video instead of the poster on your club page, so they can see how it was. Up to 100 MB.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostje na strani tvojega kluba namesto plakata vidijo ta video in tako vidijo, kako je bilo. Do 100 MB."
           }
         }
       }
@@ -3662,6 +3728,17 @@
         }
       }
     },
+    "No photos yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se brez fotografij"
+          }
+        }
+      }
+    },
     "No plans yet": {
       "extractionState": "manual",
       "localizations": {
@@ -3926,6 +4003,17 @@
         }
       }
     },
+    "Only your three most popular past events can have a video. This keeps your club page fast to open.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video lahko dobijo samo trije najbolj priljubljeni pretekli dogodki. Tako se stran tvojega kluba hitro odpre."
+          }
+        }
+      }
+    },
     "Open": {
       "extractionState": "manual",
       "localizations": {
@@ -3988,6 +4076,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpri"
+          }
+        }
+      }
+    },
+    "Open the club page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri stran kluba"
           }
         }
       }
@@ -4641,6 +4740,17 @@
         }
       }
     },
+    "Replace video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjaj video"
+          }
+        }
+      }
+    },
     "Request a Business Account": {
       "extractionState": "manual",
       "localizations": {
@@ -4989,6 +5099,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prikaži vse dogodke"
+          }
+        }
+      }
+    },
+    "See how it was": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej, kako je bilo"
           }
         }
       }
@@ -6349,6 +6470,17 @@
         }
       }
     },
+    "Up to 3 photos shown at the top of your club page (recommended 1200x800).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do 3 fotografije na vrhu strani tvojega kluba (priporoceno 1200x800)."
+          }
+        }
+      }
+    },
     "Up to 3 photos shown at the top of your club page (recommended 1200x800). Without them the banner is used.": {
       "extractionState": "manual",
       "localizations": {
@@ -6389,6 +6521,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Naloži naslovno sliko"
+          }
+        }
+      }
+    },
+    "Upload video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nalozi video"
           }
         }
       }
@@ -6554,6 +6697,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preverjam …"
+          }
+        }
+      }
+    },
+    "Video": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video"
           }
         }
       }
@@ -7404,6 +7558,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "neuspešno"
+          }
+        }
+      }
+    },
+    "followers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sledilcev"
           }
         }
       }

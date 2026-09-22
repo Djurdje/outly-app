@@ -28,7 +28,6 @@ struct ClubInfoView: View {
     @State private var clubLat: Double?
     @State private var clubLng: Double?
     @State private var clubLogoUrl = ""
-    @State private var clubBannerUrl = ""
     @State private var clubBarPrices: [BarPriceItem] = []
     @State private var showBarPricesEditor = false
 
@@ -48,13 +47,10 @@ struct ClubInfoView: View {
 
     // pickers (IMPORTANT: presented pickers work with your button components)
     @State private var showLogoPicker = false
-    @State private var showBannerPicker = false
     @State private var pickedLogoItem: PhotosPickerItem?
-    @State private var pickedBannerItem: PhotosPickerItem?
 
     // upload
     @State private var isUploadingLogo = false
-    @State private var isUploadingBanner = false
 
     enum EditField: Identifiable {
         case name, phone, website, email, description, address, city
@@ -75,9 +71,24 @@ struct ClubInfoView: View {
         var multiline: Bool { self == .description }
     }
 
+    /// Prvo nalaganje: podatkov se ni. Brez tega je zaslon ob odprtju poln "Not set"
+    /// (Martin, posnetek 20. 9.) in je videti, kot da je klub prazen.
+    private var prvicNalagam: Bool { isLoading && clubName.isEmpty && errorMessage == nil }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 18) {
+
+                if prvicNalagam {
+                    VStack(spacing: 12) {
+                        ProgressView().tint(.white)
+                        Text("Loading...")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 80)
+                } else {
 
                 // ===== LOGO CARD =====
                 VStack(spacing: 14) {
@@ -155,25 +166,16 @@ struct ClubInfoView: View {
                             ? "On the map ✓"
                             : "Not on the map yet — set the address and city.")
 
-                // ===== BANNER CARD (button opens picker) =====
-                OutlyInfoCardButton(
-                    icon: "photo.on.rectangle",
-                    title: "Profile banner",
-                    value: clubBannerUrl.isEmpty ? String(localized: "Upload banner image") : String(localized: "Banner uploaded"),
-                    description: "Recommended size: 393x220px",
-                    actionTitle: isUploadingBanner ? "Uploading..." : "Upload",
-                    onAction: {
-                        guard !isUploadingBanner, !authToken.isEmpty else { return }
-                        showBannerPicker = true
-                    }
-                )
+                // Kartice "Profile banner" tu NI vec (Martin, 22. 9. 2026): stran kluba kaze
+                // samo slideshow. Stolpec banner_url v bazi ostane, da klubi, ki imajo pasico
+                // in se nimajo galerije, ne ostanejo brez slike (APIClub.slideshowUrls).
 
                 // ===== SLIDESHOW (migracija 015) =====
                 OutlyInfoCardButton(
                     icon: "photo.stack",
                     title: "Slideshow",
-                    value: clubGalleryUrls.isEmpty ? String(localized: "Using the profile banner") : String(localized: "\(clubGalleryUrls.count) of 3 photos"),
-                    description: "Up to 3 photos shown at the top of your club page (recommended 1200x800). Without them the banner is used.",
+                    value: clubGalleryUrls.isEmpty ? String(localized: "No photos yet") : String(localized: "\(clubGalleryUrls.count) of 3 photos"),
+                    description: "Up to 3 photos shown at the top of your club page (recommended 1200x800).",
                     actionTitle: isUploadingGallery ? "Uploading..." : "Choose photos",
                     onAction: {
                         guard !isUploadingGallery, !authToken.isEmpty else { return }
@@ -247,28 +249,11 @@ struct ClubInfoView: View {
                     onAction: { showBarPricesEditor = true }
                 )
 
-                if let url = URL(string: clubBannerUrl), !clubBannerUrl.isEmpty {
-                    // Past 12: scaledToFill brez okvirja po sirini raztegne cel zaslon.
-                    Color.clear
-                        .overlay(
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image.resizable().scaledToFill()
-                                default:
-                                    Rectangle().fill(Color.white.opacity(0.06))
-                                }
-                            }
-                        )
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 160)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-
                 if isLoading {
                     ProgressView().padding(.top, 8)
                 }
+
+                } // konec else (prvicNalagam)
 
                 if let errorMessage {
                     Text(errorMessage)
@@ -300,7 +285,6 @@ struct ClubInfoView: View {
 
         // ✅ these are the key: presented PhotosPicker
         .photosPicker(isPresented: $showLogoPicker, selection: $pickedLogoItem, matching: .images)
-        .photosPicker(isPresented: $showBannerPicker, selection: $pickedBannerItem, matching: .images)
         .photosPicker(isPresented: $showGalleryPicker, selection: $pickedGalleryItems, maxSelectionCount: 3, matching: .images)
         .photosPicker(isPresented: $showVideoPicker, selection: $pickedVideoItem, matching: .videos)
         .onChange(of: pickedGalleryItems) { _, items in
@@ -315,10 +299,6 @@ struct ClubInfoView: View {
         .onChange(of: pickedLogoItem) { _, newItem in
             guard let newItem else { return }
             Task { await uploadLogo(newItem) }
-        }
-        .onChange(of: pickedBannerItem) { _, newItem in
-            guard let newItem else { return }
-            Task { await uploadBanner(newItem) }
         }
     }
 
@@ -453,7 +433,6 @@ struct ClubInfoView: View {
         clubLat = club.lat
         clubLng = club.lng
         clubLogoUrl = club.logoUrl
-        clubBannerUrl = club.bannerUrl
         clubBarPrices = club.barPrices
         clubGalleryUrls = club.galleryUrls
         clubVideoUrl = club.videoUrl
@@ -534,7 +513,6 @@ struct ClubInfoView: View {
             "address": clubAddress,
             "city": clubCity,
             "logo_url": clubLogoUrl,
-            "banner_url": clubBannerUrl,
         ]
         // Koordinati gresta v paru (omejitev v bazi: obe ali nobena).
         if let lat = clubLat, let lng = clubLng {
@@ -592,34 +570,6 @@ struct ClubInfoView: View {
             await saveClub()
         } catch {
             await MainActor.run { errorMessage = String(localized: "Logo upload failed. \(error.userMessage)") }
-        }
-    }
-
-    private func uploadBanner(_ item: PhotosPickerItem) async {
-        guard !authToken.isEmpty else { return }
-
-        await MainActor.run {
-            isUploadingBanner = true
-            errorMessage = nil
-        }
-        defer { Task { @MainActor in isUploadingBanner = false } }
-
-        do {
-            guard let data = try await item.loadTransferable(type: Data.self) else {
-                throw NSError(domain: "ClubInfo", code: 4, userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to read selected image data.")])
-            }
-
-            let sig = try await APIClient.shared.fetchCloudinarySignature(token: authToken)
-            let imageUrl = try await APIClient.shared.uploadImageToCloudinary(
-                imageData: data,
-                fileName: "club_banner.jpg",
-                signature: sig
-            )
-
-            await MainActor.run { clubBannerUrl = imageUrl }
-            await saveClub()
-        } catch {
-            await MainActor.run { errorMessage = String(localized: "Banner upload failed. \(error.userMessage)") }
         }
     }
 }

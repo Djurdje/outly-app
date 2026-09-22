@@ -15,11 +15,11 @@ struct FriendsPlansSection: View {
     private let velikostPovabi: CGFloat = 42
     private let najvecAvatarjev = 6
 
-    /// Prijatelji brez podvajanja, v vrstnem redu prvega dogodka (samo prihodnji dogodki).
+    /// Prijatelji brez podvajanja, v vrstnem redu prvega dogodka (samo dogodki, ki se niso koncali).
     private var prijatelji: [FriendUser] {
         var videni = Set<Int>()
         var seznam: [FriendUser] = []
-        for p in plans where !p.event.isPast {
+        for p in plans where !p.event.hasEnded {
             for f in p.friends where !videni.contains(f.id) {
                 videni.insert(f.id)
                 seznam.append(f)
@@ -155,7 +155,9 @@ struct FriendsPlansView: View {
     private var vsi: [FriendPlan] {
         var videni = Set<Int>()
         return plans.filter { p in
-            guard !p.event.isPast, !videni.contains(p.event.id) else { return false }
+            // Koncani dogodki na nacrtih nimajo kaj iskati (backend 019 jih ze ne poslje;
+            // tu je varovalo za primer, ko odgovori star backend).
+            guard !p.event.hasEnded, !videni.contains(p.event.id) else { return false }
             videni.insert(p.event.id)
             return true
         }
@@ -182,8 +184,10 @@ struct FriendsPlansView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)
 
-                // Z enim prijateljem ni kaj filtrirati (All = ta prijatelj), zato gumbov ni.
-                if prijatelji.count >= 2 {
+                // Gumbi "All" + po en na prijatelja. Do 22. 9. so se pokazali sele pri dveh
+                // prijateljih; Martin jih hoce vedno, ker je brez njih videti, kot da zaslon
+                // ne dela. Pri enem prijatelju sta gumba dva (All in on) in oba delujeta.
+                if !prijatelji.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             gumbFiltra(String(localized: "All"), id: nil)

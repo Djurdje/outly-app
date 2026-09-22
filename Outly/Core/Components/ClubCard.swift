@@ -105,11 +105,13 @@ struct ClubCard: View {
 
     // MARK: - Helpers
 
+    /// Prva slika slideshowa (in sele ce je ni, stara pasica — glej APIClub.slideshowUrls).
+    /// Od 22. 9. klub pasice ne nalaga vec, zato je to za nove klube prva slika slideshowa.
     @ViewBuilder
     private var bannerImage: some View {
         if
-            !club.bannerUrl.isEmpty,
-            let url = URL(string: club.bannerUrl)
+            let prva = club.slideshowUrls.first, !prva.isEmpty,
+            let url = URL(string: prva)
         {
             AsyncImage(url: url) { img in
                 Color.clear.overlay(img.resizable().scaledToFill()).clipped()

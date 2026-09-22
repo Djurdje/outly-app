@@ -12,6 +12,8 @@ struct NotificationsMenuView: View {
     @Binding var invites: [MyInvite]
     let friendRequests: [FriendRequest]
     let receivedTickets: [ReceivedTicket]
+    /// "Klub, ki mu sledis, je objavil dogodek" (backend migracija 019).
+    let clubEvents: [ClubEventNotification]
     let isLoading: Bool
     /// Zapre meni (pred navigacijo in ob dotiku zunaj).
     var onClose: () -> Void
@@ -19,8 +21,10 @@ struct NotificationsMenuView: View {
     var onJoined: (String) -> Void
     /// Dotik obvestila o prejeti vstopnici (id prenosa) — HomeView ga oznaci kot prebrano.
     var onTicketSeen: (Int) -> Void
+    /// Dotik obvestila o novem dogodku kluba (id obvestila) — HomeView ga oznaci kot prebrano.
+    var onClubEventSeen: (Int) -> Void
 
-    private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty && receivedTickets.isEmpty }
+    private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty && receivedTickets.isEmpty && clubEvents.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -69,6 +73,17 @@ struct NotificationsMenuView: View {
                         }
                         .buttonStyle(.plain)
                         .simultaneousGesture(TapGesture().onEnded { onClose() })
+                    }
+                    ForEach(clubEvents) { n in
+                        NavigationLink {
+                            ClubDetailView(clubId: n.clubId)
+                        } label: {
+                            vrstica(slika: .klub(n.clubLogoUrl),
+                                    naslov: String(localized: "\(n.clubName) posted a new event: \(n.eventTitle)"),
+                                    podnaslov: n.displayDayTime.isEmpty ? String(localized: "Open the club page") : n.displayDayTime)
+                        }
+                        .buttonStyle(.plain)
+                        .simultaneousGesture(TapGesture().onEnded { onClubEventSeen(n.id); onClose() })
                     }
                     ForEach(receivedTickets) { t in
                         NavigationLink {

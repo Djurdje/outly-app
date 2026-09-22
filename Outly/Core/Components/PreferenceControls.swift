@@ -14,6 +14,8 @@ struct OutlyGenreGrid: View {
                            GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
+        // Brez okvirja okoli mreze (Martin, 22. 9. 2026): gumbi zanrov stojijo sami,
+        // vsak ima svoj rob. Prej je bila mreza v sivi plosci — okvir v okvirju.
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(genres, id: \.self) { g in
                 GenreChip(title: GenreNames.display(g), isSelected: selected.contains(g)) {
@@ -21,9 +23,7 @@ struct OutlyGenreGrid: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.08)))
+        .padding(.vertical, 4)
     }
 }
 
