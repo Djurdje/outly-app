@@ -73,7 +73,7 @@ struct ClubDetailView: View {
         .task { await load() }
     }
 
-    // MARK: - 1) Header: slideshow do treh slik, ime kluba in gumb Follow
+    // MARK: - 1) Header: slideshow do treh slik in ime kluba
     // Slike so povsod ovite v Color.clear.overlay(...).clipped() (past 12).
     private var header: some View {
         ZStack(alignment: .bottomLeading) {
@@ -85,17 +85,6 @@ struct ClubDetailView: View {
                 endPoint: .bottom
             )
             .allowsHitTesting(false)
-
-            // Gumb Follow: desno na slideshowu (Martin, 22. 9.).
-            VStack {
-                HStack {
-                    Spacer()
-                    followButton
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
 
             // Samo ime kluba. Stevilo sledilcev je od 22. 9. (Martin) v vrstici z logom,
             // poravnano na desno — cez sliko je bilo tesno ob imenu in slabo berljivo.
@@ -143,10 +132,10 @@ struct ClubDetailView: View {
                 .padding(.horizontal, 16)
                 .frame(height: 36)
                 .background(
-                    Capsule().fill(sledim ? Color.black.opacity(0.45) : Color.outlyBlue)
+                    Capsule().fill(sledim ? Color.white.opacity(0.08) : Color.outlyBlue)
                 )
                 .overlay(
-                    Capsule().stroke(Color.white.opacity(sledim ? 0.45 : 0), lineWidth: 1)
+                    Capsule().stroke(Color.white.opacity(sledim ? 0.35 : 0), lineWidth: 1)
                 )
                 .contentShape(Capsule())
             }
@@ -248,8 +237,12 @@ struct ClubDetailView: View {
 
             Spacer(minLength: 8)
 
-            // Stevilo sledilcev: desno v vrstici z logom (Martin, 22. 9.).
-            followersLabel
+            // Desno v vrstici z logom: stevilo sledilcev, pod njim gumb Follow (Martin, 22. 9.;
+            // gumb je bil prej na slideshowu).
+            VStack(alignment: .trailing, spacing: 10) {
+                followersLabel
+                followButton
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 4)
