@@ -41,8 +41,10 @@ struct ClubDetailView: View {
                     Text(errorText).foregroundStyle(.red).padding(.horizontal, 16)
                 }
 
-                // 3) Popular: najvec TRIJE koncani dogodki (strezik jih omeji), s posnetkom namesto plakata
-                popularSection
+                // 3) Popular: najvec TRIJE koncani dogodki (streznik jih omeji). Navadne kartice —
+                //    posnetek dogodka se predvaja SAMO na zaslonu koncanega dogodka (Martin, 22. 9.),
+                //    tu bi trije predvajalniki zasedli cel zaslon in zasencili prihajajoce dogodke.
+                eventsSection(title: String(localized: "Popular"), events: popular)
 
                 // 4) Predstavitveni video (na mestu, kjer je bil prej opis)
                 videoBlock
@@ -71,7 +73,7 @@ struct ClubDetailView: View {
         .task { await load() }
     }
 
-    // MARK: - 1) Header: slideshow do treh slik, ime + sledilci + gumb Follow
+    // MARK: - 1) Header: slideshow do treh slik, ime kluba in gumb Follow
     // Slike so povsod ovite v Color.clear.overlay(...).clipped() (past 12).
     private var header: some View {
         ZStack(alignment: .bottomLeading) {
@@ -95,34 +97,33 @@ struct ClubDetailView: View {
             .padding(.horizontal, 16)
             .padding(.top, 14)
 
-            // Ime levo, stevilo sledilcev poravnano na desno v isti vrstici.
-            HStack(alignment: .lastTextBaseline, spacing: 10) {
-                Text(club?.name ?? String(localized: "Club"))
-                    .font(.system(size: 40, weight: .bold))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.6)
-                Spacer(minLength: 8)
-                followersLabel
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 14)
-            .allowsHitTesting(false)
+            // Samo ime kluba. Stevilo sledilcev je od 22. 9. (Martin) v vrstici z logom,
+            // poravnano na desno — cez sliko je bilo tesno ob imenu in slabo berljivo.
+            Text(club?.name ?? String(localized: "Club"))
+                .font(.system(size: 40, weight: .bold))
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 14)
+                .allowsHitTesting(false)
         }
         .frame(height: 260)
         .clipped()
     }
 
-    /// "1.2k followers" — kratko, da ne odrine imena kluba.
+    /// "1.2k followers" — desno v vrstici z logom. `fixedSize` prepreci, da bi se besedilo
+    /// prelomilo, ko ima klub dolgo ime mesta ali veliko zanrov.
     private var followersLabel: some View {
         HStack(spacing: 5) {
             Image(systemName: "person.2.fill")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
             Text(Self.kratkoStevilo(sledilci))
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
             Text("followers")
                 .font(.system(size: 12, weight: .medium))
         }
-        .foregroundStyle(.white.opacity(0.9))
+        .foregroundStyle(.secondary)
         .fixedSize()
     }
 
@@ -161,26 +162,6 @@ struct ClubDetailView: View {
         if n < 1000 { return "\(n)" }
         let tisoc = Double(n) / 1000
         return String(format: n < 10_000 ? "%.1fk" : "%.0fk", tisoc)
-    }
-
-    // MARK: - 3) Popular: koncani dogodki s posnetkom
-    @ViewBuilder
-    private var popularSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Popular")
-                .font(.title3.bold())
-
-            if popular.isEmpty && !isLoading && errorText == nil {
-                Text("No events.")
-                    .foregroundStyle(.secondary)
-            }
-
-            ForEach(popular, id: \.id) { e in
-                PastEventCard(event: e, clubName: club?.name)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
     }
 
     // MARK: - 4) Predstavitveni video kluba (iste sirine kot vsebina, visina kot prejsnji opis)
@@ -265,7 +246,10 @@ struct ClubDetailView: View {
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 8)
+
+            // Stevilo sledilcev: desno v vrstici z logom (Martin, 22. 9.).
+            followersLabel
         }
         .padding(.horizontal, 16)
         .padding(.top, 4)
@@ -413,36 +397,6 @@ private struct ContactRow: View {
                 .truncationMode(.middle)
         }
         .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Kartica koncanega dogodka: posnetek namesto plakata
-
-/// Eden od najvec treh "popular" (koncanih) dogodkov kluba. Ce je klub nalozil posnetek,
-/// je nad kartico predvajalnik (video se prenese sele ob dotiku, glej OutlyRecapVideo);
-/// sicer je kartica enaka kot doslej. Cela kartica vodi na zaslon dogodka.
-private struct PastEventCard: View {
-    let event: APIEvent
-    let clubName: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let url = event.recapVideoURL {
-                OutlyRecapVideo(url: url, posterUrl: event.posterUrl)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 190)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
-                    .padding(.bottom, 10)
-            }
-
-            NavigationLink {
-                EventDetailView(event: event)
-            } label: {
-                EventCardAPI(event: event, clubName: clubName, variant: .clubRow)
-            }
-            .buttonStyle(.plain)
-        }
     }
 }
 
