@@ -99,13 +99,17 @@ struct EventDetailView: View {
                 // Brez tega preliv prestreze dotik in posnetka ni mogoce zagnati.
                 .allowsHitTesting(false)
             }
+            // Obrezuje se samo slika/video (scaledToFill gre cez rob), NE gumb za vstopnice:
+            // gumb je 18 pt od dna, njegov moder sij pa sega dlje — z obrezovanjem cele pasice
+            // bi bil sij spodaj odrezan v ravno crto.
+            .frame(height: heroHeight)
+            .clipped()
 
             ticketBar
                 .padding(.horizontal, 16)
                 .padding(.bottom, 18)
         }
         .frame(height: heroHeight)
-        .clipped()
     }
 
     /// Plakat cez priblizno polovico zaslona (na iPhonu 14 Pro ~470 pt).
@@ -355,8 +359,12 @@ struct EventDetailView: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(active ? Color.outlyBlue.opacity(0.65) : Color.black.opacity(0.55))
-                    .shadow(color: active ? Color.outlyBlue.opacity(0.25) : .black.opacity(0.35), radius: 14, y: 6)
+                    // Bolj izrazit od 22. 9. (Martin): polnejsa modra in moder sij okoli gumba
+                    // (dve senci brez zamika — ozka svetla + siroka mehka), da nakup izstopi s plakata.
+                    .fill(active ? Color.outlyBlue.opacity(0.85) : Color.black.opacity(0.55))
+                    .shadow(color: active ? Color.outlyBlue.opacity(0.70) : .black.opacity(0.35),
+                            radius: active ? 12 : 14, y: active ? 0 : 6)
+                    .shadow(color: active ? Color.outlyBlue.opacity(0.45) : .clear, radius: 28)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
