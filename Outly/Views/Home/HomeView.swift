@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import UIKit
 
 /// Domaci zaslon po Figmi ("homescreen", 20:2): avatar levo, logo na sredini,
 /// "Where to?", Suggestions, Tonight/This week, Last week's biggest hits, In your area,
@@ -27,11 +28,16 @@ struct HomeView: View {
     /// Filtri (desni del "Where to?"); privzeti = brez omejitev.
     @State private var filters: EventFilters = .privzeti
     @State private var showFilters = false
+    /// Zamegljen posnetek domacega zaslona za zaslon Filtri (isto kot Search/Profile,
+    /// Martin 22. 9.). Nastane ob dotiku na ikono filtra, torej kaze tocno to, kar je bilo.
+    @State private var posnetekZaFiltre: UIImage?
     /// Spustni meni obvestil pod zvoncem (od 20. 9.; prej je zvonec vodil na My Clubs).
     @State private var showNotifications = false
     @State private var invites: [MyInvite] = []
     @State private var friendRequests: [FriendRequest] = []
     @State private var receivedTickets: [ReceivedTicket] = []
+    /// Obvestila "klub, ki mu sledis, je objavil dogodek" (backend migracija 019).
+    @State private var clubEvents: [ClubEventNotification] = []
     @State private var notificationsLoading = false
     /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
     @State private var friendPlans: [FriendPlan] = []
@@ -196,7 +202,12 @@ struct HomeView: View {
 
                     header
 
-                    WhereToField(onSearch: odpriIskanje, onFilter: { showFilters = true }, filterActive: filters.jeAktiven)
+                    WhereToField(onSearch: odpriIskanje,
+                                 onFilter: {
+                                     posnetekZaFiltre = UIApplication.shared.posnetekZaslona()
+                                     showFilters = true
+                                 },
+                                 filterActive: filters.jeAktiven)
 
                     if let errorText {
                         VStack(spacing: 8) {
@@ -325,10 +336,14 @@ struct HomeView: View {
                 if showNotifications { notificationsOverlay }
             }
             .navigationTitle("")
-            .sheet(isPresented: $showFilters) {
+            // fullScreenCover, ne sheet: filtri lezijo cez cel zaslon nad zamegljenim
+            // zamrznjenim domacim zaslonom, tako kot Search in Profile. Kot list bi bili
+            // kartica s sistemskim ozadjem in posnetek bi bil odrezan.
+            .fullScreenCover(isPresented: $showFilters) {
                 FiltersView(filters: $filters, cities: cities,
                             events: upcomingEvents, clubsById: clubsById,
                             distanceKm: { distanceKm(to: $0) })
+                    .environment(\.posnetekDoma, posnetekZaFiltre)
             }
             // Osvezitev tece v samostojni nalogi: SwiftUI prekine nalogo .refreshable, ce se
             // stanje pogleda spremeni pred koncem klicev (isLoading, me, lokacija), in
@@ -446,7 +461,8 @@ struct HomeView: View {
     /// (Me.pendingReceivedTickets); drugih obvestil (APNs) se ni.
     /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
     private var notificationCount: Int {
-        (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0) + (me?.pendingReceivedTickets ?? 0)
+        (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0)
+            + (me?.pendingReceivedTickets ?? 0) + (me?.pendingClubEvents ?? 0)
     }
 
     /// Meni obvestil cez domaci zaslon: zatemnjeno ozadje (dotik zapre) + kartica pod zvoncem.
@@ -456,10 +472,12 @@ struct HomeView: View {
                 .ignoresSafeArea()
                 .onTapGesture { zapriObvestila() }
             NotificationsMenuView(invites: $invites, friendRequests: friendRequests, receivedTickets: receivedTickets,
+                                  clubEvents: clubEvents,
                                   isLoading: notificationsLoading,
                                   onClose: { zapriObvestila() },
                                   onJoined: { _ in Task { await loadMe() } },
-                                  onTicketSeen: { id in Task { await oznaciPrejetoVstopnico(id) } })
+                                  onTicketSeen: { id in Task { await oznaciPrejetoVstopnico(id) } },
+                                  onClubEventSeen: { id in Task { await oznaciObvestiloKluba(id) } })
                 .padding(.top, 50)
                 .padding(.trailing, 16)
                 .transition(.scale(scale: 0.92, anchor: .topTrailing).combined(with: .opacity))
@@ -477,10 +495,21 @@ struct HomeView: View {
         async let v = APIClient.shared.fetchMyInvites(token: authToken)
         async let f = APIClient.shared.fetchMyFriends(token: authToken)
         async let p = APIClient.shared.fetchReceivedTickets(token: authToken)
+        async let k = APIClient.shared.fetchClubEventNotifications(token: authToken)
         if let vabila = try? await v { invites = vabila }
         if let prijatelji = try? await f { friendRequests = prijatelji.requestsIn }
         // Star backend brez poti -> napaka -> seznam ostane prazen (brez obvestila, ne pade).
         if let prejete = try? await p { receivedTickets = prejete }
+        if let klubski = try? await k { clubEvents = klubski }
+        await loadMe()
+    }
+
+    /// Dotik obvestila "klub je objavil dogodek": lokalno takoj izgine, streznik ga oznaci
+    /// kot prebrano, nato se osvezi stevec na zvoncu.
+    private func oznaciObvestiloKluba(_ id: Int) async {
+        clubEvents.removeAll { $0.id == id }
+        guard !authToken.isEmpty else { return }
+        try? await APIClient.shared.markClubEventSeen(token: authToken, id: id)
         await loadMe()
     }
 

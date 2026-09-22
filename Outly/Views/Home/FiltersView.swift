@@ -97,7 +97,9 @@ struct FiltersView: View {
     }
 
     var body: some View {
-        // Prikazan kot sheet, zato ima svoj NavigationStack (ni potisnjen pogled).
+        // Prikazan kot fullScreenCover (od 22. 9.), zato ima svoj NavigationStack (ni potisnjen pogled).
+        // Ozadje je zamegljen zamrznjen domaci zaslon — posnetek pride iz okolja (posnetekDoma),
+        // narise ga .outlyOzadje() spodaj, enako kot pri Search in Profile.
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {

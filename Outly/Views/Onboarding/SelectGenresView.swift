@@ -142,13 +142,14 @@ struct GenreChip: View {
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity)
                 .frame(height: 24)
+                // Neizbran: samo rob, brez ozadja (Martin, 22. 9. 2026). Izbran: moder.
                 .background(
-                    Capsule().fill(isSelected ? Color.outlyBlue : Color.outlyCard)
+                    Capsule().fill(isSelected ? Color.outlyBlue : Color.clear)
                 )
                 .overlay(
-                    Capsule().stroke(isSelected ? Color.clear : Color.white, lineWidth: 1)
+                    Capsule().stroke(isSelected ? Color.clear : Color.white.opacity(0.55), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.25), radius: 2, y: 2)
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }

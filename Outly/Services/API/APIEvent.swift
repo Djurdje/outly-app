@@ -32,6 +32,16 @@ struct APIEvent: Identifiable, Decodable {
     /// Streznik: "available" | "few_left" | "sold_out" | "external"
     let availability: String?
 
+    /// Stanje dogodka (backend migracija 019): "upcoming" | "live" | "ended".
+    /// Star backend polja nima -> privzeto "upcoming" (pravilo 2: nova polja s privzetkom).
+    /// Za "ali je ze mimo" uporabljaj `hasEnded`, ne tega niza.
+    let lifecycle: String
+    /// Posnetek "kako je bilo" na koncanem dogodku (019). Prazen niz = brez videa.
+    let recapVideoUrl: String
+    /// Samo v GET /business/events: ali sme klub na ta dogodek naloziti posnetek
+    /// (koncan IN med tremi najbolj popularnimi). Pravilo uveljavi streznik.
+    let recapAllowed: Bool
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -50,6 +60,9 @@ struct APIEvent: Identifiable, Decodable {
         case capacity
         case soldCount = "sold_count"
         case availability
+        case lifecycle
+        case recapVideoUrl = "recap_video_url"
+        case recapAllowed = "recap_allowed"
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -74,6 +87,10 @@ struct APIEvent: Identifiable, Decodable {
         capacity         = try c.decodeIfPresent(Int.self, forKey: .capacity)
         soldCount        = try c.decodeIfPresent(Int.self, forKey: .soldCount) ?? 0
         availability     = try c.decodeIfPresent(String.self, forKey: .availability)
+        // Star backend teh polj nima (pravilo 2: novo polje vedno s privzeto vrednostjo).
+        lifecycle        = (try? c.decodeIfPresent(String.self, forKey: .lifecycle)) ?? "upcoming"
+        recapVideoUrl    = (try? c.decodeIfPresent(String.self, forKey: .recapVideoUrl)) ?? ""
+        recapAllowed     = (try? c.decodeIfPresent(Bool.self, forKey: .recapAllowed)) ?? false
     }
 }
 
@@ -135,6 +152,22 @@ enum DateParsing {
 }
 
 extension APIEvent {
+    /// Dogodek je KONCAN (backend 019). Backend odloci po `COALESCE(end_at, start_at + 8 h)`;
+    /// ce polja ni (star backend), isto izracunamo tu, da se meja ne razide.
+    var hasEnded: Bool {
+        if lifecycle == "ended" { return true }
+        if lifecycle == "live" || lifecycle == "upcoming" { return false }
+        let konec = endDate ?? startDate?.addingTimeInterval(8 * 3600)
+        guard let konec else { return false }
+        return konec <= Date()
+    }
+
+    /// Posnetek "kako je bilo" — samo na koncanem dogodku in samo, ce ga je klub nalozil.
+    var recapVideoURL: URL? {
+        guard hasEnded, !recapVideoUrl.isEmpty else { return nil }
+        return URL(string: recapVideoUrl)
+    }
+
     var isPast: Bool {
         // najprej uporabi timeStatus, če ga backend pošlje
         if let ts = timeStatus {

@@ -38,6 +38,12 @@ struct APIClub: Identifiable, Decodable {
     /// Predstavitveni video kluba (migracija 015). Prazen niz = brez videa.
     let videoUrl: String
 
+    /// Stevilo sledilcev kluba (migracija 019). Star backend polja nima -> 0.
+    let followersCount: Int
+    /// Ali PRIJAVLJENI uporabnik sledi klubu. Pove samo GET /clubs/:id z zetonom;
+    /// drugje ostane false in gumb Follow se popravi, ko se klub nalozi.
+    let isFollowing: Bool
+
     enum CodingKeys: String, CodingKey {
         case id
         case ownerUserId = "owner_user_id"
@@ -59,6 +65,8 @@ struct APIClub: Identifiable, Decodable {
         case barPrices = "bar_prices"
         case galleryUrls = "gallery_urls"
         case videoUrl = "video_url"
+        case followersCount = "followers_count"
+        case isFollowing = "is_following"
     }
 
     /// Obrambno dekodiranje: shema ima NOT NULL DEFAULT '' na besedilih, a ce bi
@@ -87,6 +95,8 @@ struct APIClub: Identifiable, Decodable {
         barPrices    = (try? c.decodeIfPresent([BarPriceItem].self, forKey: .barPrices)) ?? []
         galleryUrls  = ((try? c.decodeIfPresent([String].self, forKey: .galleryUrls)) ?? []).filter { !$0.isEmpty }
         videoUrl     = (try? c.decodeIfPresent(String.self, forKey: .videoUrl)) ?? ""
+        followersCount = (try? c.decodeIfPresent(Int.self, forKey: .followersCount)) ?? 0
+        isFollowing    = (try? c.decodeIfPresent(Bool.self, forKey: .isFollowing)) ?? false
     }
 
     /// Slike za slideshow: galerija, sicer pasica (da stari klubi ostanejo enaki).

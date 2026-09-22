@@ -30,6 +30,13 @@ struct EventFormView: View {
     @State private var pickedPoster: PhotosPickerItem?
     @State private var isUploadingPoster = false
 
+    // Posnetek koncanega dogodka (backend migracija 019): video NAMESTO plakata na strani
+    // kluba. Streznik ga sprejme samo na koncanem dogodku, ki je med TREMI najbolj
+    // popularnimi dogodki kluba — `existing.recapAllowed` je njegov odgovor na to vprasanje.
+    @State private var recapVideoUrl = ""
+    @State private var pickedRecap: PhotosPickerItem?
+    @State private var isUploadingRecap = false
+
     @State private var isSaving = false
     @State private var message: String?
     @State private var showDeleteConfirm = false
@@ -125,6 +132,36 @@ struct EventFormView: View {
                     }
                 }
 
+                if let e = existing, e.hasEnded {
+                    Section("Event video") {
+                        if e.recapAllowed {
+                            HStack(spacing: 12) {
+                                if !recapVideoUrl.isEmpty {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Color.outlyBlue)
+                                }
+                                PhotosPicker(selection: $pickedRecap, matching: .videos) {
+                                    HStack(spacing: 8) {
+                                        if isUploadingRecap { ProgressView() }
+                                        Text(LocalizedStringKey(recapVideoUrl.isEmpty ? "Upload video" : "Replace video"))
+                                    }
+                                }
+                                .disabled(isUploadingRecap)
+                            }
+                            Text("Guests see this video instead of the poster on your club page, so they can see how it was. Up to 100 MB.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            if !recapVideoUrl.isEmpty {
+                                Button("Remove video", role: .destructive) { Task { await shraniPosnetek("") } }
+                            }
+                        } else {
+                            Text("Only your three most popular past events can have a video. This keeps your club page fast to open.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
                 Section("Visibility") {
                     Toggle("Published (visible to everyone)", isOn: $isPublished)
                     if existing?.status == "cancelled" {
@@ -170,6 +207,9 @@ struct EventFormView: View {
             .onChange(of: pickedPoster) { _, item in
                 if let item { Task { await uploadPoster(item) } }
             }
+            .onChange(of: pickedRecap) { _, item in
+                if let item { Task { await uploadRecap(item) } }
+            }
             .task { await loadGenres() }
             .onAppear(perform: prefill)
         }
@@ -190,6 +230,7 @@ struct EventFormView: View {
         if let cap = e.capacity { capacityText = String(cap) }
         ticketUrl = e.ticketUrl ?? ""
         posterUrl = e.posterUrl
+        recapVideoUrl = e.recapVideoUrl
         isPublished = (e.status == "published")
     }
 
@@ -286,6 +327,43 @@ struct EventFormView: View {
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 { session.logout(); return }
             message = api.userMessage
+        } catch {
+            message = error.userMessage
+        }
+    }
+
+    /// Posnetek se shrani TAKOJ (loceno od gumba Save), ker gre skozi svoje preverjanje
+    /// na strezniku: dogodek mora biti koncan in med prvimi tremi. Tako uporabnik napako
+    /// vidi zdaj in ne sele ob shranjevanju celega obrazca.
+    private func shraniPosnetek(_ url: String) async {
+        guard let e = existing else { return }
+        message = nil
+        do {
+            let posodobljen = try await APIClient.shared.setRecapVideo(token: session.token, eventId: e.id, url: url)
+            recapVideoUrl = posodobljen.recapVideoUrl
+            onSaved(posodobljen)
+        } catch let api as APIError {
+            if case let .requestFailed(code, _) = api, code == 401 { session.logout(); return }
+            message = api.userMessage
+        } catch {
+            message = error.userMessage
+        }
+    }
+
+    private func uploadRecap(_ item: PhotosPickerItem) async {
+        message = nil
+        isUploadingRecap = true
+        defer { isUploadingRecap = false }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            // Cloudinary (brezplacni paket) sprejme videe do 100 MB — isto kot video kluba.
+            if data.count > 100 * 1024 * 1024 {
+                message = String(localized: "The video is larger than 100 MB. Please pick a shorter one.")
+                return
+            }
+            let sig = try await APIClient.shared.fetchCloudinarySignature(token: session.token)
+            let url = try await APIClient.shared.uploadVideoToCloudinary(videoData: data, fileName: "event_recap.mp4", signature: sig)
+            await shraniPosnetek(url)
         } catch {
             message = error.userMessage
         }
