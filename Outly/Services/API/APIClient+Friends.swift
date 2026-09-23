@@ -139,18 +139,26 @@ private struct AcceptFriendResponse: Decodable {
 
 /// Dogodek, na katerega gre vsaj en prijatelj: isti stolpci kot GET /events (APIEvent)
 /// plus ime/logo kluba in seznam prijateljev.
+/// `interested` in `myPlan` sta nova (backend migracija 020, 23. 9. 2026) — star backend ju
+/// se nima, zato privzeto prazen seznam / nil (pravilo 2).
 struct FriendPlan: Decodable, Identifiable {
     let event: APIEvent
     let clubName: String
     let clubLogoUrl: String
+    /// Prijatelji, ki GREJO (vstopnica). Ime `friends` je ostalo zaradi obratne zdruzljivosti.
     let friends: [FriendUser]
+    /// Prijatelji, ki jih dogodek ZANIMA (brez vstopnice).
+    let interested: [FriendUser]
+    /// Moj lasten odnos do dogodka (na /me/plans je to skoraj vedno .going).
+    let myPlan: EventPlan?
 
     var id: Int { event.id }
 
     enum CodingKeys: String, CodingKey {
-        case friends
+        case friends, interested
         case clubName = "club_name"
         case clubLogoUrl = "club_logo_url"
+        case myPlan = "my_plan"
     }
 
     init(from decoder: Decoder) throws {
@@ -159,6 +167,9 @@ struct FriendPlan: Decodable, Identifiable {
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
         clubLogoUrl = try c.decodeIfPresent(String.self, forKey: .clubLogoUrl) ?? ""
         friends = try c.decodeIfPresent([FriendUser].self, forKey: .friends) ?? []
+        interested = try c.decodeIfPresent([FriendUser].self, forKey: .interested) ?? []
+        let p: EventPlan?? = try? c.decodeIfPresent(EventPlan.self, forKey: .myPlan)
+        myPlan = p ?? nil
     }
 }
 

@@ -14,6 +14,14 @@ struct EventDetailView: View {
     /// Srcek (Liked events na domacem zaslonu). Prej na zaslonu dogodka ni bilo srcka.
     @EnvironmentObject private var favorites: FavoritesStore
 
+    // "I'm in" (backend migracija 020, 23. 9. 2026): moj nacrt + prijatelji, ki grejo/jih zanima.
+    // Nalozi se loceno od dogodka (GET /events/:id z zetonom), da fetchEvent(id:) v
+    // APIClient+Discover ostane nespremenjen (ga uporabljajo tudi neprijavljeni zasloni).
+    @State private var myPlan: EventPlan?
+    @State private var friendsGoing: [FriendUser] = []
+    @State private var friendsInterested: [FriendUser] = []
+    @State private var planSubmitting = false
+
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
@@ -28,6 +36,9 @@ struct EventDetailView: View {
 
                 // Ime dogodka + srcek pod pasico
                 titleBlock
+
+                // Prijatelji, ki grejo/jih zanima (samo, ce jih je) — pod naslovom, nad opisom.
+                friendsRow
 
                 // Logo in ime kluba (vodi na stran kluba)
                 clubRow
@@ -50,6 +61,7 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await loadClub() }
+        .task { await loadPlan() }
         .sheet(isPresented: $showBuy) {
             BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"))
                 .environmentObject(session)
@@ -127,22 +139,90 @@ struct EventDetailView: View {
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             if session.isLoggedIn {
-                Button {
-                    favorites.toggle(event.id, token: session.token)
-                } label: {
-                    Image(systemName: favorites.contains(event.id) ? "heart.fill" : "heart")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.9))
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(Color.white.opacity(0.10)))
+                HStack(spacing: 8) {
+                    imInPill
+                    Button {
+                        favorites.toggle(event.id, token: session.token)
+                    } label: {
+                        Image(systemName: favorites.contains(event.id) ? "heart.fill" : "heart")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.9))
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(Color.white.opacity(0.10)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events"))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events"))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.top, 2)
+    }
+
+    /// Pil s tremi stanji (poleg srcka): nic -> "I'm in" (bel rob, prosojno), interested ->
+    /// "Interested" (bel poln pil, moder napis), going -> "Going" (moder poln pil, bela kljukica,
+    /// ni pritisljiv — to stanje pride samo iz vstopnice, ne od tod). Martin, 23. 9. 2026.
+    @ViewBuilder
+    private var imInPill: some View {
+        switch myPlan {
+        case .going:
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
+                Text("Going").font(.system(size: 14, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .frame(height: 40)
+            .background(Capsule().fill(Color.outlyBlue))
+
+        case .interested:
+            Button { preklopiZanimanje() } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "hand.thumbsup.fill").font(.system(size: 12, weight: .bold))
+                    Text("Interested").font(.system(size: 14, weight: .bold))
+                }
+                .foregroundStyle(Color.outlyBlue)
+                .padding(.horizontal, 14)
+                .frame(height: 40)
+                .background(Capsule().fill(Color.white))
+            }
+            .buttonStyle(.plain)
+
+        case nil:
+            Button { preklopiZanimanje() } label: {
+                Text("I'm in")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .frame(height: 40)
+                    .overlay(Capsule().stroke(Color.white.opacity(0.6), lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Vrstica prijateljev pod naslovom: prekrivajoci avatarji + "Ana, Luka going · 2 interested".
+    /// Skrita, ce dogodka ne gre/ne zanima noben prijatelj (nalozi se v loadPlan()).
+    @ViewBuilder
+    private var friendsRow: some View {
+        let napis = FriendsPlanText.summary(going: friendsGoing, interested: friendsInterested)
+        if !napis.isEmpty {
+            let vsi = Array((friendsGoing + friendsInterested.filter { fi in !friendsGoing.contains { $0.id == fi.id } }).prefix(4))
+            HStack(spacing: 8) {
+                HStack(spacing: -10) {
+                    ForEach(vsi) { f in
+                        OutlyAvatarView(avatarUrlString: f.avatarUrl, size: 28)
+                            .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+                    }
+                }
+                Text(napis)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 16)
+        }
     }
 
     // MARK: - Klub: logo, ime, 18+ -> stran kluba
@@ -507,6 +587,47 @@ struct EventDetailView: View {
             Text(value)
                 .font(.subheadline)
                 .foregroundStyle(.primary)
+        }
+    }
+
+    /// Naloz "I'm in": moj nacrt + prijatelji. Samo za prijavljene, tiho ob napaki
+    /// (zasebno stanje, ne sme podreti ostalega zaslona).
+    private func loadPlan() async {
+        guard session.isLoggedIn, !session.token.isEmpty else { return }
+        do {
+            let info = try await APIClient.shared.fetchEventPlan(id: event.id, token: session.token)
+            await MainActor.run {
+                myPlan = info.myPlan
+                friendsGoing = info.friendsGoing
+                friendsInterested = info.friendsInterested
+            }
+        } catch {
+            // Tiho: "I'm in" gumb ostane v zacetnem stanju, ostali zaslon dela naprej.
+        }
+    }
+
+    /// Preklopi "I'm in" <-> "Interested" (PUT/DELETE), optimisticno z vrnitvijo ob napaki.
+    /// "Going" ni dosegljivo od tu — pride samo z nakupom vstopnice (streznik nastavi plan).
+    private func preklopiZanimanje() {
+        guard !planSubmitting, myPlan != .going else { return }
+        let token = session.token
+        guard !token.isEmpty else { return }
+        let prejsnje = myPlan
+        let novo: EventPlan? = (myPlan == .interested) ? nil : .interested
+        withAnimation(.snappy) { myPlan = novo }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        planSubmitting = true
+        Task {
+            do {
+                if let novo {
+                    try await APIClient.shared.setEventInterest(token: token, eventId: event.id, plan: novo)
+                } else {
+                    try await APIClient.shared.clearEventInterest(token: token, eventId: event.id)
+                }
+            } catch {
+                await MainActor.run { withAnimation(.snappy) { myPlan = prejsnje } }
+            }
+            await MainActor.run { planSubmitting = false }
         }
     }
 

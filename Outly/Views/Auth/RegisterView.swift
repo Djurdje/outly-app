@@ -58,21 +58,11 @@ struct RegisterView: View {
                 }
 
                 HStack(spacing: 14) {
-                    Button {
+                    OutlyPrimaryButton(title: isLoading ? "Signing up..." : "Sign up", isLoading: isLoading) {
                         Task { await register() }
-                    } label: {
-                        HStack(spacing: 10) {
-                            if isLoading { ProgressView().tint(.white) }
-                            Text(LocalizedStringKey(isLoading ? "Signing up..." : "Sign up"))
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.outlyBlue)
-                        .foregroundColor(.white)
-                        .cornerRadius(14)
                     }
                     .disabled(isLoading)
+                    .outlySij(moc: 0.5)
 
                     Button {
                         authStage = "login"

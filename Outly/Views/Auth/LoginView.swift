@@ -97,21 +97,11 @@ struct LoginView: View {
                         .padding(.horizontal, 18)
                 }
 
-                Button {
+                OutlyPrimaryButton(title: isLoading ? "Continue..." : "Continue", isLoading: isLoading) {
                     Task { await login() }
-                } label: {
-                    HStack(spacing: 10) {
-                        if isLoading { ProgressView().tint(.white) }
-                        Text(LocalizedStringKey(isLoading ? "Continue..." : "Continue"))
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.outlyBlue)
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
                 }
                 .disabled(isLoading)
+                .outlySij(moc: 0.5)
 
                 Spacer()
 

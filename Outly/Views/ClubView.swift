@@ -143,6 +143,8 @@ struct ClubDetailView: View {
             .disabled(sledenjeTece)
             .opacity(sledenjeTece ? 0.6 : 1)
             .accessibilityLabel(Text(sledim ? String(localized: "Following") : String(localized: "Follow")))
+            // Sij samo dokler se ne sledi - potem, ko uporabnik ze sledi, gumb ni vec CTA.
+            .outlySij(moc: 1.0, aktiven: !sledim)
         }
     }
 

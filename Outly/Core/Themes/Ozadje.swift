@@ -52,46 +52,70 @@ struct HomeSnapshotBackground: View {
     }
 }
 
+/// Samostojna zameglitev (cisto racunanje na CIImage/CGImage, brez UIKit hierarhije).
+enum OzadnjaZameglitev {
+    /// CIContext je drag za ustvarit (prevede si cevovod senčilnikov) — prej je nastal ob VSAKEM
+    /// posnetku in je bil glavni del zamika. Zdaj nastane enkrat na zagon aplikacije.
+    private static let ciKontekst = CIContext(options: [.useSoftwareRenderer: false])
+
+    /// Zamegli ze zajet posnetek (CIGaussianBlur); radij v pikslih se prilagodi merilu SLIKE,
+    /// zato deluje na posnetku katerekoli locljivosti.
+    static func zamegli(_ slika: UIImage) -> UIImage? {
+        guard let cg = slika.cgImage else { return nil }
+        let vhod = CIImage(cgImage: cg)
+        let filter = CIFilter.gaussianBlur()
+        filter.inputImage = vhod.clampedToExtent()
+        // Radij v PIKSLIH: pri merilu 0.25 je 22 pt enako 22 * 0.25 piksla, pri merilu 1.0 pa 22 pt.
+        filter.radius = Float(22 * slika.scale)
+        guard let izhod = filter.outputImage?.cropped(to: vhod.extent) else { return nil }
+        guard let rezultat = ciKontekst.createCGImage(izhod, from: vhod.extent) else { return nil }
+        return UIImage(cgImage: rezultat, scale: slika.scale, orientation: slika.imageOrientation)
+    }
+}
+
 extension UIApplication {
-    /// Posnetek trenutnega zaslona, ze zamegljen (CIGaussianBlur) — klice se PRED preklopom
-    /// zavihka, da kaze domaci zaslon tam, kjer je uporabnik ostal. Zamegli se enkrat tu, ne na
-    /// vsakem zaslonu posebej.
-    func posnetekZaslona() -> UIImage? {
-        let okno = connectedScenes
+    /// Kljucno okno (edino mesto, kjer to iscemo — uporabljata ga tako surovPosnetek kot
+    /// prekrivna plast krozhnega razkritja v MainTabView za velikost zaslona).
+    var kljucnoOkno: UIWindow? {
+        connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow }
-        guard let okno else { return nil }
+    }
+
+    /// Oster zajem trenutnega zaslona v danem merilu (pikslov na tocko), BREZ zameglitve.
+    /// Klice se na glavni niti (drawHierarchy je UIKit, samo glavna nit) — zato je sinhrona.
+    /// Za ozadje zavihka (zamegljeno, cetrtina locljivosti) uporabi `posnetekZaslona()`.
+    /// Za prekrivno plast "krozhnega razkritja" (Martin, 23. 9.) uporabi merilo 1.0 — plast
+    /// je vidna oster med rastjo/krcitvijo, cetrtinska locljivost bi bila tam vidno zrnata.
+    func surovPosnetek(merilo: CGFloat = UIApplication.meriloPosnetka) -> UIImage? {
+        guard let okno = kljucnoOkno else { return nil }
         let format = UIGraphicsImageRendererFormat()
+        format.scale = merilo
+        format.opaque = true  // brez alfa kanala je risanje hitrejse (ozadje je itak crno)
+        return UIGraphicsImageRenderer(bounds: okno.bounds, format: format).image { _ in
+            okno.drawHierarchy(in: okno.bounds, afterScreenUpdates: false)
+        }
+    }
+
+    /// Zamegli ze zajet posnetek (CIGaussianBlur) — ovoj okrog OzadnjaZameglitev.
+    func zamegljenPosnetek(iz slika: UIImage) -> UIImage? {
+        OzadnjaZameglitev.zamegli(slika)
+    }
+
+    /// Posnetek trenutnega zaslona, ze zamegljen (CIGaussianBlur) — klice se PRED preklopom
+    /// zavihka, da kaze domaci zaslon tam, kjer je uporabnik ostal. Ostaja kot ovoj za FiltersView
+    /// (posnetekZaFiltre v HomeView), ki ga rabi sinhrono, preden se zaslon Filtri odpre.
+    func posnetekZaslona() -> UIImage? {
         // Posnetek se zajame v CETRTINI locljivosti (Martin, 22. 9.: "filter ozadje dolgo nalaga").
         // Zajem in zameglitev sta bila prej na polni locljivosti in sta se zgodila SINHRONO,
         // preden se je zaslon Filtri sploh odprl — od dotika do zaslona je bila vidna luknja.
         // Slika se tako ali tako zamegli z radijem 22 pt, torej vse pod 22 pt izgine; pri cetrtini
         // je najmanjsa ohranjena podrobnost 4 pt, kar je globoko pod mejo. Pikslov je 16x manj.
-        format.scale = Self.meriloPosnetka
-        format.opaque = true  // brez alfa kanala je risanje hitrejse (ozadje je itak crno)
-        let surov = UIGraphicsImageRenderer(bounds: okno.bounds, format: format).image { _ in
-            okno.drawHierarchy(in: okno.bounds, afterScreenUpdates: false)
-        }
-        return Self.zamegli(surov) ?? surov
+        guard let surov = surovPosnetek(merilo: Self.meriloPosnetka) else { return nil }
+        return zamegljenPosnetek(iz: surov) ?? surov
     }
 
-    /// Koliko pikslov na tocko ima posnetek. 0.25 = cetrtina locljivosti.
-    private static let meriloPosnetka: CGFloat = 0.25
-
-    /// CIContext je drag za ustvarit (prevede si cevovod senčilnikov) — prej je nastal ob VSAKEM
-    /// posnetku in je bil glavni del zamika. Zdaj nastane enkrat na zagon aplikacije.
-    private static let ciKontekst = CIContext(options: [.useSoftwareRenderer: false])
-
-    private static func zamegli(_ slika: UIImage) -> UIImage? {
-        guard let cg = slika.cgImage else { return nil }
-        let vhod = CIImage(cgImage: cg)
-        let filter = CIFilter.gaussianBlur()
-        filter.inputImage = vhod.clampedToExtent()
-        // Radij v PIKSLIH: slika je v merilu 0.25, zato je 22 pt enako 22 * 0.25 piksla.
-        filter.radius = Float(22 * meriloPosnetka)
-        guard let izhod = filter.outputImage?.cropped(to: vhod.extent) else { return nil }
-        guard let rezultat = ciKontekst.createCGImage(izhod, from: vhod.extent) else { return nil }
-        return UIImage(cgImage: rezultat, scale: slika.scale, orientation: slika.imageOrientation)
-    }
+    /// Koliko pikslov na tocko ima posnetek za ozadje zavihka. 0.25 = cetrtina locljivosti.
+    fileprivate static let meriloPosnetka: CGFloat = 0.25
 }

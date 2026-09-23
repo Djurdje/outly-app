@@ -12,6 +12,17 @@
         }
       }
     },
+    "%@ going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gre"
+          }
+        }
+      }
+    },
     "%@ has sent you an invitation": {
       "extractionState": "manual",
       "localizations": {
@@ -106,6 +117,28 @@
         }
       }
     },
+    "%@, %@ + %lld going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %@ in še %lld gre"
+          }
+        }
+      }
+    },
+    "%@, %@ going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@ gresta"
+          }
+        }
+      }
+    },
     "%@:": {
       "extractionState": "manual"
     },
@@ -174,6 +207,17 @@
         }
       }
     },
+    "%lld followers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sledilcev"
+          }
+        }
+      }
+    },
     "%lld friends going": {
       "extractionState": "manual",
       "localizations": {
@@ -203,6 +247,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vstopilo: %lld"
+          }
+        }
+      }
+    },
+    "%lld interested": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld jih zanima"
           }
         }
       }
@@ -685,6 +740,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dodaj dogodek"
+          }
+        }
+      }
+    },
+    "Add friends to see their plans here": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj prijatelje, da tu vidiš njihove načrte"
           }
         }
       }
@@ -2636,6 +2702,17 @@
         }
       }
     },
+    "Friends plans": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načrti prijateljev"
+          }
+        }
+      }
+    },
     "From": {
       "extractionState": "manual",
       "localizations": {
@@ -2709,6 +2786,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pojdi na Moj račun > Prošnja za ustvarjalca in izpolni kratek obrazec. Prošnje pregledamo ročno — stanje lahko spremljaš na istem zaslonu.\n\nKo je odobrena, se tvoj profil preklopi na poslovni pogled: Pregled, Dogodki, Skeniraj vstopnice in Nastavitve."
+          }
+        }
+      }
+    },
+    "Going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grem"
           }
         }
       }
@@ -2834,6 +2922,17 @@
         }
       }
     },
+    "I'm in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grem zraven"
+          }
+        }
+      }
+    },
     "IN": {
       "extractionState": "manual",
       "localizations": {
@@ -2880,6 +2979,17 @@
     },
     "Instagram": {
       "extractionState": "manual"
+    },
+    "Interested": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zanima me"
+          }
+        }
+      }
     },
     "Invalid URL.": {
       "extractionState": "manual",
@@ -2932,6 +3042,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Povabi člana"
+          }
+        }
+      }
+    },
+    "Invite more": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi še koga"
           }
         }
       }
@@ -3042,6 +3163,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pridruži se platformi in promoviraj svoj klub, bar ali dogodek tisočim turistom in domačinom. S poslovnim računom lahko objavljaš dogodke, prodajaš vstopnice neposredno prek aplikacije in se v realnem času povezuješ s svojim občinstvom."
+          }
+        }
+      }
+    },
+    "Join them": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridruži se"
           }
         }
       }
@@ -3713,6 +3845,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ni novih obvestil"
+          }
+        }
+      }
+    },
+    "No one going yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še nihče ne gre"
+          }
+        }
+      }
+    },
+    "No one interested yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še nihče ni zainteresiran"
           }
         }
       }
@@ -5180,6 +5334,17 @@
         }
       }
     },
+    "Send this ticket to %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslati to vstopnico uporabniku %@?"
+          }
+        }
+      }
+    },
     "Send ticket": {
       "extractionState": "manual",
       "localizations": {
@@ -5220,6 +5385,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Poslane prošnje"
+          }
+        }
+      }
+    },
+    "Sent to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslano %@"
           }
         }
       }
@@ -6767,6 +6943,17 @@
         }
       }
     },
+    "View event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej dogodek"
+          }
+        }
+      }
+    },
     "View events": {
       "extractionState": "manual",
       "localizations": {
@@ -7214,6 +7401,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tvoj klub še ni urejen. Najprej izpolni podatke o klubu."
+          }
+        }
+      }
+    },
+    "Your copy stops working.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja kopija preneha delovati."
           }
         }
       }
