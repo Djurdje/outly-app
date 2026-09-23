@@ -88,7 +88,7 @@ extension UIApplication {
     /// Za ozadje zavihka (zamegljeno, cetrtina locljivosti) uporabi `posnetekZaslona()`.
     /// Za prekrivno plast "krozhnega razkritja" (Martin, 23. 9.) uporabi merilo 1.0 — plast
     /// je vidna oster med rastjo/krcitvijo, cetrtinska locljivost bi bila tam vidno zrnata.
-    func surovPosnetek(merilo: CGFloat = Self.meriloPosnetka) -> UIImage? {
+    func surovPosnetek(merilo: CGFloat = UIApplication.meriloPosnetka) -> UIImage? {
         guard let okno = kljucnoOkno else { return nil }
         let format = UIGraphicsImageRendererFormat()
         format.scale = merilo
