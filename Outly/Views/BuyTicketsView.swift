@@ -16,9 +16,11 @@ struct BuyTicketsView: View {
     @EnvironmentObject private var session: SessionStore
 
     @State private var quantity = 1
-    @State private var isBuying = false
+    /// Stanje skupnega akcijskega gumba (OutlyAkcijskiGumb) - nadomesca prejsnji isBuying.
+    @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
+    @Environment(\.accessibilityReduceMotion) private var manjGibanja
 
     private var koda: String { event.currency ?? "EUR" }
     private var unitCents: Int { event.ticketPriceCents ?? 0 }
@@ -58,12 +60,14 @@ struct BuyTicketsView: View {
                         Text(LocalizedStringKey(purchase == nil ? "Cancel" : "Done"))
                     }
                     .foregroundColor(.white.opacity(0.85))
+                    .disabled(stanje == .nalaga)
                 }
             }
             .toolbarBackground(ozadje, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
         .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(stanje == .nalaga)
     }
 
     // MARK: - Obrazec
@@ -225,7 +229,7 @@ struct BuyTicketsView: View {
 
     private var izbiraKolicine: some View {
         HStack(spacing: 14) {
-            krogGumb("minus", enabled: quantity > 1) {
+            krogGumb("minus", enabled: quantity > 1 && stanje == .miruje) {
                 quantity -= 1
             }
             Text("\(quantity)")
@@ -234,7 +238,7 @@ struct BuyTicketsView: View {
                 .frame(minWidth: 34)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: quantity)
-            krogGumb("plus", enabled: quantity < maxQuantity) {
+            krogGumb("plus", enabled: quantity < maxQuantity && stanje == .miruje) {
                 quantity += 1
             }
         }
@@ -303,24 +307,13 @@ struct BuyTicketsView: View {
 
     private var gumbPlacaj: some View {
         let soldOut = event.isSoldOut || remaining == 0
-        return Button {
+        // Krog + kljukica prek skupnega OutlyAkcijskiGumb (Buy ne dobi naslovUspeha - po
+        // kljukici se cel zaslon "razpre" v uspeh(purchase), glej kupi()).
+        return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
             Task { await kupi() }
-        } label: {
-            HStack(spacing: 10) {
-                if isBuying { ProgressView().tint(.white) }
-                Text(naslovGumbaPlacaj(soldOut: soldOut))
-                    .font(.system(size: 17, weight: .semibold))
-                    .contentTransition(.numericText())
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(soldOut ? Color.white.opacity(0.12) : Color.outlyBlue)
-            .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .disabled(isBuying || soldOut)
-        .animation(.snappy, value: totalCents)
+        .disabled(soldOut)
+        .outlySij(moc: 1.0, aktiven: !soldOut)
     }
 
     /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.
@@ -332,6 +325,21 @@ struct BuyTicketsView: View {
 
     // MARK: - Uspeh
 
+    /// Zabrisan vstop z rahlim zamikom (0,15 s) - za vse razen prve kartice vstopnice,
+    /// ki namesto tega "zraste" iz mesta gumba (glej `prvaKarticaVstop`).
+    private var zabrisZZamikom: AnyTransition {
+        manjGibanja ? .opacity : .outlyZabris.animation(.easeOut(duration: 0.25).delay(0.15))
+    }
+
+    /// Prva kartica vstopnice "zraste" iz polozaja gumba Buy (spodaj na zaslonu) -
+    /// scale 0.2 -> 1 z anchor .bottom, brez zamika (pojavi se takoj z zaslonom uspeha).
+    private var prvaKarticaVstop: AnyTransition {
+        manjGibanja
+            ? .opacity
+            : .scale(scale: 0.2, anchor: .bottom).combined(with: .opacity)
+                .animation(.spring(response: 0.5, dampingFraction: 0.8))
+    }
+
     private func uspeh(_ p: PurchaseResponse) -> some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 18) {
@@ -342,15 +350,18 @@ struct BuyTicketsView: View {
                         .foregroundColor(.outlyBlue)
                 }
                 .padding(.top, 16)
+                .transition(zabrisZZamikom)
 
                 Text("You're in!")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
+                    .transition(zabrisZZamikom)
 
                 Text(povzetekNarocila(p))
                     .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
+                    .transition(zabrisZZamikom)
 
                 if p.mode == "test" {
                     HStack(spacing: 6) {
@@ -362,10 +373,12 @@ struct BuyTicketsView: View {
                     .padding(.horizontal, 12).padding(.vertical, 6)
                     .background(Color.orange.opacity(0.12))
                     .clipShape(Capsule())
+                    .transition(zabrisZZamikom)
                 }
 
                 ForEach(Array(p.tickets.enumerated()), id: \.element.id) { i, t in
                     karticaVstopnice(t, index: i + 1, count: p.tickets.count)
+                        .transition(i == 0 ? prvaKarticaVstop : zabrisZZamikom)
                 }
 
                 Text("Saved under Profile → Tickets. Show the QR code at the door.")
@@ -373,6 +386,7 @@ struct BuyTicketsView: View {
                     .foregroundColor(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .padding(.top, 4)
+                    .transition(zabrisZZamikom)
 
                 Button { dismiss() } label: {
                     Text("Done")
@@ -385,6 +399,7 @@ struct BuyTicketsView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 6)
+                .transition(zabrisZZamikom)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 40)
@@ -494,15 +509,18 @@ struct BuyTicketsView: View {
 
     private func kupi() async {
         errorMessage = nil
-        isBuying = true
-        defer { isBuying = false }
+        stanje = .nalaga
         do {
             let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity)
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { purchase = p }
+            // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
+            stanje = .uspeh
+            // Kljukica naj bo za hip vidna, preden se krog "razpre" v vstopnico.
+            try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
             errorMessage = error.userMessage
+            stanje = .napaka
         }
     }
 }

@@ -12,6 +12,10 @@ struct HomeView: View {
     /// Preklop zavihka (MainTabView): "Where to?" -> iskanje, avatar -> profil.
     var odpriIskanje: () -> Void = {}
     var odpriProfil: () -> Void = {}
+    /// Okvirja avatarja in polja "Where to?" v okenskih koordinatah — MainTabView jih rabi za
+    /// izvor "kroznega razkritja" (Martin, 23. 9.). Privzeto .constant, da klicu ni treba skrbeti
+    /// za to v predogledih/testih.
+    var okvirIzvorov: Binding<IzvoriRazkritja> = .constant(IzvoriRazkritja())
     @State private var genres: [String] = []
 
     @State private var clubs: [APIClub] = []
@@ -208,6 +212,13 @@ struct HomeView: View {
                                      showFilters = true
                                  },
                                  filterActive: filters.jeAktiven)
+                        // Okvir polja "Where to?" v okenskih koordinatah — izvor pravokotnika za
+                        // rast/krcitev Searcha (isti okvir, isti radij kot polje samo).
+                        .background(
+                            GeometryReader { g in
+                                Color.clear.preference(key: WhereToOkvirKey.self, value: g.frame(in: .global))
+                            }
+                        )
 
                     if let errorText {
                         VStack(spacing: 8) {
@@ -331,6 +342,11 @@ struct HomeView: View {
             }
             .coordinateSpace(name: "homeScroll")
             .onPreferenceChange(HomeScrollOffsetKey.self) { scrollOffset = $0 }
+            // Okvirja avatarja/polja gresta navzgor v MainTabView (izvora "kroznega razkritja").
+            // Posodabljata se tudi med drsenjem, zato MainTabView v trenutku dotika ve, ali sta
+            // (se) vidna — ce nista, uporabi privzeti izvor pri robu (glej preklopi(na:)).
+            .onPreferenceChange(AvatarOkvirKey.self) { if let r = $0 { okvirIzvorov.wrappedValue.avatar = r } }
+            .onPreferenceChange(WhereToOkvirKey.self) { if let r = $0 { okvirIzvorov.wrappedValue.whereTo = r } }
             .background(homeBackground)
             .overlay {
                 if showNotifications { notificationsOverlay }
@@ -541,6 +557,12 @@ struct HomeView: View {
                         OutlyAvatarView(avatarUrlString: me?.avatarUrl, size: 36)
                     }
                     .buttonStyle(.plain)
+                    // Okvir avatarja v okenskih koordinatah — izvor kroga za rast/krcitev Profila.
+                    .background(
+                        GeometryReader { g in
+                            Color.clear.preference(key: AvatarOkvirKey.self, value: g.frame(in: .global))
+                        }
+                    )
                     Spacer()
                     Button {
                         if showNotifications {
