@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 enum EventCardVariant {
     case clubRow
@@ -8,31 +7,26 @@ enum EventCardVariant {
 }
 
 struct EventCardAPI: View {
-    /// Priljubljeni dogodki — na strezniku (FavoritesStore, migracija 012).
-    @EnvironmentObject private var favorites: FavoritesStore
-    @EnvironmentObject private var session: SessionStore
-
-    private var isFavorite: Bool { favorites.contains(event.id) }
-    private func toggleFavorite() {
-        favorites.toggle(event.id, token: session.token)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }
-
     let event: APIEvent
     let clubName: String?
     let clubLogoUrl: String?
     let variant: EventCardVariant
+    /// Znacka "Going"/"Interested" namesto srcka (Martin, 24. 9. 2026: srcek je odstranjen,
+    /// nadomestil ga je "I'm in"). nil = brez znacke (privzeto, obratna zdruzljivost klicev).
+    let planBadge: EventPlan?
 
     init(
         event: APIEvent,
         clubName: String? = nil,
         clubLogoUrl: String? = nil,
-        variant: EventCardVariant = .clubRow
+        variant: EventCardVariant = .clubRow,
+        planBadge: EventPlan? = nil
     ) {
         self.event = event
         self.clubName = clubName
         self.clubLogoUrl = clubLogoUrl
         self.variant = variant
+        self.planBadge = planBadge
     }
 
     var body: some View {
@@ -79,21 +73,31 @@ struct EventCardAPI: View {
                 }
             }
 
-            Spacer(minLength: 8)
-
-            Button(action: toggleFavorite) {
-                Image(systemName: isFavorite ? "heart.fill" : "heart")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(isFavorite ? Color.red : Color.white.opacity(0.6))
-                    .frame(width: 40, height: 40)
-                    .contentShape(Rectangle())
+            if let planBadge {
+                Spacer(minLength: 8)
+                znacka(planBadge)
             }
-            .buttonStyle(.plain)
         }
         .padding(12)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// Majhna znacka "Going" (moder poln pil) ali "Interested" (bela obroba) — glej CLAUDE.md
+    /// (modra samo na glavnem gumbu ostaja, tu gre za status, ne gumb za dejanje).
+    private func znacka(_ plan: EventPlan) -> some View {
+        Text(plan == .going ? "Going" : "Interested")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(plan == .going ? .white : Color.white.opacity(0.85))
+            .padding(.horizontal, 10)
+            .frame(height: 26)
+            .background(
+                Capsule().fill(plan == .going ? Color.outlyBlue : Color.clear)
+            )
+            .overlay(
+                Capsule().stroke(Color.white.opacity(plan == .going ? 0 : 0.5), lineWidth: 1)
+            )
     }
 
     // MARK: - HOME ROW

@@ -45,6 +45,9 @@ struct HomeView: View {
     @State private var notificationsLoading = false
     /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
     @State private var friendPlans: [FriendPlan] = []
+    /// "Going events" (Martin, 24. 9. 2026, namesto "Liked events" — srcek je odstranjen, nadomestil
+    /// ga je "I'm in"): moji lastni nacrti (GET /me/plans), going in interested.
+    @State private var myPlans: [FriendPlan] = []
     /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje.
     @State private var scrollOffset: CGFloat = 0
 
@@ -53,14 +56,16 @@ struct HomeView: View {
 
     @EnvironmentObject private var prefs: UserPreferences
     @EnvironmentObject private var locationManager: LocationManager
-    /// Priljubljeni (srcek) s streznika — razdelek "Liked events" (od 13. 9. namesto zavihka Saved).
-    @EnvironmentObject private var favorites: FavoritesStore
 
-    /// Prihajajoci priljubljeni dogodki, najblizji najprej (pretekli so samo v "See all").
-    private var likedUpcoming: [APIEvent] {
-        favorites.events
-            .filter { ($0.startDate ?? .distantFuture) >= Date().addingTimeInterval(-6 * 3600) }
-            .sorted { ($0.startDate ?? .distantFuture) < ($1.startDate ?? .distantFuture) }
+    /// "Going events": prihajajoci moji nacrti, going najprej, nato interested, znotraj tega
+    /// po datumu (Martin, 24. 9. 2026 — nadomestilo za "Liked events" po odstranitvi srckov).
+    private var goingUpcoming: [FriendPlan] {
+        myPlans
+            .filter { ($0.event.startDate ?? .distantFuture) >= Date().addingTimeInterval(-6 * 3600) }
+            .sorted { a, b in
+                if (a.myPlan == .going) != (b.myPlan == .going) { return a.myPlan == .going }
+                return (a.event.startDate ?? .distantFuture) < (b.event.startDate ?? .distantFuture)
+            }
     }
 
     private var userAge: Int? { session.me?.age }
@@ -249,10 +254,10 @@ struct HomeView: View {
                             }
                         }
 
-                        // 2b. Liked events (Martin, 13. 9.): srcki iz nav bara na domaci zaslon.
-                        // Razdelek je viden samo, ko uporabnik kaj oznaci — prazen ne moti.
-                        if !likedUpcoming.isEmpty {
-                            likedSection
+                        // 2b. Going events (Martin, 24. 9.): moji nacrti ("I'm in") na domaci zaslon,
+                        // namesto prejsnjih srckov. Razdelek je viden samo, ko je kaj v njem.
+                        if !goingUpcoming.isEmpty {
+                            goingSection
                         }
 
                         // 3. Last week's biggest hits (Figma 50:100)
@@ -374,15 +379,17 @@ struct HomeView: View {
         // Ob vrnitvi na zavihek osvezimo samo profil (avatar, pozdrav), ne vsega.
         // Prvi prikaz: .task ze klice loadMe() znotraj loadAll(), zato tu preskocimo.
         .onAppear {
-            if !clubs.isEmpty { Task { await loadMe() } }
+            // Ob vrnitvi na zavihek (npr. z zaslona dogodka po "I'm in") osvezimo profil in nacrte
+            // (Martin, 24. 9.: Going events in Friends plans morajo sledit takoj, ne sele po pull-to-refresh).
+            if !clubs.isEmpty { Task { await loadMe(); await osveziNacrte() } }
         }
     }
 
-    // MARK: - Liked events (loceno zaradi tipnega preverjevalnika, kot genreSection)
-    private var likedSection: some View {
+    // MARK: - Going events (loceno zaradi tipnega preverjevalnika, kot genreSection)
+    private var goingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeader(title: "Liked events")
+                SectionHeader(title: "Going events")
                 Spacer()
                 NavigationLink { SavedView() } label: {
                     Text("See all")
@@ -391,8 +398,34 @@ struct HomeView: View {
                 }
                 .buttonStyle(.plain)
             }
-            HorizontalEventsScroll(events: likedUpcoming, clubsById: clubsById)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(goingUpcoming) { p in
+                        NavigationLink { EventDetailView(event: p.event) } label: {
+                            ZStack(alignment: .topTrailing) {
+                                EventPosterCard(event: p.event, clubName: p.clubName.isEmpty ? clubsById[p.event.clubId]?.name : p.clubName)
+                                if let plan = p.myPlan { goingZnacka(plan) }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
+    }
+
+    /// Majhna znacka na kartici "Going events": moder poln pil (going) ali bela obroba (interested).
+    private func goingZnacka(_ plan: EventPlan) -> some View {
+        Text(plan == .going ? "Going" : "Interested")
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(0.3)
+            .foregroundColor(.white)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(plan == .going ? Color.outlyBlue : Color.black.opacity(0.55))
+            .overlay(Capsule().stroke(Color.white.opacity(plan == .going ? 0 : 0.6), lineWidth: 1))
+            .clipShape(Capsule())
+            .padding(10)
     }
 
     // MARK: - Discover your genre (vidne 3 vrstice, ostale z drsenjem) — loceno,
@@ -654,11 +687,11 @@ struct HomeView: View {
                 if !genresRes.isEmpty { self.genres = genresRes }
             }
             await loadMe()
-            // Liked events: osvezimo tudi priljubljene (pull-to-refresh), napaka tu ni kriticna.
-            await favorites.load(token: authToken)
-            // Nacrti prijateljev: napaka (npr. star backend brez poti) ni kriticna -> prazen razdelek.
+            // Nacrti prijateljev in moji lastni ("Going events"): napaka (npr. star backend
+            // brez poti) ni kriticna -> prazen razdelek. Tiho, ker to ni kljucni podatek zaslona.
             if !authToken.isEmpty {
                 friendPlans = (try? await APIClient.shared.fetchFriendsPlans(token: authToken)) ?? []
+                myPlans = (try? await APIClient.shared.fetchMyPlans(token: authToken)) ?? []
             }
         } catch is CancellationError {
             // Prekinitev naloge (SwiftUI) ni napaka za uporabnika.
@@ -668,6 +701,13 @@ struct HomeView: View {
             self.errorText = error.userMessage
         }
         isLoading = false
+    }
+
+    /// Nacrti prijateljev in moji nacrti (Going events); napaka ni kriticna -> seznam ostane.
+    private func osveziNacrte() async {
+        guard !authToken.isEmpty else { return }
+        if let f = try? await APIClient.shared.fetchFriendsPlans(token: authToken) { friendPlans = f }
+        if let m = try? await APIClient.shared.fetchMyPlans(token: authToken) { myPlans = m }
     }
 
     private func loadMe() async {
