@@ -25,21 +25,51 @@ enum FriendsPlanText {
     }
 }
 
-/// Razdelek "Your friends plans" na domacem zaslonu (Martin, 23. 9. 2026, prenova iz kroznih
-/// avatarjev v seznam vrstic po dogodku): najvec 3 vrstice, razvrscene po stevilu prijateljev
-/// (going + interested) padajoce, nato po datumu. Desno gumb "Join them" (nakup) ali "I'm in"
-/// (PUT interest) ali znacka "Going" — glej FriendsPlanRow. Moder sij samo na gumbu prve vrstice
-/// (pravilo: en sij na zaslon). Na koncu "Invite more" brez sija. Brez nacrtov razdelek ostane
-/// z namigom, ne izgine.
+/// Razdelek "Friends plans" na domacem zaslonu (Martin, 24. 9. 2026: nazaj na krozne avatarje
+/// izpred PR #22, na Martinovo zahtevo po ogledu builda; vrstice po dogodku ostanejo samo na
+/// zaslonu "View"). Krogi prijateljev: moder rob = grejo (vstopnica), bel rob 50 % = jih zanima
+/// ("I'm in", sistem iz PR #22 ostane); grejo najprej, brez podvajanja osebe. Na koncu crtkan
+/// krog "+" "Invite more" (ShareLink outly.si), desno "View" -> FriendsPlansView. Vsi elementi
+/// so za 15 % manjsi kot v izvirniku izpred PR #22 (Martin: avatar 64->54, Invite more 42->36,
+/// pisave/razmiki ×0,85, zaokrozeno na cele tocke). Brez nacrtov razdelek ostane z namigom.
 struct FriendsPlansSection: View {
     let plans: [FriendPlan]
     let clubsById: [Int: APIClub]
 
-    private let najvecVrstic = 3
+    private let velikost: CGFloat = 54
+    private let velikostPovabi: CGFloat = 36
+    private let najvecAvatarjev = 6
 
-    /// Brez koncanih in podvojenih dogodkov, razvrsceno po priljubljenosti med prijatelji.
-    private var prikazani: [FriendPlan] {
-        plans.brezPodvojenihInKoncanih.razvrsceniPoPriljubljenosti()
+    /// Prijatelji, ki GREJO (vstopnica), brez podvajanja, v vrstnem redu prvega dogodka.
+    /// Samo dogodki, ki se niso koncali.
+    private var friendsGoing: [FriendUser] {
+        var videni = Set<Int>()
+        var seznam: [FriendUser] = []
+        for p in plans where !p.event.hasEnded {
+            for f in p.friends where !videni.contains(f.id) {
+                videni.insert(f.id)
+                seznam.append(f)
+            }
+        }
+        return seznam
+    }
+
+    /// Prijatelji, ki jih ZANIMA (brez vstopnice), brez tistih, ki ze grejo (ni podvajanja osebe).
+    private var friendsInterestedOnly: [FriendUser] {
+        var videni = Set(friendsGoing.map(\.id))
+        var seznam: [FriendUser] = []
+        for p in plans where !p.event.hasEnded {
+            for f in p.interested where !videni.contains(f.id) {
+                videni.insert(f.id)
+                seznam.append(f)
+            }
+        }
+        return seznam
+    }
+
+    /// Grejo najprej, nato tisti, ki jih samo zanima.
+    private var prijatelji: [(user: FriendUser, gre: Bool)] {
+        friendsGoing.map { ($0, true) } + friendsInterestedOnly.map { ($0, false) }
     }
 
     var body: some View {
@@ -57,36 +87,74 @@ struct FriendsPlansSection: View {
                 .buttonStyle(.plain)
             }
 
-            if prikazani.isEmpty {
-                Text("Add friends to see their plans here")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                VStack(spacing: 10) {
-                    ForEach(Array(prikazani.prefix(najvecVrstic).enumerated()), id: \.element.id) { index, p in
-                        FriendPlanRow(plan: p, clubsById: clubsById, prikaziSij: index == 0)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(Array(prijatelji.prefix(najvecAvatarjev)), id: \.user.id) { par in
+                        NavigationLink {
+                            FriendsPlansView(plans: plans, clubsById: clubsById)
+                        } label: {
+                            avatar(par.user, gre: par.gre)
+                        }
+                        .buttonStyle(.plain)
                     }
+
+                    if prijatelji.count > najvecAvatarjev {
+                        NavigationLink {
+                            FriendsPlansView(plans: plans, clubsById: clubsById)
+                        } label: {
+                            Text("+\(prijatelji.count - najvecAvatarjev)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: velikost, height: velikost)
+                                .background(Circle().fill(Color.white.opacity(0.08)))
+                                .overlay(Circle().stroke(Color.outlyBlue, lineWidth: 2))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if prijatelji.isEmpty {
+                        Text("Add friends to see where they're going")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
+                            .frame(maxWidth: 145, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    povabi
                 }
-                povabiVrstica
+                .padding(.vertical, 2)
             }
         }
     }
 
-    /// "Invite more": deli povezavo do Outlyja. Brez sija (sij je ze na prvi vrstici zgoraj).
-    private var povabiVrstica: some View {
+    /// Krog z modrim (gre) ali belim 50 % (zanima) robom, slika prek OutlyAvatarView.
+    private func avatar(_ f: FriendUser, gre: Bool) -> some View {
+        OutlyAvatarView(avatarUrlString: f.avatarUrl, size: velikost - 5)
+            .padding(3)
+            .overlay(Circle().stroke(gre ? Color.outlyBlue : Color.white.opacity(0.5), lineWidth: 2))
+            .accessibilityLabel(Text(f.username))
+    }
+
+    /// Crtkan krog "+" in "Invite more": deli povezavo do Outlyja (sistemski list za deljenje).
+    private var povabi: some View {
         ShareLink(item: URL(string: "https://outly.si")!,
                   message: Text("Join me on Outly — see where we're going out.")) {
-            HStack(spacing: 8) {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 15, weight: .semibold))
-                Text("Invite more")
-                    .font(.system(size: 14, weight: .semibold))
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: velikostPovabi, height: velikostPovabi)
+                    .overlay(
+                        Circle().strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundColor(.white.opacity(0.45))
+                    )
+                Text("Invite\nmore")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.outlyBlue)
+                    .multilineTextAlignment(.leading)
             }
-            .foregroundColor(.white.opacity(0.75))
-            .frame(maxWidth: .infinity)
-            .frame(height: 42)
-            .background(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
+            .frame(height: velikost)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

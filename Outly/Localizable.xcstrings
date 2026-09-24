@@ -8032,6 +8032,39 @@
     },
     "€": {
       "extractionState": "manual"
+    },
+    "Going events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kam grem"
+          }
+        }
+      }
+    },
+    "No going events yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še nimaš nobenih načrtov"
+          }
+        }
+      }
+    },
+    "Tap \"I'm in\" on any event and it will show up here and on your home screen — on every device you log in to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dotakni se “Grem” na katerem koli dogodku in prikazal se bo tukaj in na domačem zaslonu – na vsaki napravi, na kateri si prijavljen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

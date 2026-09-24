@@ -11,8 +11,6 @@ struct EventDetailView: View {
     @State private var showBuy = false
     @State private var showBarPrices = false
     @EnvironmentObject private var session: SessionStore
-    /// Srcek (Liked events na domacem zaslonu). Prej na zaslonu dogodka ni bilo srcka.
-    @EnvironmentObject private var favorites: FavoritesStore
 
     // "I'm in" (backend migracija 020, 23. 9. 2026): moj nacrt + prijatelji, ki grejo/jih zanima.
     // Nalozi se loceno od dogodka (GET /events/:id z zetonom), da fetchEvent(id:) v
@@ -129,7 +127,9 @@ struct EventDetailView: View {
         max(400, min(540, UIScreen.main.bounds.height * 0.55))
     }
 
-    // MARK: - Naslov + srcek (pod sliko)
+    // MARK: - Naslov + pil "I'm in" (pod sliko)
+    // Srcek je odstranjen (Martin, 24. 9. 2026): "I'm in" ga je nadomestil, FavoritesStore
+    // ostaja v repu (backend pot ostane), samo ta zaslon ga vec ne uporablja.
     private var titleBlock: some View {
         HStack(alignment: .top, spacing: 12) {
             Text(event.title)
@@ -139,20 +139,7 @@ struct EventDetailView: View {
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             if session.isLoggedIn {
-                HStack(spacing: 8) {
-                    imInPill
-                    Button {
-                        favorites.toggle(event.id, token: session.token)
-                    } label: {
-                        Image(systemName: favorites.contains(event.id) ? "heart.fill" : "heart")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(favorites.contains(event.id) ? Color.outlyBlue : Color.white.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.white.opacity(0.10)))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(String(localized: favorites.contains(event.id) ? "Remove from liked events" : "Add to liked events"))
-                }
+                imInPill
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -160,7 +147,7 @@ struct EventDetailView: View {
         .padding(.top, 2)
     }
 
-    /// Pil s tremi stanji (poleg srcka): nic -> "I'm in" (bel rob, prosojno), interested ->
+    /// Pil s tremi stanji: nic -> "I'm in" (bel rob, prosojno), interested ->
     /// "Interested" (bel poln pil, moder napis), going -> "Going" (moder poln pil, bela kljukica,
     /// ni pritisljiv — to stanje pride samo iz vstopnice, ne od tod). Martin, 23. 9. 2026.
     @ViewBuilder

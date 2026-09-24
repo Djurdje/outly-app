@@ -21,16 +21,59 @@ extension EnvironmentValues {
     }
 }
 
+/// "Kot Revolut" krcenje/rast vsebine (Martin, 24. 9. 2026, zamenjava za krozno razkritje iz PR #22):
+/// ob preklopu Home<->Search/Profile MainTabView to vrednost animira, `.outlyOzadje()` pa jo
+/// prebere in z njo skalira/zbledi/zamegli SVOJO vsebino (ne ozadja pod njo) — tako vsebina
+/// "zraste" iz sidra (sredisce avatarja/polja Where to?) namesto da bi navaden TabView samo
+/// zamenjal zaslon. Privzeta vrednost je "nevtralna" (skala 1, brez prosojnosti/zameglitve),
+/// zato je za Home/Map brez ucinka, ce jo MainTabView ne spremeni.
+struct VstopZavihka: Equatable {
+    var skala: CGFloat = 1
+    var prosojnost: Double = 1
+    var zameglitev: CGFloat = 0
+    /// Sidro skaliranja v LASTNIH koordinatah vsebine (0...1) — sredisce avatarja/polja Where to?,
+    /// preracunano iz okenskih koordinat glede na velikost okna (MainTabView).
+    var sidro: UnitPoint = .topLeading
+
+    static let privzeto = VstopZavihka()
+}
+
+private struct VstopZavihkaKey: EnvironmentKey {
+    static let defaultValue = VstopZavihka.privzeto
+}
+
+extension EnvironmentValues {
+    /// Trenutno stanje "rasti/krcenja" vsebine zavihka (glej VstopZavihka).
+    var vstopZavihka: VstopZavihka {
+        get { self[VstopZavihkaKey.self] }
+        set { self[VstopZavihkaKey.self] = newValue }
+    }
+}
+
 private struct OutlyOzadjeModifier: ViewModifier {
     @Environment(\.posnetekDoma) private var posnetek
+    @Environment(\.vstopZavihka) private var vstop
+    @Environment(\.accessibilityReduceMotion) private var zmanjsanoGibanje
 
     func body(content: Content) -> some View {
-        content.background(HomeSnapshotBackground(slika: posnetek))
+        Group {
+            if zmanjsanoGibanje {
+                // Trdo pravilo (Martin, 24. 9.): pri Reduce Motion samo prosojnost, brez skale/zameglitve.
+                content.opacity(vstop.prosojnost)
+            } else {
+                content
+                    .scaleEffect(vstop.skala, anchor: vstop.sidro)
+                    .opacity(vstop.prosojnost)
+                    .blur(radius: vstop.zameglitev)
+            }
+        }
+        .background(HomeSnapshotBackground(slika: posnetek))
     }
 }
 
 extension View {
-    /// Crno ozadje zaslona oziroma zamegljen domaci zaslon, ce ga okolje ima (glej PosnetekDomaKey).
+    /// Crno ozadje zaslona oziroma zamegljen domaci zaslon, ce ga okolje ima (glej PosnetekDomaKey),
+    /// in "rast/krcenje" vsebine iz sidra, ce ga okolje ima (glej VstopZavihka).
     func outlyOzadje() -> some View { modifier(OutlyOzadjeModifier()) }
 }
 

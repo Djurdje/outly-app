@@ -12,21 +12,27 @@ import SwiftUI
 /// posnetek gre v okolje (`posnetekDoma`) in vsak zaslon v teh dveh zavihkih ga narise kot svoje
 /// ozadje (`.outlyOzadje()`, glej Ozadje.swift). Map ostane pravi zemljevid.
 ///
-/// "Krozno razkritje" (Martin, 23. 9.): nad TabView lezi prekrivna plast (RazkritjeSloj/ZabrisSloj
-/// iz RazkritjeZavihka.swift), ki ob preklopu Home<->Search/Profile rise krog (avatar) ali
-/// zaobljen pravokotnik (polje Where to?), ki zraste/skrci cez cel zaslon; Search<->Profile je
-/// en gib cez oba; karkoli z Map je navaden zabris. Sistemski TabView sam preklopi takoj (brez
-/// svoje animacije), plast nad njim je tista, ki "pripoveduje" prehod.
+/// Prehod Home <-> Search/Profile (Martin, 24. 9., po posnetku Revoluta po slicicah — ZAMENJAVA
+/// za "krozno razkritje" iz PR #22, ki ga je Martin videl in ni hotel): BREZ maske/kroga. Namesto
+/// tega vsebina cilja (cela, ne izrezana) zraste iz sidra v sredini avatarja/polja "Where to?" s
+/// 40 % na 100 % velikosti, hkrati se pojavi (opacity 0->1) in izostri (blur ~10->0) v ~0,3 s
+/// (ease-out) — to nosi `VstopZavihka` v okolju (Core/Themes/Ozadje.swift), ki jo `.outlyOzadje()`
+/// prebere in uporabi na SVOJI vsebini zaslona. Poleg tega domaci zaslon pod njo v ~0,3 s zbledi
+/// v ze zamegljen posnetek (`ZabrisSloj` nad TabViewom, oster posnetek pojema) — to je "Home se
+/// zamegli" del. Nazaj (Profile/Search -> Home) je obratno in v koncu preklopimo zavihek.
+/// Search <-> Profile je NAVADEN preklop, brez animacije (Martin izrecno). Karkoli <-> Map in
+/// Reduce Motion ostaneta navaden zabris (ZabrisSloj), kot prej.
 struct MainTabView: View {
     // Izbran zavihek: domaci zaslon ("Where to?") preklopi na iskanje, avatar na profil.
     @State private var zavihek = 0
     @State private var posnetekDoma: UIImage?
     /// Okvirja avatarja in polja "Where to?" (HomeView jih izmeri in poda navzgor).
     @State private var okvirIzvorov = IzvoriRazkritja()
-    /// Plasti kroznega/pravokotnega razkritja, trenutno na zaslonu (obicajno 0 ali 1, med
-    /// Search<->Profile za hip 0 potem 1 — glej prehodSearchProfil).
-    @State private var plasti: [PlastPodatki] = []
-    /// Zabris (Map, ali Reduce Motion namesto oblik) — samostojen, ker nima oblike/izvora.
+    /// Trenutno stanje rasti/krcenja vsebine zavihka (glej VstopZavihka v Ozadje.swift) — v okolju,
+    /// zato ga prebere `.outlyOzadje()` katerekoli globoke vsebine (tudi potisnjenih zaslonov).
+    @State private var vstop = VstopZavihka.privzeto
+    /// Zabrisi cez cel zaslon, trenutno na zaslonu (Map, Reduce Motion, in spremljevalna plast
+    /// pri rasti/krcenju "Home se zamegli"/"Home se izostri") — obicajno 0 ali 1 naenkrat.
     @State private var zabrisi: [UUID: (slika: UIImage, trajanje: Double)] = [:]
 
     @EnvironmentObject private var session: SessionStore
@@ -39,7 +45,7 @@ struct MainTabView: View {
         Binding(get: { zavihek }, set: { nov in preklopi(na: nov) })
     }
 
-    // MARK: - Odlocitev vrste prehoda
+    // MARK: - Sidra (avatar / Where to?)
 
     /// Velikost okna v tockah — isti koordinatni sistem kot okvirIzvorov (global) in posnetki.
     private var velikostOkna: CGSize {
@@ -50,19 +56,19 @@ struct MainTabView: View {
         CGRect(origin: .zero, size: velikostOkna)
     }
 
-    /// Privzeti izvor za Profil, ce avatar ni (vec) viden (odrsan) — krog pri levem zgornjem robu.
+    /// Privzeti izvor za Profil, ce avatar ni (vec) viden (odrsan) — levi zgornji rob, kot prej.
     private var privzetIzvorProfil: CGRect {
         CGRect(x: 16, y: 54, width: 36, height: 36)
     }
 
-    /// Privzeti izvor za Search, ce polje ni (vec) vidno — pravokotnik na sredini vrha.
+    /// Privzeti izvor za Search, ce polje ni (vec) vidno — sredina vrha, kot prej.
     private var privzetIzvorIskanje: CGRect {
         let sirina = min(velikostOkna.width - 32, 320)
         return CGRect(x: (velikostOkna.width - sirina) / 2, y: 92, width: sirina, height: 48)
     }
 
-    /// Okvir je "veljaven" (uporaben za izvor), ce ga poznamo IN je njegovo sredisce znotraj
-    /// vidnega okna — sicer (odrsan, ali se ne izmerjen) uporabimo privzeti izvor pri robu.
+    /// Okvir je "veljaven" (uporaben za sidro), ce ga poznamo IN je njegovo sredisce znotraj
+    /// vidnega okna — sicer (odrsan, ali se ne izmerjen) uporabimo privzet izvor pri robu.
     private func veljavenIzvor(_ r: CGRect?) -> CGRect? {
         guard let r, r.width > 1, r.height > 1 else { return nil }
         let sredisce = CGPoint(x: r.midX, y: r.midY)
@@ -72,136 +78,97 @@ struct MainTabView: View {
     private var izvorProfil: CGRect { veljavenIzvor(okvirIzvorov.avatar) ?? privzetIzvorProfil }
     private var izvorIskanje: CGRect { veljavenIzvor(okvirIzvorov.whereTo) ?? privzetIzvorIskanje }
 
-    /// Skala, pri kateri oblika (krog ali pravokotnik) s sredino v izvoru pokrije cel zaslon,
-    /// vkljucno z najbolj oddaljenim vogalom (+5 % zaloge).
-    private func skalaZaPokritje(izvor: CGRect, krog: Bool) -> CGFloat {
-        let okno = oknoBounds
-        let sredisce = CGPoint(x: izvor.midX, y: izvor.midY)
-        if krog {
-            let vogali = [
-                CGPoint(x: okno.minX, y: okno.minY), CGPoint(x: okno.maxX, y: okno.minY),
-                CGPoint(x: okno.minX, y: okno.maxY), CGPoint(x: okno.maxX, y: okno.maxY)
-            ]
-            let najdaljsi = vogali.map { hypot($0.x - sredisce.x, $0.y - sredisce.y) }.max() ?? 0
-            let polmer = min(izvor.width, izvor.height) / 2
-            guard polmer > 0 else { return 1 }
-            return (najdaljsi * 1.05) / polmer
-        } else {
-            let maxDX = max(sredisce.x - okno.minX, okno.maxX - sredisce.x)
-            let maxDY = max(sredisce.y - okno.minY, okno.maxY - sredisce.y)
-            let skalaX = izvor.width > 0 ? (maxDX * 2 * 1.05) / izvor.width : 1
-            let skalaY = izvor.height > 0 ? (maxDY * 2 * 1.05) / izvor.height : 1
-            return max(skalaX, skalaY, 1)
-        }
+    /// Sidro skaliranja (UnitPoint, 0...1) iz okenskega okvirja — sredisce izvora glede na
+    /// velikost okna. `scaleEffect(anchor:)` na vsebini priblizno enake velikosti kot okno
+    /// (zaslon minus varni rob/spodnja vrstica) to prime dovolj natancno.
+    private func sidroIz(_ izvor: CGRect) -> UnitPoint {
+        let okno = velikostOkna
+        guard okno.width > 0, okno.height > 0 else { return .topLeading }
+        return UnitPoint(x: izvor.midX / okno.width, y: izvor.midY / okno.height)
     }
+
+    // MARK: - Preklop
 
     private func preklopi(na nov: Int) {
         guard nov != zavihek else { return }  // dvakratni dotik iste ikone: sistemsko ze vrne na koren, sicer nic
         let od = zavihek
 
         // Ozadje za Search/Profile (zamegljen posnetek Home) osvezimo vedno, ko zapuscamo Home —
-        // enako kot prej (glej osveziOzadjeZavihka).
+        // isti posnetek uporabi tudi zapriVHome kot spremljevalno plast ob vrnitvi.
         if od == 0 && nov != 0 { osveziOzadjeZavihka() }
 
         if zmanjsanoGibanje {
-            // Reduce Motion: brez oblik, samo zabris 0,2 s (velja za VSAK prehod, tudi Map).
+            // Trdo pravilo (Martin, 24. 9.): pri Reduce Motion samo navaden zabris, brez rasti/krcenja.
             zabris(na: nov, trajanje: 0.2)
             return
         }
 
         switch (od, nov) {
         case (2, _), (_, 2):
-            // Karkoli <-> Map: navaden zabris, Map nima izvora.
+            // Karkoli <-> Map: navaden zabris, pusti kot je (Martin izrecno).
             zabris(na: nov, trajanje: 0.25)
         case (0, 1):
-            rastIzHome(na: nov, krog: false)
+            odpriIzHome(na: nov, izvor: izvorIskanje)
         case (0, 3):
-            rastIzHome(na: nov, krog: true)
+            odpriIzHome(na: nov, izvor: izvorProfil)
         case (1, 0):
-            skrciVHome(krog: false)
+            zapriVHome(odIzvora: izvorIskanje)
         case (3, 0):
-            skrciVHome(krog: true)
-        case (1, 3):
-            prehodSearchProfil(naProfil: true)
-        case (3, 1):
-            prehodSearchProfil(naProfil: false)
+            zapriVHome(odIzvora: izvorProfil)
         default:
+            // Search <-> Profile: navaden preklop, brez animacije (Martin izrecno).
             zavihek = nov
         }
     }
 
-    // MARK: - Prehodi z obliko
-
-    /// Home -> Search/Profile: oblika zraste iz avatarja/polja in pokrije zaslon; POD njo je ze
-    /// ziv cilj (zavihek preklopimo TAKOJ, plast nad njim samo "odpre luknjo").
-    private func rastIzHome(na nov: Int, krog: Bool) {
-        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else { zavihek = nov; return }
-        let izvor = krog ? izvorProfil : izvorIskanje
-        let koncna = skalaZaPokritje(izvor: izvor, krog: krog)
-        zavihek = nov
-        dodajPlast(PlastPodatki(slika: surov, izvor: izvor, krog: krog,
-                                 zacetnaSkala: 1, koncnaSkala: koncna, obratno: false, trajanje: 0.45))
-    }
-
-    /// Search/Profile -> Home: oblika (ki kaze zamrznjen Search/Profile) se skrci nazaj v
-    /// avatar/polje; POD njo je ze ziv Home (zavihek preklopimo TAKOJ na 0).
-    private func skrciVHome(krog: Bool) {
-        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else { zavihek = 0; return }
-        let izvor = krog ? izvorProfil : izvorIskanje
-        let zacetna = skalaZaPokritje(izvor: izvor, krog: krog)
-        zavihek = 0
-        dodajPlast(PlastPodatki(slika: surov, izvor: izvor, krog: krog,
-                                 zacetnaSkala: zacetna, koncnaSkala: 1, obratno: true, trajanje: 0.35))
-    }
-
-    /// Search <-> Profile: en gib (~0,4 s), vmes za hip viden Home — izvedeno zaporedno
-    /// (skrcitev trenutnega v svojo obliko 0,2 s, nato rast ciljnega iz svoje oblike 0,25 s),
-    /// kar navodilo izrecno dopusca kot sprejemljivo.
-    private func prehodSearchProfil(naProfil: Bool) {
-        guard let surovOd = UIApplication.shared.surovPosnetek(merilo: 1.0) else {
-            zavihek = naProfil ? 3 : 1
+    /// Home -> Search/Profile: vsebina cilja zraste iz sidra (40 % -> 100 %, opacity 0->1,
+    /// blur 10->0, 0,3 s ease-out); zavihek preklopimo TAKOJ (POD plastjo je ze ziv cilj), plast
+    /// nad njim (oster posnetek Home) v istem casu pojema in odkriva ze zamegljen posnetekDoma
+    /// pod seboj — to je "Home se zamegli".
+    private func odpriIzHome(na nov: Int, izvor: CGRect) {
+        let sidro = sidroIz(izvor)
+        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else {
+            zavihek = nov
             return
         }
-        // "Od": ce gremo NA profil, smo bili na Searchu (pravokotnik); sicer smo bili na Profilu (krog).
-        let odKrog = !naProfil
-        let izvorOd = odKrog ? izvorProfil : izvorIskanje
-        let zacetnaOd = skalaZaPokritje(izvor: izvorOd, krog: odKrog)
-
-        zavihek = 0  // za hip Home, kot v skrciVHome
-        dodajPlast(PlastPodatki(slika: surovOd, izvor: izvorOd, krog: odKrog,
-                                 zacetnaSkala: zacetnaOd, koncnaSkala: 1, obratno: true, trajanje: 0.2)) {
-            let ciljZavihek = naProfil ? 3 : 1
-            guard let surovHome = UIApplication.shared.surovPosnetek(merilo: 1.0) else {
-                zavihek = ciljZavihek
-                return
-            }
-            let naKrog = naProfil
-            let izvorNa = naKrog ? izvorProfil : izvorIskanje
-            let koncnaNa = skalaZaPokritje(izvor: izvorNa, krog: naKrog)
-            zavihek = ciljZavihek
-            dodajPlast(PlastPodatki(slika: surovHome, izvor: izvorNa, krog: naKrog,
-                                     zacetnaSkala: 1, koncnaSkala: koncnaNa, obratno: false, trajanje: 0.25))
+        vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 10, sidro: sidro)
+        zavihek = nov
+        dodajZabris(slika: surov, trajanje: 0.3)
+        withAnimation(.easeOut(duration: 0.3)) {
+            vstop = VstopZavihka(skala: 1, prosojnost: 1, zameglitev: 0, sidro: sidro)
         }
     }
 
-    /// Doda plast, jo po trajanju odstrani in (ce podano) sprozi naslednji korak — uporablja
-    /// Search<->Profile za zaporedje dveh plasti v enem gibu.
-    private func dodajPlast(_ p: PlastPodatki, poKoncu: (() -> Void)? = nil) {
-        plasti.append(p)
-        let id = p.id
-        DispatchQueue.main.asyncAfter(deadline: .now() + p.trajanje) {
-            plasti.removeAll { $0.id == id }
-            poKoncu?()
+    /// Search/Profile -> Home: najprej ziva vsebina zaslona, ki ga zapuscamo, skrci proti sidru
+    /// (100 % -> 40 %), zbledi in zamegli (0,25 s); SELE PO KONCU (withAnimation(_:completion:),
+    /// iOS 17) preklopimo zavihek na Home in nad njim za 0,2 s zbledi plast z zamegljenim
+    /// posnetkom Home (posnetekDoma) — "domaci zaslon se izostri". Na koncu vstop ponastavimo
+    /// BREZ animacije, da je ob naslednjem odprtju stanje cisto.
+    private func zapriVHome(odIzvora izvor: CGRect) {
+        let sidro = sidroIz(izvor)
+        withAnimation(.easeIn(duration: 0.25)) {
+            vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 10, sidro: sidro)
+        } completion: {
+            zavihek = 0
+            if let ozadje = posnetekDoma {
+                dodajZabris(slika: ozadje, trajanje: 0.2)
+            }
+            vstop = .privzeto
         }
+    }
+
+    /// Doda zabris (slika pojema iz neprosojne v prosojno) in ga po trajanju odstrani.
+    private func dodajZabris(slika: UIImage, trajanje: Double) {
+        let id = UUID()
+        zabrisi[id] = (slika, trajanje)
+        DispatchQueue.main.asyncAfter(deadline: .now() + trajanje) { zabrisi.removeValue(forKey: id) }
     }
 
     /// Navaden zabris (Map, ali Reduce Motion): zavihek preklopimo takoj, plast nad njim pojema.
     private func zabris(na nov: Int, trajanje: Double) {
         guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else { zavihek = nov; return }
         zavihek = nov
-        let id = UUID()
-        zabrisi[id] = (surov, trajanje)
-        DispatchQueue.main.asyncAfter(deadline: .now() + trajanje) { zabrisi.removeValue(forKey: id) }
+        dodajZabris(slika: surov, trajanje: trajanje)
     }
 
     /// Ozadje zavihka Search/Profile (zamegljen zamrznjen Home).
@@ -246,11 +213,11 @@ struct MainTabView: View {
                     .tag(3)
             }
             .accentColor(.blackColor)
+            // Stanje rasti/krcenja vsebine (glej VstopZavihka) — privzeto nevtralno, zato brez
+            // ucinka na Home/Map, ki `.outlyOzadje()` ne kliceta.
+            .environment(\.vstopZavihka, vstop)
 
-            // Prekrivna plast kroznega/pravokotnega razkritja — nad TabView, dotiki gredo skozi.
-            ForEach(plasti) { p in
-                RazkritjeSloj(podatki: p, velikostOkna: velikostOkna)
-            }
+            // Prekrivne plasti zabrisa — nad TabView, dotiki gredo skozi.
             ForEach(Array(zabrisi.keys), id: \.self) { id in
                 if let z = zabrisi[id] {
                     ZabrisSloj(slika: z.slika, velikostOkna: velikostOkna, trajanje: z.trajanje)
