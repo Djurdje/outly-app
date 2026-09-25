@@ -60,9 +60,10 @@ struct BusinessDashboardView: View {
                     }
                     .frame(maxWidth: .infinity)
                 } else if let sales {
-                    graf(sales)
-                    periodPills
+                    // Vrstni red (Martin, 26. 9.): stirje okvirji na vrhu, gumbi obdobja nad grafom, graf.
                     povzetek(sales)
+                    periodPills
+                    graf(sales)
 
                     if let activity {
                         checkActivity(activity)
@@ -120,14 +121,9 @@ struct BusinessDashboardView: View {
             }
             .frame(height: 200)
         }
-        .padding(16)
-        .background(
-            LinearGradient(
-                colors: [Color(red: 11/255, green: 18/255, blue: 48/255), Color(red: 10/255, green: 10/255, blue: 10/255)],
-                startPoint: .top, endPoint: .bottom
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.vertical, 8)
+        // Brez modre kartice (Martin, 26. 9.: "barva ni povsod, ampak od modre crte dol"): graf lezi
+        // na crnem ozadju kot na sliki, modra je samo krivulja in preliv pod njo.
     }
 
     private func salesChart(_ series: [BusinessSales.SeriesPoint]) -> some View {
@@ -138,17 +134,29 @@ struct BusinessDashboardView: View {
         return Chart(series) { p in
             let y = Double(p.grossCents) / 100.0
 
+            // Preliv SAMO pod krivuljo: mocnejsi tik pod crto, izgine proti dnu (Martin, 26. 9., slika).
             AreaMark(x: .value("Date", p.date), y: .value("Gross", y))
                 .interpolationMethod(.catmullRom)
                 .foregroundStyle(
-                    LinearGradient(colors: [Color.outlyBlue.opacity(0.35), Color.outlyBlue.opacity(0.0)], startPoint: .top, endPoint: .bottom)
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color.outlyBlue.opacity(0.55), location: 0),
+                            .init(color: Color.outlyBlue.opacity(0.18), location: 0.45),
+                            .init(color: Color.outlyBlue.opacity(0.0), location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
                 )
 
-            // Sij pod glavno crto: ista pot, sirsa in bolj prosojna (past: Chart nima .shadow na LineMark).
+            // Sij okoli krivulje (Chart nima .shadow na LineMark): dve sirsi, prosojni kopiji iste poti.
             LineMark(x: .value("Date", p.date), y: .value("Gross", y))
                 .interpolationMethod(.catmullRom)
-                .lineStyle(StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
-                .foregroundStyle(Color.outlyBlue.opacity(0.25))
+                .lineStyle(StrokeStyle(lineWidth: 14, lineCap: .round, lineJoin: .round))
+                .foregroundStyle(Color.outlyBlue.opacity(0.14))
+            LineMark(x: .value("Date", p.date), y: .value("Gross", y))
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                .foregroundStyle(Color.outlyBlue.opacity(0.35))
 
             LineMark(x: .value("Date", p.date), y: .value("Gross", y))
                 .interpolationMethod(.catmullRom)
