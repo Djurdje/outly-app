@@ -212,6 +212,8 @@ struct BusinessSales: Decodable {
         let grossCents: Int
         let ticketsSold: Int
         let checkedIn: Int
+        /// Koliko oseb je oznacilo "interested" (backend, 25. 9. 2026); star streznik ga se ne vrne -> 0.
+        let interestedCount: Int
 
         enum CodingKeys: String, CodingKey {
             case id, title, status, capacity
@@ -222,6 +224,7 @@ struct BusinessSales: Decodable {
             case grossCents = "gross_cents"
             case ticketsSold = "tickets_sold"
             case checkedIn = "checked_in"
+            case interestedCount = "interested_count"
         }
 
         init(from decoder: Decoder) throws {
@@ -237,6 +240,7 @@ struct BusinessSales: Decodable {
             grossCents = try c.decodeIfPresent(Int.self, forKey: .grossCents) ?? 0
             ticketsSold = try c.decodeIfPresent(Int.self, forKey: .ticketsSold) ?? 0
             checkedIn = try c.decodeIfPresent(Int.self, forKey: .checkedIn) ?? 0
+            interestedCount = try c.decodeIfPresent(Int.self, forKey: .interestedCount) ?? 0
         }
 
         var startDate: Date? { DateParsing.parseBackendDate(startAt) }
@@ -261,6 +265,37 @@ struct BusinessSales: Decodable {
         }
     }
 
+    /// En kos grafa prodaje (GET /business/sales?range=), dodano 25. 9. 2026 za prenovljeno
+    /// nadzorno plosco. bucket je "YYYY-MM-DD" (week/month) ali "YYYY-MM" (year); loci ju stevilo znakov.
+    struct SeriesPoint: Decodable, Identifiable {
+        let bucket: String
+        let grossCents: Int
+        let tickets: Int
+        var id: String { bucket }
+
+        enum CodingKeys: String, CodingKey {
+            case bucket, tickets
+            case grossCents = "gross_cents"
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            bucket = try c.decodeIfPresent(String.self, forKey: .bucket) ?? ""
+            grossCents = try c.decodeIfPresent(Int.self, forKey: .grossCents) ?? 0
+            tickets = try c.decodeIfPresent(Int.self, forKey: .tickets) ?? 0
+        }
+
+        /// Mesecni kos ima obliko "YYYY-MM" (7 znakov), dnevni "YYYY-MM-DD" (10 znakov).
+        var isMonthly: Bool { bucket.count == 7 }
+
+        var date: Date {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = isMonthly ? "yyyy-MM" : "yyyy-MM-dd"
+            return f.date(from: bucket) ?? Date()
+        }
+    }
+
     let mode: String
     let feePercent: Double
     let summary: Summary
@@ -268,9 +303,12 @@ struct BusinessSales: Decodable {
     let recentOrders: [APIOrder]
     /// Zadnjih 14 dni; starejsi streznik ga ne vraca -> prazno.
     let salesByDay: [DaySales]
+    /// Graf glede na izbrano obdobje (week/month/year); starejsi streznik ga se ne vraca -> prazno,
+    /// zaslon takrat pade nazaj na salesByDay.
+    let series: [SeriesPoint]
 
     enum CodingKeys: String, CodingKey {
-        case mode, summary, events
+        case mode, summary, events, series
         case feePercent = "fee_percent"
         case recentOrders = "recent_orders"
         case salesByDay = "sales_by_day"
@@ -284,6 +322,7 @@ struct BusinessSales: Decodable {
         events = try c.decodeIfPresent([EventSales].self, forKey: .events) ?? []
         recentOrders = try c.decodeIfPresent([APIOrder].self, forKey: .recentOrders) ?? []
         salesByDay = try c.decodeIfPresent([DaySales].self, forKey: .salesByDay) ?? []
+        series = try c.decodeIfPresent([SeriesPoint].self, forKey: .series) ?? []
     }
 }
 
@@ -348,9 +387,11 @@ extension APIClient {
         return try decode([APIOrder].self, from: data)
     }
 
-    /// GET /business/sales — prodaja lastnega kluba.
-    func fetchBusinessSales(token: String) async throws -> BusinessSales {
-        let data = try await send(path: "business/sales", method: "GET", token: token)
+    /// GET /business/sales — prodaja lastnega kluba. `range` doloca graf (week/month/year, 25. 9. 2026);
+    /// starejsi streznik ga ignorira in vrne isti odgovor kot prej (series prazen -> pade nazaj na salesByDay).
+    func fetchBusinessSales(token: String, range: String = "month") async throws -> BusinessSales {
+        let data = try await send(path: "business/sales", method: "GET", token: token,
+                                  query: [URLQueryItem(name: "range", value: range)])
         return try decode(BusinessSales.self, from: data)
     }
 

@@ -71,6 +71,8 @@ struct ClubDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await load() }
+        // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
+        .task { await APIClient.shared.postView(clubId: clubId) }
     }
 
     // MARK: - 1) Header: slideshow do treh slik in ime kluba

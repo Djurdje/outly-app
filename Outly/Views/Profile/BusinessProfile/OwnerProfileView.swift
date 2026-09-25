@@ -112,7 +112,7 @@ struct OwnerProfileView: View {
 
     private var meni: some View {
         VStack(spacing: 12) {
-            NavigationLink { BusinessDashboardView(clubName: club?.name) } label: {
+            NavigationLink { BusinessDashboardView(clubId: club?.id, clubName: club?.name) } label: {
                 OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
             }
             NavigationLink { BusinessEventsView(clubId: club?.id, clubName: club?.name) } label: {

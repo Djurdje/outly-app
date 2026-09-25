@@ -8087,6 +8087,160 @@
           }
         }
       }
+    },
+    "Sales": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja"
+          }
+        }
+      }
+    },
+    "By year": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po letu"
+          }
+        }
+      }
+    },
+    "By month": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po mesecu"
+          }
+        }
+      }
+    },
+    "By week": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po tednu"
+          }
+        }
+      }
+    },
+    "No sales in this period": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V tem obdobju ni prodaje"
+          }
+        }
+      }
+    },
+    "Check activity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveri aktivnost"
+          }
+        }
+      }
+    },
+    "Clicks on profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kliki na profil"
+          }
+        }
+      }
+    },
+    "Clicks on events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kliki na dogodke"
+          }
+        }
+      }
+    },
+    "Followers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sledilci"
+          }
+        }
+      }
+    },
+    "+%@ this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ ta teden"
+          }
+        }
+      }
+    },
+    "Staff activity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivnost ekipe"
+          }
+        }
+      }
+    },
+    "No staff yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ni ekipe"
+          }
+        }
+      }
+    },
+    "View all": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikazi vse"
+          }
+        }
+      }
+    },
+    "No scans yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ni skenov"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
