@@ -1,22 +1,27 @@
 import SwiftUI
 import Charts
 
-/// Nadzorna plosca kluba s PRAVIMI podatki (GET /business/sales): prihodek, prodane
-/// vstopnice, provizija, izplacilo, prodaja po dogodkih, zadnja narocila, vstop na vratih.
-/// Prejsnja razlicica (v _staro/) je kazala izmisljene dolarje.
+/// Nadzorna plosca kluba, prenovljena 25. 9. 2026 (Martin): graf prodaje po Figmi/skici,
+/// "Check activity" (kliki na profil/dogodke, sledilci, aktivnost ekipe na vratih) in
+/// "Event performance". "Recent sales" je odstranjen (razlog: Martin, 25. 9.) — dekodiranje
+/// recent_orders v BusinessSales ostane, ker ga backend se posilja in ne skodi.
 @MainActor
 struct BusinessDashboardView: View {
+    var clubId: Int? = nil
     let clubName: String?
 
     @EnvironmentObject private var session: SessionStore
 
     @State private var sales: BusinessSales?
+    @State private var activity: BusinessActivity?
     @State private var isLoading = false
+    @State private var isChartLoading = false
     @State private var errorText: String?
+    @State private var range: SalesRange = .month
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 26) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Dashboard")
                         .font(.system(size: 30, weight: .bold))
@@ -39,8 +44,15 @@ struct BusinessDashboardView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
+                if let sales, sales.mode == "test" {
+                    Text("Test mode: purchases are simulated, no money moves. Numbers show how the real dashboard will look.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.orange.opacity(0.85))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 if isLoading && sales == nil {
-                    HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.vertical, 30)
+                    HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.vertical, 40)
                 } else if let errorText {
                     VStack(spacing: 10) {
                         Text(errorText).foregroundColor(.red).font(.subheadline)
@@ -48,10 +60,15 @@ struct BusinessDashboardView: View {
                     }
                     .frame(maxWidth: .infinity)
                 } else if let sales {
-                    statistika(sales)
                     graf(sales)
+                    periodPills
+                    povzetek(sales)
+
+                    if let activity {
+                        checkActivity(activity)
+                    }
+
                     dogodki(sales)
-                    narocila(sales)
                 }
 
                 Spacer(minLength: 20)
@@ -67,141 +84,357 @@ struct BusinessDashboardView: View {
         .onAppear { Task { await load() } }
     }
 
-    // MARK: - Statistika
+    // MARK: - 1) Graf prodaje (kartica, identicna skici Martina 25. 9. 2026)
 
-    private func statistika(_ s: BusinessSales) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                kartica("Total revenue", Denar.evri(s.summary.grossCents), "gross, all events")
-                kartica("Tickets sold", "\(s.summary.ticketsSold)", "\(s.summary.orders) orders · \(s.summary.buyers) buyers")
-                kartica("Outly fee", Denar.evri(s.summary.feeCents), "\(Int(s.feePercent)) % of gross")
-                kartica("Your payout", Denar.evri(s.summary.netCents), "after fee and refunds")
+    private var periodSumCents: Int {
+        sales?.series.reduce(0) { $0 + $1.grossCents } ?? 0
+    }
+
+    private func graf(_ s: BusinessSales) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sales")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                if isChartLoading {
+                    // Preklop obdobja: majhen indikator namesto vsote, dokler nov graf ne pride.
+                    ProgressView().tint(.outlyBlue).scaleEffect(0.7)
+                } else {
+                    Text(Denar.evri(periodSumCents))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.outlyBlue)
+                }
             }
-            HStack(spacing: 12) {
-                kartica("Last 7 days", Denar.evri(s.summary.gross7dCents), "\(s.summary.tickets7d) tickets")
+            .padding(.bottom, 14)
+
+            ZStack {
+                if s.series.isEmpty || periodSumCents == 0 {
+                    Text("No sales in this period")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.5))
+                } else {
+                    salesChart(s.series)
+                        .animation(.snappy, value: s.series.map(\.grossCents))
+                }
             }
-            if s.mode == "test" {
-                Text("Test mode: purchases are simulated, no money moves. Numbers show how the real dashboard will look.")
-                    .font(.system(size: 11))
-                    .foregroundColor(.orange.opacity(0.85))
-                    .fixedSize(horizontal: false, vertical: true)
+            .frame(height: 200)
+        }
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 11/255, green: 18/255, blue: 48/255), Color(red: 10/255, green: 10/255, blue: 10/255)],
+                startPoint: .top, endPoint: .bottom
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func salesChart(_ series: [BusinessSales.SeriesPoint]) -> some View {
+        let maxEuros = Double(series.map(\.grossCents).max() ?? 0) / 100.0
+        let yValues = yAxisValues(maxEuros: maxEuros)
+        let domainTop = yValues.last ?? 1
+
+        return Chart(series) { p in
+            let y = Double(p.grossCents) / 100.0
+
+            AreaMark(x: .value("Date", p.date), y: .value("Gross", y))
+                .interpolationMethod(.catmullRom)
+                .foregroundStyle(
+                    LinearGradient(colors: [Color.outlyBlue.opacity(0.35), Color.outlyBlue.opacity(0.0)], startPoint: .top, endPoint: .bottom)
+                )
+
+            // Sij pod glavno crto: ista pot, sirsa in bolj prosojna (past: Chart nima .shadow na LineMark).
+            LineMark(x: .value("Date", p.date), y: .value("Gross", y))
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+                .foregroundStyle(Color.outlyBlue.opacity(0.25))
+
+            LineMark(x: .value("Date", p.date), y: .value("Gross", y))
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                .foregroundStyle(Color.outlyBlue)
+        }
+        .chartYScale(domain: 0...max(domainTop, 1))
+        .chartXAxis {
+            AxisMarks(values: xAxisDates(series)) { value in
+                AxisValueLabel {
+                    if let d = value.as(Date.self) {
+                        Text(xAxisLabel(d))
+                            .font(.system(size: 10))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: yValues) { value in
+                AxisValueLabel {
+                    if let v = value.as(Double.self) {
+                        Text(v == 0 ? "0 €" : "\(Int(v)) €")
+                            .font(.system(size: 10))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
             }
         }
     }
 
-    private func kartica(_ naslov: LocalizedStringKey, _ vrednost: String, _ opis: LocalizedStringKey) -> some View {
+    /// Sest "lepih" vrednosti Y-osi (0, ~max/12, ~max/6, ~max/3, ~max/2, max), zaokrozenih
+    /// na 10/50/100, kot na Martinovi skici (0 €, 300 €, 750 €, 1500 €, 3000 €, 7000 €).
+    private func yAxisValues(maxEuros: Double) -> [Double] {
+        guard maxEuros > 0 else { return [0] }
+        let fractions: [Double] = [0, 1.0 / 12, 1.0 / 6, 1.0 / 3, 1.0 / 2, 1.0]
+        var values = fractions.map { niceRoundUp(maxEuros * $0) }
+        for i in 1..<values.count where values[i] <= values[i - 1] {
+            values[i] = values[i - 1] + (values[i - 1] < 100 ? 10 : (values[i - 1] < 1000 ? 50 : 100))
+        }
+        return values
+    }
+
+    private func niceRoundUp(_ v: Double) -> Double {
+        guard v > 0 else { return 0 }
+        let step: Double = v < 100 ? 10 : (v < 1000 ? 50 : 100)
+        return (v / step).rounded(.up) * step
+    }
+
+    /// Kateri datumi dobijo oznako na osi X, glede na izbrano obdobje.
+    private func xAxisDates(_ series: [BusinessSales.SeriesPoint]) -> [Date] {
+        switch range {
+        case .year, .week:
+            return series.map(\.date)
+        case .month:
+            return series.enumerated().compactMap { i, p in i % 5 == 0 ? p.date : nil }
+        }
+    }
+
+    private func xAxisLabel(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Jezik.shared.locale
+        switch range {
+        case .year:
+            f.dateFormat = "MMM"
+            return f.string(from: d).lowercased()
+        case .month:
+            f.dateFormat = "d. M."
+            return f.string(from: d)
+        case .week:
+            f.dateFormat = "EEE"
+            return f.string(from: d).lowercased()
+        }
+    }
+
+    // MARK: - 2) Gumbi obdobja
+
+    private var periodPills: some View {
+        HStack(spacing: 10) {
+            ForEach(SalesRange.allCases, id: \.self) { r in
+                periodPill(r)
+            }
+            Spacer()
+        }
+        .padding(.top, 2)
+    }
+
+    private func periodPill(_ r: SalesRange) -> some View {
+        let izbran = r == range
+        return Button {
+            guard r != range else { return }
+            range = r
+            Task { await loadSales() }
+        } label: {
+            Text(r.label)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(izbran ? Color.outlyBlue : Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(izbran ? Color.clear : Color.outlyBlue.opacity(0.7), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Povzetek (Martin, 25. 9. 2026: vrni te stevilke — odstranjen je bil samo "Recent sales")
+
+    private func povzetek(_ s: BusinessSales) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            summaryCard("Total revenue", Denar.evri(s.summary.grossCents), "gross, all events")
+            summaryCard("Tickets sold", stevilka(s.summary.ticketsSold), "\(s.summary.orders) orders · \(s.summary.buyers) buyers")
+            summaryCard("Outly fee", Denar.evri(s.summary.feeCents), "\(Int(s.feePercent)) % of gross")
+            summaryCard("Your payout", Denar.evri(s.summary.netCents), "after fee and refunds", modra: true)
+        }
+    }
+
+    /// Ista kartica kot "Check activity" (radij 16, bela podlaga ~5-6 %); "Your payout" je edina
+    /// modra stevilka v tej mrezi (poudarek, kot je narocil Martin).
+    private func summaryCard(_ naslov: LocalizedStringKey, _ vrednost: String, _ opis: LocalizedStringKey, modra: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(naslov)
                 .font(.footnote)
                 .foregroundColor(.white.opacity(0.65))
             Text(vrednost)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.white)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(modra ? .outlyBlue : .white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(opis)
-                .font(.system(size: 11))
-                .foregroundColor(.white.opacity(0.45))
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.6))
                 .lineLimit(1)
         }
-        .frame(maxWidth: .infinity, minHeight: 86, alignment: .leading)
-        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .frame(minHeight: 78, alignment: .topLeading)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    // MARK: - Graf (Swift Charts, zadnjih 14 dni)
+    // MARK: - 3) Check activity
 
-    private func graf(_ s: BusinessSales) -> some View {
+    private let leftColumnHeight: CGFloat = 224
+
+    private func checkActivity(_ a: BusinessActivity) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Sales, last 14 days")
-                    .font(.title3.bold())
-                    .foregroundColor(.white)
-                Spacer()
-                Text(Denar.evri(s.salesByDay.reduce(0) { $0 + $1.grossCents }))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.outlyBlue)
-            }
+            Text("Check activity")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.white)
 
-            if s.salesByDay.isEmpty {
-                Text("No daily data yet.")
-                    .font(.subheadline).foregroundColor(.white.opacity(0.6))
-            } else {
-                Chart(s.salesByDay) { d in
-                    AreaMark(
-                        x: .value("Day", d.date, unit: .day),
-                        y: .value("Revenue", Double(d.grossCents) / 100.0)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(
-                        LinearGradient(colors: [Color.outlyBlue.opacity(0.35), Color.outlyBlue.opacity(0.0)], startPoint: .top, endPoint: .bottom)
-                    )
-                    LineMark(
-                        x: .value("Day", d.date, unit: .day),
-                        y: .value("Revenue", Double(d.grossCents) / 100.0)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(Color.outlyBlue)
-                    if d.grossCents > 0 {
-                        PointMark(
-                            x: .value("Day", d.date, unit: .day),
-                            y: .value("Revenue", Double(d.grossCents) / 100.0)
-                        )
-                        .symbolSize(40)
-                        .foregroundStyle(Color.white)
-                    }
+            HStack(alignment: .top, spacing: 12) {
+                VStack(spacing: 10) {
+                    statCard("Clicks on profile", a.clicksProfile, a.clicksProfile7d)
+                    statCard("Clicks on events", a.clicksEvents, a.clicksEvents7d)
+                    statCard("Followers", a.followersCount, a.followersNew7d)
                 }
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .day, count: 3)) { _ in
-                        AxisGridLine().foregroundStyle(Color.white.opacity(0.08))
-                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
-                            .foregroundStyle(Color.white.opacity(0.5))
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(position: .leading) { v in
-                        AxisGridLine().foregroundStyle(Color.white.opacity(0.08))
-                        AxisValueLabel {
-                            if let n = v.as(Double.self) {
-                                Text(n >= 1000 ? String(format: "%.1fk €", n / 1000) : String(format: "%.0f €", n))
-                                    .foregroundColor(.white.opacity(0.5))
-                            }
-                        }
-                    }
-                }
-                .frame(height: 170)
-                .padding(14)
-                .background(Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .frame(maxWidth: .infinity)
+
+                staffCard(a.staff)
+                    .frame(maxWidth: .infinity)
             }
         }
     }
 
-    // MARK: - Dogodki
+    private func statCard(_ naslov: LocalizedStringKey, _ vrednost: Int, _ delta7d: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(naslov)
+                .font(.footnote)
+                .foregroundColor(.white.opacity(0.65))
+            Text(stevilka(vrednost))
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text("+\(stevilka(delta7d)) this week")
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .frame(height: (leftColumnHeight - 20) / 3)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func staffCard(_ staff: [BusinessActivity.StaffActivity]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Staff activity")
+                .font(.footnote)
+                .foregroundColor(.white.opacity(0.65))
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+
+            if staff.isEmpty {
+                Spacer()
+                Text("No staff yet")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.5))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Spacer()
+            } else {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 10) {
+                        ForEach(staff) { m in
+                            NavigationLink {
+                                StaffScansView(member: m)
+                            } label: {
+                                staffRow(m)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
+                }
+            }
+        }
+        .frame(height: leftColumnHeight, alignment: .top)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func staffRow(_ m: BusinessActivity.StaffActivity) -> some View {
+        HStack(spacing: 8) {
+            OutlyAvatarView(avatarUrlString: m.avatarUrl, size: 28)
+            Text(m.username)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.white)
+                .lineLimit(1)
+            Spacer()
+            Text(stevilka(m.scans))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.outlyBlue)
+        }
+    }
+
+    private func stevilka(_ n: Int) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.locale = Jezik.shared.locale
+        return f.string(from: NSNumber(value: n)) ?? "\(n)"
+    }
+
+    // MARK: - 4) Event performance (drsljiv seznam, max ~4 vrstice vidne)
+
+    private let eventListHeight: CGFloat = 340
 
     private func dogodki(_ s: BusinessSales) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Event performance")
-                .font(.title3.bold())
-                .foregroundColor(.white)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Event performance")
+                    .font(.title3.bold())
+                    .foregroundColor(.white)
+                Spacer()
+                NavigationLink {
+                    BusinessEventsView(clubId: clubId, clubName: clubName)
+                } label: {
+                    Text("View all")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+            }
 
             if s.events.isEmpty {
                 Text("No events yet. Add one under Events.")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.6))
             } else {
-                VStack(spacing: 10) {
-                    ForEach(s.events) { e in
-                        NavigationLink {
-                            EventTicketsView(event: e)
-                        } label: {
-                            vrsticaDogodka(e)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 10) {
+                        ForEach(s.events) { e in
+                            NavigationLink {
+                                EventTicketsView(event: e)
+                            } label: {
+                                vrsticaDogodka(e)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
+                .frame(height: eventListHeight)
             }
         }
     }
@@ -209,10 +442,13 @@ struct BusinessDashboardView: View {
     private func vrsticaDogodka(_ e: BusinessSales.EventSales) -> some View {
         HStack(spacing: 12) {
             if !e.posterUrl.isEmpty, let url = URL(string: e.posterUrl) {
-                AsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
-                    .frame(width: 54, height: 54)
-                    .clipped()
-                    .cornerRadius(10)
+                AsyncImage(url: url) { img in
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                } placeholder: {
+                    Rectangle().fill(Color.white.opacity(0.1))
+                }
+                .frame(width: 54, height: 54)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             } else {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color.outlyBlue.opacity(0.25))
@@ -232,6 +468,11 @@ struct BusinessDashboardView: View {
                     }
                     Text("·")
                     Text("\(e.checkedIn) in")
+                    if e.interestedCount > 0 {
+                        Text("·")
+                        Label("\(e.interestedCount) interested", systemImage: "hand.thumbsup")
+                            .labelStyle(.titleAndIcon)
+                    }
                 }
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.7))
@@ -252,47 +493,6 @@ struct BusinessDashboardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    // MARK: - Narocila
-
-    private func narocila(_ s: BusinessSales) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recent sales")
-                .font(.title3.bold())
-                .foregroundColor(.white)
-
-            if s.recentOrders.isEmpty {
-                Text("No sales yet.")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.6))
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(s.recentOrders) { o in
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(o.eventTitle)
-                                    .font(.subheadline.weight(.semibold)).foregroundColor(.white).lineLimit(1)
-                                Text("\(o.buyerUsername.isEmpty ? o.buyerEmail : o.buyerUsername) · \(o.quantity) × \(Denar.evri(o.unitPriceCents, koda: o.currency))")
-                                    .font(.caption).foregroundColor(.white.opacity(0.55)).lineLimit(1)
-                            }
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 3) {
-                                Text(Denar.evri(o.totalCents, koda: o.currency))
-                                    .font(.subheadline.weight(.semibold)).foregroundColor(.white)
-                                Text(cas(o.createdDate) + (o.status == "paid" ? "" : " · \(orderStatusLabel(o.status))"))
-                                    .font(.caption).foregroundColor(.white.opacity(0.45))
-                            }
-                        }
-                        .padding(.vertical, 10)
-                        Divider().background(Color.white.opacity(0.1))
-                    }
-                }
-                .padding(.horizontal, 14)
-                .background(Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-        }
-    }
-
     /// Napis statusa dogodka za prikaz (vrednost "published"/"draft"/"cancelled" ostane za API).
     private func eventStatusLabel(_ status: String) -> String {
         switch status {
@@ -302,38 +502,52 @@ struct BusinessDashboardView: View {
         }
     }
 
-    /// Napis statusa narocila za prikaz (vrednost ostane za API/primerjave).
-    private func orderStatusLabel(_ status: String) -> String {
-        switch status {
-        case "pending": return String(localized: "pending")
-        case "failed": return String(localized: "failed")
-        case "cancelled": return String(localized: "cancelled")
-        case "refunded": return String(localized: "refunded")
-        case "partially_refunded": return String(localized: "partially refunded")
-        default: return status
-        }
-    }
-
     private func datum(_ d: Date?) -> String {
         guard let d else { return "" }
         return d.formatted(date: .abbreviated, time: .shortened)
     }
 
-    private func cas(_ d: Date?) -> String {
-        guard let d else { return "" }
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .short
-        return f.localizedString(for: d, relativeTo: Date())
-    }
+    // MARK: - Nalaganje
 
     private func load() async {
         isLoading = true
         defer { isLoading = false }
         do {
-            sales = try await APIClient.shared.fetchBusinessSales(token: session.token)
+            sales = try await APIClient.shared.fetchBusinessSales(token: session.token, range: range.apiValue)
             errorText = nil
         } catch {
             errorText = error.userMessage
+            return
+        }
+        // Ce streznik (se) nima /business/activity (star backend), zaslon vseeno pokaze
+        // graf in dogodke — samo "Check activity" izgine namesto da podre cel zaslon.
+        activity = try? await APIClient.shared.fetchBusinessActivity(token: session.token)
+    }
+
+    /// Ob preklopu obdobja osvezimo samo graf (aktivnost in dogodki ostanejo).
+    private func loadSales() async {
+        isChartLoading = true
+        defer { isChartLoading = false }
+        do {
+            sales = try await APIClient.shared.fetchBusinessSales(token: session.token, range: range.apiValue)
+        } catch {
+            errorText = error.userMessage
+        }
+    }
+}
+
+/// Obdobje grafa prodaje (GET /business/sales?range=). Vrstni red je isti kot na Martinovi
+/// skici: By year, By month, By week — privzeto By month (najbolj uporabno za lastnika).
+enum SalesRange: String, CaseIterable {
+    case year, month, week
+
+    var apiValue: String { rawValue }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .year: return "By year"
+        case .month: return "By month"
+        case .week: return "By week"
         }
     }
 }

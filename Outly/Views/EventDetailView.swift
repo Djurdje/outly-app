@@ -60,6 +60,8 @@ struct EventDetailView: View {
         .preferredColorScheme(.dark)
         .task { await loadClub() }
         .task { await loadPlan() }
+        // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
+        .task { await APIClient.shared.postView(eventId: event.id) }
         .sheet(isPresented: $showBuy) {
             BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"))
                 .environmentObject(session)
