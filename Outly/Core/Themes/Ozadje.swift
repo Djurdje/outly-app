@@ -61,10 +61,12 @@ private struct OutlyOzadjeModifier: ViewModifier {
                 // Trdo pravilo (Martin, 24. 9.): pri Reduce Motion samo prosojnost, brez skale/zameglitve.
                 content.opacity(vstop.prosojnost)
             } else {
+                // Brez .blur na ZIVI vsebini (Martin, 25. 9.: "tranzicije stekajo"): animiran Gaussov
+                // blur cez cel zaslon s slikami vsak frame znova rise in zamegli celo plast, skupaj s
+                // skaliranjem pade pod 60 fps. Zameglitev ostane samo na posnetkih (ozadje, plast).
                 content
                     .scaleEffect(vstop.skala, anchor: vstop.sidro)
                     .opacity(vstop.prosojnost)
-                    .blur(radius: vstop.zameglitev)
             }
         }
         .background(HomeSnapshotBackground(slika: posnetek))
@@ -103,6 +105,19 @@ enum OzadnjaZameglitev {
 
     /// Zamegli ze zajet posnetek (CIGaussianBlur); radij v pikslih se prilagodi merilu SLIKE,
     /// zato deluje na posnetku katerekoli locljivosti.
+    /// Pomanjsa ze zajet posnetek (npr. z merila 1.0 na 0.25) — risanje UIImage v manjsi renderer je
+    /// poceni (GPU), za razliko od drugega klica drawHierarchy, ki znova prehodi vso hierarhijo.
+    /// Zato ob preklopu zavihka zajamemo zaslon ENKRAT (ostro) in zamegljeno ozadje izpeljemo iz tega.
+    static func pomanjsaj(_ slika: UIImage, naMerilo merilo: CGFloat) -> UIImage {
+        let velikost = slika.size
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = merilo
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: velikost, format: format).image { _ in
+            slika.draw(in: CGRect(origin: .zero, size: velikost))
+        }
+    }
+
     static func zamegli(_ slika: UIImage) -> UIImage? {
         guard let cg = slika.cgImage else { return nil }
         let vhod = CIImage(cgImage: cg)
