@@ -15,7 +15,7 @@ import SwiftUI
 /// Prehod Home <-> Search/Profile (Martin, 24. 9., po posnetku Revoluta po slicicah — ZAMENJAVA
 /// za "krozno razkritje" iz PR #22, ki ga je Martin videl in ni hotel): BREZ maske/kroga. Namesto
 /// tega vsebina cilja (cela, ne izrezana) zraste iz sidra v sredini avatarja/polja "Where to?" s
-/// 40 % na 100 % velikosti, hkrati se pojavi (opacity 0->1) in izostri (blur ~10->0) v ~0,3 s
+/// 40 % na 100 % velikosti, hkrati se pojavi (opacity 0->1) v ~0,3 s; brez blura na zivi vsebini (25. 9.)
 /// (ease-out) — to nosi `VstopZavihka` v okolju (Core/Themes/Ozadje.swift), ki jo `.outlyOzadje()`
 /// prebere in uporabi na SVOJI vsebini zaslona. Poleg tega domaci zaslon pod njo v ~0,3 s zbledi
 /// v ze zamegljen posnetek (`ZabrisSloj` nad TabViewom, oster posnetek pojema) — to je "Home se
@@ -95,7 +95,9 @@ struct MainTabView: View {
 
         // Ozadje za Search/Profile (zamegljen posnetek Home) osvezimo vedno, ko zapuscamo Home —
         // isti posnetek uporabi tudi zapriVHome kot spremljevalno plast ob vrnitvi.
-        if od == 0 && nov != 0 { osveziOzadjeZavihka() }
+        // Za Home -> Search/Profile ozadje izpelje odpriIzHome iz istega (enega) posnetka.
+        let rastIzHome = !zmanjsanoGibanje && od == 0 && (nov == 1 || nov == 3)
+        if od == 0 && nov != 0 && !rastIzHome { osveziOzadjeZavihka() }
 
         if zmanjsanoGibanje {
             // Trdo pravilo (Martin, 24. 9.): pri Reduce Motion samo navaden zabris, brez rasti/krcenja.
@@ -122,7 +124,7 @@ struct MainTabView: View {
     }
 
     /// Home -> Search/Profile: vsebina cilja zraste iz sidra (40 % -> 100 %, opacity 0->1,
-    /// blur 10->0, 0,3 s ease-out); zavihek preklopimo TAKOJ (POD plastjo je ze ziv cilj), plast
+    /// 0,3 s ease-out, brez blura); zavihek preklopimo TAKOJ (POD plastjo je ze ziv cilj), plast
     /// nad njim (oster posnetek Home) v istem casu pojema in odkriva ze zamegljen posnetekDoma
     /// pod seboj — to je "Home se zamegli".
     private func odpriIzHome(na nov: Int, izvor: CGRect) {
@@ -131,23 +133,33 @@ struct MainTabView: View {
             zavihek = nov
             return
         }
-        vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 10, sidro: sidro)
+        // EN zajem hierarhije (drag del, glavna nit); zamegljeno ozadje izpeljemo iz istega posnetka
+        // s pomanjsavo na cetrtino — prej sta bila dva drawHierarchy zapored in prvi sliciki animacije
+        // sta manjkali (Martin, 25. 9.: "tranzicije stekajo").
+        let majhen = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
+        posnetekDoma = OzadnjaZameglitev.zamegli(majhen) ?? majhen
+        vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 0, sidro: sidro)
         zavihek = nov
         dodajZabris(slika: surov, trajanje: 0.3)
-        withAnimation(.easeOut(duration: 0.3)) {
-            vstop = VstopZavihka(skala: 1, prosojnost: 1, zameglitev: 0, sidro: sidro)
+        // Animacija se zacne EN frame po preklopu: v tem framu SwiftUI zgradi in postavi ciljni zaslon
+        // (slike, .task klici); ce bi se animacija zacela takoj, bi njen prvi del tekmoval s postavitvijo.
+        // Ostri posnetek Home v plasti ta frame prekrije, uporabnik ne vidi nicesar.
+        DispatchQueue.main.async {
+            withAnimation(.easeOut(duration: 0.3)) {
+                vstop = VstopZavihka(skala: 1, prosojnost: 1, zameglitev: 0, sidro: sidro)
+            }
         }
     }
 
     /// Search/Profile -> Home: najprej ziva vsebina zaslona, ki ga zapuscamo, skrci proti sidru
-    /// (100 % -> 40 %), zbledi in zamegli (0,25 s); SELE PO KONCU (withAnimation(_:completion:),
+    /// (100 % -> 40 %), zbledi (0,25 s); SELE PO KONCU (withAnimation(_:completion:),
     /// iOS 17) preklopimo zavihek na Home in nad njim za 0,2 s zbledi plast z zamegljenim
     /// posnetkom Home (posnetekDoma) — "domaci zaslon se izostri". Na koncu vstop ponastavimo
     /// BREZ animacije, da je ob naslednjem odprtju stanje cisto.
     private func zapriVHome(odIzvora izvor: CGRect) {
         let sidro = sidroIz(izvor)
         withAnimation(.easeIn(duration: 0.25)) {
-            vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 10, sidro: sidro)
+            vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 0, sidro: sidro)
         } completion: {
             zavihek = 0
             if let ozadje = posnetekDoma {

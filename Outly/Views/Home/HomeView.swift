@@ -45,8 +45,8 @@ struct HomeView: View {
     @State private var notificationsLoading = false
     /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
     @State private var friendPlans: [FriendPlan] = []
-    /// "Going events" (Martin, 24. 9. 2026, namesto "Liked events" — srcek je odstranjen, nadomestil
-    /// ga je "I'm in"): moji lastni nacrti (GET /me/plans), going in interested.
+    /// "Interested events" (Martin, 25. 9. 2026, prej "Going events" — sedaj samo tisti, ki me
+    /// zanimajo ("I'm in"); dogodke z vstopnico ima uporabnik pod Tickets): GET /me/plans.
     @State private var myPlans: [FriendPlan] = []
     /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje.
     @State private var scrollOffset: CGFloat = 0
@@ -57,15 +57,14 @@ struct HomeView: View {
     @EnvironmentObject private var prefs: UserPreferences
     @EnvironmentObject private var locationManager: LocationManager
 
-    /// "Going events": prihajajoci moji nacrti, going najprej, nato interested, znotraj tega
-    /// po datumu (Martin, 24. 9. 2026 — nadomestilo za "Liked events" po odstranitvi srckov).
-    private var goingUpcoming: [FriendPlan] {
+    /// "Interested events": prihajajoci moji nacrti, SAMO interested — dogodke z vstopnico
+    /// (.going) uporabnik najde pod Tickets, zato tu ne sodijo vec (Martin, 25. 9. 2026).
+    /// Po datumu, najblizji najprej.
+    private var interestedUpcoming: [FriendPlan] {
         myPlans
+            .filter { $0.myPlan == .interested }
             .filter { ($0.event.startDate ?? .distantFuture) >= Date().addingTimeInterval(-6 * 3600) }
-            .sorted { a, b in
-                if (a.myPlan == .going) != (b.myPlan == .going) { return a.myPlan == .going }
-                return (a.event.startDate ?? .distantFuture) < (b.event.startDate ?? .distantFuture)
-            }
+            .sorted { ($0.event.startDate ?? .distantFuture) < ($1.event.startDate ?? .distantFuture) }
     }
 
     private var userAge: Int? { session.me?.age }
@@ -254,10 +253,10 @@ struct HomeView: View {
                             }
                         }
 
-                        // 2b. Going events (Martin, 24. 9.): moji nacrti ("I'm in") na domaci zaslon,
-                        // namesto prejsnjih srckov. Razdelek je viden samo, ko je kaj v njem.
-                        if !goingUpcoming.isEmpty {
-                            goingSection
+                        // 2b. Interested events (Martin, 25. 9.): dogodki, kjer sem rekel "I'm in",
+                        // brez tistih z vstopnico (ti so pod Tickets). Viden samo, ko je kaj v njem.
+                        if !interestedUpcoming.isEmpty {
+                            interestedSection
                         }
 
                         // 3. Last week's biggest hits (Figma 50:100)
@@ -385,11 +384,13 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Going events (loceno zaradi tipnega preverjevalnika, kot genreSection)
-    private var goingSection: some View {
+    // MARK: - Interested events (loceno zaradi tipnega preverjevalnika, kot genreSection)
+    // Vsi tu so interested (going ima svoj dom pod Tickets), zato znacka na kartici ni vec
+    // potrebna (Martin, 25. 9. 2026; prejsnja goingZnacka je odstranjena).
+    private var interestedSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeader(title: "Going events")
+                SectionHeader(title: "Interested events")
                 Spacer()
                 NavigationLink { SavedView() } label: {
                     Text("See all")
@@ -400,12 +401,9 @@ struct HomeView: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(goingUpcoming) { p in
+                    ForEach(interestedUpcoming) { p in
                         NavigationLink { EventDetailView(event: p.event) } label: {
-                            ZStack(alignment: .topTrailing) {
-                                EventPosterCard(event: p.event, clubName: p.clubName.isEmpty ? clubsById[p.event.clubId]?.name : p.clubName)
-                                if let plan = p.myPlan { goingZnacka(plan) }
-                            }
+                            EventPosterCard(event: p.event, clubName: p.clubName.isEmpty ? clubsById[p.event.clubId]?.name : p.clubName)
                         }
                         .buttonStyle(.plain)
                     }
@@ -413,19 +411,6 @@ struct HomeView: View {
                 .padding(.vertical, 4)
             }
         }
-    }
-
-    /// Majhna znacka na kartici "Going events": moder poln pil (going) ali bela obroba (interested).
-    private func goingZnacka(_ plan: EventPlan) -> some View {
-        Text(plan == .going ? "Going" : "Interested")
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(0.3)
-            .foregroundColor(.white)
-            .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(plan == .going ? Color.outlyBlue : Color.black.opacity(0.55))
-            .overlay(Capsule().stroke(Color.white.opacity(plan == .going ? 0 : 0.6), lineWidth: 1))
-            .clipShape(Capsule())
-            .padding(10)
     }
 
     // MARK: - Discover your genre (vidne 3 vrstice, ostale z drsenjem) — loceno,

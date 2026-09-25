@@ -8044,6 +8044,17 @@
         }
       }
     },
+    "Interested events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zanima me"
+          }
+        }
+      }
+    },
     "No going events yet": {
       "extractionState": "manual",
       "localizations": {
@@ -8051,6 +8062,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Še nimaš nobenih načrtov"
+          }
+        }
+      }
+    },
+    "No interested events yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni dogodkov, ki bi te zanimali"
           }
         }
       }

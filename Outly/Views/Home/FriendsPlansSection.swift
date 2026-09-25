@@ -36,7 +36,8 @@ struct FriendsPlansSection: View {
     let plans: [FriendPlan]
     let clubsById: [Int: APIClub]
 
-    private let velikost: CGFloat = 54
+    // Avatarji +5 % (Martin, 25. 9. 2026): 54 -> 57. Invite more (36) ostane.
+    private let velikost: CGFloat = 57
     private let velikostPovabi: CGFloat = 36
     private let najvecAvatarjev = 6
 
@@ -174,187 +175,292 @@ extension Array where Element == FriendPlan {
         }
     }
 
-    /// Po stevilu prijateljev (going + interested) padajoce, nato po datumu zacetka.
-    func razvrsceniPoPriljubljenosti() -> [FriendPlan] {
-        sorted { a, b in
-            let na = a.friends.count + a.interested.count
-            let nb = b.friends.count + b.interested.count
-            if na != nb { return na > nb }
-            let da = a.event.startDate ?? .distantFuture
-            let db = b.event.startDate ?? .distantFuture
-            return da < db
+    // Prejsnja razvrsceniPoPriljubljenosti (razvrscanje za locena zavihka Going/Interested iz
+    // PR #22) je odstranjena skupaj z zavihki spodaj — noben klicatelj je vec ne rabi
+    // (Martin, 25. 9. 2026: "View" nazaj na izgled izpred PR #22).
+}
+
+// MARK: - "View" (FriendsPlansView): nazaj na izgled izpred PR #22 (Martin, 25. 9. 2026, po
+// ogledu builda) — gumbi All + po prijatelju (samo pri >= 2 prijateljih), kartica z zatemnjenim
+// plakatom, prekrivajocimi avatarji in gumboma "Join them" (nakup) / "View event". Razlika od
+// izvirnika: seznam in kartice upostevajo tudi interested prijatelje, ne samo going (avatarji:
+// going najprej z modrim robom, nato interested z belim robom 50 %, kot krogi na Home). Srcek
+// (favorites) je odstranjen — enako kot povsod drugje po 24. 9. 2026 (glej EventDetailView).
+// Potisnjen pogled, brez lastnega NavigationStacka (past 9).
+struct FriendsPlansView: View {
+    let plans: [FriendPlan]
+    let clubsById: [Int: APIClub]
+    var oseba: FriendUser? = nil
+
+    /// nil = All, sicer id prijatelja.
+    @State private var izbran: Int? = nil
+    @State private var izbranNastavljen = false
+
+    /// Brez podvojenih dogodkov in brez preteklih (varovalo, ce bi streznik kdaj vrnil vec
+    /// kot en zapis na dogodek).
+    private var vsi: [FriendPlan] { plans.brezPodvojenihInKoncanih }
+
+    /// Prijatelji za gumbe filtra: going najprej (brez podvajanja), nato tisti, ki jih samo
+    /// zanima — v vrstnem redu prvega dogodka.
+    private var prijatelji: [FriendUser] {
+        var videni = Set<Int>()
+        var seznam: [FriendUser] = []
+        for p in vsi {
+            for f in p.friends where !videni.contains(f.id) {
+                videni.insert(f.id)
+                seznam.append(f)
+            }
         }
+        for p in vsi {
+            for f in p.interested where !videni.contains(f.id) {
+                videni.insert(f.id)
+                seznam.append(f)
+            }
+        }
+        return seznam
+    }
+
+    private var izbrani: FriendUser? { prijatelji.first { $0.id == izbran } }
+
+    private var prikazani: [FriendPlan] {
+        guard let izbran else { return vsi }
+        return vsi.filter { p in
+            p.friends.contains { $0.id == izbran } || p.interested.contains { $0.id == izbran }
+        }
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(spacing: 6) {
+                    Text("Friends plans")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                    Text(izbrani.map { String(localized: "Where \($0.username) is going.") } ?? String(localized: "See where your friends are going."))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 6)
+
+                // Gumbi "All" + po prijatelju samo pri >= 2 prijateljih (Martin, 25. 9.: pri
+                // enem samem prijatelju sta gumba dva in oba delata isto, zato brez njiju).
+                if prijatelji.count >= 2 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            gumbFiltra(String(localized: "All"), id: nil)
+                            ForEach(prijatelji) { f in gumbFiltra(f.username, id: f.id) }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+
+                if prikazani.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "person.2").font(.system(size: 36)).foregroundStyle(Color.outlyBlue)
+                        Text("No plans yet").font(.headline).foregroundStyle(.white)
+                        Text("When a friend gets a ticket, the event shows up here.").font(.subheadline).foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 60)
+                } else {
+                    VStack(spacing: 16) {
+                        ForEach(prikazani) { p in FriendsPlanCard(plan: p, clubsById: clubsById) }
+                    }
+                }
+            }
+            .padding(16)
+            .padding(.bottom, 40)
+        }
+        .outlyOzadje()
+        .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(.dark)
+        .onAppear {
+            // Samo prvic: ce je uporabnik prisel z avatarja prijatelja, je ta gumb ze izbran.
+            if !izbranNastavljen { izbran = oseba?.id; izbranNastavljen = true }
+        }
+    }
+
+    // MARK: - Gumbi filtra
+
+    private func gumbFiltra(_ naslov: String, id: Int?) -> some View {
+        let aktiven = izbran == id
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) { izbran = id }
+        } label: {
+            Text(naslov)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(aktiven ? .white : .white.opacity(0.75))
+                .lineLimit(1)
+                .padding(.horizontal, 18)
+                .frame(height: 40)
+                .background(Capsule().fill(aktiven ? Color.outlyBlue : Color.white.opacity(0.06)))
+                .overlay(Capsule().stroke(Color.white.opacity(aktiven ? 0 : 0.25), lineWidth: 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Ena vrstica dogodka (deli jo Home razdelek in "View")
+// MARK: - Kartica dogodka na zaslonu "View"
 
-/// Plakat 60x60, naslov, dan · klub, prekrivajoci avatarji + napis, desno gumb/znacka.
-/// Dotik na vrstico (ne na gumb) -> EventDetailView. Skrit NavigationLink je .background
-/// cele vrstice; gumb v ospredju dotik prestreze prej, zato ne sprozi tudi navigacije.
-struct FriendPlanRow: View {
+/// Zatemnjen plakat kot ozadje, "N FRIENDS GOING · M INTERESTED" zgoraj, prekrivajoci avatarji
+/// (going najprej z modrim robom, interested z belim robom 50 %), klub/dogodek/cas/kraj, plakat
+/// z modrim robom, spodaj "Join them" (odpre nakup KOT LIST — BuyTicketsView ima lasten
+/// NavigationStack, potisniti ga NE smemo, past: skrije gumb nazaj) in "View event" (potisne
+/// EventDetailView, ki lastnega NavigationStacka nima). "Join them" je skrit, ce dogodek nima
+/// cene na Outlyju ali je razprodan/koncan.
+private struct FriendsPlanCard: View {
     let plan: FriendPlan
     let clubsById: [Int: APIClub]
-    /// Sij samo na prvi vrstici zaslona (pravilo: en sij na zaslon).
-    var prikaziSij: Bool = false
 
     @EnvironmentObject private var session: SessionStore
-    @State private var mojNacrt: EventPlan?
-    @State private var posiljam = false
     @State private var showBuy = false
 
-    private var imeKluba: String {
-        plan.clubName.isEmpty ? (clubsById[plan.event.clubId]?.name ?? "") : plan.clubName
-    }
+    private let najvecAvatarjev = 4
 
-    /// Cena na Outlyju obstaja in dogodek se ni razprodan/koncan -> "Join them" vodi v nakup.
+    private var klub: APIClub? { clubsById[plan.event.clubId] }
+    private var imeKluba: String { plan.clubName.isEmpty ? (klub?.name ?? "") : plan.clubName }
+    private var kraj: String { klub?.city ?? "" }
+
+    /// Cena na Outlyju obstaja in dogodek se ni razprodan/koncan -> "Join them" ima kaj prodati.
     private var mozenNakup: Bool {
         plan.event.ticketPriceCents != nil && !plan.event.isSoldOut && !plan.event.hasEnded
     }
 
-    private var napisPrijateljev: String {
-        FriendsPlanText.summary(going: plan.friends, interested: plan.interested)
+    /// Going in interested skupaj, brez podvajanja osebe, going najprej.
+    private var vsiPrijatelji: [(user: FriendUser, gre: Bool)] {
+        let goingIds = Set(plan.friends.map(\.id))
+        let samoInteresirani = plan.interested.filter { !goingIds.contains($0.id) }
+        return plan.friends.map { ($0, true) } + samoInteresirani.map { ($0, false) }
     }
 
     var body: some View {
-        // Skrit NavigationLink kot .background cele vrstice: dobi tocno njen okvir (background
-        // se prilagodi velikosti nadrejenega), gumb v ospredju pa dotik prestreze prej kot on.
-        rowContent
-            .background(
-                NavigationLink {
-                    EventDetailView(event: plan.event)
-                } label: { EmptyView() }
-                .opacity(0)
-            )
-            .onAppear {
-                if mojNacrt == nil { mojNacrt = plan.myPlan }
-            }
-            .sheet(isPresented: $showBuy) {
-                BuyTicketsView(event: plan.event, clubName: imeKluba.isEmpty ? String(localized: "Club") : imeKluba)
-                    .environmentObject(session)
-            }
-    }
+        VStack(alignment: .leading, spacing: 14) {
+            Text(napisGlave.uppercased())
+                .font(.system(size: 13, weight: .bold))
+                .tracking(0.6)
+                .foregroundColor(.white)
 
-    private var rowContent: some View {
-            HStack(spacing: 12) {
-                plakat
-                    .frame(width: 60, height: 60)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            avatarji
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(plan.event.title)
-                        .font(.system(size: 16, weight: .semibold))
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(imeKluba.isEmpty ? plan.event.title : imeKluba)
+                        .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(1)
-                    Text([plan.event.displayDayShort, imeKluba].filter { !$0.isEmpty }.joined(separator: " · "))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
+                    Text([imeKluba.isEmpty ? "" : plan.event.title, casDogodka].filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
                         .lineLimit(1)
-                    if !napisPrijateljev.isEmpty {
-                        HStack(spacing: 6) {
-                            avatarji
-                            Text(napisPrijateljev)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white.opacity(0.75))
-                                .lineLimit(1)
-                        }
-                        .padding(.top, 2)
+                    HStack(spacing: 5) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text([kraj, plan.event.displayDayShort].filter { !$0.isEmpty }.joined(separator: " · "))
+                            .lineLimit(1)
                     }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
                 }
-
                 Spacer(minLength: 8)
-
-                gumb
+                plakat
+                    .frame(width: 76, height: 76)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.outlyBlue, lineWidth: 1.5))
             }
-            .padding(12)
-            .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            HStack(spacing: 10) {
+                if mozenNakup {
+                    Button {
+                        showBuy = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.2.fill").font(.system(size: 15, weight: .semibold))
+                            Text("Join them").font(.system(size: 16, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 46)
+                        .background(Capsule().fill(Color.outlyBlue))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                NavigationLink {
+                    EventDetailView(event: plan.event)
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("View event").font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+                    .background(Capsule().fill(Color.black.opacity(0.35)))
+                    .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(ozadje)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.outlyBlue, lineWidth: 1.5))
+        // Sheet, ne push: BuyTicketsView ima lasten NavigationStack, potisnjen bi skril gumb
+        // nazaj (past iz razlicice tega zaslona pred PR #22).
+        .sheet(isPresented: $showBuy) {
+            BuyTicketsView(event: plan.event, clubName: imeKluba.isEmpty ? String(localized: "Club") : imeKluba)
+                .environmentObject(session)
+        }
     }
 
-    /// Do 3 prekrivajoci se avatarji: najprej tisti, ki grejo, nato tisti, ki jih zanima.
+    /// Prekrivajoci se avatarji (najvec 4) + krog "+" za ostale; going najprej z modrim robom,
+    /// interested z belim robom 50 % (kot krogi razdelka na Home).
     private var avatarji: some View {
-        let vsi = (plan.friends + plan.interested.filter { fi in !plan.friends.contains { $0.id == fi.id } }).prefix(3)
-        return HStack(spacing: -10) {
-            ForEach(Array(vsi)) { f in
-                OutlyAvatarView(avatarUrlString: f.avatarUrl, size: 22)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+        let vsi = vsiPrijatelji
+        return HStack(spacing: -12) {
+            ForEach(Array(vsi.prefix(najvecAvatarjev)), id: \.user.id) { par in
+                OutlyAvatarView(avatarUrlString: par.user.avatarUrl, size: 46)
+                    .overlay(Circle().stroke(par.gre ? Color.outlyBlue : Color.white.opacity(0.5), lineWidth: 2))
+            }
+            if vsi.count > najvecAvatarjev {
+                Text("+\(vsi.count - najvecAvatarjev)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(Color.black))
+                    .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
+                    .padding(.leading, 18)
             }
         }
     }
 
-    @ViewBuilder
-    private var gumb: some View {
-        if mojNacrt == .going {
-            goingZnacka
-        } else if mozenNakup {
-            Button {
-                showBuy = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "person.2.fill").font(.system(size: 13, weight: .semibold))
-                    Text("Join them").font(.system(size: 14, weight: .bold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 14)
-                .frame(height: 38)
-                .background(Capsule().fill(Color.outlyBlue))
-            }
-            .buttonStyle(.plain)
-            .outlySij(moc: 1.0, aktiven: prikaziSij)
-        } else {
-            imInGumb
+    private var napisGlave: String {
+        var deli: [String] = []
+        if !plan.friends.isEmpty {
+            deli.append(plan.friends.count == 1 ? String(localized: "1 friend going") : String(localized: "\(plan.friends.count) friends going"))
         }
+        if !plan.interested.isEmpty {
+            deli.append(plan.interested.count == 1 ? String(localized: "1 interested") : String(localized: "\(plan.interested.count) interested"))
+        }
+        return deli.joined(separator: " · ")
     }
 
-    private var goingZnacka: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
-            Text("Going").font(.system(size: 14, weight: .bold))
-        }
-        .foregroundColor(.white)
-        .padding(.horizontal, 14)
-        .frame(height: 38)
-        .background(Capsule().fill(Color.outlyBlue))
+    /// "22:00 - 06:00" ali samo "22:00", ce konca ni.
+    private var casDogodka: String {
+        let zacetek = plan.event.displayTimeShort
+        guard let konec = plan.event.endDate else { return zacetek }
+        return zacetek + " - " + DateParsing.shortTime.string(from: konec)
     }
 
-    private var imInGumb: some View {
-        let jeZanima = mojNacrt == .interested
-        return Button {
-            preklopiZanimanje()
-        } label: {
-            Text(jeZanima ? "Interested" : "I'm in")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(jeZanima ? .outlyBlue : .white)
-                .padding(.horizontal, 14)
-                .frame(height: 38)
-                .background(Capsule().fill(jeZanima ? Color.white : Color.clear))
-                .overlay(Capsule().stroke(Color.white.opacity(jeZanima ? 0 : 0.6), lineWidth: 1.5))
-        }
-        .buttonStyle(.plain)
-        .outlySij(moc: 1.0, aktiven: prikaziSij)
-    }
-
-    /// PUT/DELETE interest, optimisticno; ob napaki vrne nazaj. Isti vzorec kot na EventDetailView.
-    private func preklopiZanimanje() {
-        guard !posiljam else { return }
-        let token = session.token
-        guard !token.isEmpty else { return }
-        let prejsnje = mojNacrt
-        let novo: EventPlan? = (mojNacrt == .interested) ? nil : .interested
-        withAnimation(.snappy) { mojNacrt = novo }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        posiljam = true
-        Task {
-            do {
-                if let novo {
-                    try await APIClient.shared.setEventInterest(token: token, eventId: plan.event.id, plan: novo)
-                } else {
-                    try await APIClient.shared.clearEventInterest(token: token, eventId: plan.event.id)
-                }
-            } catch {
-                await MainActor.run { withAnimation(.snappy) { mojNacrt = prejsnje } }
-            }
-            await MainActor.run { posiljam = false }
+    /// Plakat kot zatemnjeno ozadje kartice; brez plakata temna ploskev.
+    private var ozadje: some View {
+        ZStack {
+            Color(red: 14/255, green: 16/255, blue: 24/255)
+            plakat
+            LinearGradient(colors: [Color.black.opacity(0.45), Color.black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
         }
     }
 
@@ -370,101 +476,5 @@ struct FriendPlanRow: View {
             Rectangle().fill(Color.outlyBlue.opacity(0.25))
                 .overlay(Image(systemName: "music.note").foregroundColor(.white.opacity(0.7)))
         }
-    }
-}
-
-/// "View" iz razdelka (Martin, 23. 9. 2026, prenova): naslov, dva segmenta "Going"/"Interested"
-/// (namesto gumbov po prijatelju), pod njimi iste vrstice kot na Home (FriendPlanRow).
-/// Potisnjen pogled, brez lastnega NavigationStacka.
-struct FriendsPlansView: View {
-    let plans: [FriendPlan]
-    let clubsById: [Int: APIClub]
-    /// Ostal zaradi obratne zdruzljivosti klica iz avatarja prijatelja (ni vec uporabljen
-    /// za filter po osebi, samo za morebitno prihodnjo rabo).
-    var oseba: FriendUser? = nil
-
-    private enum Zavihek: String, CaseIterable { case going, interested }
-    @State private var izbran: Zavihek = .going
-
-    private var vsi: [FriendPlan] { plans.brezPodvojenihInKoncanih }
-
-    /// Going: dogodki, kjer gre vsaj en prijatelj (razvrsceni po stevilu, ki gredo).
-    private var going: [FriendPlan] {
-        vsi.filter { !$0.friends.isEmpty }.razvrsceniPoPriljubljenosti()
-    }
-
-    /// Interested: dogodki, kjer je vsaj en prijatelj zainteresiran (razvrsceni enako).
-    private var interested: [FriendPlan] {
-        vsi.filter { !$0.interested.isEmpty }.razvrsceniPoPriljubljenosti()
-    }
-
-    private var prikazani: [FriendPlan] {
-        izbran == .going ? going : interested
-    }
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(spacing: 6) {
-                    Text("Friends plans")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("See where your friends are going.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.55))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 6)
-
-                zavihki
-
-                if prikazani.isEmpty {
-                    VStack(spacing: 10) {
-                        Image(systemName: "person.2").font(.system(size: 36)).foregroundStyle(Color.outlyBlue)
-                        Text(izbran == .going ? "No one going yet" : "No one interested yet")
-                            .font(.headline).foregroundStyle(.white)
-                        Text("When a friend gets a ticket, the event shows up here.").font(.subheadline).foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 60)
-                } else {
-                    VStack(spacing: 10) {
-                        ForEach(prikazani) { p in
-                            FriendPlanRow(plan: p, clubsById: clubsById)
-                        }
-                    }
-                }
-            }
-            .padding(16)
-            .padding(.bottom, 40)
-        }
-        .outlyOzadje()
-        .navigationBarTitleDisplayMode(.inline)
-        .preferredColorScheme(.dark)
-    }
-
-    /// Segment pil: izbrani moder poln, drugi prosojen z belo obrobo.
-    private var zavihki: some View {
-        HStack(spacing: 8) {
-            zavihekGumb(String(localized: "Going"), tab: .going)
-            zavihekGumb(String(localized: "Interested"), tab: .interested)
-        }
-    }
-
-    private func zavihekGumb(_ naslov: String, tab: Zavihek) -> some View {
-        let aktiven = izbran == tab
-        return Button {
-            withAnimation(.easeInOut(duration: 0.15)) { izbran = tab }
-        } label: {
-            Text(naslov)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(aktiven ? .white : .white.opacity(0.75))
-                .frame(maxWidth: .infinity)
-                .frame(height: 42)
-                .background(Capsule().fill(aktiven ? Color.outlyBlue : Color.white.opacity(0.06)))
-                .overlay(Capsule().stroke(Color.white.opacity(aktiven ? 0 : 0.25), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
     }
 }

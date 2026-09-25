@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// "Going events" (Martin, 24. 9. 2026: nadomestilo "Liked events" po odstranitvi srckov —
-/// "I'm in" jih je prevzel). Zaslon "See all" iz razdelka na domacem zaslonu: moji nacrti
-/// (going + interested, GET /me/plans), isti vir kot razdelek na Home. Potisnjen pogled —
-/// brez lastnega NavigationStack (past 9). Odpovedani in pretekli dogodki so v loceni
-/// skupini spodaj, da uporabnik vidi, zakaj jih ni vec na vrhu.
+/// "Interested events" (Martin, 25. 9. 2026: prej "Going events" — sedaj samo dogodki, kjer
+/// sem rekel "I'm in"; dogodki z vstopnico (.going) so pod Tickets, tu se ne kazejo vec).
+/// Zaslon "See all" iz razdelka na domacem zaslonu, isti vir (GET /me/plans). Potisnjen
+/// pogled — brez lastnega NavigationStack (past 9). Pretekli dogodki so v loceni skupini
+/// spodaj, da uporabnik vidi, zakaj jih ni vec na vrhu.
 @MainActor
 struct SavedView: View {
     @EnvironmentObject private var session: SessionStore
@@ -15,11 +15,14 @@ struct SavedView: View {
     @State private var loadError: String?
     @State private var loaded = false
 
+    /// Samo interested (going ima svoj dom pod Tickets) — Martin, 25. 9. 2026.
+    private var interested: [FriendPlan] { plans.filter { $0.myPlan == .interested } }
+
     private var upcoming: [FriendPlan] {
-        plans.filter { ($0.event.startDate ?? .distantFuture) >= Date().addingTimeInterval(-6 * 3600) }
+        interested.filter { ($0.event.startDate ?? .distantFuture) >= Date().addingTimeInterval(-6 * 3600) }
     }
     private var past: [FriendPlan] {
-        plans.filter { ($0.event.startDate ?? .distantFuture) < Date().addingTimeInterval(-6 * 3600) }
+        interested.filter { ($0.event.startDate ?? .distantFuture) < Date().addingTimeInterval(-6 * 3600) }
     }
 
     var body: some View {
@@ -27,7 +30,7 @@ struct SavedView: View {
             Screen {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("Going events")
+                        Text("Interested events")
                             .font(.system(size: 30, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.top, 6)
@@ -42,7 +45,7 @@ struct SavedView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.top, 30)
-                        } else if plans.isEmpty {
+                        } else if interested.isEmpty {
                             prazno
                         } else {
                             if !upcoming.isEmpty {
@@ -110,7 +113,7 @@ struct SavedView: View {
                 .font(.system(size: 40, weight: .light))
                 .foregroundColor(.white.opacity(0.35))
                 .padding(.top, 50)
-            Text("No going events yet")
+            Text("No interested events yet")
                 .font(.headline)
                 .foregroundColor(.white)
             Text("Tap \"I'm in\" on any event and it will show up here and on your home screen — on every device you log in to.")
