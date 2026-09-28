@@ -8253,17 +8253,6 @@
         }
       }
     },
-    "Call %@ to reserve a table": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokliči %@ za rezervacijo mize"
-          }
-        }
-      }
-    },
     "No VIP tables available": {
       "extractionState": "manual",
       "localizations": {
@@ -8355,6 +8344,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zanima jih"
+          }
+        }
+      }
+    },
+    "See tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej mize"
+          }
+        }
+      }
+    },
+    "FOR MORE QUESTIONS CALL:": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ZA VEČ INFORMACIJ POKLIČI:"
+          }
+        }
+      }
+    },
+    "Call %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokliči %@"
+          }
+        }
+      }
+    },
+    "VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP mize"
+          }
+        }
+      }
+    },
+    "Table reservations in the app are coming soon. %@ will publish the table layout for this event here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervacije miz v aplikaciji prihajajo kmalu. %@ bo tukaj objavil razpored miz za ta dogodek."
+          }
+        }
+      }
+    },
+    "Until then, call the club to reserve a table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do takrat za rezervacijo mize pokliči klub."
+          }
+        }
+      }
+    },
+    "Previous photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prejšnja slika"
+          }
+        }
+      }
+    },
+    "Next photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslednja slika"
           }
         }
       }
