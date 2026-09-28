@@ -8241,6 +8241,123 @@
           }
         }
       }
+    },
+    "Bottle service and private tables for your group.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steklenice in zasebne mize za vašo skupino."
+          }
+        }
+      }
+    },
+    "Call %@ to reserve a table": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokliči %@ za rezervacijo mize"
+          }
+        }
+      }
+    },
+    "No VIP tables available": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP miz ni na voljo"
+          }
+        }
+      }
+    },
+    "Reserve a VIP table": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezerviraj VIP mizo"
+          }
+        }
+      }
+    },
+    "VIP & TABLES": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP IN MIZE"
+          }
+        }
+      }
+    },
+    "for this event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "za ta dogodek"
+          }
+        }
+      }
+    },
+    "friends_plans_filter_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse"
+          }
+        }
+      }
+    },
+    "friends_plans_filter_going": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Going"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gredo"
+          }
+        }
+      }
+    },
+    "friends_plans_filter_interested": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interested"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zanima jih"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
