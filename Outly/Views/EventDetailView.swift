@@ -10,6 +10,7 @@ struct EventDetailView: View {
     @State private var errorText: String?
     @State private var showBuy = false
     @State private var showBarPrices = false
+    @State private var showVip = false
     @EnvironmentObject private var session: SessionStore
 
     // "I'm in" (backend migracija 020, 23. 9. 2026): moj nacrt + prijatelji, ki grejo/jih zanima.
@@ -68,6 +69,9 @@ struct EventDetailView: View {
         .sheet(isPresented: $showBuy) {
             BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"))
                 .environmentObject(session)
+        }
+        .sheet(isPresented: $showVip) {
+            VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
         }
         .sheet(isPresented: $showBarPrices) {
             BarPricesView(clubName: club?.name ?? String(localized: "Club"), items: club?.barPrices ?? [])
@@ -571,9 +575,10 @@ struct EventDetailView: View {
         }
     }
 
-    // MARK: - VIP & Tables (Martin, 28. 9. 2026, po skici): zamegljen in zatemnjen plakat dogodka
-    // kot ozadje, cez napis in gumb za klic kluba. Rezervacija gre po telefonu — v aplikaciji ni
-    // rezervacij miz, zato brez telefona kluba kartica pove, da miz ni. Koncan dogodek je nima.
+    // MARK: - VIP & Tables (Martin, 28. 9. 2026): zamegljen in zatemnjen plakat dogodka kot
+    // ozadje, cez napis. Kartica je gumb: odpre list s tlorisom miz (rezervacije v aplikaciji
+    // pridejo pozneje - razpored miz poslje organizator). Pod kartico sredinsko "FOR MORE
+    // QUESTIONS CALL:" in telefon kluba (tel:). Koncan dogodek kartice nima.
     private var vipPhone: String {
         (club?.contactPhone ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -592,12 +597,13 @@ struct EventDetailView: View {
                     .tracking(1.2)
                     .foregroundStyle(.white.opacity(0.5))
 
-                VStack(spacing: 8) {
-                    Image(systemName: vipTelURL == nil ? "sofa" : "crown.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-
-                    if let tel = vipTelURL {
+                Button {
+                    showVip = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
                         Text("Reserve a VIP table")
                             .font(.system(size: 22, weight: .bold))
                             .foregroundStyle(.white)
@@ -605,41 +611,43 @@ struct EventDetailView: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.75))
                             .multilineTextAlignment(.center)
-
-                        Link(destination: tel) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "phone.fill")
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text(vipPhone)
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .lineLimit(1)
-                            }
-                            .foregroundStyle(.black)
-                            .padding(.horizontal, 20)
-                            .frame(height: 44)
-                            .background(Capsule().fill(Color.white))
-                            .contentShape(Capsule())
+                        HStack(spacing: 4) {
+                            Text("See tables")
+                            Image(systemName: "chevron.right")
                         }
-                        .padding(.top, 6)
-                        .accessibilityLabel(Text("Call \(vipPhone) to reserve a table"))
-                    } else {
-                        Text("No VIP tables available")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(.white)
-                        Text("for this event")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.75))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .padding(.top, 4)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity, minHeight: 200)
+                    .background(vipOzadje)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 24)
-                .frame(maxWidth: .infinity, minHeight: 200)
-                .background(vipOzadje)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
+                .buttonStyle(.plain)
+
+                if let tel = vipTelURL {
+                    VStack(spacing: 6) {
+                        Text("FOR MORE QUESTIONS CALL:")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.55))
+                        Link(destination: tel) {
+                            Text(vipPhone)
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundStyle(Color.outlyBlue)
+                        }
+                        .accessibilityLabel(Text("Call \(vipPhone)"))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 14)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -749,5 +757,53 @@ private extension APIClub {
         if !a.isEmpty { return "\(a) \(co)".trimmingCharacters(in: .whitespaces) }
         if !c.isEmpty { return "\(c) \(co)".trimmingCharacters(in: .whitespaces) }
         return co.isEmpty ? "-" : co
+    }
+}
+
+// MARK: - List "VIP tables" (Martin, 28. 9. 2026): rezervacij miz v aplikaciji se ni. Razpored
+// miz bo poslal organizator; do takrat list pove, da pride, in napoti na telefon pod kartico.
+private struct VipTablesSheet: View {
+    let clubName: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Capsule().fill(Color.white.opacity(0.25)).frame(width: 36, height: 5).padding(.top, 8)
+            Image(systemName: "table.furniture")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .padding(.top, 12)
+            Text("VIP tables")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.white)
+            Text("Table reservations in the app are coming soon. \(clubName) will publish the table layout for this event here.")
+                .font(.system(size: 15))
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Text("Until then, call the club to reserve a table.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+            Button {
+                dismiss()
+            } label: {
+                Text("Close")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.1)))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(white: 0.07).ignoresSafeArea())
+        .presentationDetents([.medium])
+        .preferredColorScheme(.dark)
     }
 }
