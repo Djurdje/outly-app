@@ -180,52 +180,38 @@ extension Array where Element == FriendPlan {
     // (Martin, 25. 9. 2026: "View" nazaj na izgled izpred PR #22).
 }
 
-// MARK: - "View" (FriendsPlansView): nazaj na izgled izpred PR #22 (Martin, 25. 9. 2026, po
-// ogledu builda) — gumbi All + po prijatelju (samo pri >= 2 prijateljih), kartica z zatemnjenim
-// plakatom, prekrivajocimi avatarji in gumboma "Join them" (nakup) / "View event". Razlika od
-// izvirnika: seznam in kartice upostevajo tudi interested prijatelje, ne samo going (avatarji:
-// going najprej z modrim robom, nato interested z belim robom 50 %, kot krogi na Home). Srcek
-// (favorites) je odstranjen — enako kot povsod drugje po 24. 9. 2026 (glej EventDetailView).
+// MARK: - "View" (FriendsPlansView)
+// Martin, 28. 9. 2026: namesto gumbov po prijatelju trije filtri po stanju — All, Going
+// (vsaj en prijatelj ima vstopnico) in Interested (vsaj enega prijatelja zanima). Kartica z
+// zatemnjenim plakatom, prekrivajocimi avatarji in gumboma "Join them" / "View event" ostane.
 // Potisnjen pogled, brez lastnega NavigationStacka (past 9).
 struct FriendsPlansView: View {
     let plans: [FriendPlan]
     let clubsById: [Int: APIClub]
-    var oseba: FriendUser? = nil
 
-    /// nil = All, sicer id prijatelja.
-    @State private var izbran: Int? = nil
-    @State private var izbranNastavljen = false
+    private enum Filter: CaseIterable {
+        case all, going, interested
+
+        var naslov: String {
+            switch self {
+            case .all: return String(localized: "friends_plans_filter_all", defaultValue: "All")
+            case .going: return String(localized: "friends_plans_filter_going", defaultValue: "Going")
+            case .interested: return String(localized: "friends_plans_filter_interested", defaultValue: "Interested")
+            }
+        }
+    }
+
+    @State private var filter: Filter = .all
 
     /// Brez podvojenih dogodkov in brez preteklih (varovalo, ce bi streznik kdaj vrnil vec
     /// kot en zapis na dogodek).
     private var vsi: [FriendPlan] { plans.brezPodvojenihInKoncanih }
 
-    /// Prijatelji za gumbe filtra: going najprej (brez podvajanja), nato tisti, ki jih samo
-    /// zanima — v vrstnem redu prvega dogodka.
-    private var prijatelji: [FriendUser] {
-        var videni = Set<Int>()
-        var seznam: [FriendUser] = []
-        for p in vsi {
-            for f in p.friends where !videni.contains(f.id) {
-                videni.insert(f.id)
-                seznam.append(f)
-            }
-        }
-        for p in vsi {
-            for f in p.interested where !videni.contains(f.id) {
-                videni.insert(f.id)
-                seznam.append(f)
-            }
-        }
-        return seznam
-    }
-
-    private var izbrani: FriendUser? { prijatelji.first { $0.id == izbran } }
-
     private var prikazani: [FriendPlan] {
-        guard let izbran else { return vsi }
-        return vsi.filter { p in
-            p.friends.contains { $0.id == izbran } || p.interested.contains { $0.id == izbran }
+        switch filter {
+        case .all: return vsi
+        case .going: return vsi.filter { !$0.friends.isEmpty }
+        case .interested: return vsi.filter { !$0.interested.isEmpty }
         }
     }
 
@@ -236,24 +222,17 @@ struct FriendsPlansView: View {
                     Text("Friends plans")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
-                    Text(izbrani.map { String(localized: "Where \($0.username) is going.") } ?? String(localized: "See where your friends are going."))
+                    Text("See where your friends are going.")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white.opacity(0.55))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)
 
-                // Gumbi "All" + po prijatelju samo pri >= 2 prijateljih (Martin, 25. 9.: pri
-                // enem samem prijatelju sta gumba dva in oba delata isto, zato brez njiju).
-                if prijatelji.count >= 2 {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            gumbFiltra(String(localized: "All"), id: nil)
-                            ForEach(prijatelji) { f in gumbFiltra(f.username, id: f.id) }
-                        }
-                        .padding(.vertical, 2)
-                    }
+                HStack(spacing: 8) {
+                    ForEach(Filter.allCases, id: \.self) { f in gumbFiltra(f) }
                 }
+                .padding(.vertical, 2)
 
                 if prikazani.isEmpty {
                     VStack(spacing: 10) {
@@ -276,20 +255,16 @@ struct FriendsPlansView: View {
         .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .onAppear {
-            // Samo prvic: ce je uporabnik prisel z avatarja prijatelja, je ta gumb ze izbran.
-            if !izbranNastavljen { izbran = oseba?.id; izbranNastavljen = true }
-        }
     }
 
     // MARK: - Gumbi filtra
 
-    private func gumbFiltra(_ naslov: String, id: Int?) -> some View {
-        let aktiven = izbran == id
+    private func gumbFiltra(_ f: Filter) -> some View {
+        let aktiven = filter == f
         return Button {
-            withAnimation(.easeInOut(duration: 0.15)) { izbran = id }
+            withAnimation(.easeInOut(duration: 0.15)) { filter = f }
         } label: {
-            Text(naslov)
+            Text(f.naslov)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(aktiven ? .white : .white.opacity(0.75))
                 .lineLimit(1)

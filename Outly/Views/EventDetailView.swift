@@ -52,6 +52,9 @@ struct EventDetailView: View {
 
                 aboutBlock
 
+                // VIP mize: rezervacija po telefonu kluba (Martin, 28. 9. 2026)
+                vipBlock
+
                 Spacer(minLength: 40)
             }
         }
@@ -565,6 +568,98 @@ struct EventDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.top, 4)
+        }
+    }
+
+    // MARK: - VIP & Tables (Martin, 28. 9. 2026, po skici): zamegljen in zatemnjen plakat dogodka
+    // kot ozadje, cez napis in gumb za klic kluba. Rezervacija gre po telefonu — v aplikaciji ni
+    // rezervacij miz, zato brez telefona kluba kartica pove, da miz ni. Koncan dogodek je nima.
+    private var vipPhone: String {
+        (club?.contactPhone ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var vipTelURL: URL? {
+        let stevke = vipPhone.filter { $0.isNumber || $0 == "+" }
+        return stevke.isEmpty ? nil : URL(string: "tel:\(stevke)")
+    }
+
+    @ViewBuilder
+    private var vipBlock: some View {
+        if !event.hasEnded, club != nil {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("VIP & TABLES")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(.white.opacity(0.5))
+
+                VStack(spacing: 8) {
+                    Image(systemName: vipTelURL == nil ? "sofa" : "crown.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+
+                    if let tel = vipTelURL {
+                        Text("Reserve a VIP table")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Bottle service and private tables for your group.")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .multilineTextAlignment(.center)
+
+                        Link(destination: tel) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "phone.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text(vipPhone)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 20)
+                            .frame(height: 44)
+                            .background(Capsule().fill(Color.white))
+                            .contentShape(Capsule())
+                        }
+                        .padding(.top, 6)
+                        .accessibilityLabel(Text("Call \(vipPhone) to reserve a table"))
+                    } else {
+                        Text("No VIP tables available")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("for this event")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .background(vipOzadje)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+    }
+
+    /// Zamegljen in zatemnjen plakat dogodka (ali slika kluba) za kartico VIP.
+    private var vipOzadje: some View {
+        ZStack {
+            if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
+                AsyncImage(url: url) { img in
+                    Color.clear.overlay(img.resizable().scaledToFill().blur(radius: 14, opaque: true)).clipped()
+                } placeholder: {
+                    Color(white: 0.14)
+                }
+            } else {
+                Color(white: 0.14)
+            }
+            LinearGradient(colors: [.black.opacity(0.45), .black.opacity(0.75)],
+                           startPoint: .top, endPoint: .bottom)
         }
     }
 
