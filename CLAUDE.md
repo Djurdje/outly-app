@@ -49,9 +49,13 @@ _staro/                              odlozena koda (NI v Outly/, se ne prevaja)
 
 1. **Vsi klici na backend gredo skozi `APIClient.send()`**; napake prek `APIErrorMessages` / `userMessage`. Brez `URLSession` po zaslonih.
 2. Nova polja v API modelih vedno z **privzeto vrednostjo** (star backend ne sme podreti dekodiranja); pg BIGINT pride kot niz — backend to rešuje, a preveri pri novih poljih.
-3. Slike: **vedno** `Color.clear.overlay(img.resizable().scaledToFill()).clipped()` — `AsyncImage` + `scaledToFill()` brez okvirja raztegne zaslon.
+3. Slike: **vedno** `Color.clear.overlay(img.resizable().scaledToFill()).clipped()` — slika + `scaledToFill()` brez okvirja raztegne zaslon.
+   Nalaganje slik **samo prek `OutlyAsyncImage`** (isti klici kot `AsyncImage`), nikoli `AsyncImage` — ta dekodira plakat v polni
+   ločljivosti na glavni niti ob vsakem pojavu in zatika drsenje (outly-app #33).
 4. Potisnjeni pogledi **brez lastnega `NavigationStack`** (skrije gumb nazaj). Vsaka kartica mora nekam voditi (`NavigationLink`).
 5. `shuffled()`/naključje samo enkrat ob nalaganju, ne v računani lastnosti.
+   Vrednosti, ki se spreminjajo vsak frame (odmik drsenja, okvirji iz GeometryReaderja), ne v `@State` velikega pogleda — vsak frame
+   bi znova izračunal cel zaslon. Prehodi med zavihki animirajo posnetke, ne žive vsebine (glej backend `docs/STATE.md`, pasti 29. 9.).
 6. Zasloni rabijo spodnji odmik (~40) zaradi plavajoče spodnje vrstice.
 7. Vloge (`user | business | admin`, v klubu `owner | manager | doorman`) odloča strežnik; aplikacija samo kaže drug obraz (`Me.isBusiness`, `canManageClub`).
 8. Info.plist se generira: dovoljenja kot `INFOPLIST_KEY_…` v `project.pbxproj` (oba konfiga).
