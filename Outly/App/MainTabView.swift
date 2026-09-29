@@ -52,7 +52,10 @@ struct MainTabView: View {
     /// Home -> Search/Profile ga uporabi TAKOJ (29. 9. 2026, Martinov posnetek zaslona: pred rastjo
     /// je bilo ~200 ms zamrznjenega Home — cakanje na postavitev cilja in njegov zajem). Ob vsakem
     /// drugem odhodu z zavihka se zavrze, da ne bi rasel star zaslon.
-    @State private var posnetkiZavihkov: [Int: UIImage] = [:]
+    /// Poleg posnetka hranimo zamegljen Home, ki je bil takrat ozadje zavihka: posnetek ga vsebuje, zato mora
+    /// biti tudi ozadje pod rastjo (in zivo ozadje po njej) isto — sicer raste viden pravokotnik z drugacnim
+    /// ozadjem namesto vsebine (Martin, 29. 9. po #35: "ni vec tako kot prej, Revolut fora").
+    @State private var posnetkiZavihkov: [Int: (slika: UIImage, ozadje: UIImage?)] = [:]
 
     @EnvironmentObject private var jezik: Jezik
     @Environment(\.accessibilityReduceMotion) private var zmanjsanoGibanje
@@ -175,21 +178,24 @@ struct MainTabView: View {
             zavihek = nov
             return
         }
-        // EN zajem hierarhije; zamegljeno ozadje izpeljemo iz istega posnetka s pomanjsavo na cetrtino.
-        let majhen = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
-        let zamegljen = OzadnjaZameglitev.zamegli(majhen) ?? majhen
-        posnetekDoma = zamegljen
-
         // Hitra pot: posnetek cilja ze imamo (zadnji odhod s tega zavihka) — rast se zacne takoj.
-        if let cilj = posnetkiZavihkov[nov] {
+        // Ozadje ostane TISTO, ki je v posnetku (glej posnetkiZavihkov), zato tu ne zameglimo znova.
+        if let shranjen = posnetkiZavihkov[nov], let ozadje = shranjen.ozadje {
+            let cilj = shranjen.slika
+            posnetekDoma = ozadje
             zavihek = nov
             let sidro = sidroIz(izvor, v: cilj.size)
-            dodajPlast(PrekrivnaPlast(slika: zamegljen, vrsta: .ozadje(velikost: cilj.size), trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: ozadje, vrsta: .ozadje(velikost: cilj.size), trajanje: 0.3))
             dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
             dodajPlast(PrekrivnaPlast(slika: cilj, vrsta: .rast(sidro: sidro), trajanje: 0.3))
             prehodDo = Date().addingTimeInterval(0.3)
             return
         }
+
+        // EN zajem hierarhije; zamegljeno ozadje izpeljemo iz istega posnetka s pomanjsavo na cetrtino.
+        let majhen = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
+        let zamegljen = OzadnjaZameglitev.zamegli(majhen) ?? majhen
+        posnetekDoma = zamegljen
 
         // Prvic (posnetka se ni): pokrov, pocakamo, da se cilj postavi, in ga posnamemo.
         zavihek = nov
@@ -227,7 +233,7 @@ struct MainTabView: View {
             zavihek = 0
             return
         }
-        if let zavihka { posnetkiZavihkov[od] = zavihka }
+        if let zavihka { posnetkiZavihkov[od] = (zavihka, posnetekDoma) }
         let sidro = sidroIz(izvor, v: izrez.size)
         zavihek = 0
         if let ozadje = posnetekDoma {
