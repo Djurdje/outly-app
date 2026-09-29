@@ -88,7 +88,13 @@ struct MainTabView: View {
     }
 
     private var izvorProfil: CGRect { veljavenIzvor(izvori.avatar) ?? privzetIzvorProfil }
-    private var izvorIskanje: CGRect { veljavenIzvor(izvori.whereTo) ?? privzetIzvorIskanje }
+    /// Sidro za Search je ikona lupe na levi strani polja "Where to?" (Martin, 29. 9. 2026: rast iz sredine
+    /// polja je izgledala, kot da pride iz napisa "Outly"). Lupa: 16 pt notranjega roba + pol ikone (~9 pt).
+    private var izvorIskanje: CGRect {
+        let polje = veljavenIzvor(izvori.whereTo) ?? privzetIzvorIskanje
+        return CGRect(x: polje.minX + 25 - polje.height / 2, y: polje.minY,
+                      width: polje.height, height: polje.height)
+    }
 
     /// Sidro skaliranja (UnitPoint, 0...1) iz okenskega okvirja — sredisce izvora glede na
     /// dano velikost (okno ali izrez nad spodnjo vrstico).
