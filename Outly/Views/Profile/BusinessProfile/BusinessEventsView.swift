@@ -150,7 +150,7 @@ private struct BusinessEventRow: View {
     var body: some View {
         HStack(spacing: 12) {
             if let url = URL(string: event.posterUrl), !event.posterUrl.isEmpty {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     img.resizable().scaledToFill()
                 } placeholder: {
                     Color.white.opacity(0.08)

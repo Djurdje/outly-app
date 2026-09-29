@@ -94,7 +94,7 @@ struct EventDetailView: View {
                 if let recap = event.recapVideoURL {
                     OutlyRecapVideo(url: recap, posterUrl: headerImageUrl, playSize: 64)
                 } else if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: {
                         Rectangle().opacity(0.12)
@@ -228,7 +228,7 @@ struct EventDetailView: View {
         } label: {
             HStack(spacing: 12) {
                 if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: { Circle().opacity(0.12) }
                     .frame(width: 44, height: 44)
@@ -658,7 +658,7 @@ struct EventDetailView: View {
     private var vipOzadje: some View {
         ZStack {
             if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill().blur(radius: 14, opaque: true)).clipped()
                 } placeholder: {
                     Color(white: 0.14)

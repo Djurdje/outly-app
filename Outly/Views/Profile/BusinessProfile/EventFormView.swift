@@ -118,7 +118,7 @@ struct EventFormView: View {
                 Section("Poster") {
                     HStack(spacing: 12) {
                         if let url = URL(string: posterUrl), !posterUrl.isEmpty {
-                            AsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.08) }
+                            OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.08) }
                                 .frame(width: 64, height: 64)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }

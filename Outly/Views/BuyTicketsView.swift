@@ -492,7 +492,7 @@ struct BuyTicketsView: View {
             if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
                 Color.clear
                     .overlay(
-                        AsyncImage(url: url) { img in
+                        OutlyAsyncImage(url: url) { img in
                             img.resizable().scaledToFill()
                         } placeholder: {
                             Rectangle().fill(Color.white.opacity(0.08))

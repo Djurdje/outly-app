@@ -190,7 +190,7 @@ struct ClubInfoView: View {
                             ZStack(alignment: .topTrailing) {
                                 Color.clear
                                     .overlay(
-                                        AsyncImage(url: URL(string: u)) { phase in
+                                        OutlyAsyncImage(url: URL(string: u)) { phase in
                                             switch phase {
                                             case .success(let image): image.resizable().scaledToFill()
                                             default: Rectangle().fill(Color.white.opacity(0.06))
@@ -311,7 +311,7 @@ struct ClubInfoView: View {
                 .frame(width: 72, height: 72)
 
             if let url = URL(string: clubLogoUrl), !clubLogoUrl.isEmpty {
-                AsyncImage(url: url) { phase in
+                OutlyAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

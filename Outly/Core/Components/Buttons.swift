@@ -140,7 +140,7 @@ struct AvatarUploadButton: View {
         PhotosPicker(selection: $pickedItem, matching: .images) {
             ZStack {
                 if let urlString = user?.avatarUrl, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         img.resizable().scaledToFill()
                     } placeholder: {
                         Color.white.opacity(0.12)

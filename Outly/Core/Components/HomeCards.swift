@@ -10,7 +10,7 @@ struct OmejenaSlika: View {
 
     var body: some View {
         if !urlString.isEmpty, let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
+            OutlyAsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()

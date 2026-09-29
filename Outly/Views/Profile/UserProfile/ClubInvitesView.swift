@@ -133,7 +133,7 @@ struct ClubInvitesView: View {
             if !url.isEmpty, let u = URL(string: url) {
                 Color.clear
                     .overlay(
-                        AsyncImage(url: u) { img in
+                        OutlyAsyncImage(url: u) { img in
                             img.resizable().scaledToFill()
                         } placeholder: {
                             Rectangle().fill(Color.white.opacity(0.1))

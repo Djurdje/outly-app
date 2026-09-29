@@ -450,7 +450,7 @@ struct BusinessDashboardView: View {
     private func vrsticaDogodka(_ e: BusinessSales.EventSales) -> some View {
         HStack(spacing: 12) {
             if !e.posterUrl.isEmpty, let url = URL(string: e.posterUrl) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().fill(Color.white.opacity(0.1))
