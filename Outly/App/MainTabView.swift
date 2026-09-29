@@ -48,6 +48,11 @@ struct MainTabView: View {
     @State private var generacija = 0
     /// Do kdaj tece zadnji prehod — dotik pred tem preklopi takoj, brez animacije.
     @State private var prehodDo = Date.distantPast
+    /// Zadnji posnetek vsebine Search (1) / Profile (3), narejen ob odhodu z zavihka na Home.
+    /// Home -> Search/Profile ga uporabi TAKOJ (29. 9. 2026, Martinov posnetek zaslona: pred rastjo
+    /// je bilo ~200 ms zamrznjenega Home — cakanje na postavitev cilja in njegov zajem). Ob vsakem
+    /// drugem odhodu z zavihka se zavrze, da ne bi rasel star zaslon.
+    @State private var posnetkiZavihkov: [Int: UIImage] = [:]
 
     @EnvironmentObject private var jezik: Jezik
     @Environment(\.accessibilityReduceMotion) private var zmanjsanoGibanje
@@ -103,6 +108,8 @@ struct MainTabView: View {
     private func preklopi(na nov: Int) {
         guard nov != zavihek else { return }  // dvakratni dotik iste ikone: sistemsko ze vrne na koren, sicer nic
         let od = zavihek
+        // Posnetek zavihka velja samo, ce ga je ravnokar naredil zapriVHome (glej posnetkiZavihkov).
+        if od == 1 || od == 3 { posnetkiZavihkov[od] = nil }
         // Dotik med tekocim prehodom (hitro preklapljanje): brez animacije in brez novega posnetka.
         let hiter = Date() < prehodDo
         pocistiPrehod()
@@ -132,9 +139,9 @@ struct MainTabView: View {
         case (0, 3):
             odpriIzHome(na: nov, izvor: izvorProfil)
         case (1, 0):
-            zapriVHome(odIzvora: izvorIskanje)
+            zapriVHome(od: 1, odIzvora: izvorIskanje)
         case (3, 0):
-            zapriVHome(odIzvora: izvorProfil)
+            zapriVHome(od: 3, odIzvora: izvorProfil)
         default:
             // Search <-> Profile: navaden preklop, brez animacije (Martin izrecno).
             zavihek = nov
@@ -172,6 +179,19 @@ struct MainTabView: View {
         let majhen = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
         let zamegljen = OzadnjaZameglitev.zamegli(majhen) ?? majhen
         posnetekDoma = zamegljen
+
+        // Hitra pot: posnetek cilja ze imamo (zadnji odhod s tega zavihka) — rast se zacne takoj.
+        if let cilj = posnetkiZavihkov[nov] {
+            zavihek = nov
+            let sidro = sidroIz(izvor, v: cilj.size)
+            dodajPlast(PrekrivnaPlast(slika: zamegljen, vrsta: .ozadje(velikost: cilj.size), trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: cilj, vrsta: .rast(sidro: sidro), trajanje: 0.3))
+            prehodDo = Date().addingTimeInterval(0.3)
+            return
+        }
+
+        // Prvic (posnetka se ni): pokrov, pocakamo, da se cilj postavi, in ga posnamemo.
         zavihek = nov
         dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .mirujoca, trajanje: 1.0))
         prehodDo = Date().addingTimeInterval(0.4)
@@ -198,12 +218,16 @@ struct MainTabView: View {
     /// Search/Profile -> Home: zavihek preklopimo TAKOJ. Nad zivim Home se skrci zamrznjen posnetek
     /// zaslona, ki ga zapuscamo (brez spodnje vrstice, 100 % -> 40 %, 0,25 s), pod njim pa zbledi
     /// zamegljen posnetek Home (0,35 s) — "domaci zaslon se izostri".
-    private func zapriVHome(odIzvora izvor: CGRect) {
-        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0),
-              let izrez = izrezNadVrstico(surov) else {
+    private func zapriVHome(od: Int, odIzvora izvor: CGRect) {
+        // Posnetek samo vsebine zavihka (brez vrstice, merilo 2, brez prisilnega izrisa — zaslon je
+        // ze narisan); isti posnetek hranimo za naslednji Home -> ta zavihek.
+        let zavihka = UIApplication.shared.kljucnoOkno?.posnetekIzbranegaZavihka(poOsvezitvi: false)
+        guard let izrez = zavihka
+                ?? UIApplication.shared.surovPosnetek(merilo: 1.0).flatMap({ izrezNadVrstico($0) }) else {
             zavihek = 0
             return
         }
+        if let zavihka { posnetkiZavihkov[od] = zavihka }
         let sidro = sidroIz(izvor, v: izrez.size)
         zavihek = 0
         if let ozadje = posnetekDoma {
@@ -359,7 +383,7 @@ private struct NalaganjePriljubljenih: View {
 private extension UIWindow {
     /// Posnetek vsebine izbranega zavihka BREZ spodnje vrstice in brez prekrivnih plasti (te so
     /// SwiftUI sestra TabViewa, ne del pogleda zavihka). Merilo 2 — dovolj ostro za 0,3 s animacije.
-    func posnetekIzbranegaZavihka() -> UIImage? {
+    func posnetekIzbranegaZavihka(poOsvezitvi: Bool = true) -> UIImage? {
         func najdi(_ vc: UIViewController?) -> UITabBarController? {
             guard let vc else { return nil }
             if let t = vc as? UITabBarController { return t }
@@ -376,7 +400,7 @@ private extension UIWindow {
         format.opaque = true
         let meje = CGRect(x: 0, y: 0, width: pogled.bounds.width, height: visina)
         return UIGraphicsImageRenderer(bounds: meje, format: format).image { _ in
-            pogled.drawHierarchy(in: pogled.bounds, afterScreenUpdates: true)
+            pogled.drawHierarchy(in: pogled.bounds, afterScreenUpdates: poOsvezitvi)
         }
     }
 
