@@ -209,7 +209,7 @@ struct ClubDetailView: View {
     private var infoBlock: some View {
         HStack(alignment: .top, spacing: 12) {
             if let logo = club?.logoUrl, !logo.isEmpty, let url = URL(string: logo) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Circle().opacity(0.12)
@@ -463,7 +463,7 @@ private struct ClubSlideshow: View {
     private func slika(_ u: String) -> some View {
         Group {
             if let url = URL(string: u) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().opacity(0.15)

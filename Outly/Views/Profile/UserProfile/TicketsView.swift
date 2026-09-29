@@ -113,7 +113,7 @@ struct TicketsView: View {
     private func vrstica(_ t: APITicket) -> some View {
         HStack(spacing: 12) {
             if !t.posterUrl.isEmpty, let url = URL(string: t.posterUrl) {
-                AsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
+                OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
                     .frame(width: 70, height: 70)
                     .clipped()
                     .cornerRadius(12)
@@ -255,7 +255,7 @@ struct WalletTicketCard: View {
         ZStack(alignment: .bottomLeading) {
             Group {
                 if !ticket.posterUrl.isEmpty, let url = URL(string: ticket.posterUrl) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: { SkeletonBlock() }
                 } else {
@@ -270,7 +270,7 @@ struct WalletTicketCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     if !ticket.logoUrl.isEmpty, let url = URL(string: ticket.logoUrl) {
-                        AsyncImage(url: url) { img in
+                        OutlyAsyncImage(url: url) { img in
                             Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                         } placeholder: { Circle().fill(Color.white.opacity(0.2)) }
                         .frame(width: 26, height: 26)

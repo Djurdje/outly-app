@@ -236,7 +236,7 @@ struct TeamView: View {
         return ZStack {
             Circle().fill(m.role == "owner" ? Color.outlyBlue.opacity(0.25) : Color.white.opacity(0.1))
             if let s = m.avatarUrl, !s.isEmpty, let url = URL(string: s) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     img.resizable().scaledToFill()
                 } placeholder: {
                     Text(initial).font(.system(size: 17, weight: .semibold)).foregroundColor(.white)

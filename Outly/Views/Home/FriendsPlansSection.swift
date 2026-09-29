@@ -442,7 +442,7 @@ private struct FriendsPlanCard: View {
     @ViewBuilder
     private var plakat: some View {
         if !plan.event.posterUrl.isEmpty, let u = URL(string: plan.event.posterUrl) {
-            AsyncImage(url: u) { img in
+            OutlyAsyncImage(url: u) { img in
                 Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 Rectangle().fill(Color.white.opacity(0.1))

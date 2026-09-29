@@ -709,17 +709,27 @@ private struct HomeOzadje: View {
                 startPoint: .top, endPoint: .bottom
             )
             // Sij A (zgoraj levo): 55 % -> pojenja.
-            RadialGradient(colors: [Color.outlyBlue.opacity(0.55), .clear],
-                           center: .center, startRadius: 0, endRadius: 310)
-                .frame(width: 620, height: 620)
-                .blur(radius: 40)
+            // Brez .blur (29. 9. 2026): Gaussov blur cez 620 pt plast se je ob vsakem framu drsenja
+            // racunal znova (vsebina nad njim se premika). Mehkobo zdaj nosi sam preliv (vec postankov).
+            RadialGradient(stops: [
+                               .init(color: Color.outlyBlue.opacity(0.55), location: 0),
+                               .init(color: Color.outlyBlue.opacity(0.30), location: 0.35),
+                               .init(color: Color.outlyBlue.opacity(0.08), location: 0.75),
+                               .init(color: .clear, location: 1)
+                           ],
+                           center: .center, startRadius: 0, endRadius: 350)
+                .frame(width: 700, height: 700)
                 .offset(x: -100 + 120 * t, y: -260 - 160 * t)
                 .opacity(0.95 - 0.55 * t)
             // Sij B (spodaj desno): 30 % -> se krepi in leze navzgor.
-            RadialGradient(colors: [Color.outlyBlue.opacity(0.30), .clear],
-                           center: .center, startRadius: 0, endRadius: 260)
-                .frame(width: 520, height: 520)
-                .blur(radius: 60)
+            RadialGradient(stops: [
+                               .init(color: Color.outlyBlue.opacity(0.30), location: 0),
+                               .init(color: Color.outlyBlue.opacity(0.16), location: 0.35),
+                               .init(color: Color.outlyBlue.opacity(0.04), location: 0.75),
+                               .init(color: .clear, location: 1)
+                           ],
+                           center: .center, startRadius: 0, endRadius: 320)
+                .frame(width: 640, height: 640)
                 .offset(x: 140 - 90 * t, y: 260 - 240 * t)
                 .opacity(0.35 + 0.6 * t)
         }

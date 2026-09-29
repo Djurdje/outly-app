@@ -247,7 +247,7 @@ struct MyClubsView: View {
             if let url, !url.isEmpty, let u = URL(string: url) {
                 Color.clear
                     .overlay(
-                        AsyncImage(url: u) { img in
+                        OutlyAsyncImage(url: u) { img in
                             img.resizable().scaledToFill()
                         } placeholder: {
                             Rectangle().fill(Color.white.opacity(0.1))
@@ -445,7 +445,7 @@ struct MyClubDetailView: View {
             if let s = club?.logoUrl ?? (logoUrl.isEmpty ? nil : logoUrl), !s.isEmpty, let u = URL(string: s) {
                 Color.clear
                     .overlay(
-                        AsyncImage(url: u) { img in
+                        OutlyAsyncImage(url: u) { img in
                             img.resizable().scaledToFill()
                         } placeholder: {
                             Rectangle().fill(Color.white.opacity(0.1))

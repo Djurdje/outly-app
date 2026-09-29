@@ -122,7 +122,7 @@ struct NotificationsMenuView: View {
             case .klub(let url):
                 Group {
                     if !url.isEmpty, let u = URL(string: url) {
-                        AsyncImage(url: u) { img in
+                        OutlyAsyncImage(url: u) { img in
                             Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                         } placeholder: {
                             Rectangle().fill(Color.white.opacity(0.1))

@@ -51,7 +51,7 @@ struct ProfileView: View {
                     // ===== HEADER: vedno osebni profil, nikoli klub =====
                     HStack(spacing: 25) {
                         if let url = userAvatarURL {
-                            AsyncImage(url: url) { phase in
+                            OutlyAsyncImage(url: url) { phase in
                                 switch phase {
                                 case .success(let image):
                                     image

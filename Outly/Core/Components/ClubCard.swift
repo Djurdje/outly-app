@@ -113,7 +113,7 @@ struct ClubCard: View {
             let prva = club.slideshowUrls.first, !prva.isEmpty,
             let url = URL(string: prva)
         {
-            AsyncImage(url: url) { img in
+            OutlyAsyncImage(url: url) { img in
                 Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 Rectangle().opacity(0.15)
@@ -131,7 +131,7 @@ struct ClubCard: View {
             !club.logoUrl.isEmpty,
             let url = URL(string: club.logoUrl)
         {
-            AsyncImage(url: url) { img in
+            OutlyAsyncImage(url: url) { img in
                 Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 RoundedRectangle(cornerRadius: 22)

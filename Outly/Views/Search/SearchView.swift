@@ -212,7 +212,7 @@ struct SearchView: View {
     private func row(icon: String, title: String, subtitle: String, imageUrl: String, busy: Bool = false) -> some View {
         HStack(spacing: 12) {
             if let url = URL(string: imageUrl), !imageUrl.isEmpty {
-                AsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }
+                OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }
                     .frame(width: 44, height: 44)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
