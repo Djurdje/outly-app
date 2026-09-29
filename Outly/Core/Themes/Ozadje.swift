@@ -118,65 +118,6 @@ enum OzadnjaZameglitev {
         }
     }
 
-    /// Lasten CIContext za izlocanje vsebine (klice se tudi z ozadne niti).
-    nonisolated(unsafe) private static let ciKontekstVsebine = CIContext(options: [.useSoftwareRenderer: false])
-
-    /// Iz posnetka zavihka (vsebina + zamegljen Home kot ozadje) naredi sliko SAMO vsebine s prosojnim
-    /// ozadjem (29. 9. 2026, Martin: "ni vec una animacija k je bla prej"). Prvotni prehod je povecal
-    /// samo vsebino, ozadje je stalo; posnetek z ozadjem je rasel kot kartica. Ozadje poznamo tocno
-    /// (isto kot HomeSnapshotBackground: crno + slika scaledToFill cez celo okno + 60 % crne), zato ga
-    /// narisemo, odstejemo od posnetka in obdrzimo le piksle, ki se opazno razlikujejo (+ 2 pt roba).
-    /// Temni deli vsebine, enaki ozadju, postanejo prosojni — za 0,3 s animacije to ni vidno.
-    nonisolated static func izlociVsebino(_ posnetek: UIImage, ozadje: UIImage, visinaOkna: CGFloat) -> UIImage? {
-        guard let cgS = posnetek.cgImage else { return nil }
-        let velikost = posnetek.size
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = posnetek.scale
-        format.opaque = true
-        let pricakovano = UIGraphicsImageRenderer(size: velikost, format: format).image { ctx in
-            UIColor.black.setFill()
-            ctx.fill(CGRect(origin: .zero, size: velikost))
-            let bw = ozadje.size.width, bh = ozadje.size.height
-            if bw > 0, bh > 0 {
-                let m = max(velikost.width / bw, visinaOkna / bh)
-                let w = bw * m, h = bh * m
-                ozadje.draw(in: CGRect(x: (velikost.width - w) / 2, y: (visinaOkna - h) / 2, width: w, height: h))
-            }
-            UIColor.black.withAlphaComponent(0.6).setFill()
-            ctx.fill(CGRect(origin: .zero, size: velikost), blendMode: .normal)
-        }
-        guard let cgB = pricakovano.cgImage else { return nil }
-        let vir = CIImage(cgImage: cgS)
-        let razlika = CIFilter.differenceBlendMode()
-        razlika.inputImage = vir
-        razlika.backgroundImage = CIImage(cgImage: cgB)
-        // Vsota razlik treh kanalov v vse tri -> sivina; nad pragom = vsebina.
-        let sivo = CIFilter.colorMatrix()
-        sivo.inputImage = razlika.outputImage
-        let vsota = CIVector(x: 1, y: 1, z: 1, w: 0)
-        sivo.rVector = vsota
-        sivo.gVector = vsota
-        sivo.bVector = vsota
-        sivo.aVector = CIVector(x: 0, y: 0, z: 0, w: 1)
-        let prag = CIFilter.colorThreshold()
-        prag.inputImage = sivo.outputImage
-        prag.threshold = 0.12
-        let razsiri = CIFilter.morphologyMaximum()
-        razsiri.inputImage = prag.outputImage
-        razsiri.radius = Float(2 * posnetek.scale)
-        let omehcaj = CIFilter.gaussianBlur()
-        omehcaj.inputImage = razsiri.outputImage?.clampedToExtent()
-        omehcaj.radius = Float(1.5 * posnetek.scale)
-        guard let maska = omehcaj.outputImage?.cropped(to: vir.extent) else { return nil }
-        let zdruzi = CIFilter.blendWithMask()
-        zdruzi.inputImage = vir
-        zdruzi.backgroundImage = CIImage.clear.cropped(to: vir.extent)
-        zdruzi.maskImage = maska
-        guard let izhod = zdruzi.outputImage,
-              let cg = ciKontekstVsebine.createCGImage(izhod, from: vir.extent) else { return nil }
-        return UIImage(cgImage: cg, scale: posnetek.scale, orientation: .up)
-    }
-
     static func zamegli(_ slika: UIImage) -> UIImage? {
         guard let cg = slika.cgImage else { return nil }
         let vhod = CIImage(cgImage: cg)
