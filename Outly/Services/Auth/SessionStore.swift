@@ -154,8 +154,11 @@ final class SessionStore: ObservableObject {
         guard !token.isEmpty else { return false }
         do {
             let fetched = try await APIClient.shared.me(token: token)
-            me = fetched
-            meLoadError = nil
+            // Samo ob dejanski spremembi (29. 9. 2026): vsaka objava `me` znova izrise vse, kar
+            // opazuje sejo (tudi MainTabView z vsemi zavihki) — Home in Profile klicata /me ob
+            // vsakem prikazu, torej sredi animacije preklopa zavihka.
+            if me != fetched { me = fetched }
+            if meLoadError != nil { meLoadError = nil }
             return true
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 {
