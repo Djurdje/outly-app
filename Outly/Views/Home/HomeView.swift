@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import CoreLocation
 import UIKit
 
@@ -48,8 +49,11 @@ struct HomeView: View {
     /// "Interested events" (Martin, 25. 9. 2026, prej "Going events" — sedaj samo tisti, ki me
     /// zanimajo ("I'm in"); dogodke z vstopnico ima uporabnik pod Tickets): GET /me/plans.
     @State private var myPlans: [FriendPlan] = []
-    /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje.
-    @State private var scrollOffset: CGFloat = 0
+    /// Odmik drsenja (0 = vrh) za ozadje, ki se odziva na drsenje. Referenca, NE @State (29. 9. 2026,
+    /// "aplikacija steka"): kot @State je vsak frame drsenja znova izracunal celoten domaci zaslon
+    /// (vse sezname dogodkov). Zdaj ga opazuje samo ozadje (HomeOzadje); @State drzi le referenco,
+    /// zato HomeView ob spremembi odmika ne izrise znova.
+    @State private var drsenje = DrsenjeHome()
 
     @EnvironmentObject private var session: SessionStore
     private var authToken: String { session.token }
@@ -177,8 +181,9 @@ struct HomeView: View {
             let ma = moji.contains(a.lowercased()), mb = moji.contains(b.lowercased())
             return ma != mb ? ma : a < b
         }
+        let razvrsceni = sortedUpcoming  // enkrat, ne za vsak zanr posebej
         return urejeni.map { g in
-            let evs = sortedUpcoming.filter { $0.genres.contains { $0.caseInsensitiveCompare(g) == .orderedSame } }
+            let evs = razvrsceni.filter { $0.genres.contains { $0.caseInsensitiveCompare(g) == .orderedSame } }
             return (g, evs.first?.posterUrl ?? "", evs.count)
         }
     }
@@ -345,13 +350,13 @@ struct HomeView: View {
                 )
             }
             .coordinateSpace(name: "homeScroll")
-            .onPreferenceChange(HomeScrollOffsetKey.self) { scrollOffset = $0 }
+            .onPreferenceChange(HomeScrollOffsetKey.self) { v in MainActor.assumeIsolated { drsenje.nastavi(v) } }
             // Okvirja avatarja/polja gresta navzgor v MainTabView (izvora "kroznega razkritja").
             // Posodabljata se tudi med drsenjem, zato MainTabView v trenutku dotika ve, ali sta
             // (se) vidna — ce nista, uporabi privzeti izvor pri robu (glej preklopi(na:)).
             .onPreferenceChange(AvatarOkvirKey.self) { if let r = $0 { izvori?.avatar = r } }
             .onPreferenceChange(WhereToOkvirKey.self) { if let r = $0 { izvori?.whereTo = r } }
-            .background(homeBackground)
+            .background(HomeOzadje(drsenje: drsenje))
             .overlay {
                 if showNotifications { notificationsOverlay }
             }
@@ -452,43 +457,6 @@ struct HomeView: View {
     }
 
     // MARK: - Deli
-
-    /// Delez drsenja 0…1 (1400 pt drsenja = poln premik sijev).
-    private var scrollT: CGFloat { min(max(scrollOffset / 1400, 0), 1) }
-
-    /// Ozadje domacega zaslona (od 20. 9.): temno mornariski preliv z dvema mehkima
-    /// modrima sijema, ki se ob drsenju pocasi premikata in spreminjata moc — zgornji
-    /// pojenja in gre desno-gor, spodnji se krepi in leze navzgor. Brez ostrih robov,
-    /// brez oblik. Samo tu — ostali zasloni ostanejo crni.
-    private var homeBackground: some View {
-        let t = scrollT
-        return ZStack {
-            LinearGradient(
-                stops: [
-                    .init(color: Color(red: 13/255, green: 18/255, blue: 38/255), location: 0),
-                    .init(color: Color(red: 10/255, green: 12/255, blue: 20/255), location: 0.46),
-                    .init(color: Color(red: 8/255, green: 9/255, blue: 15/255), location: 1)
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-            // Sij A (zgoraj levo): 55 % -> pojenja.
-            RadialGradient(colors: [Color.outlyBlue.opacity(0.55), .clear],
-                           center: .center, startRadius: 0, endRadius: 310)
-                .frame(width: 620, height: 620)
-                .blur(radius: 40)
-                .offset(x: -100 + 120 * t, y: -260 - 160 * t)
-                .opacity(0.95 - 0.55 * t)
-            // Sij B (spodaj desno): 30 % -> se krepi in leze navzgor.
-            RadialGradient(colors: [Color.outlyBlue.opacity(0.30), .clear],
-                           center: .center, startRadius: 0, endRadius: 260)
-                .frame(width: 520, height: 520)
-                .blur(radius: 60)
-                .offset(x: 140 - 90 * t, y: 260 - 240 * t)
-                .opacity(0.35 + 0.6 * t)
-        }
-        .animation(.linear(duration: 0.9), value: t)
-        .ignoresSafeArea()
-    }
 
     /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites), prosnje
     /// za prijateljstvo (Me.pendingFriendRequests) in neprebrane prejete vstopnice
@@ -706,4 +674,56 @@ struct HomeView: View {
 private struct HomeScrollOffsetKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
+/// Odmik drsenja domacega zaslona. ObservableObject, ki ga opazuje SAMO HomeOzadje.
+final class DrsenjeHome: ObservableObject {
+    @Published private(set) var odmik: CGFloat = 0
+
+    /// Pod 2 pt spremembe ne objavimo — ozadje se premika pocasi (1400 pt = poln premik).
+    func nastavi(_ nov: CGFloat) {
+        if abs(nov - odmik) >= 2 { odmik = nov }
+    }
+}
+
+/// Ozadje domacega zaslona (od 20. 9.): temno mornariski preliv z dvema mehkima
+/// modrima sijema, ki se ob drsenju pocasi premikata in spreminjata moc — zgornji
+/// pojenja in gre desno-gor, spodnji se krepi in leze navzgor. Brez ostrih robov,
+/// brez oblik. Samo tu — ostali zasloni ostanejo crni. Loceno od HomeView, da drsenje
+/// izrise samo ozadje (29. 9. 2026).
+private struct HomeOzadje: View {
+    @ObservedObject var drsenje: DrsenjeHome
+
+    /// Delez drsenja 0…1 (1400 pt drsenja = poln premik sijev).
+    private var t: CGFloat { min(max(drsenje.odmik / 1400, 0), 1) }
+
+    var body: some View {
+        let t = self.t
+        return ZStack {
+            LinearGradient(
+                stops: [
+                    .init(color: Color(red: 13/255, green: 18/255, blue: 38/255), location: 0),
+                    .init(color: Color(red: 10/255, green: 12/255, blue: 20/255), location: 0.46),
+                    .init(color: Color(red: 8/255, green: 9/255, blue: 15/255), location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            // Sij A (zgoraj levo): 55 % -> pojenja.
+            RadialGradient(colors: [Color.outlyBlue.opacity(0.55), .clear],
+                           center: .center, startRadius: 0, endRadius: 310)
+                .frame(width: 620, height: 620)
+                .blur(radius: 40)
+                .offset(x: -100 + 120 * t, y: -260 - 160 * t)
+                .opacity(0.95 - 0.55 * t)
+            // Sij B (spodaj desno): 30 % -> se krepi in leze navzgor.
+            RadialGradient(colors: [Color.outlyBlue.opacity(0.30), .clear],
+                           center: .center, startRadius: 0, endRadius: 260)
+                .frame(width: 520, height: 520)
+                .blur(radius: 60)
+                .offset(x: 140 - 90 * t, y: 260 - 240 * t)
+                .opacity(0.35 + 0.6 * t)
+        }
+        .animation(.linear(duration: 0.9), value: t)
+        .ignoresSafeArea()
+    }
 }
