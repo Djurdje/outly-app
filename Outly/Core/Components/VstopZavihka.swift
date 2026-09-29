@@ -79,20 +79,8 @@ struct KrcenjeSloj: View {
     /// Sidro v koordinatah izreza (0...1).
     let sidro: UnitPoint
     let trajanje: Double
-    /// true = obratno: raste iz sidra (40 % -> 100 %) in se pojavi (Home -> Search/Profile).
-    var raste: Bool = false
-    @State private var skala: CGFloat
-    @State private var neprosojnost: Double
-
-    init(slika: UIImage, velikost: CGSize, sidro: UnitPoint, trajanje: Double, raste: Bool = false) {
-        self.slika = slika
-        self.velikost = velikost
-        self.sidro = sidro
-        self.trajanje = trajanje
-        self.raste = raste
-        _skala = State(initialValue: raste ? 0.4 : 1)
-        _neprosojnost = State(initialValue: raste ? 0 : 1)
-    }
+    @State private var skala: CGFloat = 1
+    @State private var neprosojnost: Double = 1
 
     var body: some View {
         Image(uiImage: slika)
@@ -104,9 +92,9 @@ struct KrcenjeSloj: View {
             .ignoresSafeArea(.all)
             .allowsHitTesting(false)
             .onAppear {
-                withAnimation(raste ? .easeOut(duration: trajanje) : .easeIn(duration: trajanje)) {
-                    skala = raste ? 1 : 0.4
-                    neprosojnost = raste ? 1 : 0
+                withAnimation(.easeIn(duration: trajanje)) {
+                    skala = 0.4
+                    neprosojnost = 0
                 }
             }
     }
