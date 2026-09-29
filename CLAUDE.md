@@ -55,7 +55,8 @@ _staro/                              odlozena koda (NI v Outly/, se ne prevaja)
 4. Potisnjeni pogledi **brez lastnega `NavigationStack`** (skrije gumb nazaj). Vsaka kartica mora nekam voditi (`NavigationLink`).
 5. `shuffled()`/naključje samo enkrat ob nalaganju, ne v računani lastnosti.
    Vrednosti, ki se spreminjajo vsak frame (odmik drsenja, okvirji iz GeometryReaderja), ne v `@State` velikega pogleda — vsak frame
-   bi znova izračunal cel zaslon. Prehodi med zavihki animirajo posnetke, ne žive vsebine (glej backend `docs/STATE.md`, pasti 29. 9.).
+   bi znova izračunal cel zaslon. Prehod Home → Search/Profile: raste živa vsebina (samo skala, brez animirane prosojnosti); posnetki zaslona so
+   videz pokvarili (#34–#38) — glej backend `docs/STATE.md`, pasti 29. 9. Animacij ne spreminjaj brez Martinovega posnetka zaslona.
 6. Zasloni rabijo spodnji odmik (~40) zaradi plavajoče spodnje vrstice.
 7. Vloge (`user | business | admin`, v klubu `owner | manager | doorman`) odloča strežnik; aplikacija samo kaže drug obraz (`Me.isBusiness`, `canManageClub`).
 8. Info.plist se generira: dovoljenja kot `INFOPLIST_KEY_…` v `project.pbxproj` (oba konfiga).
