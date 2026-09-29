@@ -185,9 +185,11 @@ struct MainTabView: View {
             posnetekDoma = ozadje
             zavihek = nov
             let sidro = sidroIz(izvor, v: cilj.size)
+            // Vrstni red kot prvotni prehod: mirujoce ozadje, nad njim raste vsebina, cez vse pa oster
+            // Home pojema (prej je bila plast "Home se zamegli" NAD zivim TabViewom).
             dodajPlast(PrekrivnaPlast(slika: ozadje, vrsta: .ozadje(velikost: cilj.size), trajanje: 0.3))
-            dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
             dodajPlast(PrekrivnaPlast(slika: cilj, vrsta: .rast(sidro: sidro), trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
             prehodDo = Date().addingTimeInterval(0.3)
             return
         }
@@ -214,9 +216,12 @@ struct MainTabView: View {
                 return
             }
             let sidro = sidroIz(izvor, v: cilj.size)
+            // Samo vsebina (brez ozadja), da raste vsebina in ne "kartica" z ozadjem.
+            let vsebina = OzadnjaZameglitev.izlociVsebino(cilj, ozadje: zamegljen,
+                                                          visinaOkna: velikostOkna.height) ?? cilj
             dodajPlast(PrekrivnaPlast(slika: zamegljen, vrsta: .ozadje(velikost: cilj.size), trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: vsebina, vrsta: .rast(sidro: sidro), trajanje: 0.3))
             dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
-            dodajPlast(PrekrivnaPlast(slika: cilj, vrsta: .rast(sidro: sidro), trajanje: 0.3))
             prehodDo = Date().addingTimeInterval(0.3)
         }
     }
@@ -233,7 +238,17 @@ struct MainTabView: View {
             zavihek = 0
             return
         }
-        if let zavihka { posnetkiZavihkov[od] = (zavihka, posnetekDoma) }
+        // Za naslednji Home -> ta zavihek shranimo SAMO vsebino (izlocanje ozadja v ozadju, ~ms);
+        // ce se uporabnik vrne prej, kot je gotovo, gre prehod po pocasni poti.
+        if let zavihka, let ozadje = posnetekDoma {
+            let visina = velikostOkna.height
+            DispatchQueue.global(qos: .userInitiated).async {
+                let vsebina = OzadnjaZameglitev.izlociVsebino(zavihka, ozadje: ozadje, visinaOkna: visina)
+                DispatchQueue.main.async {
+                    if let vsebina, zavihek == 0 { posnetkiZavihkov[od] = (vsebina, ozadje) }
+                }
+            }
+        }
         let sidro = sidroIz(izvor, v: izrez.size)
         zavihek = 0
         if let ozadje = posnetekDoma {
