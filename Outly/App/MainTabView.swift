@@ -154,31 +154,44 @@ struct MainTabView: View {
         }
     }
 
-    /// Home -> Search/Profile: vsebina cilja zraste iz sidra (40 % -> 100 %, opacity 0->1,
-    /// 0,3 s ease-out, brez blura); zavihek preklopimo TAKOJ (POD plastjo je ze ziv cilj), plast
-    /// nad njim (oster posnetek Home) v istem casu pojema in odkriva ze zamegljen posnetekDoma
-    /// pod seboj — to je "Home se zamegli".
+    /// Home -> Search/Profile (29. 9. 2026: prej je rasla ZIVA vsebina cilja — vsak frame se je
+    /// na novo izrisal cel zaslon s poljem za iskanje, seznamom in slikami; na telefonu je to bilo
+    /// "kot 15 fps"). Zdaj animiramo samo SLIKE, kot pri poti nazaj:
+    /// 1. ob dotiku: oster posnetek Home cez cel zaslon kot mirujoc pokrov, zavihek preklopimo;
+    /// 2. ~2 frama kasneje (cilj je postavljen pod pokrovom): posnamemo samo vsebino ciljnega
+    ///    zavihka (brez spodnje vrstice) in zamenjamo pokrov s tremi plastmi:
+    ///    zamegljen Home (mirujoce ozadje, isto kot ozadje cilja) -> oster Home, ki pojema ->
+    ///    posnetek cilja, ki raste iz sidra (40 % -> 100 %, opacity 0 -> 1, 0,3 s ease-out);
+    /// 3. po koncu plasti odstranimo — pod njimi je ze ziv, enak zaslon.
     private func odpriIzHome(na nov: Int, izvor: CGRect) {
-        let sidro = sidroIz(izvor, v: velikostOkna)
         guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else {
             zavihek = nov
             return
         }
         // EN zajem hierarhije; zamegljeno ozadje izpeljemo iz istega posnetka s pomanjsavo na cetrtino.
         let majhen = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
-        posnetekDoma = OzadnjaZameglitev.zamegli(majhen) ?? majhen
-        vstop = VstopZavihka(skala: 0.4, prosojnost: 0, zameglitev: 0, sidro: sidro)
+        let zamegljen = OzadnjaZameglitev.zamegli(majhen) ?? majhen
+        posnetekDoma = zamegljen
         zavihek = nov
-        dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
-        prehodDo = Date().addingTimeInterval(0.3)
-        // Animacija se zacne EN frame po preklopu (v tem framu SwiftUI postavi ciljni zaslon).
-        // Ce je uporabnik vmes ze preklopil drugam, je generacija drugacna in ne naredimo nic.
+        dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .mirujoca, trajanje: 1.0))
+        prehodDo = Date().addingTimeInterval(0.4)
+
         let gen = generacija
-        DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.035) {
             guard gen == generacija else { return }
-            withAnimation(.easeOut(duration: 0.3)) {
-                vstop = VstopZavihka(skala: 1, prosojnost: 1, zameglitev: 0, sidro: sidro)
+            let cilj = UIApplication.shared.kljucnoOkno?.posnetekIzbranegaZavihka()
+            // Pokrov (mirujoc Home) zamenjamo z animacijo v ISTEM izrisu — brez utripa.
+            plasti.removeAll()
+            guard let cilj else {
+                // Posnetka ni (npr. drugacna hierarhija): samo zbledi Home, kot navaden zabris.
+                dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.25))
+                return
             }
+            let sidro = sidroIz(izvor, v: cilj.size)
+            dodajPlast(PrekrivnaPlast(slika: zamegljen, vrsta: .ozadje(velikost: cilj.size), trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: 0.3))
+            dodajPlast(PrekrivnaPlast(slika: cilj, vrsta: .rast(sidro: sidro), trajanje: 0.3))
+            prehodDo = Date().addingTimeInterval(0.3)
         }
     }
 
@@ -280,6 +293,22 @@ struct MainTabView: View {
                     ZabrisSloj(slika: plast.slika, velikostOkna: velikostOkna, trajanje: plast.trajanje)
                 case .krcenje(let sidro):
                     KrcenjeSloj(slika: plast.slika, velikost: plast.slika.size, sidro: sidro, trajanje: plast.trajanje)
+                case .rast(let sidro):
+                    KrcenjeSloj(slika: plast.slika, velikost: plast.slika.size, sidro: sidro, trajanje: plast.trajanje,
+                                raste: true)
+                case .mirujoca:
+                    Image(uiImage: plast.slika)
+                        .resizable()
+                        .frame(width: velikostOkna.width, height: velikostOkna.height)
+                        .ignoresSafeArea(.all)
+                        .allowsHitTesting(false)
+                case .ozadje(let velikost):
+                    HomeSnapshotBackground(slika: plast.slika)
+                        .frame(width: velikost.width, height: velikost.height)
+                        .clipped()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .ignoresSafeArea(.all)
+                        .allowsHitTesting(false)
                 }
             }
         }
@@ -301,6 +330,12 @@ private struct PrekrivnaPlast: Identifiable {
         case zabris
         /// Izrez nad spodnjo vrstico, krci se proti sidru in pojema (KrcenjeSloj).
         case krcenje(sidro: UnitPoint)
+        /// Posnetek ciljnega zavihka (nad spodnjo vrstico), raste iz sidra in se pojavi.
+        case rast(sidro: UnitPoint)
+        /// Mirujoca slika cez cel zaslon (pokrov, dokler se cilj ne postavi).
+        case mirujoca
+        /// Mirujoce zamegljeno ozadje (kot ozadje Search/Profile), velikost izreza nad vrstico.
+        case ozadje(velikost: CGSize)
     }
 
     let id = UUID()
@@ -322,6 +357,29 @@ private struct NalaganjePriljubljenih: View {
 }
 
 private extension UIWindow {
+    /// Posnetek vsebine izbranega zavihka BREZ spodnje vrstice in brez prekrivnih plasti (te so
+    /// SwiftUI sestra TabViewa, ne del pogleda zavihka). Merilo 2 — dovolj ostro za 0,3 s animacije.
+    func posnetekIzbranegaZavihka() -> UIImage? {
+        func najdi(_ vc: UIViewController?) -> UITabBarController? {
+            guard let vc else { return nil }
+            if let t = vc as? UITabBarController { return t }
+            for otrok in vc.children { if let t = najdi(otrok) { return t } }
+            return najdi(vc.presentedViewController)
+        }
+        guard let pogled = najdi(rootViewController)?.selectedViewController?.view,
+              pogled.bounds.width > 1, pogled.bounds.height > 1 else { return nil }
+        let okvir = pogled.convert(pogled.bounds, to: self)
+        let visina = min(spodnjaVrsticaVrh ?? okvir.maxY, okvir.maxY) - okvir.minY
+        guard okvir.minY < 1, visina > 1 else { return nil }  // pricakujemo zavihek od vrha okna
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = min(traitCollection.displayScale, 2)
+        format.opaque = true
+        let meje = CGRect(x: 0, y: 0, width: pogled.bounds.width, height: visina)
+        return UIGraphicsImageRenderer(bounds: meje, format: format).image { _ in
+            pogled.drawHierarchy(in: pogled.bounds, afterScreenUpdates: true)
+        }
+    }
+
     /// Zgornji rob sistemske spodnje vrstice zavihkov v okenskih koordinatah (nil, ce je ni).
     var spodnjaVrsticaVrh: CGFloat? {
         func najdi(_ v: UIView) -> UITabBar? {
