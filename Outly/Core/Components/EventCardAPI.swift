@@ -43,7 +43,9 @@ struct EventCardAPI: View {
     }
 
     // MARK: - CLUB ROW
-    // Levo plakat (Figma "Coming Soon"), sredina: naslov, zanri, cena; desno datum + srce.
+    // Levo plakat (Figma "Coming Soon"), sredina: naslov, zanri, datum; desno cena (modra z rahlim
+    // sijem) in znacka. Kartica je cez vso sirino (Martin, 29. 9. 2026: vse kartice enako dolge kot
+    // okvir videa na strani kluba, ne vsaka po dolzini naslova).
     private var clubRowBody: some View {
         HStack(spacing: 12) {
             eventPosterSmall
@@ -62,23 +64,30 @@ struct EventCardAPI: View {
                         .lineLimit(1)
                 }
 
-                HStack(spacing: 6) {
-                    Text(event.priceLabel)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.white)
-                    Text("·").foregroundStyle(Color.white.opacity(0.4))
-                    Text(event.displayDateShort)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.white.opacity(0.7))
-                }
+                Text(event.displayDateShort)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.white.opacity(0.7))
             }
 
-            if let planBadge {
-                Spacer(minLength: 8)
-                znacka(planBadge)
+            Spacer(minLength: 8)
+
+            VStack(alignment: .trailing, spacing: 8) {
+                Text(event.priceLabel)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.outlyBlue)
+                    .lineLimit(1)
+                    .fixedSize()
+                    // Rahel sij, blizu gumbov (Sij.swift), a sibkejsi - to je napis, ne gumb.
+                    .shadow(color: Color.outlyBlue.opacity(0.55), radius: 4)
+                    .shadow(color: Color.outlyBlue.opacity(0.30), radius: 10)
+
+                if let planBadge {
+                    znacka(planBadge)
+                }
             }
         }
         .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
