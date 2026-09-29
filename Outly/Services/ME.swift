@@ -3,7 +3,7 @@ import Foundation
 /// Uporabnik, kot ga vrne GET /me (in PATCH /me, PATCH /me/avatar).
 /// Vsa polja razen id/email/username/role so neobvezna, ker so bila dodana
 /// z migracijo 003 in so lahko NULL. Ena vrstica z NULL ne sme podreti dekodiranja.
-struct Me: Decodable {
+struct Me: Decodable, Equatable {
     let id: Int
     let email: String
     let username: String
@@ -123,7 +123,7 @@ struct Me: Decodable {
 }
 
 /// Eno clanstvo iz GET /me `clubs` (migracija 018): klub in moja vloga v njem.
-struct MeClub: Decodable, Identifiable {
+struct MeClub: Decodable, Identifiable, Equatable {
     let clubId: Int
     let clubName: String
     let clubLogoUrl: String

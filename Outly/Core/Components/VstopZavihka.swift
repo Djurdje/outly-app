@@ -12,10 +12,17 @@ import SwiftUI
 
 /// Okvirja avatarja in polja "Where to?" v HomeView, v GLOBALNIH (okenskih) koordinatah —
 /// isti koordinatni sistem kot posnetek zaslona (surovPosnetek), da se sidro ujema z vsebino.
-/// HomeView ju izmeri z GeometryReader/PreferenceKey in poda navzgor v MainTabView.
-struct IzvoriRazkritja: Equatable {
-    var avatar: CGRect?
-    var whereTo: CGRect?
+/// HomeView ju izmeri z GeometryReader/PreferenceKey in zapise sem.
+///
+/// Razred, NE @State vrednost (29. 9. 2026, "aplikacija steka"): okvirja se spreminjata ob VSAKEM
+/// framu drsenja domacega zaslona. Kot @State v MainTabView je vsak frame drsenja znova izracunal
+/// celoten TabView (vse stiri zavihke, tudi zemljevid). Vrednosti rabimo samo v trenutku dotika,
+/// zato jih hranimo v referenci, katere spremembe SwiftUI ne opazuje. Dostop samo z glavne niti.
+final class IzvoriRazkritja: @unchecked Sendable {
+    // nonisolated(unsafe): pise se iz onPreferenceChange (v SDK lahko @Sendable zaprtek), bere ob
+    // dotiku — oboje na glavni niti.
+    nonisolated(unsafe) var avatar: CGRect?
+    nonisolated(unsafe) var whereTo: CGRect?
 }
 
 /// PreferenceKey za okvir avatarja (glava HomeView).
@@ -57,6 +64,38 @@ struct ZabrisSloj: View {
             .allowsHitTesting(false)
             .onAppear {
                 withAnimation(.easeInOut(duration: trajanje)) { neprosojnost = 0 }
+            }
+    }
+}
+
+/// Krcenje zaslona, ki ga zapuscamo (Search/Profile -> Home, 29. 9. 2026): zamrznjen posnetek
+/// vsebine (brez spodnje vrstice) se skrci proti sidru (100 % -> 40 %) in zbledi. Pod njim je ze
+/// ziv Home — zavihek se preklopi TAKOJ ob dotiku, ne sele po animaciji; prej je bil dotik med
+/// animacijo prezrt ali pa je koncni preklop na Home "povozil" zavihek, ki ga je uporabnik ze izbral.
+struct KrcenjeSloj: View {
+    let slika: UIImage
+    /// Velikost izreza (sirina okna x visina nad spodnjo vrstico), poravnan levo zgoraj.
+    let velikost: CGSize
+    /// Sidro v koordinatah izreza (0...1).
+    let sidro: UnitPoint
+    let trajanje: Double
+    @State private var skala: CGFloat = 1
+    @State private var neprosojnost: Double = 1
+
+    var body: some View {
+        Image(uiImage: slika)
+            .resizable()
+            .frame(width: velikost.width, height: velikost.height)
+            .scaleEffect(skala, anchor: sidro)
+            .opacity(neprosojnost)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .ignoresSafeArea(.all)
+            .allowsHitTesting(false)
+            .onAppear {
+                withAnimation(.easeIn(duration: trajanje)) {
+                    skala = 0.4
+                    neprosojnost = 0
+                }
             }
     }
 }

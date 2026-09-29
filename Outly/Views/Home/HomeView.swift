@@ -13,9 +13,9 @@ struct HomeView: View {
     var odpriIskanje: () -> Void = {}
     var odpriProfil: () -> Void = {}
     /// Okvirja avatarja in polja "Where to?" v okenskih koordinatah — MainTabView jih rabi za
-    /// izvor "kroznega razkritja" (Martin, 23. 9.). Privzeto .constant, da klicu ni treba skrbeti
-    /// za to v predogledih/testih.
-    var okvirIzvorov: Binding<IzvoriRazkritja> = .constant(IzvoriRazkritja())
+    /// sidro prehoda. Referenca brez opazovanja (glej IzvoriRazkritja): drsenje ne sme vsak frame
+    /// znova izrisati celega TabViewa. nil v predogledih/testih.
+    var izvori: IzvoriRazkritja? = nil
     @State private var genres: [String] = []
 
     @State private var clubs: [APIClub] = []
@@ -349,8 +349,8 @@ struct HomeView: View {
             // Okvirja avatarja/polja gresta navzgor v MainTabView (izvora "kroznega razkritja").
             // Posodabljata se tudi med drsenjem, zato MainTabView v trenutku dotika ve, ali sta
             // (se) vidna — ce nista, uporabi privzeti izvor pri robu (glej preklopi(na:)).
-            .onPreferenceChange(AvatarOkvirKey.self) { if let r = $0 { okvirIzvorov.wrappedValue.avatar = r } }
-            .onPreferenceChange(WhereToOkvirKey.self) { if let r = $0 { okvirIzvorov.wrappedValue.whereTo = r } }
+            .onPreferenceChange(AvatarOkvirKey.self) { if let r = $0 { izvori?.avatar = r } }
+            .onPreferenceChange(WhereToOkvirKey.self) { if let r = $0 { izvori?.whereTo = r } }
             .background(homeBackground)
             .overlay {
                 if showNotifications { notificationsOverlay }
