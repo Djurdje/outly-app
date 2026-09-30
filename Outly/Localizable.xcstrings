@@ -5395,7 +5395,7 @@
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Poslano %@"
+            "value": "Vstopnica poslana: %@"
           }
         }
       }
