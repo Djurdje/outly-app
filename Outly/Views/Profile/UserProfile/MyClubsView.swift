@@ -383,7 +383,7 @@ struct MyClubDetailView: View {
                         }
 
                         NavigationLink {
-                            QRScannerView()
+                            QRScannerView(clubId: clubId)
                         } label: {
                             OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan ticket")
                         }

@@ -2,28 +2,192 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
-/// Skener QR za vrata (AVFoundation, brez zunanjih knjiznic). Vsak prebran QR gre na
-/// POST /business/tickets/scan; streznik preveri podpis in stanje. Ista koda se
-/// ne poslje dvakrat zapored, dokler je v kadru (sicer bi vsak okvir sprozil klic).
+/// Skener QR za vrata, ki dela tudi brez povezave (backend issue #86).
+///
+/// 1. Vratar izbere dogodek. Javni kljuc in seznam vstopnic se prenesejo na telefon (in osvezujejo na ~2 min).
+/// 2. Koda v2 se preveri LOKALNO (podpis Ed25519, dogodek, seznam, ze skenirano na tem telefonu): zeleno takoj,
+///    sken gre v trajno vrsto, ki se poslje prek scan-batch takoj in periodicno. Streznik ostane razsodnik.
+/// 3. Stara koda v1 se na telefonu ne da preveriti: s povezavo jo preveri obstojec POST /scan, brez nje je rumeno.
+///
+/// Vse odlocanje je v SkenSeja (testirano); ta zaslon samo kaze stanje: povezava, stevilo cakajocih, cas zadnjega prenosa seznama.
 @MainActor
 struct QRScannerView: View {
     @EnvironmentObject private var session: SessionStore
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+
+    @StateObject private var seja: SkenSeja
+    @State private var omrezje = SkenOmrezje()
 
     @State private var zadnjaKoda = ""
-    @State private var rezultat: ScanResult?
-    @State private var isChecking = false
+    @State private var prikaz: SkenPrikaz?
+    /// Ena koda naenkrat (ni prikazano; »Checking…« kaze seja samo ob spletnem preverjanju).
+    @State private var obdelava = false
     @State private var dovoljenje: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var stevec = (ok: 0, zavrnjeno: 0)
+    @State private var pokaziKonflikte = false
+
+    /// `clubId`: klub, v katerem vratar dela (MyClubDetailView). Vrsta skenov je shranjena po klubu.
+    init(clubId: Int? = nil) {
+        _seja = StateObject(wrappedValue: SkenSeja(klubId: clubId ?? IzbraniKlub.id ?? 0, api: SkenApiZivi()))
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            if seja.dogodek == nil {
+                izbiraDogodka
+            } else {
+                skener
+            }
+        }
+        .navigationTitle(seja.dogodek?.title ?? String(localized: "Scan tickets"))
+        .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(.dark)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                if !seja.konflikti.isEmpty {
+                    Button { pokaziKonflikte = true } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                            Text("\(seja.konflikti.count)")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.orange)
+                    }
+                    .accessibilityLabel(Text("Conflicts"))
+                }
+                if seja.dogodek != nil {
+                    Button { zamenjajDogodek() } label: { Image(systemName: "calendar") }
+                        .accessibilityLabel(Text("Change event"))
+                }
+            }
+        }
+        .sheet(isPresented: $pokaziKonflikte) {
+            SkenKonfliktiView(seja: seja)
+        }
+        .task {
+            if dovoljenje == .notDetermined {
+                let ok = await AVCaptureDevice.requestAccess(for: .video)
+                dovoljenje = ok ? .authorized : .denied
+            }
+        }
+        .task { await zacniSejo() }
+        .onChange(of: scenePhase) { _, faza in
+            if faza == .active { seja.takojOsvezi() }
+        }
+        .onDisappear {
+            omrezje.ustavi()
+            seja.ustavi()
+            // Zadnji poskus pred odhodom; kar ostane, je na disku in se poslje ob naslednjem odprtju skenerja.
+            let s = seja
+            Task { await s.poslji() }
+        }
+    }
 
+    /// Poveze sejo z zetonom in uporabnikom, zazene tik (posiljanje, osvezevanje) in nalozi dogodke.
+    private func zacniSejo() async {
+        let store: SessionStore = session
+        seja.zeton = { [weak store] in store?.token ?? "" }
+        seja.uporabnikId = store.me?.id
+        seja.zacni()
+        let s = seja
+        omrezje.zacni { gor in s.omrezjeSpremenjeno(gor: gor) }
+        await seja.naloziDogodke()
+    }
+
+    private func zamenjajDogodek() {
+        prikaz = nil
+        zadnjaKoda = ""
+        seja.zapriDogodek()
+    }
+
+    // MARK: - Izbira dogodka
+
+    private var izbiraDogodka: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                stanjeVrstica(prikaziSeznam: false)
+
+                Text("Choose an event")
+                    .font(.title2.bold())
+                    .foregroundColor(.white)
+                    .padding(.top, 6)
+                Text("The ticket list is downloaded to this phone, so scanning keeps working without a connection.")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.65))
+
+                if seja.dogodkiNalaga && seja.dogodki.isEmpty {
+                    HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.vertical, 30)
+                } else if let napaka = seja.dogodkiNapaka {
+                    VStack(spacing: 10) {
+                        Text(verbatim: napaka).foregroundColor(.red).font(.subheadline).multilineTextAlignment(.center)
+                        Button("Try again") { Task { await seja.naloziDogodke() } }
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                } else if seja.ponujeniDogodki.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 34))
+                            .foregroundColor(.white.opacity(0.6))
+                        Text("No events to scan")
+                            .font(.headline).foregroundColor(.white)
+                        Text("Published events of your club show up here.")
+                            .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 30)
+                } else {
+                    ForEach(seja.ponujeniDogodki) { d in
+                        Button { Task { await seja.odpri(d) } } label: { vrsticaDogodka(d) }
+                            .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 8)
+            .padding(.bottom, 40)
+        }
+    }
+
+    private func vrsticaDogodka(_ d: SkenDogodek) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(verbatim: d.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
+                if let t = SkenCas.razcleni(d.startAt) {
+                    Text(verbatim: t.formatted(date: .abbreviated, time: .shortened))
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+            Spacer()
+            if d.lifecycle == "live" {
+                Text("Live")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(.green)
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white.opacity(0.4))
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - Skener
+
+    private var skener: some View {
+        ZStack {
             if dovoljenje == .authorized {
                 KameraQR { koda in obravnavaj(koda) }
                     .ignoresSafeArea()
-                okvir
+                RoundedRectangle(cornerRadius: 22)
+                    .stroke(Color.white.opacity(0.9), lineWidth: 3)
+                    .frame(width: 240, height: 240)
             } else if dovoljenje == .notDetermined {
                 VStack(spacing: 14) {
                     ProgressView().tint(.white)
@@ -44,128 +208,202 @@ struct QRScannerView: View {
                 .padding(30)
             }
 
-            VStack {
+            VStack(spacing: 10) {
+                stanjeVrstica(prikaziSeznam: true)
+                pripravaOpozorilo
                 Spacer()
-                rezultatKartica
+                if seja.preverjaNaStrezniku {
+                    HStack(spacing: 10) { ProgressView().tint(.white); Text("Checking…").foregroundColor(.white) }
+                        .padding(14)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.8))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                } else if let p = prikaz {
+                    rezultatKartica(p)
+                } else if dovoljenje == .authorized {
+                    Text("Point the camera at the ticket's QR code")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(Color.black.opacity(0.55))
+                        .clipShape(Capsule())
+                }
             }
-            .padding(18)
-        }
-        .navigationTitle("Scan tickets")
-        .navigationBarTitleDisplayMode(.inline)
-        .preferredColorScheme(.dark)
-        .task {
-            if dovoljenje == .notDetermined {
-                let ok = await AVCaptureDevice.requestAccess(for: .video)
-                dovoljenje = ok ? .authorized : .denied
-            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
     }
 
-    private var okvir: some View {
-        VStack {
-            Text("Point the camera at the ticket's QR code")
-                .font(.subheadline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(Color.black.opacity(0.55))
-                .clipShape(Capsule())
-                .padding(.top, 20)
-            Spacer()
-            RoundedRectangle(cornerRadius: 22)
-                .stroke(Color.white.opacity(0.9), lineWidth: 3)
-                .frame(width: 240, height: 240)
-            Spacer()
-            HStack(spacing: 18) {
-                Text("\(stevec.ok) in").foregroundColor(.green)
-                Text("\(stevec.zavrnjeno) refused").foregroundColor(.red)
+    /// Vedno vidno: povezava, koliko skenov caka, cas zadnjega prenosa seznama (+ stevec vstopov).
+    private func stanjeVrstica(prikaziSeznam: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 14) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(seja.povezava ? Color.green : Color.orange)
+                        .frame(width: 8, height: 8)
+                    Text(LocalizedStringKey(seja.povezava ? "Online" : "Offline"))
+                }
+                if seja.cakajoce > 0 {
+                    Text("\(seja.cakajoce) waiting").foregroundColor(.orange)
+                } else {
+                    Text("All sent").foregroundColor(.white.opacity(0.6))
+                }
+                Spacer()
+                if prikaziSeznam {
+                    Text("\(seja.sprejeti) in").foregroundColor(.green)
+                    Text("\(seja.zavrnjeni) refused").foregroundColor(.red)
+                }
             }
-            .font(.subheadline.weight(.semibold))
-            .padding(.horizontal, 14).padding(.vertical, 8)
-            .background(Color.black.opacity(0.55))
-            .clipShape(Capsule())
-            .padding(.bottom, 120)
+            if prikaziSeznam {
+                if let t = seja.zadnjiPrenos {
+                    Text("List updated \(SkenPrikaz.cas(t))").foregroundColor(.white.opacity(0.6))
+                } else {
+                    Text("List not downloaded").foregroundColor(.white.opacity(0.6))
+                }
+            }
+            if !seja.zapisOK {
+                Text("Scans could not be saved on this phone. Free up storage space.")
+                    .foregroundColor(.red)
+            }
         }
+        .font(.footnote.weight(.semibold))
+        .foregroundColor(.white.opacity(0.9))
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.65))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     @ViewBuilder
-    private var rezultatKartica: some View {
-        if isChecking {
-            HStack(spacing: 10) { ProgressView().tint(.white); Text("Checking…").foregroundColor(.white) }
-                .padding(14)
-                .frame(maxWidth: .infinity)
-                .background(Color.black.opacity(0.8))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        } else if let r = rezultat {
-            let ok = r.result == "ok"
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Image(systemName: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(ok ? .green : .red)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(LocalizedStringKey(ok ? "WELCOME IN" : naslovNapake(r.result)))
-                            .font(.headline).foregroundColor(.white)
-                        Text(r.message).font(.subheadline).foregroundColor(.white.opacity(0.8))
-                    }
-                    Spacer()
-                    Button("Next") { rezultat = nil; zadnjaKoda = "" }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(Capsule())
-                }
-
-                // VIP (backend 025): vratar/bar takoj vidi VIP, mizo in paket - tudi pri ze skenirani vstopnici.
-                if let t = r.ticket, t.isVip {
-                    HStack(spacing: 10) {
-                        Image(systemName: "crown.fill")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.black)
-                        Text(verbatim: VipOznaka.vrstica(tableLabel: t.tableLabel, packageName: t.packageName))
-                            .font(.system(size: 17, weight: .heavy))
-                            .foregroundColor(.black)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 14).padding(.vertical, 12)
-                    .background(Color.vipZlata)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
+    private var pripravaOpozorilo: some View {
+        switch seja.priprava {
+        case .nalaga:
+            HStack(spacing: 10) {
+                ProgressView().tint(.white)
+                Text("Downloading the ticket list…").foregroundColor(.white)
             }
-            .padding(14)
-            .background((ok ? Color.green : Color.red).opacity(0.25))
-            .background(Color.black.opacity(0.85))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .font(.footnote.weight(.semibold))
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.black.opacity(0.65))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        case .manjkaPodatkov(let sporocilo):
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Offline check is not ready")
+                    .font(.footnote.weight(.bold)).foregroundColor(.yellow)
+                Text(verbatim: sporocilo)
+                    .font(.footnote).foregroundColor(.white.opacity(0.8))
+                Text("Until the list is downloaded, tickets can only be checked with a connection.")
+                    .font(.footnote).foregroundColor(.white.opacity(0.8))
+                Button("Try again") {
+                    if let d = seja.dogodek { Task { await seja.odpri(d) } }
+                }
+                .font(.footnote.weight(.bold)).foregroundColor(.white)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.black.opacity(0.65))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        default:
+            EmptyView()
         }
     }
 
-    private func naslovNapake(_ r: String) -> String {
-        switch r {
-        case "already_used": return "ALREADY SCANNED"
-        case "wrong_club": return "WRONG CLUB"
-        case "unknown": return "UNKNOWN TICKET"
-        case "unpaid": return "NOT PAID"
-        default: return "REFUSED"
+    // MARK: - Rezultat
+
+    private func rezultatKartica(_ p: SkenPrikaz) -> some View {
+        let barva: Color = p.barva == .zeleno ? .green : (p.barva == .rdece ? .red : .yellow)
+        let ikona = p.barva == .zeleno ? "checkmark.circle.fill" : (p.barva == .rdece ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
+        return VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: ikona)
+                    .font(.system(size: 32))
+                    .foregroundColor(barva)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: p.naslov)
+                        .font(.headline).foregroundColor(.white)
+                    if !p.podnaslov.isEmpty {
+                        Text(verbatim: p.podnaslov)
+                            .font(.subheadline).foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                Spacer()
+                Button("Next") { naprej() }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Capsule())
+            }
+
+            if let o = p.opomba {
+                Text(verbatim: o)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(.yellow)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            // VIP (backend 025): vratar/bar takoj vidi VIP, mizo in paket - tudi pri ze skenirani vstopnici.
+            if let vip = p.vip {
+                HStack(spacing: 10) {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                    Text(verbatim: vip)
+                        .font(.system(size: 17, weight: .heavy))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .background(Color.vipZlata)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
+            // Rumeno: aplikacija gosta ne spusti sama. Vratar odloci; sken gre v vrsto in ga streznik preveri naknadno.
+            if p.ponudiVstop, let qr = p.qr {
+                Button {
+                    prikaz = seja.spustiRocno(qr: qr)
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                } label: {
+                    Text("Let in")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
         }
+        .padding(14)
+        .background(barva.opacity(0.25))
+        .background(Color.black.opacity(0.85))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func naprej() {
+        prikaz = nil
+        zadnjaKoda = ""
     }
 
     private func obravnavaj(_ koda: String) {
-        // Ista koda ostane v kadru vec okvirjev zapored; klicemo samo ob spremembi in ko ni odprtega rezultata.
-        guard koda != zadnjaKoda, !isChecking, rezultat == nil else { return }
+        // Ista koda ostane v kadru vec okvirjev zapored; odlocamo samo ob spremembi in ko ni odprtega rezultata.
+        guard koda != zadnjaKoda, !obdelava, prikaz == nil else { return }
         zadnjaKoda = koda
-        isChecking = true
+        obdelava = true
         Task {
-            defer { isChecking = false }
-            do {
-                let r = try await APIClient.shared.scanTicket(token: session.token, qr: koda)
-                rezultat = r
-                if r.result == "ok" { stevec.ok += 1 } else { stevec.zavrnjeno += 1 }
-                let g = UINotificationFeedbackGenerator()
-                g.notificationOccurred(r.result == "ok" ? .success : .error)
-            } catch {
-                rezultat = ScanResult(result: "error", message: error.userMessage, usedAt: nil)
+            defer { obdelava = false }
+            let p = await seja.skeniraj(koda)
+            prikaz = p
+            let g = UINotificationFeedbackGenerator()
+            switch p.barva {
+            case .zeleno: g.notificationOccurred(.success)
+            case .rdece: g.notificationOccurred(.error)
+            case .rumeno: g.notificationOccurred(.warning)
             }
         }
     }

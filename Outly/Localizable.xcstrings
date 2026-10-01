@@ -8807,6 +8807,600 @@
           }
         }
       }
+    },
+    "Conflicts": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konflikti"
+          }
+        }
+      }
+    },
+    "Change event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjaj dogodek"
+          }
+        }
+      }
+    },
+    "Choose an event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi dogodek"
+          }
+        }
+      }
+    },
+    "The ticket list is downloaded to this phone, so scanning keeps working without a connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam vstopnic se prenese v telefon, zato skeniranje deluje tudi brez povezave."
+          }
+        }
+      }
+    },
+    "No events to scan": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni dogodkov za skeniranje"
+          }
+        }
+      }
+    },
+    "Published events of your club show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tukaj se prikažejo objavljeni dogodki tvojega kluba."
+          }
+        }
+      }
+    },
+    "Live": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V teku"
+          }
+        }
+      }
+    },
+    "%lld waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čaka na pošiljanje: %lld"
+          }
+        }
+      }
+    },
+    "All sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse poslano"
+          }
+        }
+      }
+    },
+    "List updated %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam osvežen ob %@"
+          }
+        }
+      }
+    },
+    "List not downloaded": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam ni prenesen"
+          }
+        }
+      }
+    },
+    "Scans could not be saved on this phone. Free up storage space.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenov ni bilo mogoče shraniti v telefon. Sprosti prostor v pomnilniku."
+          }
+        }
+      }
+    },
+    "Downloading the ticket list…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prenašam seznam vstopnic …"
+          }
+        }
+      }
+    },
+    "Offline check is not ready": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preverjanje brez povezave še ni pripravljeno"
+          }
+        }
+      }
+    },
+    "Until the list is downloaded, tickets can only be checked with a connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokler seznam ni prenesen, je vstopnice mogoče preveriti samo s povezavo."
+          }
+        }
+      }
+    },
+    "Let in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spusti"
+          }
+        }
+      }
+    },
+    "These guests were let in from this phone, but the server did not confirm the entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ti gosti so bili spuščeni s tega telefona, strežnik pa vstopa ni potrdil."
+          }
+        }
+      }
+    },
+    "No conflicts": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni konfliktov"
+          }
+        }
+      }
+    },
+    "Scanned here at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenirano tukaj ob %@"
+          }
+        }
+      }
+    },
+    "First used on the server at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prvič uporabljeno na strežniku ob %@"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi"
+          }
+        }
+      }
+    },
+    "Not on the list: bought after the last download. The server checks it when you are back online.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni na seznamu: kupljena po zadnjem prenosu. Strežnik jo preveri, ko je povezava spet na voljo."
+          }
+        }
+      }
+    },
+    "Scanned on this phone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenirano na tem telefonu."
+          }
+        }
+      }
+    },
+    "Scanned on this phone at %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenirano na tem telefonu ob %@."
+          }
+        }
+      }
+    },
+    "Already used at %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že uporabljeno ob %@."
+          }
+        }
+      }
+    },
+    "TICKET TRANSFERRED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VSTOPNICA PRENESENA"
+          }
+        }
+      }
+    },
+    "This code is no longer valid: the ticket was sent to someone else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta koda ne velja več: vstopnica je bila poslana komu drugemu."
+          }
+        }
+      }
+    },
+    "REFUNDED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRNJENO"
+          }
+        }
+      }
+    },
+    "This ticket was refunded.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica je bila povrnjena."
+          }
+        }
+      }
+    },
+    "CANCELLED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PREKLICANO"
+          }
+        }
+      }
+    },
+    "This ticket was cancelled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica je bila preklicana."
+          }
+        }
+      }
+    },
+    "WRONG EVENT": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DRUG DOGODEK"
+          }
+        }
+      }
+    },
+    "This ticket is for a different event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica je za drug dogodek."
+          }
+        }
+      }
+    },
+    "INVALID CODE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEVELJAVNA KODA"
+          }
+        }
+      }
+    },
+    "This is not a valid Outly ticket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To ni veljavna vstopnica Outly."
+          }
+        }
+      }
+    },
+    "OLD CODE": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STARA KODA"
+          }
+        }
+      }
+    },
+    "This ticket has an old code. It can only be checked with a connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica ima staro kodo. Preveriti jo je mogoče samo s povezavo."
+          }
+        }
+      }
+    },
+    "NO DATA YET": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ŠE NI PODATKOV"
+          }
+        }
+      }
+    },
+    "The ticket list is not downloaded yet. It can only be checked with a connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam vstopnic še ni prenesen. Preveriti jo je mogoče samo s povezavo."
+          }
+        }
+      }
+    },
+    "LET IN": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SPUŠČEN"
+          }
+        }
+      }
+    },
+    "Not checked yet. The server checks this ticket when you are back online.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni preverjeno. Strežnik vstopnico preveri, ko je povezava spet na voljo."
+          }
+        }
+      }
+    },
+    "Already used: the server had this ticket scanned first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že uporabljeno: strežnik je to vstopnico prejel skenirano prej."
+          }
+        }
+      }
+    },
+    "The ticket was transferred to someone else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica je bila prenesena na drugo osebo."
+          }
+        }
+      }
+    },
+    "The ticket is for another club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica je za drug klub."
+          }
+        }
+      }
+    },
+    "The server does not know this ticket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik te vstopnice ne pozna."
+          }
+        }
+      }
+    },
+    "The order is not paid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naročilo ni plačano."
+          }
+        }
+      }
+    },
+    "The ticket was refunded.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica je bila povrnjena."
+          }
+        }
+      }
+    },
+    "The ticket was cancelled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica je bila preklicana."
+          }
+        }
+      }
+    },
+    "The server rejected the code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik je kodo zavrnil."
+          }
+        }
+      }
+    },
+    "The server did not confirm this entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik tega vstopa ni potrdil."
+          }
+        }
+      }
+    },
+    "The scanner key could not be downloaded.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ključa za skener ni bilo mogoče prenesti."
+          }
+        }
+      }
+    },
+    "Choose an event first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej izberi dogodek."
+          }
+        }
+      }
+    },
+    "Online": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povezan"
+          }
+        }
+      }
+    },
+    "Offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brez povezave"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
