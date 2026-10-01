@@ -1,0 +1,86 @@
+# Zascita: obcutljive spremembe zahtevajo oznako "odobril-martin".
+#
+# Zakaj: agent sme sam mergati PR-je v master, vsak merge pa je nov TestFlight build pri testerjih.
+# Brez tega bi lahko sam zdruzil spremembo pravil igre, podpisovanja ali izjave o zasebnosti.
+# Workflow pade, ce PR spremeni katero od teh poti in nima oznake:
+#   .github/workflows/**                 gradnja, podpisovanje, TestFlight, ta preverba
+#   CLAUDE.md, .claude/**                navodila in agenti
+#   Outly.xcodeproj/project.pbxproj      podpisovanje, verzija, dovoljenja (Info.plist kljuci)
+#   Outly/PrivacyInfo.xcprivacy          izjava o zasebnosti za Apple
+#
+# POZOR: repo je zaseben na brezplacnem GitHubu, zato te preverbe ni mogoce narediti obvezne.
+# Rdec zagon merge-a tehnicno NE ustavi — agent mora pred merge-om sam preveriti, da je zelen.
+#
+# Sprozilec je namenoma "pull_request_target": izvede se razlicica z veje main, ne iz PR-ja,
+# zato PR te preverbe ne more izklopiti. Koda iz PR-ja se nikoli ne prevzame (ni checkouta) —
+# beremo samo seznam spremenjenih datotek prek API-ja. Vzor: outly-backend/.github/workflows/zascita.yml.
+name: Zascita
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  zascita:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obcutljive spremembe zahtevajo oznako odobril-martin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          OZNAKA: odobril-martin
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh api --paginate "repos/$REPO/pulls/$PR/files" > /tmp/datoteke.json
+          echo "Spremenjene datoteke:"; jq -r '.[].filename' /tmp/datoteke.json | sed 's/^/  /'
+
+          RAZLOGI=""
+          dodaj() { RAZLOGI+="  - $1"$'\n'; }
+
+          # Tudi staro ime pri preimenovanju, sicer bi preimenovanje IZ zascitene poti ubezalo.
+          POTI=$(jq -r '.[] | (.filename, (.previous_filename // empty))' /tmp/datoteke.json)
+          while IFS= read -r p; do
+            [ -n "$p" ] || continue
+            case "$p" in
+              .github/workflows/*)            dodaj "$p (preverbe in avtomatizacija)" ;;
+              CLAUDE.md|.claude/*)            dodaj "$p (navodila agentom)" ;;
+              Outly.xcodeproj/project.pbxproj) dodaj "$p (podpisovanje, verzija, dovoljenja)" ;;
+              Outly/PrivacyInfo.xcprivacy)    dodaj "$p (izjava o zasebnosti za Apple)" ;;
+            esac
+          done <<< "$POTI"
+
+          RAZLOGI=$(printf '%s' "$RAZLOGI" | sort -u)
+          if [ -z "$RAZLOGI" ]; then
+            echo "Nic obcutljivega v tem PR-ju — oznaka ni potrebna."
+            exit 0
+          fi
+
+          echo "Obcutljivo v tem PR-ju:"; printf '%s\n' "$RAZLOGI"
+
+          IMA=$(gh api "repos/$REPO/pulls/$PR" --jq '[.labels[].name] | index("'"$OZNAKA"'") != null')
+          if [ "$IMA" = "true" ]; then
+            echo "Oznaka '$OZNAKA' je prisotna — v redu."
+            exit 0
+          fi
+
+          {
+            echo "### Zascita: manjka oznaka \`$OZNAKA\`"
+            echo
+            echo "PR se dotika stvari, ki jih agent ne sme zdruziti sam:"
+            echo
+            printf '%s\n' "$RAZLOGI"
+            echo
+            echo "Martin naj PR-ju doda oznako \`$OZNAKA\` (GitHub → PR → Labels), nato se preverba pozene znova."
+            echo "Agent si oznake NE sme dodati sam — s tem bi zascito izklopil."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error::Manjka oznaka '$OZNAKA' — PR spreminja obcutljive datoteke (glej povzetek zagona)."
+          exit 1

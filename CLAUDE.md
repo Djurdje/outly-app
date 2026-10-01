@@ -22,6 +22,10 @@ Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-bac
 - Nikoli ne potiskaj neposredno v `master` — veja + PR + zelen Actions (prevod) + `type-checker` → **PR sam mergaj**
   (squash prek GitHub MCP orodja `merge_pull_request` (gh CLI v oblaku ni) in pobriši vejo; odločeno 16. 9. 2026, človeka vmes ni). Merge sproži TestFlight build – v PR opis napiši,
   kaj naj Martin preveri na telefonu. (GitHub zaščite na tem zasebnem repu ne uveljavlja tehnično — to je dogovor, ne varovalo.)
+- **Oznaka `odobril-martin`** (workflow `Zascita`, od 1. 10. 2026): PR, ki spremeni `.github/workflows/**`, `CLAUDE.md`,
+  `.claude/**`, `Outly.xcodeproj/project.pbxproj` ali `Outly/PrivacyInfo.xcprivacy`, je rdeč brez te oznake. Oznako doda
+  **Martin**; agent si je ne sme dodati sam. Ker GitHub tu merge-a ne ustavi, pred vsakim merge-om preveri **oba** checka
+  (`Gradnja iOS` in `Zascita`): rdeč `Zascita` = ne mergaj, povej Martinu in počakaj.
 - Ne spreminjaj `runs-on: macos-26`, `MARKETING_VERSION` ali podpisovanja brez Martina. Apple od aprila 2026 sprejema samo iOS 26 SDK.
 
 ## Pred vsakim PR-jem (obvezno, ker ni Xcoda)
