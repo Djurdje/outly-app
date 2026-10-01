@@ -1,0 +1,498 @@
+import SwiftUI
+import UIKit
+
+/// VIP mize dogodka (sheet iz EventDetailView, kot BuyTicketsView): tloris kluba -> dotik proste mize ->
+/// izbira bottle paketa (vstet v ceno) -> "Reserve table". Placilo je do Stripa v TESTNEM nacinu
+/// (narocilo je takoj placano, denar se ne premakne) - zaslon to pove enako kot pri vstopnicah.
+/// Prijava, starost in omejitve uveljavi streznik (isto kot pri nakupu vstopnic): napaka gre v `userMessage`.
+/// Po uspehu ima kupec N VIP vstopnic (vsaka svoja QR koda) v Profile -> Tickets in jih od tam
+/// z navadnim prenosom razdeli prijateljem.
+@MainActor
+struct VipTablesView: View {
+    let event: APIEvent
+    let clubName: String
+
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var session: SessionStore
+    @Environment(\.accessibilityReduceMotion) private var manjGibanja
+
+    @State private var vip: EventVip?
+    @State private var nalaganje = true
+    @State private var napakaNalaganja: String?
+    @State private var izbranaMizaId: Int?
+    @State private var izbraniPaketId: Int?
+    @State private var stanje: StanjeAkcije = .miruje
+    @State private var errorMessage: String?
+    @State private var purchase: PurchaseResponse?
+
+    private let ozadje = Color(white: 0.06)
+    private let kartica = Color(white: 0.11)
+
+    private var koda: String { vip?.currency ?? event.currency ?? "EUR" }
+
+    private var izbranaMiza: VipTable? {
+        guard let id = izbranaMizaId else { return nil }
+        return vip?.tables.first { $0.id == id }
+    }
+
+    /// Paket je obvezen, ce ga klub ponuja (backend: sicer 400).
+    private var paketObvezen: Bool { !(vip?.packages.isEmpty ?? true) }
+    private var paketIzbran: Bool { !paketObvezen || izbraniPaketId != nil }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let purchase {
+                    uspeh(purchase)
+                } else {
+                    vsebina
+                }
+            }
+            .background(ozadje.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(LocalizedStringKey(purchase == nil ? "VIP tables" : "Your VIP table is booked"))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(LocalizedStringKey(purchase == nil ? "Cancel" : "Done"))
+                    }
+                    .foregroundColor(.white.opacity(0.85))
+                    .disabled(stanje == .nalaga)
+                }
+            }
+            .toolbarBackground(ozadje, for: .navigationBar)
+        }
+        .preferredColorScheme(.dark)
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(stanje == .nalaga)
+        .task { await naloziVip() }
+    }
+
+    // MARK: - Vsebina
+
+    @ViewBuilder
+    private var vsebina: some View {
+        if nalaganje && vip == nil {
+            VStack { ProgressView().tint(.white) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let napakaNalaganja, vip == nil {
+            VStack(spacing: 10) {
+                Text(napakaNalaganja).foregroundColor(.red).font(.subheadline)
+                    .multilineTextAlignment(.center)
+                Button("Try again") { Task { await naloziVip() } }.foregroundColor(.outlyBlue)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let vip, vip.isUsable, let plan = vip.plan {
+            tloris(vip, plan: plan)
+        } else {
+            VStack(spacing: 10) {
+                Image(systemName: "table.furniture")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+                Text("No VIP tables for this event yet.")
+                    .font(.system(size: 15))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func tloris(_ vip: EventVip, plan: VipPlan) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    glava
+                        .padding(.top, 8)
+
+                    VipTloris(
+                        plan: plan,
+                        mize: vip.tables,
+                        izbranaId: izbranaMizaId,
+                        prodajaOdprta: vip.onSale,
+                        onSelect: { m in izberi(m) }
+                    )
+
+                    legenda
+
+                    if !vip.onSale {
+                        Text("Table reservations are closed for this event.")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    } else if let m = izbranaMiza {
+                        karticaMize(m, vip: vip)
+                            .id("izbira")
+                    } else {
+                        Text("Tap a free table to reserve it.")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+
+                    if let errorMessage {
+                        napaka(errorMessage)
+                    }
+
+                    Spacer(minLength: 20)
+                }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 40)
+            }
+            .onChange(of: izbranaMizaId) { _, novo in
+                guard novo != nil else { return }
+                withAnimation(manjGibanja ? nil : Animation.easeOut(duration: 0.3)) {
+                    proxy.scrollTo("izbira", anchor: .bottom)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if vip.onSale, let m = izbranaMiza {
+                    gumbRezerviraj(m)
+                        .padding(.horizontal, 18)
+                        .padding(.top, 10)
+                        .padding(.bottom, 12)
+                        .background(ozadje)
+                }
+            }
+        }
+    }
+
+    private var glava: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(clubName.uppercased())
+                .font(.system(size: 11, weight: .bold))
+                .tracking(1.2)
+                .foregroundColor(.white.opacity(0.55))
+            Text(event.title)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.white)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+            Text("\(event.displayDateShort) · \(event.displayTimeShort)")
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.7))
+        }
+    }
+
+    private var legenda: some View {
+        HStack(spacing: 18) {
+            legendaVnos(polnilo: Color(white: 0.14), obroba: Color.white.opacity(0.65), napis: "Available")
+            legendaVnos(polnilo: .outlyBlue, obroba: Color.white.opacity(0.9), napis: "Selected")
+            legendaVnos(polnilo: Color.white.opacity(0.03), obroba: Color.white.opacity(0.12), napis: "Booked")
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func legendaVnos(polnilo: Color, obroba: Color, napis: String) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(polnilo)
+                .overlay(Circle().stroke(obroba, lineWidth: 1.5))
+                .frame(width: 14, height: 14)
+            Text(LocalizedStringKey(napis))
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.65))
+        }
+    }
+
+    // MARK: - Izbrana miza
+
+    private func opisMize(_ m: VipTable) -> String {
+        let osebe = String(localized: "Up to \(m.seats) people")
+        return "\(VipOznaka.miza(m.label)) · \(osebe) · \(Denar.evri(m.priceCents, koda: koda))"
+    }
+
+    private func karticaMize(_ m: VipTable, vip: EventVip) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 10) {
+                Image(systemName: "table.furniture")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+                Text(opisMize(m))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+
+            if !vip.packages.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "wineglass")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("Choose your bottle")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    Text("Included in the table price")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.5))
+
+                    VStack(spacing: 8) {
+                        ForEach(vip.packages) { p in
+                            vrsticaPaketa(p)
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+            }
+
+            vrsticaPlacila
+
+            if event.minAge > 0 {
+                Text("\(event.minAge)+ · ID at the door")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.75))
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(kartica)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+    }
+
+    private func napaka(_ besedilo: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.circle.fill").foregroundColor(.red)
+            Text(besedilo)
+                .font(.system(size: 13))
+                .foregroundColor(.red)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func vrsticaPaketa(_ p: VipPackage) -> some View {
+        let izbran = izbraniPaketId == p.id
+        return Button {
+            guard stanje == .miruje else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            izbraniPaketId = p.id
+            errorMessage = nil
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: izbran ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(izbran ? .white : .white.opacity(0.45))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: p.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.leading)
+                    if !p.description.isEmpty {
+                        Text(verbatim: p.description)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.6))
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white.opacity(izbran ? 0.10 : 0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.white.opacity(izbran ? 0.55 : 0.0), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(izbran ? .isSelected : [])
+    }
+
+    /// Isto sporocilo kot pri vstopnicah: dokler ni Stripa, se nic ne zaracuna.
+    private var vrsticaPlacila: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "creditcard")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 40, height: 40)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Payment")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                HStack(spacing: 6) {
+                    Circle().fill(Color.orange).frame(width: 6, height: 6)
+                    Text("Test mode — nothing is charged")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - Gumb
+
+    private func naslovGumba(_ m: VipTable) -> String {
+        if m.priceCents <= 0 { return String(localized: "Reserve table") }
+        return String(localized: "Reserve table · \(Denar.evri(m.priceCents, koda: koda))")
+    }
+
+    private func gumbRezerviraj(_ m: VipTable) -> some View {
+        OutlyAkcijskiGumb(naslov: naslovGumba(m), stanje: $stanje) {
+            Task { await rezerviraj(m) }
+        }
+        .disabled(!paketIzbran)
+        .opacity(paketIzbran ? 1 : 0.45)
+        .outlySij(moc: 1.0, aktiven: paketIzbran)
+    }
+
+    // MARK: - Uspeh
+
+    private func uspeh(_ p: PurchaseResponse) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 18) {
+                ZStack {
+                    Circle().fill(Color.outlyBlue.opacity(0.15)).frame(width: 84, height: 84)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(.outlyBlue)
+                }
+                .padding(.top, 16)
+
+                Text("Your VIP table is booked")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        VipZnacka()
+                        Text(verbatim: povzetekNarocila(p))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    if let paket = p.order.packageName, !paket.isEmpty {
+                        Text(verbatim: paket)
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.75))
+                            .multilineTextAlignment(.center)
+                    }
+                    Text("Order \(p.order.publicRef)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+
+                if p.mode == "test" {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color.orange).frame(width: 6, height: 6)
+                        Text("Test purchase — nothing was charged")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color.orange.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+
+                Text("Send the VIP tickets to your friends from Tickets.")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 10)
+
+                Button { dismiss() } label: {
+                    Text("Done")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.outlyBlue)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 6)
+            }
+            .padding(.horizontal, 18)
+            .padding(.bottom, 40)
+        }
+    }
+
+    /// "Table T1 · Up to 6 people · 300,00 €" iz narocila (posnetek na strezniku).
+    private func povzetekNarocila(_ p: PurchaseResponse) -> String {
+        var deli: [String] = []
+        if let l = p.order.tableLabel, !l.isEmpty { deli.append(VipOznaka.miza(l)) }
+        if let n = p.order.tableSeats { deli.append(String(localized: "Up to \(n) people")) }
+        deli.append(Denar.evri(p.order.totalCents, koda: p.order.currency))
+        return deli.joined(separator: " · ")
+    }
+
+    // MARK: - Dejanja
+
+    private func izberi(_ m: VipTable) {
+        guard stanje == .miruje, m.available else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        errorMessage = nil
+        izbranaMizaId = m.id
+    }
+
+    /// Nalozi tloris. Ob osvezitvi po 409 se izbira obdrzi samo, ce je miza se prosta.
+    private func naloziVip() async {
+        nalaganje = true
+        defer { nalaganje = false }
+        do {
+            let novo = try await APIClient.shared.fetchEventVip(eventId: event.id, token: session.token)
+            vip = novo
+            napakaNalaganja = nil
+            if let id = izbranaMizaId, !(novo.tables.first { $0.id == id }?.available ?? false) {
+                izbranaMizaId = nil
+            }
+            if let pid = izbraniPaketId, !novo.packages.contains(where: { $0.id == pid }) {
+                izbraniPaketId = nil
+            }
+        } catch {
+            if vip == nil { napakaNalaganja = error.userMessage }
+        }
+    }
+
+    private func rezerviraj(_ m: VipTable) async {
+        errorMessage = nil
+        stanje = .nalaga
+        do {
+            let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
+                                                        packageId: izbraniPaketId, token: session.token)
+            // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
+            stanje = .uspeh
+            try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
+        } catch {
+            errorMessage = error.userMessage
+            stanje = .napaka
+            // 409: miza je medtem ze prodana (ali prodaja zaprta) -> osvezi tloris, izbira izgine.
+            if let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
+                await naloziVip()
+            }
+        }
+    }
+}

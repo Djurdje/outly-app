@@ -574,6 +574,8 @@ struct EventTicketsView: View {
     @State private var errorText: String?
     @State private var zadnjiRezultat: ScanResult?
     @State private var delujoc: Int?
+    /// VIP rezervacije (backend 025). nil = se ni naloženo ali star streznik brez poti -> razdelka ni.
+    @State private var vip: BusinessEventVip?
 
     private var used: Int { tickets.filter { $0.isUsed }.count }
 
@@ -605,6 +607,8 @@ struct EventTicketsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
 
+                vipRezervacije
+
                 Text("Door check-in")
                     .font(.title3.bold())
                     .foregroundColor(.white)
@@ -626,6 +630,16 @@ struct EventTicketsView: View {
                                         .foregroundColor(.white)
                                     Text(t.publicRef)
                                         .font(.caption).foregroundColor(.white.opacity(0.5))
+                                    if t.isVip {
+                                        HStack(spacing: 6) {
+                                            VipZnacka(kompakten: true)
+                                            if let l = t.tableLabel, !l.isEmpty {
+                                                Text(verbatim: VipOznaka.miza(l))
+                                                    .font(.caption.weight(.semibold))
+                                                    .foregroundColor(.vipZlata)
+                                            }
+                                        }
+                                    }
                                 }
                                 Spacer()
                                 if t.isUsed {
@@ -687,6 +701,80 @@ struct EventTicketsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    // MARK: - VIP rezervacije (samo branje; tloris in cene se urejajo na outly.si/app)
+
+    @ViewBuilder
+    private var vipRezervacije: some View {
+        if let vip {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.vipZlata)
+                    Text("VIP reservations")
+                        .font(.title3.bold())
+                        .foregroundColor(.white)
+                }
+                if !vip.isSetUp {
+                    Text("Set up VIP tables at outly.si/app")
+                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                } else if vip.bookings.isEmpty {
+                    Text("No reservations yet")
+                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(vip.bookings) { m in
+                            vrsticaRezervacije(m)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func vrsticaRezervacije(_ m: VipBusinessTable) -> some View {
+        if let b = m.booking {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: VipOznaka.miza(m.label))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    Text(verbatim: b.buyerUsername)
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.75))
+                    if !b.packageName.isEmpty {
+                        Text(verbatim: b.packageName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.vipZlata)
+                    }
+                    if !b.packageDescription.isEmpty {
+                        Text(verbatim: b.packageDescription)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
+                }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(verbatim: "\(b.checkedIn)/\(b.guests)")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(b.guests > 0 && b.checkedIn >= b.guests ? .green : .white)
+                    Text("Checked in")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.55))
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.vipZlata.opacity(0.35), lineWidth: 1)
+            )
+        }
+    }
+
     private func load() async {
         isLoading = true
         defer { isLoading = false }
@@ -695,6 +783,16 @@ struct EventTicketsView: View {
             errorText = nil
         } catch {
             errorText = error.userMessage
+        }
+        await naloziVip()
+    }
+
+    /// Tiho: starejsi streznik poti nima (404) in VIP je dodatek - seznam vstopnic ne sme zaradi tega odpovedati.
+    private func naloziVip() async {
+        do {
+            vip = try await APIClient.shared.fetchBusinessEventVip(eventId: event.id, token: session.token)
+        } catch {
+            vip = nil
         }
     }
 
