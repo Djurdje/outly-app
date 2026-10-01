@@ -715,18 +715,19 @@ struct EventTicketsView: View {
                         .font(.title3.bold())
                         .foregroundColor(.white)
                 }
-                if !vip.isSetUp {
-                    Text("Set up VIP tables at outly.si/app")
-                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
-                } else if vip.bookings.isEmpty {
-                    Text("No reservations yet")
-                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
-                } else {
+                if !vip.bookings.isEmpty {
+                    // Rezervacije so resnica tudi, ce je VIP medtem izklopljen ali tloris odstranjen.
                     VStack(spacing: 8) {
                         ForEach(vip.bookings) { m in
                             vrsticaRezervacije(m)
                         }
                     }
+                } else if !vip.isSetUp {
+                    Text("Set up VIP tables at outly.si/app")
+                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                } else {
+                    Text("No reservations yet")
+                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
                 }
             }
         }

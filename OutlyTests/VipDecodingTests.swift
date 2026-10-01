@@ -165,6 +165,24 @@ final class VipDecodingTests: XCTestCase {
         XCTAssertEqual(v.bookings.first?.booking?.guests, 6)
     }
 
+    func testBusinessTableArchivedFlagDefaultsToFalse() throws {
+        let nova = try decode(VipBusinessTable.self, #"{"id": 1, "label": "T1", "seats": 4}"#)
+        XCTAssertFalse(nova.archived)
+        let arh = try decode(VipBusinessTable.self, #"{"id": 2, "label": "T2", "seats": 4, "archived": true}"#)
+        XCTAssertTrue(arh.archived)
+    }
+
+    func testBookingsShownEvenWhenVipDisabled() throws {
+        let v = try decode(BusinessEventVip.self, """
+        {"event_id": 12, "enabled": false, "currency": "EUR", "plan": null,
+         "tables": [{"id": 5, "label": "T1", "seats": 6, "archived": true,
+                     "booking": {"order_id": 1, "buyer_username": "ana", "guests": 6, "checked_in": 0}}],
+         "packages": []}
+        """)
+        XCTAssertFalse(v.isSetUp)
+        XCTAssertEqual(v.bookings.count, 1)
+    }
+
     func testBusinessEventVipWithoutPlanIsNotSetUp() throws {
         let v = try decode(BusinessEventVip.self, #"{"event_id": 12, "enabled": true, "currency": "EUR", "plan": null, "tables": [], "packages": []}"#)
         XCTAssertFalse(v.isSetUp)

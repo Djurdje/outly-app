@@ -481,7 +481,8 @@ struct VipTablesView: View {
         stanje = .nalaga
         do {
             let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
-                                                        packageId: izbraniPaketId, token: session.token)
+                                                        packageId: izbraniPaketId, expectedPriceCents: m.priceCents,
+                                                        token: session.token)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
@@ -489,7 +490,7 @@ struct VipTablesView: View {
         } catch {
             errorMessage = error.userMessage
             stanje = .napaka
-            // 409: miza je medtem ze prodana (ali prodaja zaprta) -> osvezi tloris, izbira izgine.
+            // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine.
             if let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
                 await naloziVip()
             }

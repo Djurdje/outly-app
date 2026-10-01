@@ -8796,6 +8796,17 @@
           }
         }
       }
+    },
+    "The table price has changed. Check the new price and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cena mize se je spremenila. Preveri novo ceno in poskusi znova."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

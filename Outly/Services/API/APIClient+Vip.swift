@@ -183,11 +183,13 @@ struct VipBusinessTable: Decodable, Identifiable {
     let priceCents: Int
     let defaultPriceCents: Int
     let disabled: Bool
+    /// Arhivirana miza (backend jo vrne samo, ce ima rezervacijo na tem dogodku).
+    let archived: Bool
     /// nil = miza na tem dogodku ni rezervirana.
     let booking: VipBooking?
 
     enum CodingKeys: String, CodingKey {
-        case id, label, seats, disabled, booking
+        case id, label, seats, disabled, archived, booking
         case priceCents = "price_cents"
         case defaultPriceCents = "default_price_cents"
     }
@@ -200,6 +202,7 @@ struct VipBusinessTable: Decodable, Identifiable {
         priceCents = try c.decodeIfPresent(Int.self, forKey: .priceCents) ?? 0
         defaultPriceCents = try c.decodeIfPresent(Int.self, forKey: .defaultPriceCents) ?? 0
         disabled = try c.decodeIfPresent(Bool.self, forKey: .disabled) ?? false
+        archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
         booking = try c.decodeIfPresent(VipBooking.self, forKey: .booking)
     }
 }
@@ -235,6 +238,7 @@ struct BusinessEventVip: Decodable {
     }
 
     /// Klub ima VIP pri tem dogodku vklopljen in ima tloris z mizami.
+    /// (Rezervacije se kazejo ne glede na to - glej `bookings`.)
     var isSetUp: Bool { enabled && plan != nil && !tables.isEmpty }
 }
 
@@ -250,9 +254,11 @@ extension APIClient {
 
     /// POST /events/:id/tables/:tableId/orders — nakup mize. `packageId` je obvezen, ce ima klub pakete.
     /// Odgovor je isti kot pri nakupu vstopnic (narocilo + N VIP vstopnic). 409 = miza je ze prodana.
-    func buyTable(eventId: Int, tableId: Int, packageId: Int?, token: String) async throws -> PurchaseResponse {
+    /// `expectedPriceCents` = cena, ki jo je kupec videl; ob drugacni ceni backend vrne 409 "The table price has changed.".
+    func buyTable(eventId: Int, tableId: Int, packageId: Int?, expectedPriceCents: Int? = nil, token: String) async throws -> PurchaseResponse {
         var body: [String: Any] = [:]
         if let packageId { body["package_id"] = packageId }
+        if let expectedPriceCents { body["expected_price_cents"] = expectedPriceCents }
         let data = try await send(path: "events/\(eventId)/tables/\(tableId)/orders", method: "POST",
                                   token: token, json: body)
         return try decode(PurchaseResponse.self, from: data)

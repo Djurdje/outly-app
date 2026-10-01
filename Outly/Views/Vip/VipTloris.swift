@@ -112,6 +112,10 @@ struct VipTloris: View {
         let obroba: Color = izbrana ? Color.white.opacity(0.9) : (prosta ? Color.white.opacity(0.65) : Color.white.opacity(0.12))
         let besedilo: Color = prosta || izbrana ? .white : Color.white.opacity(0.3)
         let oblikaMize = oblika(m, celica: celica)
+        let sirinaMize = CGFloat(m.w) * celica
+        let visinaMize = CGFloat(m.h) * celica
+        let tarcaSirina = max(sirinaMize, 44)
+        let tarcaVisina = max(visinaMize, 44)
         return Button {
             if prosta && prodajaOdprta { onSelect(m) }
         } label: {
@@ -125,11 +129,14 @@ struct VipTloris: View {
                     .minimumScaleFactor(0.5)
                     .padding(2)
             }
-            .frame(width: CGFloat(m.w) * celica, height: CGFloat(m.h) * celica)
-            .contentShape(oblikaMize)
+            .frame(width: sirinaMize, height: visinaMize)
+            // Tarca za dotik vsaj 44 x 44 pt, sredinsko okoli mize; izris ostane enak.
+            .frame(width: tarcaSirina, height: tarcaVisina)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .offset(x: CGFloat(m.x) * celica, y: CGFloat(m.y) * celica)
+        .offset(x: CGFloat(m.x) * celica - (tarcaSirina - sirinaMize) / 2,
+                y: CGFloat(m.y) * celica - (tarcaVisina - visinaMize) / 2)
         .accessibilityLabel(Text(verbatim: "\(VipOznaka.miza(m.label)), \(opisStanja(m))"))
     }
 }
