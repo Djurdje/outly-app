@@ -108,6 +108,11 @@ extension APIError {
         if t.contains("not in a club team")             { return String(localized: "You are not in a club team.") }
         // Vstopnice
         if t.contains("quantity must be")               { return String(localized: "Choose between 1 and 10 tickets.") }
+        // VIP mize (POST /events/:id/tables/:tableId/orders)
+        if t.contains("already booked")                 { return String(localized: "This table is already booked.") }
+        if t.contains("price has changed")              { return String(localized: "The table price has changed. Check the new price and try again.") }
+        if t.contains("choose a bottle package") || t.contains("package does not belong") { return String(localized: "Choose a bottle for your table.") }
+        if t.contains("table not found")                { return String(localized: "This table is not available anymore.") }
         if t.contains("not on sale")                    { return String(localized: "This event is not on sale.") }
         if t.contains("no tickets on outly")            { return String(localized: "Tickets for this event are not sold on Outly.") }
         if t.contains("already started")                { return String(localized: "This event has already started.") }

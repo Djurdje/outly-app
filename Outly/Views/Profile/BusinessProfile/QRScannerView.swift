@@ -97,22 +97,42 @@ struct QRScannerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         } else if let r = rezultat {
             let ok = r.result == "ok"
-            HStack(spacing: 12) {
-                Image(systemName: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(ok ? .green : .red)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(LocalizedStringKey(ok ? "WELCOME IN" : naslovNapake(r.result)))
-                        .font(.headline).foregroundColor(.white)
-                    Text(r.message).font(.subheadline).foregroundColor(.white.opacity(0.8))
+            VStack(spacing: 10) {
+                HStack(spacing: 12) {
+                    Image(systemName: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(ok ? .green : .red)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(LocalizedStringKey(ok ? "WELCOME IN" : naslovNapake(r.result)))
+                            .font(.headline).foregroundColor(.white)
+                        Text(r.message).font(.subheadline).foregroundColor(.white.opacity(0.8))
+                    }
+                    Spacer()
+                    Button("Next") { rezultat = nil; zadnjaKoda = "" }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
                 }
-                Spacer()
-                Button("Next") { rezultat = nil; zadnjaKoda = "" }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12).padding(.vertical, 8)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(Capsule())
+
+                // VIP (backend 025): vratar/bar takoj vidi VIP, mizo in paket - tudi pri ze skenirani vstopnici.
+                if let t = r.ticket, t.isVip {
+                    HStack(spacing: 10) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.black)
+                        Text(verbatim: VipOznaka.vrstica(tableLabel: t.tableLabel, packageName: t.packageName))
+                            .font(.system(size: 17, weight: .heavy))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .background(Color.vipZlata)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
             }
             .padding(14)
             .background((ok ? Color.green : Color.red).opacity(0.25))

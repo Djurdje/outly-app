@@ -71,7 +71,13 @@ struct EventDetailView: View {
                 .environmentObject(session)
         }
         .sheet(isPresented: $showVip) {
-            VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
+            // VIP mize v aplikaciji (backend 025): tloris + nakup. Brez njih ostane prejsnji list (telefon kluba).
+            if event.vipEnabled {
+                VipTablesView(event: event, clubName: club?.name ?? String(localized: "Club"))
+                    .environmentObject(session)
+            } else {
+                VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
+            }
         }
         .sheet(isPresented: $showBarPrices) {
             BarPricesView(clubName: club?.name ?? String(localized: "Club"), items: club?.barPrices ?? [])
@@ -607,6 +613,11 @@ struct EventDetailView: View {
                         Text("Reserve a VIP table")
                             .font(.system(size: 22, weight: .bold))
                             .foregroundStyle(.white)
+                        if event.vipEnabled, let od = event.vipFromCents {
+                            Text("from \(Denar.evri(od, koda: event.currency ?? "EUR"))")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Color.vipZlata)
+                        }
                         Text("Bottle service and private tables for your group.")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.75))
