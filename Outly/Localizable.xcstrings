@@ -8435,6 +8435,367 @@
           }
         }
       }
+    },
+    "Reserve table": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezerviraj mizo"
+          }
+        }
+      }
+    },
+    "Reserve table · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezerviraj mizo · %@"
+          }
+        }
+      }
+    },
+    "Choose your bottle": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi svojo steklenico"
+          }
+        }
+      }
+    },
+    "Included in the table price": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Všteto v ceno mize"
+          }
+        }
+      }
+    },
+    "Booked": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zasedeno"
+          }
+        }
+      }
+    },
+    "Available": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prosto"
+          }
+        }
+      }
+    },
+    "Selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbrano"
+          }
+        }
+      }
+    },
+    "Your VIP table is booked": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja VIP miza je rezervirana"
+          }
+        }
+      }
+    },
+    "Send the VIP tickets to your friends from Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP vstopnice pošlji prijateljem v razdelku Vstopnice."
+          }
+        }
+      }
+    },
+    "Table": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miza"
+          }
+        }
+      }
+    },
+    "Bottle": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steklenica"
+          }
+        }
+      }
+    },
+    "VIP reservations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP rezervacije"
+          }
+        }
+      }
+    },
+    "No reservations yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervacij še ni"
+          }
+        }
+      }
+    },
+    "Checked in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prišli"
+          }
+        }
+      }
+    },
+    "from %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "od %@"
+          }
+        }
+      }
+    },
+    "Set up VIP tables at outly.si/app": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP mize nastaviš na outly.si/app"
+          }
+        }
+      }
+    },
+    "Bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar"
+          }
+        }
+      }
+    },
+    "Stage": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oder"
+          }
+        }
+      }
+    },
+    "DJ": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DJ"
+          }
+        }
+      }
+    },
+    "Dance floor": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plesišče"
+          }
+        }
+      }
+    },
+    "Entrance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vhod"
+          }
+        }
+      }
+    },
+    "WC": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WC"
+          }
+        }
+      }
+    },
+    "No VIP tables for this event yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za ta dogodek VIP miz še ni."
+          }
+        }
+      }
+    },
+    "Table reservations are closed for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervacije miz za ta dogodek so zaprte."
+          }
+        }
+      }
+    },
+    "Tap a free table to reserve it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dotakni se proste mize, da jo rezerviraš."
+          }
+        }
+      }
+    },
+    "This table is already booked.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta miza je že rezervirana."
+          }
+        }
+      }
+    },
+    "Choose a bottle for your table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi steklenico za svojo mizo."
+          }
+        }
+      }
+    },
+    "This table is not available anymore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta miza ni več na voljo."
+          }
+        }
+      }
+    },
+    "Up to %lld people": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Up to %lld person"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Up to %lld people"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Do %lld oseb"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Do %lld osebe"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Do %lld oseb"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Do %lld oseb"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "version": "1.0"

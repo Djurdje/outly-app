@@ -42,6 +42,12 @@ struct APIEvent: Identifiable, Decodable {
     /// (koncan IN med tremi najbolj popularnimi). Pravilo uveljavi streznik.
     let recapAllowed: Bool
 
+    /// VIP mize (backend 025): dogodek ima vklopljen VIP IN klub ima vsaj eno aktivno mizo.
+    /// Star backend polj nima -> false / nil (pravilo 2).
+    let vipEnabled: Bool
+    /// Najnizja efektivna cena vklopljene mize v centih; nil = ni VIP.
+    let vipFromCents: Int?
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -63,6 +69,8 @@ struct APIEvent: Identifiable, Decodable {
         case lifecycle
         case recapVideoUrl = "recap_video_url"
         case recapAllowed = "recap_allowed"
+        case vipEnabled = "vip_enabled"
+        case vipFromCents = "vip_from_cents"
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -91,6 +99,8 @@ struct APIEvent: Identifiable, Decodable {
         lifecycle        = (try? c.decodeIfPresent(String.self, forKey: .lifecycle)) ?? "upcoming"
         recapVideoUrl    = (try? c.decodeIfPresent(String.self, forKey: .recapVideoUrl)) ?? ""
         recapAllowed     = (try? c.decodeIfPresent(Bool.self, forKey: .recapAllowed)) ?? false
+        vipEnabled       = (try? c.decodeIfPresent(Bool.self, forKey: .vipEnabled)) ?? false
+        vipFromCents     = (try? c.decodeIfPresent(Int.self, forKey: .vipFromCents)) ?? nil
     }
 }
 
