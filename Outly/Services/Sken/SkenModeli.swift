@@ -38,7 +38,7 @@ struct ScanKey: Codable, Equatable {
 /// Ena vstopnica v GET /business/events/:id/scan-list.
 struct ScanListTicket: Codable, Equatable {
     var serial: String
-    /// valid | used | refunded | void
+    /// valid | used | refunded | void | unpaid (vstopnica neplacanega narocila; backend jih vrne od 2. 10. 2026)
     var status: String
     var usedAt: String?
     var isVip: Bool
@@ -69,7 +69,8 @@ struct ScanListTicket: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         serial = try c.decode(String.self, forKey: .serial)
-        status = (try? c.decodeIfPresent(String.self, forKey: .status)) ?? "valid"
+        // Manjkajoc status NIKOLI ne pomeni "valid": neznano stanje je rdece (odlocitev prepusti strezniku).
+        status = (try? c.decodeIfPresent(String.self, forKey: .status)) ?? "unknown"
         usedAt = (try? c.decodeIfPresent(String.self, forKey: .usedAt)) ?? nil
         isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
         tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
@@ -102,13 +103,15 @@ struct ScanList: Codable, Equatable {
         self.transferredSerials = transferredSerials
     }
 
+    /// Strogo: pokvarjen ali okrnjen odgovor (manjkajoc `tickets`, napacen tip, vstopnica brez serial-a) vrze. Prejsnja razlicica je
+    /// to tiho spremenila v PRAZEN seznam in izbrisala vse znanje o vstopnicah (pregled M9); klicatelj ob napaki obdrzi stari seznam.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         eventId = (try? c.decodeIfPresent(Int.self, forKey: .eventId)) ?? 0
         generatedAt = (try? c.decodeIfPresent(String.self, forKey: .generatedAt)) ?? ""
         kid = (try? c.decodeIfPresent(String.self, forKey: .kid)) ?? ""
-        tickets = (try? c.decodeIfPresent([ScanListTicket].self, forKey: .tickets)) ?? []
-        transferredSerials = (try? c.decodeIfPresent([String].self, forKey: .transferredSerials)) ?? []
+        tickets = try c.decode([ScanListTicket].self, forKey: .tickets)
+        transferredSerials = try c.decode([String].self, forKey: .transferredSerials)
     }
 }
 

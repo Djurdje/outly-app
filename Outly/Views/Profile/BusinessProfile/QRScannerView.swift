@@ -24,6 +24,8 @@ struct QRScannerView: View {
     @State private var obdelava = false
     @State private var dovoljenje: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var pokaziKonflikte = false
+    /// Koda v1, ki jo vratar zeli spustiti sam: najprej potrdi (P4), sele nato gre v vrsto.
+    @State private var zaPotrditev: String?
 
     /// `clubId`: klub, v katerem vratar dela (MyClubDetailView). Vrsta skenov je shranjena po klubu.
     init(clubId: Int? = nil) {
@@ -63,6 +65,19 @@ struct QRScannerView: View {
         }
         .sheet(isPresented: $pokaziKonflikte) {
             SkenKonfliktiView(seja: seja)
+        }
+        .confirmationDialog("Let this guest in?", isPresented: Binding(get: { zaPotrditev != nil }, set: { if !$0 { zaPotrditev = nil } }),
+                            titleVisibility: .visible) {
+            Button("Let in") {
+                if let qr = zaPotrditev {
+                    prikaz = seja.spustiRocno(qr: qr)
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                }
+                zaPotrditev = nil
+            }
+            Button("Cancel", role: .cancel) { zaPotrditev = nil }
+        } message: {
+            Text("This code could not be checked on the phone. The server checks it later; if it is not valid, it shows up under Conflicts.")
         }
         .task {
             if dovoljenje == .notDetermined {
@@ -258,10 +273,20 @@ struct QRScannerView: View {
             }
             if prikaziSeznam {
                 if let t = seja.zadnjiPrenos {
-                    Text("List updated \(SkenPrikaz.cas(t))").foregroundColor(.white.opacity(0.6))
+                    // M11: ce seznam ni od danes, je zraven datum (sicer »List updated 23:40« zjutraj izgleda svez).
+                    Text("List updated \(SkenPrikaz.casPrenosa(t))")
+                        .foregroundColor(seja.seznamStar ? .orange : .white.opacity(0.6))
                 } else {
                     Text("List not downloaded").foregroundColor(.white.opacity(0.6))
                 }
+                if seja.seznamStar {
+                    Text("The list could not be refreshed for a while. Tickets bought or refunded since then are not in it.")
+                        .foregroundColor(.orange)
+                }
+            }
+            if seja.dostopOdvzet {
+                Text("You are no longer on this club's team. The downloaded lists were removed from this phone.")
+                    .foregroundColor(.red)
             }
             if !seja.zapisOK {
                 Text("Scans could not be saved on this phone. Free up storage space.")
@@ -366,8 +391,7 @@ struct QRScannerView: View {
             // Rumeno: aplikacija gosta ne spusti sama. Vratar odloci; sken gre v vrsto in ga streznik preveri naknadno.
             if p.ponudiVstop, let qr = p.qr {
                 Button {
-                    prikaz = seja.spustiRocno(qr: qr)
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    zaPotrditev = qr
                 } label: {
                     Text("Let in")
                         .font(.system(size: 16, weight: .semibold))

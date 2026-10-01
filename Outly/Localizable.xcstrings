@@ -8913,7 +8913,7 @@
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seznam osvežen ob %@"
+            "value": "Seznam osvežen: %@"
           }
         }
       }
@@ -9398,6 +9398,116 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brez povezave"
+          }
+        }
+      }
+    },
+    "The order for this ticket is not paid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naročilo za to vstopnico ni plačano."
+          }
+        }
+      }
+    },
+    "The scanner key is not downloaded yet. This ticket can only be checked with a connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ključ skenerja še ni prenesen. To vstopnico je mogoče preveriti samo s povezavo."
+          }
+        }
+      }
+    },
+    "KEY OUTDATED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KLJUČ ZASTAREL"
+          }
+        }
+      }
+    },
+    "The scanner key is out of date. Connect to the internet to update it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ključ skenerja je zastarel. Poveži se z internetom, da ga osvežiš."
+          }
+        }
+      }
+    },
+    "This ticket is for another club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica je za drug klub."
+          }
+        }
+      }
+    },
+    "Let this guest in?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spustim gosta noter?"
+          }
+        }
+      }
+    },
+    "This code could not be checked on the phone. The server checks it later; if it is not valid, it shows up under Conflicts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te kode telefon ni mogel preveriti. Strežnik jo preveri pozneje; če ni veljavna, se pokaže pod Konflikti."
+          }
+        }
+      }
+    },
+    "The list could not be refreshed for a while. Tickets bought or refunded since then are not in it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznama že nekaj časa ni bilo mogoče osvežiti. Vstopnice, kupljene ali vrnjene od takrat, niso v njem."
+          }
+        }
+      }
+    },
+    "You are no longer on this club's team. The downloaded lists were removed from this phone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V ekipi tega kluba nisi več. Prenesene sezname smo odstranili s telefona."
+          }
+        }
+      }
+    },
+    "No connection. Showing your saved clubs; the scanner still works.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni povezave. Prikazani so shranjeni klubi; skener še vedno deluje."
           }
         }
       }

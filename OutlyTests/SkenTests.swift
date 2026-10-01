@@ -3,8 +3,8 @@ import Foundation
 import CryptoKit
 @testable import Outly
 
-// Sken vstopnic brez povezave (backend issue #86): preverjanje kode v2, vrsta, odlocitev, SkenSeja z lazno API-jem.
-// Koda se podpise v testu s CryptoKit kot streznik (Ed25519 nad "o2.<base64url(JSON)>").
+// Sken vstopnic brez povezave (backend issue #86): preverjanje kode v2, vrsta, odlocitev, SkenSeja z lazno API-jem,
+// hladen zagon brez povezave (K1), odjava (M13). Koda se podpise v testu s CryptoKit kot streznik (Ed25519 nad "o2.<base64url(JSON)>").
 
 private enum Pomoc {
     static func b64url(_ d: Data) -> String {
@@ -23,6 +23,12 @@ private enum Pomoc {
         return "\(sporocilo).\(b64url(podpis))"
     }
 
+    /// Koda v1 (stara): telo {v:1,t,e,i} + "." + 32 sestnajstiskih znakov (HMAC, ki ga telefon ne more preveriti).
+    static func kodaV1(serial: String, event: Int) -> String {
+        let telo = b64url(Data("{\"v\":1,\"t\":\"\(serial)\",\"e\":\(event),\"i\":1790000000}".utf8))
+        return "\(telo).0123456789abcdef0123456789abcdef"
+    }
+
     static func serial() -> String { UUID().uuidString.lowercased() }
 
     static func zacasnaMapa() -> URL {
@@ -36,12 +42,17 @@ private enum Pomoc {
     static func scanKey(_ k: Curve25519.Signing.PrivateKey, kid: String = "kid1") -> ScanKey {
         ScanKey(kid: kid, publicKey: b64url(javni(k)))
     }
+
+    static func seznamPodatki(_ l: ScanList) -> Data { try! JSONEncoder().encode(l) }
 }
 
 // MARK: - Razclenjevanje in podpis
 
 final class SkenKodaTests: XCTestCase {
     private let kljuc = Curve25519.Signing.PrivateKey()
+
+    private func jeV1(_ qr: String) -> Bool { if case .v1 = SkenKoda.razcleni(qr) { return true } else { return false } }
+    private func jeNeznano(_ qr: String) -> Bool { SkenKoda.razcleni(qr) == .neznano }
 
     func testVeljavnaKodaSeRazclenjiInPreveri() throws {
         let s = Pomoc.serial()
@@ -81,15 +92,54 @@ final class SkenKodaTests: XCTestCase {
         XCTAssertFalse(SkenPodpis.preveri(sporocilo: sporocilo, podpis: p, javniKljuc: Data(repeating: 0, count: 31)))
     }
 
-    func testKodaV1InSmetiNisoV2() {
-        XCTAssertEqual(SkenKoda.razcleni("eyJ0IjoiYWJjIn0.0123456789abcdef0123456789abcdef"), .v1)
-        XCTAssertEqual(SkenKoda.razcleni(""), .neznano)
-        XCTAssertEqual(SkenKoda.razcleni("https://example.com/x"), .neznano)
-        XCTAssertEqual(SkenKoda.razcleni("o2.abc"), .v1)   // dva dela: oblika v1 (preveri streznik)
-        XCTAssertEqual(SkenKoda.razcleni("o2.@@@.@@@"), .neznano)
-        XCTAssertEqual(SkenKoda.razcleni("o2.\(Pomoc.telo(serial: "ni-uuid", event: 1)).\(Pomoc.b64url(Data(count: 64)))"), .neznano)
-        XCTAssertEqual(SkenKoda.razcleni("o2.\(Pomoc.telo(serial: Pomoc.serial(), event: 1)).\(Pomoc.b64url(Data(count: 10)))"), .neznano)
-        XCTAssertEqual(SkenKoda.razcleni(String(repeating: "a", count: 2000)), .neznano)
+    func testSmetiNisoKoda() {
+        XCTAssertTrue(jeNeznano(""))
+        XCTAssertTrue(jeNeznano("https://example.com/x"))
+        XCTAssertTrue(jeNeznano("o2.@@@.@@@"))
+        XCTAssertTrue(jeNeznano("o2.\(Pomoc.telo(serial: "ni-uuid", event: 1)).\(Pomoc.b64url(Data(count: 64)))"))
+        XCTAssertTrue(jeNeznano("o2.\(Pomoc.telo(serial: Pomoc.serial(), event: 1)).\(Pomoc.b64url(Data(count: 10)))"))
+        XCTAssertTrue(jeNeznano(String(repeating: "a", count: 2000)))
+    }
+
+    /// P4: koda v1 mora imeti telo {v:1, t: UUID, e}; vsak "a.b" ni v1 (pred popravkom je bil vsak par z dvema deloma »stara koda«).
+    func testKodaV1MoraImetiPraviloTelo() {
+        let s = Pomoc.serial()
+        XCTAssertTrue(jeV1(Pomoc.kodaV1(serial: s, event: 42)))
+        guard case let .v1(telo) = SkenKoda.razcleni(Pomoc.kodaV1(serial: s.uppercased(), event: 42)) else { return XCTFail() }
+        XCTAssertEqual(telo.serial, s)
+        XCTAssertEqual(telo.eventId, 42)
+        XCTAssertNil(telo.kid)
+        XCTAssertTrue(jeNeznano("abc.def"))
+        XCTAssertTrue(jeNeznano("o2.abc"))
+        XCTAssertTrue(jeNeznano("eyJ0IjoiYWJjIn0.0123456789abcdef0123456789abcdef"))   // telo {"t":"abc"}: ni UUID, ni v
+        XCTAssertTrue(jeNeznano("e30.0123456789abcdef"))                               // telo {}
+        let slabUuid = Pomoc.b64url(Data("{\"v\":1,\"t\":\"ni-uuid\",\"e\":42}".utf8))
+        XCTAssertTrue(jeNeznano("\(slabUuid).0123456789abcdef0123456789abcdef"))
+        let napacnaVerzija = Pomoc.b64url(Data("{\"v\":2,\"t\":\"\(s)\",\"e\":42}".utf8))
+        XCTAssertTrue(jeNeznano("\(napacnaVerzija).0123456789abcdef0123456789abcdef"))
+        let brezDogodka = Pomoc.b64url(Data("{\"v\":1,\"t\":\"\(s)\"}".utf8))
+        XCTAssertTrue(jeNeznano("\(brezDogodka).0123456789abcdef0123456789abcdef"))
+    }
+
+    /// M15: dejanska koda, ki jo je izdal backend (QR_SECRET »outly-test-secret-0123456789-abcdefghij-XYZ«, backend `qrKodaV2`),
+    /// in javni kljuc iz GET /business/scan-key. Ujame razhajanje formata (kodiranje, vrstni red polj, podpisano besedilo), ki ga
+    /// testi s podpisom iz CryptoKit ne morejo: ti bi se z napako v obe smeri ujemali sami s seboj.
+    func testKodaIzdanaNaBackenduSePreveri() {
+        let qr = "o2.eyJ2IjoyLCJ0IjoiNWIwZjBhNGUtNmMxZC00ZjdhLTlhNTItM2MxZDJlN2I4YTkwIiwiZSI6NDI0MiwiaSI6MTc5MDc2OTYwMCwiayI6IklWQlZ3TXA4ekcwIn0.8qToG70-CDxRzP2DVfayB-T9DeYrFSQ_KjWSPmSTzygeckkVsAc4oLQtbtXRIxFZA_ZhSMdnn9rqLr4f6JgJAw"
+        let kljuc = ScanKey(kid: "IVBVwMp8zG0", publicKey: "hlTuMAovT8cRxqiA11PnLeCuyCAzbtq6edCPyuTcDUk")
+        XCTAssertNotNil(kljuc.surovi)
+        guard case let .v2(telo, sporocilo, podpis) = SkenKoda.razcleni(qr) else { return XCTFail("backendova koda ni v2") }
+        XCTAssertEqual(telo.serial, "5b0f0a4e-6c1d-4f7a-9a52-3c1d2e7b8a90")
+        XCTAssertEqual(telo.eventId, 4242)
+        XCTAssertEqual(telo.kid, "IVBVwMp8zG0")
+        XCTAssertTrue(SkenPodpis.preveri(sporocilo: sporocilo, podpis: podpis, javniKljuc: kljuc.surovi ?? Data()))
+        // ... in prek celotne odlocitve: pravi dogodek zelena, drug dogodek rdeca, ponarejen podpis rdeca
+        let s1 = SkenOdlocitev.odloci(qr: qr, dogodekId: 4242, kljuc: kljuc, indeks: nil, lokalni: [:])
+        XCTAssertEqual(s1.razlog, .veljavnaNiNaSeznamu)
+        XCTAssertEqual(SkenOdlocitev.odloci(qr: qr, dogodekId: 1, kljuc: kljuc, indeks: nil, lokalni: [:]).razlog, .napacenDogodek)
+        var zlomljen = Array(qr)
+        zlomljen[zlomljen.count - 5] = zlomljen[zlomljen.count - 5] == "A" ? "B" : "A"
+        XCTAssertEqual(SkenOdlocitev.odloci(qr: String(zlomljen), dogodekId: 4242, kljuc: kljuc, indeks: nil, lokalni: [:]).razlog, .neveljavna)
     }
 
     func testBase64URL() {
@@ -106,8 +156,8 @@ final class SkenOdlocitevTests: XCTestCase {
     private let kljuc = Curve25519.Signing.PrivateKey()
     private let dogodek = 42
 
-    private func odloci(_ qr: String, seznam: ScanList?, lokalni: [String: Date] = [:], kljucPodatek: Data? = nil) -> SkenSodba {
-        SkenOdlocitev.odloci(qr: qr, dogodekId: dogodek, kljuc: kljucPodatek ?? Pomoc.javni(kljuc),
+    private func odloci(_ qr: String, seznam: ScanList?, lokalni: [String: Date] = [:], kljucPodatek: ScanKey? = nil) -> SkenSodba {
+        SkenOdlocitev.odloci(qr: qr, dogodekId: dogodek, kljuc: kljucPodatek ?? Pomoc.scanKey(kljuc),
                              indeks: seznam.map { SkenIndeks($0) }, lokalni: lokalni)
     }
 
@@ -128,6 +178,15 @@ final class SkenOdlocitevTests: XCTestCase {
         XCTAssertEqual(r.barva, .zeleno)
     }
 
+    /// P4: kljuc je, seznama (se) ni: podpis in dogodek se vseeno preverita, sele nato zeleno z opombo.
+    func testKljucBrezSeznamaPreveriPodpisInDogodek() {
+        let s = Pomoc.serial()
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: dogodek), seznam: nil).razlog, .veljavnaNiNaSeznamu)
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: 7), seznam: nil).razlog, .napacenDogodek)
+        let tuj = Curve25519.Signing.PrivateKey()
+        XCTAssertEqual(odloci(Pomoc.koda(tuj, serial: s, event: dogodek), seznam: nil).razlog, .neveljavna)
+    }
+
     func testSpremenjenPodpisTeloAliKljucJeRdece() {
         let s = Pomoc.serial()
         let seznam = ScanList(eventId: dogodek, tickets: [ScanListTicket(serial: s)])
@@ -137,8 +196,21 @@ final class SkenOdlocitevTests: XCTestCase {
         podpis[10] ^= 0xff
         XCTAssertEqual(odloci("\(deli[0]).\(deli[1]).\(Pomoc.b64url(podpis))", seznam: seznam).razlog, .neveljavna)
         XCTAssertEqual(odloci("o2.\(Pomoc.telo(serial: s, event: 99)).\(deli[2])", seznam: seznam).razlog, .neveljavna)
-        XCTAssertEqual(odloci(qr, seznam: seznam, kljucPodatek: Pomoc.javni(Curve25519.Signing.PrivateKey())).razlog, .neveljavna)
+        XCTAssertEqual(odloci(qr, seznam: seznam, kljucPodatek: Pomoc.scanKey(Curve25519.Signing.PrivateKey())).razlog, .neveljavna)
         XCTAssertEqual(odloci("nekaj tretjega", seznam: seznam).razlog, .neveljavna)
+    }
+
+    /// M10: koda z drugim `kid` od kljuca na telefonu ni ponaredek, ampak zastarel kljuc: rumeno, ne rdece.
+    func testDrugKidJeRumenoNeRdece() {
+        let s = Pomoc.serial()
+        let novi = Curve25519.Signing.PrivateKey()
+        let r = odloci(Pomoc.koda(novi, serial: s, event: dogodek, kid: "kid2"), seznam: ScanList(eventId: dogodek, tickets: [ScanListTicket(serial: s)]))
+        XCTAssertEqual(r.razlog, .kljucNeujema)
+        XCTAssertEqual(r.barva, .rumeno)
+        XCTAssertFalse(r.spusti)
+        // isti kid, drug podpis = ponaredek: rdece
+        let ponaredek = odloci(Pomoc.koda(novi, serial: s, event: dogodek, kid: "kid1"), seznam: nil)
+        XCTAssertEqual(ponaredek.razlog, .neveljavna)
     }
 
     func testNapacenDogodekJeRdece() {
@@ -156,17 +228,25 @@ final class SkenOdlocitevTests: XCTestCase {
     }
 
     func testStanjePoSeznamu() {
-        let u = Pomoc.serial(), v = Pomoc.serial(), x = Pomoc.serial()
+        let u = Pomoc.serial(), v = Pomoc.serial(), x = Pomoc.serial(), n = Pomoc.serial(), neznan = Pomoc.serial()
         let seznam = ScanList(eventId: dogodek, tickets: [
             ScanListTicket(serial: u, status: "used", usedAt: "2026-10-01T21:15:00.000Z"),
             ScanListTicket(serial: v, status: "refunded"),
             ScanListTicket(serial: x, status: "void"),
+            ScanListTicket(serial: n, status: "unpaid"),
+            ScanListTicket(serial: neznan, status: "nekaj-novega"),
         ])
         let ru = odloci(Pomoc.koda(kljuc, serial: u, event: dogodek), seznam: seznam)
         XCTAssertEqual(ru.razlog, .zeUporabljena)
         XCTAssertEqual(ru.kdaj, SkenCas.razcleni("2026-10-01T21:15:00.000Z"))
         XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: v, event: dogodek), seznam: seznam).razlog, .vrnjena)
         XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: x, event: dogodek), seznam: seznam).razlog, .preklicana)
+        // P3: neplacano narocilo je rdece (backend ga vrne s statusom unpaid)
+        let rn = odloci(Pomoc.koda(kljuc, serial: n, event: dogodek), seznam: seznam)
+        XCTAssertEqual(rn.razlog, .neplacana)
+        XCTAssertEqual(rn.barva, .rdece)
+        // neznan status ni nikoli zelen
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: neznan, event: dogodek), seznam: seznam).barva, .rdece)
     }
 
     func testDvojniLokalniSkenJeRdece() {
@@ -183,14 +263,19 @@ final class SkenOdlocitevTests: XCTestCase {
 
     func testStaraKodaInManjkajociPodatki() {
         let s = Pomoc.serial()
-        XCTAssertEqual(odloci("e30.0123456789abcdef", seznam: ScanList(eventId: dogodek)).razlog, .staraKoda)
-        XCTAssertEqual(odloci("e30.0123456789abcdef", seznam: ScanList(eventId: dogodek)).barva, .rumeno)
+        let v1 = Pomoc.kodaV1(serial: s, event: dogodek)
+        XCTAssertEqual(odloci(v1, seznam: ScanList(eventId: dogodek)).razlog, .staraKoda)
+        XCTAssertEqual(odloci(v1, seznam: ScanList(eventId: dogodek)).barva, .rumeno)
         let brez = SkenOdlocitev.odloci(qr: Pomoc.koda(kljuc, serial: s, event: dogodek), dogodekId: dogodek, kljuc: nil, indeks: nil, lokalni: [:])
         XCTAssertEqual(brez.razlog, .manjkaPodatkov)
         XCTAssertEqual(brez.barva, .rumeno)
-        // koda v1, ki je bila ze spuscena na tej napravi, je rdeca
-        let cas = Date()
-        XCTAssertEqual(odloci("e30.0123456789abcdef", seznam: ScanList(eventId: dogodek), lokalni: ["e30.0123456789abcdef": cas]).razlog, .zeUporabljenaLokalno)
+        // negativni podatki veljajo tudi za v1: ze skenirana na tej napravi, prenesena, drug dogodek
+        XCTAssertEqual(odloci(v1, seznam: ScanList(eventId: dogodek), lokalni: [s: Date()]).razlog, .zeUporabljenaLokalno)
+        XCTAssertEqual(odloci(v1, seznam: ScanList(eventId: dogodek, transferredSerials: [s])).razlog, .prenesena)
+        XCTAssertEqual(odloci(Pomoc.kodaV1(serial: s, event: 9), seznam: nil).razlog, .napacenDogodek)
+        // koda, ki ni v1 ali v2, je neveljavna (ne »stara koda«, ki bi ponudila »Let in«)
+        XCTAssertEqual(odloci("abc.def", seznam: nil).razlog, .neveljavna)
+        XCTAssertEqual(odloci("e30.0123456789abcdef", seznam: nil).razlog, .neveljavna)
     }
 }
 
@@ -208,11 +293,9 @@ final class SkenModeliTests: XCTestCase {
         XCTAssertEqual(l.eventId, 5)
         XCTAssertEqual(l.tickets.count, 2)
         XCTAssertTrue(l.tickets[0].isVip)
-        XCTAssertEqual(l.tickets[1].status, "valid")   // privzeto
+        XCTAssertEqual(l.tickets[1].status, "unknown")   // manjkajoc status ni nikoli "valid"
         XCTAssertFalse(l.tickets[1].isVip)
         XCTAssertEqual(l.transferredSerials, ["OLD"])
-        let prazno = try JSONDecoder().decode(ScanList.self, from: Data("{}".utf8))
-        XCTAssertEqual(prazno.tickets.count, 0)
 
         let k = try JSONDecoder().decode(ScanKey.self, from: Data(#"{"alg":"Ed25519","kid":"k","public_key":"\#(Pomoc.b64url(Data(count: 32)))","qr_format":"x"}"#.utf8))
         XCTAssertEqual(k.kid, "k")
@@ -221,12 +304,126 @@ final class SkenModeliTests: XCTestCase {
         XCTAssertNil(ScanKey(kid: "k", publicKey: "kratek").surovi)
     }
 
+    /// M9: pokvarjen odgovor ne sme postati prazen seznam (to bi izbrisalo vso znanje o vstopnicah).
+    func testPokvarjenSeznamVrzeNamestoPraznega() {
+        XCTAssertThrowsError(try JSONDecoder().decode(ScanList.self, from: Data(#"{"event_id":1,"tickets":"nekaj","transferred_serials":[]}"#.utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(ScanList.self, from: Data(#"{"event_id":1,"tickets":[{"status":"valid"}],"transferred_serials":[]}"#.utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(ScanList.self, from: Data("{}".utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(ScanList.self, from: Data(#"{"event_id":1,"tickets":[]}"#.utf8)))
+    }
+
     func testRezultatiBatcha() throws {
         let json = #"[{"client_scan_id":"a","serial":"s","result":"ok","used_at":"2026-10-01T21:00:00.000Z"},{"client_scan_id":"b","serial":null,"result":"error","used_at":null},{"result":"invalid"}]"#
         let r = try JSONDecoder().decode([ScanBatchResult].self, from: Data(json.utf8))
         XCTAssertTrue(r[0].jeDokoncen)
         XCTAssertFalse(r[1].jeDokoncen)   // error ostane v vrsti
         XCTAssertFalse(r[2].jeDokoncen)   // brez client_scan_id ga ni mogoce povezati z vnosom
+    }
+}
+
+// MARK: - Klasifikacija napak, cas prenosa (M11, M12)
+
+final class SkenNapakeInCasTests: XCTestCase {
+    /// M12: preklic ni izpad povezave; omrezne napake in 5xx so.
+    func testPreklicNiIzpadPovezave() {
+        XCTAssertFalse(URLError(.cancelled).jeIzpadPovezave)
+        XCTAssertFalse(CancellationError().jeIzpadPovezave)
+        XCTAssertTrue(URLError(.notConnectedToInternet).jeIzpadPovezave)
+        XCTAssertTrue(URLError(.timedOut).jeIzpadPovezave)
+        XCTAssertTrue(APIError.requestFailed(503, "").jeIzpadPovezave)
+        XCTAssertTrue(APIError.requestFailed(-1, "Could not refresh session").jeIzpadPovezave)
+        XCTAssertTrue(APIError.requestFailed(429, "").jeIzpadPovezave)
+        for koda in [400, 401, 403, 404, 409] { XCTAssertFalse(APIError.requestFailed(koda, "").jeIzpadPovezave) }
+        XCTAssertFalse(APIError.decodingFailed.jeIzpadPovezave)
+        XCTAssertFalse(SkenSeja.jeOmrezna(URLError(.cancelled)))
+        XCTAssertTrue(SkenSeja.jeOmrezna(URLError(.networkConnectionLost)))
+    }
+
+    func testSeznamJeStarPo10Minutah() {
+        let zdaj = Date()
+        XCTAssertFalse(SkenSeja.jeStar(nil, zdaj: zdaj))                                  // ni prenosa: »ni prenesen«, ne »star«
+        XCTAssertFalse(SkenSeja.jeStar(zdaj.addingTimeInterval(-60), zdaj: zdaj))
+        XCTAssertFalse(SkenSeja.jeStar(zdaj.addingTimeInterval(-9 * 60), zdaj: zdaj))
+        XCTAssertTrue(SkenSeja.jeStar(zdaj.addingTimeInterval(-11 * 60), zdaj: zdaj))
+    }
+
+    func testCasPrenosaImaDatumCeNiDanes() {
+        var koledar = Calendar(identifier: .gregorian)
+        koledar.timeZone = TimeZone(identifier: "UTC")!
+        let zdaj = Date(timeIntervalSince1970: 1_790_000_000)
+        let danes = zdaj.addingTimeInterval(-3600)
+        let vceraj = zdaj.addingTimeInterval(-26 * 3600)
+        XCTAssertEqual(SkenPrikaz.casPrenosa(danes, zdaj: zdaj, koledar: koledar), SkenPrikaz.cas(danes))
+        XCTAssertNotEqual(SkenPrikaz.casPrenosa(vceraj, zdaj: zdaj, koledar: koledar), SkenPrikaz.cas(vceraj))
+        XCTAssertTrue(SkenPrikaz.casPrenosa(vceraj, zdaj: zdaj, koledar: koledar).count > SkenPrikaz.cas(vceraj).count)
+    }
+}
+
+// MARK: - K1: hladen zagon brez povezave
+
+final class MeShrambaTests: XCTestCase {
+    private var mapa: URL!
+    private var disk: SkenDisk!
+
+    override func setUp() async throws {
+        mapa = Pomoc.zacasnaMapa()
+        disk = SkenDisk(mapa: mapa.appendingPathComponent("Seja", isDirectory: true))
+    }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
+
+    private func vratar() throws -> Me {
+        let json = #"""
+        {"id":7,"email":"ana@primer.si","username":"ana","role":"user","club_id":3,"club_role":"doorman",
+         "clubs":[{"club_id":3,"club_name":"Klub Tri","club_logo_url":"https://x/y.png","role":"doorman"}],
+         "pending_invites":2,"genres":["techno"],"onboarded_at":"2026-09-01T10:00:00.000Z"}
+        """#
+        return try JSONDecoder().decode(Me.self, from: Data(json.utf8))
+    }
+
+    func testMeSePrebereNazajIzDiska() throws {
+        let me = try vratar()
+        XCTAssertNil(MeShramba.preberi(disk: disk))
+        XCTAssertTrue(MeShramba.shrani(me, disk: disk))
+        let nazaj = MeShramba.preberi(disk: disk)
+        XCTAssertEqual(nazaj, me)
+        XCTAssertEqual(nazaj?.clubs.first?.clubName, "Klub Tri")
+        XCTAssertEqual(nazaj?.clubs.first?.role, "doorman")
+        XCTAssertEqual(nazaj?.isOnboarded, true)
+        // brez zetonov: datoteka ima samo Me
+        let besedilo = String(data: disk.surovo(MeShramba.ime) ?? Data(), encoding: .utf8) ?? ""
+        XCTAssertFalse(besedilo.lowercased().contains("token"))
+        XCTAssertFalse(besedilo.contains("Bearer"))
+        MeShramba.pobrisi(disk: disk)
+        XCTAssertNil(MeShramba.preberi(disk: disk))
+    }
+
+    /// Pred popravkom: GET /me brez povezave -> nikoli Me -> SessionLoadingView za vedno (vratar ne pride do skenerja).
+    func testIzpadPovezaveUporabiShranjenMe() throws {
+        let me = try vratar()
+        MeShramba.shrani(me, disk: disk)
+        let shranjen = MeShramba.preberi(disk: disk)
+        XCTAssertEqual(MeShramba.nadomestniMe(ob: URLError(.notConnectedToInternet), shranjen: shranjen), me)
+        XCTAssertEqual(MeShramba.nadomestniMe(ob: URLError(.timedOut), shranjen: shranjen), me)
+        XCTAssertEqual(MeShramba.nadomestniMe(ob: APIError.requestFailed(503, ""), shranjen: shranjen), me)
+        XCTAssertEqual(MeShramba.nadomestniMe(ob: APIError.requestFailed(-1, "Could not refresh session"), shranjen: shranjen), me)
+    }
+
+    /// 401/403 in pokvarjen odgovor NISO izpad: tam odloca SessionStore (odjava ali napaka), ne shranjen Me.
+    func testZavrnitevInPreklicNistaIzpad() throws {
+        let shranjen = try vratar()
+        XCTAssertNil(MeShramba.nadomestniMe(ob: APIError.requestFailed(401, ""), shranjen: shranjen))
+        XCTAssertNil(MeShramba.nadomestniMe(ob: APIError.requestFailed(403, ""), shranjen: shranjen))
+        XCTAssertNil(MeShramba.nadomestniMe(ob: APIError.requestFailed(404, ""), shranjen: shranjen))
+        XCTAssertNil(MeShramba.nadomestniMe(ob: APIError.decodingFailed, shranjen: shranjen))
+        XCTAssertNil(MeShramba.nadomestniMe(ob: URLError(.cancelled), shranjen: shranjen))
+        // brez shranjenega Me ni cesa uporabiti
+        XCTAssertNil(MeShramba.nadomestniMe(ob: URLError(.notConnectedToInternet), shranjen: nil))
+    }
+
+    func testPokvarjenaDatotekaMeNiCrash() throws {
+        try FileManager.default.createDirectory(at: disk.mapa, withIntermediateDirectories: true)
+        try Data("{ ni json".utf8).write(to: disk.mapa.appendingPathComponent(MeShramba.ime))
+        XCTAssertNil(MeShramba.preberi(disk: disk))
     }
 }
 
@@ -246,12 +443,14 @@ final class SkenVrstaTests: XCTestCase {
         try? FileManager.default.removeItem(at: mapa)
     }
 
-    private func vnos(_ id: String = UUID().uuidString.lowercased(), klub: Int = 1, uporabnik: Int? = 7, dogodek: Int = 42) -> SkenVnos {
-        SkenVnos(clientScanId: id, qr: "o2.x.y", serial: Pomoc.serial(), eventId: dogodek, klubId: klub, uporabnikId: uporabnik, imetnik: "ana")
+    private func vnos(_ id: String = UUID().uuidString.lowercased(), klub: Int = 1, uporabnik: Int? = 7, dogodek: Int = 42,
+                      cas: Date = Date()) -> SkenVnos {
+        SkenVnos(clientScanId: id, qr: "o2.x.y", serial: Pomoc.serial(), eventId: dogodek, klubId: klub, uporabnikId: uporabnik,
+                 scannedAt: cas, imetnik: "ana")
     }
 
     func testVrstaPrezivi_ponovniZagon() {
-        let a = vnos(), b = vnos()
+        let a = vnos(cas: Date(timeIntervalSince1970: 1_790_000_000)), b = vnos(cas: Date(timeIntervalSince1970: 1_790_000_100))
         let v1 = SkenVrsta(disk: disk)
         v1.dodaj(a)
         v1.dodaj(b)
@@ -266,6 +465,17 @@ final class SkenVrstaTests: XCTestCase {
         XCTAssertTrue(v.dodaj(a))
         XCTAssertFalse(v.dodaj(a))
         XCTAssertEqual(v.vnosi.count, 1)
+    }
+
+    /// M8: dodajanje skena zapise samo nov vnos; obstojecih datotek ne prepisuje (pred popravkom je vsak sken prepisal celo vrsto).
+    func testDodajanjeSkenaNePrepisujeCeleVrste() throws {
+        let v = SkenVrsta(disk: disk)
+        v.dodaj(vnos("a"))
+        let pot = mapa.appendingPathComponent("vrsta/a.json")
+        try Data("marker".utf8).write(to: pot)
+        v.dodaj(vnos("b"))
+        XCTAssertEqual(try String(contentsOf: pot, encoding: .utf8), "marker")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mapa.appendingPathComponent("vrsta/b.json").path))
     }
 
     func testOkOdstraniTihoAlreadyUsedPostaneKonflikt() {
@@ -330,6 +540,17 @@ final class SkenVrstaTests: XCTestCase {
         XCTAssertEqual(v.stevilo(klub: 1, uporabnik: 7), 520)
         XCTAssertEqual(v.stevilo(klub: 2, uporabnik: 7), 1)
         XCTAssertEqual(v.stevilo(klub: 1, uporabnik: nil), 521)   // uporabnik neznan -> vsi tega kluba
+        XCTAssertEqual(v.steviloVseh, 522)
+    }
+
+    func testZadrzaniVnosNeGreVPaket() {
+        let v = SkenVrsta(disk: disk)
+        v.dodaj(vnos("a"), zadrzi: true)
+        v.dodaj(vnos("b"))
+        XCTAssertEqual(v.paket(klub: 1, uporabnik: 7).map { $0.clientScanId }, ["b"])
+        XCTAssertEqual(v.stevilo(klub: 1, uporabnik: 7), 2)   // a se vedno caka (steje se)
+        v.sprosti("a")
+        XCTAssertEqual(v.paket(klub: 1, uporabnik: 7).count, 2)
     }
 
     func testPotrditevKonfliktaPrezivi() {
@@ -340,6 +561,64 @@ final class SkenVrstaTests: XCTestCase {
         v.potrdiKonflikt("a")
         XCTAssertEqual(v.nepotrjeniKonflikti(klub: 1).count, 0)
         XCTAssertEqual(SkenVrsta(disk: disk).konflikti.count, 1)   // ni izbrisan, samo potrjen
+    }
+
+    /// M14: potrjeni konflikti, starejsi od 30 dni, se obrezejo; nepotrjeni ostanejo, dokler jih vratar ne potrdi.
+    func testPotrjeniKonfliktiStarejsiOd30DniSeObrezejo() {
+        let v = SkenVrsta(disk: disk)
+        let staro = Date().addingTimeInterval(-40 * 86400)
+        let star = vnos("star", cas: staro), svez = vnos("svez"), nepotrjenStar = vnos("nepotrjen", cas: staro)
+        [star, svez, nepotrjenStar].forEach { v.dodaj($0) }
+        v.uporabi(["star", "svez", "nepotrjen"].map { ScanBatchResult(clientScanId: $0, result: "already_used") }, poslani: [star, svez, nepotrjenStar])
+        XCTAssertEqual(v.konflikti.count, 3)
+        v.potrdiKonflikt("star")
+        v.potrdiKonflikt("svez")
+        XCTAssertEqual(Set(v.konflikti.map { $0.clientScanId }), ["svez", "nepotrjen"])          // potrjen in star: ze obrezan
+        XCTAssertEqual(Set(SkenVrsta(disk: disk).konflikti.map { $0.clientScanId }), ["svez", "nepotrjen"])
+        // cez 31 dni (ob zagonu) se obreze se potrjeni svez, nepotrjen starec ostane
+        let kasneje = SkenVrsta(disk: disk, zdaj: Date().addingTimeInterval(31 * 86400))
+        XCTAssertEqual(Set(kasneje.konflikti.map { $0.clientScanId }), ["nepotrjen"])
+    }
+
+    /// P5: pokvarjena shramba vrste ne sme tiho pobrisati cakajocih skenov: ostane na strani (vrsta.pokvarjena-<cas>.json).
+    func testPokvarjenaVrstaOstaneNaStrani() throws {
+        let v1 = SkenVrsta(disk: disk)
+        v1.dodaj(vnos("a"))
+        let podmapa = mapa.appendingPathComponent("vrsta")
+        for ime in try FileManager.default.contentsOfDirectory(atPath: podmapa.path) {
+            try Data("{ pokvarjeno".utf8).write(to: podmapa.appendingPathComponent(ime))
+        }
+        let v2 = SkenVrsta(disk: disk)
+        XCTAssertEqual(v2.vnosi.count, 0)
+        XCTAssertEqual(v2.pokvarjenihDatotek, 1)
+        let stran = disk.imena().filter { $0.hasPrefix("vrsta.pokvarjena-") && $0.hasSuffix(".json") }
+        XCTAssertEqual(stran.count, 1)
+        XCTAssertEqual(String(data: disk.surovo(stran[0]) ?? Data(), encoding: .utf8), "{ pokvarjeno")
+    }
+
+    /// P5: ena pokvarjena datoteka ne potegne s seboj ostalih (pred popravkom je celotna vrsta padla skupaj z eno napako).
+    func testPokvarjenVnosNePotegneOstalih() throws {
+        let v1 = SkenVrsta(disk: disk)
+        ["a", "b", "c"].forEach { v1.dodaj(vnos($0)) }
+        try Data("{ pokvarjeno".utf8).write(to: mapa.appendingPathComponent("vrsta/b.json"))
+        let v2 = SkenVrsta(disk: disk)
+        XCTAssertEqual(Set(v2.vnosi.map { $0.clientScanId }), ["a", "c"])
+        XCTAssertEqual(v2.pokvarjenihDatotek, 1)
+        XCTAssertEqual(disk.imena().filter { $0.hasPrefix("vrsta.pokvarjena-") }.count, 1)
+    }
+
+    func testPokvarjenElementKonfliktovNePotegneOstalih() throws {
+        let v1 = SkenVrsta(disk: disk)
+        let a = vnos("a")
+        v1.dodaj(a)
+        v1.uporabi([ScanBatchResult(clientScanId: "a", result: "already_used")], poslani: [a])
+        let dobri = try JSONSerialization.jsonObject(with: JSONEncoder().encode(v1.konflikti)) as? [Any] ?? []
+        let podatki = try JSONSerialization.data(withJSONObject: dobri + [["nekaj": 1]])
+        try podatki.write(to: mapa.appendingPathComponent(SkenVrsta.datotekaKonfliktov))
+        let v2 = SkenVrsta(disk: disk)
+        XCTAssertEqual(v2.konflikti.map { $0.clientScanId }, ["a"])
+        XCTAssertEqual(v2.pokvarjenihDatotek, 1)
+        XCTAssertEqual(disk.imena().filter { $0.hasPrefix("konflikti.pokvarjena-") }.count, 1)
     }
 
     func testDeljenaVrstaJeEnaNaDisk() {
@@ -365,31 +644,59 @@ final class SkenVrstaTests: XCTestCase {
 
 // MARK: - SkenSeja
 
-private final class LazniApi: SkenApi {
+private final class LazniApi: SkenApi, @unchecked Sendable {
+    private let zapah = NSLock()
     var kljucOdgovor: Result<ScanKey, Error>
-    var seznamOdgovor: Result<ScanList, Error>
+    var seznamOdgovor: Result<Data, Error>
     var paketOdgovor: ([SkenVnos]) -> Result<[ScanBatchResult], Error> = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
     var spletniOdgovor: Result<ScanResult, Error> = .success(ScanResult(result: "ok", message: "Welcome", usedAt: nil))
     var dogodkiOdgovor: Result<[SkenDogodek], Error> = .success([])
+    /// Streznik odgovori sele po toliko sekundah (ali ga prekine rok).
+    var zakasnitevPaketa: Double = 0
+    var zakasnitevSpletnega: Double = 0
     private(set) var paketi: [[SkenVnos]] = []
     private(set) var deviceIdji: [String] = []
     private(set) var spletniKlici: [String] = []
+    private(set) var klubIdji: [Int?] = []
+    private(set) var kljucKlici = 0
+    private(set) var seznamKlici = 0
 
     init(kljuc: ScanKey, seznam: ScanList) {
         kljucOdgovor = .success(kljuc)
-        seznamOdgovor = .success(seznam)
+        seznamOdgovor = .success(Pomoc.seznamPodatki(seznam))
     }
 
-    func dogodki(token: String) async throws -> [SkenDogodek] { try dogodkiOdgovor.get() }
-    func kljuc(token: String) async throws -> ScanKey { try kljucOdgovor.get() }
-    func seznam(token: String, dogodekId: Int) async throws -> ScanList { try seznamOdgovor.get() }
-    func paket(token: String, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult] {
-        paketi.append(vnosi)
-        deviceIdji.append(deviceId)
+    func nastaviSeznam(_ l: ScanList) { seznamOdgovor = .success(Pomoc.seznamPodatki(l)) }
+
+    // Zapah samo v sinhronih pomoznih funkcijah (NSLock v async funkciji je v Swift 6 napaka).
+    private func zabelezi(_ klub: Int?, kljuc: Bool = false, seznam: Bool = false, paket: [SkenVnos]? = nil, deviceId: String? = nil, spletni: String? = nil) {
+        zapah.lock()
+        defer { zapah.unlock() }
+        klubIdji.append(klub)
+        if kljuc { kljucKlici += 1 }
+        if seznam { seznamKlici += 1 }
+        if let paket { paketi.append(paket) }
+        if let deviceId { deviceIdji.append(deviceId) }
+        if let spletni { spletniKlici.append(spletni) }
+    }
+
+    func dogodki(token: String, klubId: Int?) async throws -> [SkenDogodek] { zabelezi(klubId); return try dogodkiOdgovor.get() }
+    func kljuc(token: String, klubId: Int?) async throws -> ScanKey {
+        zabelezi(klubId, kljuc: true)
+        return try kljucOdgovor.get()
+    }
+    func seznam(token: String, klubId: Int?, dogodekId: Int) async throws -> Data {
+        zabelezi(klubId, seznam: true)
+        return try seznamOdgovor.get()
+    }
+    func paket(token: String, klubId: Int?, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult] {
+        zabelezi(klubId, paket: vnosi, deviceId: deviceId)
+        if zakasnitevPaketa > 0 { try await Task.sleep(nanoseconds: UInt64(zakasnitevPaketa * 1_000_000_000)) }
         return try paketOdgovor(vnosi).get()
     }
-    func spletniSken(token: String, qr: String) async throws -> ScanResult {
-        spletniKlici.append(qr)
+    func spletniSken(token: String, klubId: Int?, qr: String, rok: Double) async throws -> ScanResult {
+        zabelezi(klubId, spletni: qr)
+        if zakasnitevSpletnega > 0 { try await Task.sleep(nanoseconds: UInt64(zakasnitevSpletnega * 1_000_000_000)) }
         return try spletniOdgovor.get()
     }
 }
@@ -403,10 +710,12 @@ final class SkenSejaTests: XCTestCase {
     override func setUp() async throws { mapa = Pomoc.zacasnaMapa() }
     override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
 
-    private func naredi(_ api: LazniApi, deviceId: String = "naprava-1") -> SkenSeja {
+    private func naredi(_ api: LazniApi, klub: Int = 1, deviceId: String = "naprava-1", rok: Double = 1.0, rokSpletni: Double = 1.0,
+                        kljucOdmik: Double = 0) -> SkenSeja {
         // Nova vrsta z diska = nov zagon aplikacije (vsaka seja prebere vrsto in lokalne skene znova z diska).
         let disk = SkenDisk(mapa: mapa)
-        let s = SkenSeja(klubId: 1, uporabnikId: 7, api: api, disk: disk, deviceId: deviceId, vrsta: SkenVrsta(disk: disk))
+        let s = SkenSeja(klubId: klub, uporabnikId: 7, api: api, disk: disk, deviceId: deviceId, vrsta: SkenVrsta(disk: disk),
+                         rokStreznika: rok, rokSpletni: rokSpletni, kljucOdmik: kljucOdmik)
         s.zeton = { "zeton" }
         return s
     }
@@ -414,6 +723,8 @@ final class SkenSejaTests: XCTestCase {
     private func api(vstopnice: [ScanListTicket]) -> LazniApi {
         LazniApi(kljuc: Pomoc.scanKey(kljuc), seznam: ScanList(eventId: 42, generatedAt: "2026-10-01T20:00:00Z", kid: "kid1", tickets: vstopnice))
     }
+
+    private func zdaj() -> Date { Date() }
 
     func testZelenoTakojInDvojniSkenJeRdece() async {
         let s1 = Pomoc.serial()
@@ -437,6 +748,151 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(seja.zavrnjeni, 1)
     }
 
+    // MARK: K2: dvojen vstop, ko sta oba vratarja ONLINE
+
+    /// Pred popravkom: online sken je bil zelen takoj, `already_used` je prisel sele pozneje kot »konflikt«, gost pa je ze sel noter.
+    func testOnlineStreznikRecheAlreadyUsedJeRdeceInNiKonflikta() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "already_used", usedAt: "2026-10-01T20:59:00.000Z") }) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertEqual(p.naslov, String(localized: "ALREADY SCANNED"))
+        XCTAssertEqual(seja.cakajoce, 0)          // gost ni bil spuscen: vnos ne ostane v vrsti
+        XCTAssertEqual(seja.konflikti.count, 0)   // in ni konflikt
+        XCTAssertEqual(seja.sprejeti, 0)
+        XCTAssertEqual(seja.zavrnjeni, 1)
+    }
+
+    func testOnlineOkJeZelenoSTemIstimClientScanId() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let qr = Pomoc.koda(kljuc, serial: s1, event: 42)
+        let p = await seja.skeniraj(qr)
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertNil(p.opomba)
+        XCTAssertEqual(seja.cakajoce, 0)          // streznik je potrdil: vnos je odstranjen
+        XCTAssertEqual(a.paketi.count, 1)         // ENA zahteva, takoj ob skenu (ne ob naslednjem tiku)
+        XCTAssertEqual(a.paketi[0].count, 1)
+        XCTAssertEqual(a.paketi[0][0].qr, qr)
+        XCTAssertEqual(seja.sprejeti, 1)
+        XCTAssertFalse(seja.preverjaNaStrezniku)
+    }
+
+    func testOnlineVsiDokoncniOdgovoriStreznikaSoRdeci() async {
+        let a = api(vstopnice: [])
+        var odgovor = "ok"
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: odgovor, usedAt: nil) }) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let rdeci = ["already_used", "transferred", "refunded", "void", "unpaid", "invalid", "wrong_club", "unknown"]
+        for r in rdeci {
+            odgovor = r
+            let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
+            XCTAssertEqual(p.barva, .rdece, "rezultat \(r)")
+        }
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertEqual(seja.konflikti.count, 0)
+        XCTAssertEqual(seja.sprejeti, 0)
+        XCTAssertEqual(seja.zavrnjeni, rdeci.count)
+        XCTAssertEqual(a.paketi.count, rdeci.count)
+    }
+
+    /// Streznik gosta ni spustil -> koda ni »porabljena« lokalno: naslednji sken spet vpraša streznik (npr. po tem ko vratar uredi napako).
+    func testStreznikovoRdeceNeZapreKodeLokalno() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        var odgovor = "unpaid"
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: odgovor) }) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let qr = Pomoc.koda(kljuc, serial: s1, event: 42)
+        let prvi = await seja.skeniraj(qr)
+        XCTAssertEqual(prvi.barva, .rdece)
+        odgovor = "ok"
+        let drugi = await seja.skeniraj(qr)
+        XCTAssertEqual(drugi.barva, .zeleno)
+        XCTAssertEqual(a.paketi.count, 2)
+        XCTAssertNotEqual(a.paketi[0][0].clientScanId, a.paketi[1][0].clientScanId)
+    }
+
+    /// Rok ~2 s (tu 0,2 s): streznik ne odgovori -> velja lokalna sodba, vnos ostane v vrsti in se poslje pozneje (isti client_scan_id).
+    func testOnlineRokPoteceVelaLokalnaSodbaInNeBlokira() async {
+        let s1 = Pomoc.serial(), s2 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
+        a.zakasnitevPaketa = 10
+        let seja = naredi(a, rok: 0.2)
+        await seja.odpri(dogodek)
+        let zacetek = Date()
+        let p1 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        let p2 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s2, event: 42))
+        let trajanje = Date().timeIntervalSince(zacetek)
+        XCTAssertEqual(p1.barva, .zeleno)
+        XCTAssertEqual(p2.barva, .zeleno)
+        XCTAssertTrue(trajanje < 3, "dva skena sta cakala \(trajanje) s (rok 0,2 s, zakasnitev streznika 10 s)")
+        XCTAssertEqual(seja.cakajoce, 2)
+        XCTAssertEqual(seja.sprejeti, 2)
+        XCTAssertFalse(seja.preverjaNaStrezniku)
+        // streznik spet odgovarja: vrsta se poslje z ISTIMI client_scan_id (idempotentnost), nic ne ostane
+        let poslani = a.paketi.flatMap { $0 }.map { $0.clientScanId }
+        a.zakasnitevPaketa = 0
+        await seja.poslji()
+        await seja.pocakajPosiljanje()
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertEqual(Set(a.paketi.last?.map { $0.clientScanId } ?? []), Set(poslani))
+    }
+
+    func testOnlineNapakaStreznikaVelaLokalnaSodba() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        a.paketOdgovor = { _ in .failure(APIError.requestFailed(503, "")) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertEqual(seja.cakajoce, 1)
+        XCTAssertFalse(seja.povezava)
+    }
+
+    func testOnlineErrorRezultatVelaLokalnaSodbaVnosOstane() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, result: "error") }) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertEqual(seja.cakajoce, 1)
+    }
+
+    /// P3: brez povezave »ni na seznamu« ostane zeleno z opombo; z povezavo odloci streznik.
+    func testNiNaSeznamuBrezPovezaveZelenoZOpombo() async {
+        let a = api(vstopnice: [])
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        seja.omrezjeSpremenjeno(gor: false)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertNotNil(p.opomba)
+    }
+
+    func testNiNaSeznamuZPovezavoOdlociStreznik() async {
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let kupljena = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))   // streznik: ok
+        XCTAssertEqual(kupljena.barva, .zeleno)
+        XCTAssertNil(kupljena.opomba)                                                              // streznik je potrdil, opombe ni
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, result: "unknown") }) }
+        let neznana = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
+        XCTAssertEqual(neznana.barva, .rdece)
+    }
+
     func testPoslanoInDvojniSkenPoSinhronizacijiOstaneRdec() async {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
@@ -456,13 +912,17 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(p.barva, .rdece)
     }
 
-    func testAlreadyUsedOdStreznikaPostaneKonflikt() async {
+    func testAlreadyUsedOdStreznikaPoSinhronizacijiPostaneKonflikt() async {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
-        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "already_used", usedAt: "2026-10-01T20:59:00.000Z") }) }
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let seja = naredi(a)
         await seja.odpri(dogodek)
-        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        seja.omrezjeSpremenjeno(gor: false)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))   // brez povezave: zeleno, gost gre noter
+        XCTAssertEqual(p.barva, .zeleno)
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "already_used", usedAt: "2026-10-01T20:59:00.000Z") }) }
+        seja.omrezjeSpremenjeno(gor: true)
         await seja.poslji()
         await seja.pocakajPosiljanje()
         XCTAssertEqual(seja.cakajoce, 0)
@@ -495,6 +955,19 @@ final class SkenSejaTests: XCTestCase {
         // ponovni poskus poslje ISTI client_scan_id (idempotentnost na strezniku), ne nov
         XCTAssertGreaterThanOrEqual(a.paketi.count, 2)
         XCTAssertEqual(Set(a.paketi.flatMap { $0 }.map { $0.clientScanId }).count, 1)
+    }
+
+    /// M12: preklic klica (zaslon izgine) ni izpad povezave: indikator ostane »Online«, vnos ostane v vrsti.
+    func testPreklicKlicaNiOffline() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        a.paketOdgovor = { _ in .failure(URLError(.cancelled)) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertTrue(seja.povezava)
+        XCTAssertEqual(seja.cakajoce, 1)
     }
 
     func testOdprtjeBrezPovezaveSShranjenimSeznamom() async {
@@ -533,14 +1006,37 @@ final class SkenSejaTests: XCTestCase {
         guard case .manjkaPodatkov = seja.priprava else { return XCTFail("pricakovan manjkaPodatkov, dobljeno \(seja.priprava)") }
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
         XCTAssertEqual(p.barva, .rumeno)
-        XCTAssertTrue(a.spletniKlici.isEmpty)   // brez povezave nobenega spletnega klica
+        XCTAssertFalse(p.ponudiVstop)             // v2 brez kljuca ni mogoce spustiti na slepo (P4: »Let in« samo za v1)
+        XCTAssertTrue(a.spletniKlici.isEmpty)      // brez povezave nobenega spletnega klica
+    }
+
+    /// P4: kljuc je globalen: prenesen za en dogodek, velja za vse (pred popravkom je bil kljuc na dogodek).
+    func testKljucJeGlobalenInDelaZaDrugDogodekBrezSeznama() async {
+        let a = api(vstopnice: [])
+        let prva = naredi(a)
+        await prva.odpri(dogodek)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mapa.appendingPathComponent(SkenDisk.imeKljuca).path))
+
+        let brez = api(vstopnice: [])
+        brez.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
+        brez.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
+        brez.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let druga = naredi(brez)
+        await druga.odpri(SkenDogodek(id: 77, title: "Drug dogodek"))   // seznama za ta dogodek ni, kljuc pa je
+        XCTAssertEqual(druga.priprava, .pripravljen)
+        let dobra = await druga.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 77))
+        XCTAssertEqual(dobra.barva, .zeleno)
+        let napacenDogodek = await druga.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
+        XCTAssertEqual(napacenDogodek.barva, .rdece)
+        let ponaredek = await druga.skeniraj(Pomoc.koda(Curve25519.Signing.PrivateKey(), serial: Pomoc.serial(), event: 77))
+        XCTAssertEqual(ponaredek.barva, .rdece)
     }
 
     func testStaraKodaBrezPovezaveJeRumenaSPovezavoGreNaStreznik() async {
         let a = api(vstopnice: [])
         let seja = naredi(a)
         await seja.odpri(dogodek)
-        let v1 = "eyJ0IjoiYWJjIn0.0123456789abcdef0123456789abcdef"
+        let v1 = Pomoc.kodaV1(serial: Pomoc.serial(), event: 42)
 
         // s povezavo: obstojec POST /scan
         let online = await seja.skeniraj(v1)
@@ -553,7 +1049,7 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(ponovnoV1.barva, .rdece)
 
         // druga stara koda brez povezave: rumeno, vratar odloci
-        let v1b = "eyJ0IjoieHl6In0.fedcba9876543210fedcba9876543210"
+        let v1b = Pomoc.kodaV1(serial: Pomoc.serial(), event: 42)
         let rumena = await seja.skeniraj(v1b)
         XCTAssertEqual(rumena.barva, .rumeno)
         XCTAssertTrue(rumena.ponudiVstop)
@@ -564,6 +1060,35 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(seja.cakajoce, 1)
         let ponovnoV1b = await seja.skeniraj(v1b)
         XCTAssertEqual(ponovnoV1b.barva, .rdece)
+    }
+
+    /// P4: »Let in« samo za veljavno obliko v1 za TA dogodek; v2 (brez kljuca/z neujemajocim kljucem), smeti in drug dogodek se zavrnejo.
+    func testSpustiRocnoSamoZaV1ZaTaDogodek() async {
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        XCTAssertEqual(seja.spustiRocno(qr: Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42)).barva, .rdece)   // v2
+        XCTAssertEqual(seja.spustiRocno(qr: "abc.def").barva, .rdece)
+        XCTAssertEqual(seja.spustiRocno(qr: "e30.0123456789abcdef").barva, .rdece)
+        XCTAssertEqual(seja.spustiRocno(qr: Pomoc.kodaV1(serial: Pomoc.serial(), event: 9)).barva, .rdece)        // drug dogodek
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertEqual(seja.spustiRocno(qr: Pomoc.kodaV1(serial: Pomoc.serial(), event: 42)).barva, .zeleno)
+        XCTAssertEqual(seja.cakajoce, 1)
+    }
+
+    /// P6: spletni sken ima kratek rok; Wi-Fi brez interneta ne sme zadrzati vrat 30 s. Ob roku: rumeno z »Let in«.
+    func testSpletniSkenImaKratekRokInPadeNaRumeno() async {
+        let a = api(vstopnice: [])
+        a.zakasnitevSpletnega = 10
+        let seja = naredi(a, rokSpletni: 0.2)
+        await seja.odpri(dogodek)
+        let zacetek = Date()
+        let p = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
+        XCTAssertTrue(Date().timeIntervalSince(zacetek) < 3)
+        XCTAssertEqual(p.barva, .rumeno)
+        XCTAssertTrue(p.ponudiVstop)
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertFalse(seja.preverjaNaStrezniku)
     }
 
     func testPrenesenaInNapacenDogodekSkoziSejo() async {
@@ -578,6 +1103,18 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(seja.cakajoce, 0)
     }
 
+    func testNeplacanaVstopnicaJeRdecaSkoziSejo() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1, status: "unpaid")])
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertEqual(p.naslov, String(localized: "NOT PAID"))
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertTrue(a.paketi.isEmpty)   // rdece se odloci lokalno, streznika ni treba vprasati
+    }
+
     func testSpremenjenKidPonovnoPrenesePodpisniKljuc() async {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
@@ -586,28 +1123,51 @@ final class SkenSejaTests: XCTestCase {
         // streznik zamenja skrivnost -> nov par in nov kid
         let novi = Curve25519.Signing.PrivateKey()
         a.kljucOdgovor = .success(Pomoc.scanKey(novi, kid: "kid2"))
-        a.seznamOdgovor = .success(ScanList(eventId: 42, kid: "kid2", tickets: [ScanListTicket(serial: s1)]))
+        a.nastaviSeznam(ScanList(eventId: 42, kid: "kid2", tickets: [ScanListTicket(serial: s1)]))
         await seja.osveziSeznam()
         let noviSken = await seja.skeniraj(Pomoc.koda(novi, serial: s1, event: 42, kid: "kid2"))
         XCTAssertEqual(noviSken.barva, .zeleno)
-        // star kljuc ni vec veljaven
+        // koda s starim kljucem (drug kid) ni ponaredek, ampak zastarela: rumeno, ne rdece (M10)
+        a.spletniOdgovor = .failure(URLError(.timedOut))
         let stariSken = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
-        XCTAssertEqual(stariSken.barva, .rdece)
+        XCTAssertEqual(stariSken.barva, .rumeno)
+        XCTAssertEqual(a.spletniKlici.count, 1)   // z povezavo najprej poskusi streznik
     }
 
+    /// M10: koda z novim `kid`, kljuca na telefonu pa ni mogoce osveziti: rumeno (ne rdece); ko se kljuc prenese, je koda zelena.
     func testNovKidBrezMoznostiPrenosaKljucaNeDaNapacnegaRdecega() async {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a)
         await seja.odpri(dogodek)
         a.kljucOdgovor = .failure(URLError(.timedOut))
-        a.seznamOdgovor = .success(ScanList(eventId: 42, kid: "kid2", tickets: [ScanListTicket(serial: s1)]))
+        a.nastaviSeznam(ScanList(eventId: 42, kid: "kid2", tickets: [ScanListTicket(serial: s1)]))
         await seja.osveziSeznam()
         a.spletniOdgovor = .failure(URLError(.timedOut))   // tudi spletni sken ne uspe
         let novi = Curve25519.Signing.PrivateKey()
-        let p = await seja.skeniraj(Pomoc.koda(novi, serial: s1, event: 42, kid: "kid2"))
-        XCTAssertEqual(p.barva, .rumeno)   // kljuca ni: odlocitev prepusti vratarju / strezniku
-        XCTAssertEqual(a.spletniKlici.count, 1)   // a najprej poskusi streznik
+        let koda = Pomoc.koda(novi, serial: s1, event: 42, kid: "kid2")
+        let p = await seja.skeniraj(koda)
+        XCTAssertEqual(p.barva, .rumeno)           // ne rdece: koda je lahko pristna
+        XCTAssertEqual(p.naslov, String(localized: "KEY OUTDATED"))
+        XCTAssertFalse(p.ponudiVstop)
+        // povezava se vrne, kljuc se prenese: ista koda je zelena
+        a.kljucOdgovor = .success(Pomoc.scanKey(novi, kid: "kid2"))
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        seja.omrezjeSpremenjeno(gor: false)
+        _ = await seja.osveziKljuc()
+        let zdajKoda = await seja.skeniraj(koda)
+        XCTAssertEqual(zdajKoda.barva, .zeleno)
+    }
+
+    /// Neuspel prenos kljuca se ne ponavlja vsako sekundo (vsak sken z zastarelim kljucem sprozi poskus): najmanj 20 s med poskusi.
+    func testNeuspelPrenosKljucaSePonoviNajprejCez20s() async {
+        let a = api(vstopnice: [])
+        a.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
+        let seja = naredi(a, kljucOdmik: 20)
+        await seja.odpri(dogodek)       // en poskus
+        _ = await seja.osveziKljuc()
+        _ = await seja.osveziKljuc()
+        XCTAssertEqual(a.kljucKlici, 1)
     }
 
     func testDogodkiSeShranijoInPonujajoPravePrihajajoce() async {
@@ -630,6 +1190,159 @@ final class SkenSejaTests: XCTestCase {
         await druga.naloziDogodke()   // brez povezave: shranjen seznam
         XCTAssertEqual(druga.ponujeniDogodki.map { $0.id }, [4, 1])
         XCTAssertNil(druga.dogodkiNapaka)
+    }
+
+    // MARK: M7: klub izrecno v vsakem klicu
+
+    func testVsakKlicNosiIzrecenKlub() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        let seja = naredi(a, klub: 5)
+        await seja.naloziDogodke()
+        await seja.odpri(dogodek)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        _ = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
+        await seja.poslji()
+        XCTAssertTrue(a.klubIdji.count >= 5)   // dogodki, kljuc, seznam, paket, spletni sken
+        XCTAssertEqual(Set(a.klubIdji.map { $0 ?? -1 }), [5])
+        // klub 0 (ni znan): glava se ne poslje
+        let b = api(vstopnice: [])
+        let brezKluba = naredi(b, klub: 0)
+        await brezKluba.odpri(dogodek)
+        XCTAssertEqual(Set(b.klubIdji.map { $0 ?? -1 }), [-1])
+    }
+
+    // MARK: M8: nespremenjen seznam
+
+    func testNespremenjenSeznamSeNeZapisujeZnova() async throws {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let datoteka = mapa.appendingPathComponent(SkenDisk.imeSeznama(klub: 1, dogodek: 42))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: datoteka.path))
+        try Data("marker".utf8).write(to: datoteka)
+        let prej = seja.zadnjiPrenos
+        try await Task.sleep(nanoseconds: 20_000_000)
+        await seja.osveziSeznam()   // isti odgovor
+        XCTAssertEqual(try String(contentsOf: datoteka, encoding: .utf8), "marker")   // ni bil ponovno zapisan
+        XCTAssertTrue((seja.zadnjiPrenos ?? .distantPast) > (prej ?? .distantFuture))     // cas prenosa se je osvezil
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))           // indeks je ostal
+        XCTAssertEqual(p.barva, .zeleno)
+        // spremenjen odgovor se zapise
+        a.nastaviSeznam(ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: s1), ScanListTicket(serial: Pomoc.serial())]))
+        await seja.osveziSeznam()
+        XCTAssertNotEqual(try String(contentsOf: datoteka, encoding: .utf8), "marker")
+    }
+
+    // MARK: M9: pokvarjen odgovor obdrzi stari seznam
+
+    func testPokvarjenOdgovorSeznamaObdrziStariSeznam() async {
+        let s1 = Pomoc.serial()
+        let a = LazniApi(kljuc: Pomoc.scanKey(kljuc), seznam: ScanList(eventId: 42, kid: "kid1", tickets: [], transferredSerials: [s1]))
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        a.seznamOdgovor = .success(Data(#"{"event_id":42,"tickets":"pokvarjeno"}"#.utf8))
+        await seja.osveziSeznam()
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .rdece)   // vstopnica je se vedno »prenesena«, praznega seznama ni
+        // tudi na disku je ostal star seznam
+        let druga = naredi(a)
+        a.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
+        await druga.odpri(dogodek)
+        let p2 = await druga.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p2.barva, .rdece)
+    }
+
+    // MARK: M11: starost seznama
+
+    func testSvezSeznamNiStarInUspesnoOsvezevanjeBrisePogoj() async {
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        XCTAssertFalse(seja.seznamStar)
+        XCTAssertNotNil(seja.zadnjiPrenos)
+    }
+
+    // MARK: M13: 403 in odjava
+
+    func testOdvzemDostopaPrejPosljeNeposlanoNatoPobriseSezname() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        await seja.odpri(dogodek)
+        seja.omrezjeSpremenjeno(gor: false)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(seja.cakajoce, 1)
+        await seja.poslji()                // neuspel poskus (ozadnji poskus ob skenu se konca skupaj z njim)
+        await seja.pocakajPosiljanje()
+        XCTAssertEqual(seja.cakajoce, 1)
+        // povezava je spet tu, a streznik pravi 403 (ni vec clan ekipe): najprej poslji, kar caka, nato pobrisi sezname
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
+        a.seznamOdgovor = .failure(APIError.requestFailed(403, "Forbidden"))
+        await seja.osveziSeznam()
+        XCTAssertTrue(seja.dostopOdvzet)
+        XCTAssertEqual(seja.cakajoce, 0)   // neposlano je bilo poslano pred brisanjem
+        let imena = Set(SkenDisk(mapa: mapa).imena())
+        XCTAssertFalse(imena.contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        XCTAssertFalse(imena.contains(SkenDisk.imeLokalnih(klub: 1, dogodek: 42)))
+        XCTAssertFalse(imena.contains(SkenDisk.imeDogodkov(klub: 1)))
+        // brez dostopa se skeniranje ne poskusa vec poslati
+        let stevilo = a.paketi.count
+        await seja.poslji()
+        XCTAssertEqual(a.paketi.count, stevilo)
+    }
+
+    func testOdvzemDostopaBrezPovezaveObdrziNeposlaneSkene() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        a.seznamOdgovor = .failure(APIError.requestFailed(403, "Forbidden"))
+        await seja.osveziSeznam()
+        XCTAssertTrue(seja.dostopOdvzet)
+        XCTAssertFalse(Set(SkenDisk(mapa: mapa).imena()).contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        XCTAssertEqual(SkenVrsta(disk: SkenDisk(mapa: mapa)).vnosi.count, 1)   // vnos je se na disku
+    }
+
+    func testOdjavaPosljeNeposlanoInPobrisePodatke() async {
+        let disk = SkenDisk(mapa: mapa)
+        let vrsta = SkenVrsta.deljena(disk)
+        vrsta.dodaj(SkenVnos(qr: "o2.x.y", serial: Pomoc.serial(), eventId: 42, klubId: 3, uporabnikId: 7, imetnik: "ana"))
+        disk.zapisi(SkenLokalniSkeni(), SkenDisk.imeLokalnih(klub: 3, dogodek: 42))
+        disk.zapisiSurovo(Data("{}".utf8), SkenDisk.imeSeznama(klub: 3, dogodek: 42))
+        let a = api(vstopnice: [])
+        await SkenOdjava.poslji(token: "zeton", api: a, disk: disk, rok: 2, deviceId: "naprava-1")
+        XCTAssertEqual(vrsta.vnosi.count, 0)
+        XCTAssertEqual(a.klubIdji, [3])        // vsak klub s svojo glavo
+        SkenOdjava.pocisti(disk: disk)
+        XCTAssertEqual(disk.imena().filter { $0 != "vrsta" }, [])
+    }
+
+    func testOdjavaBrezPovezaveObdrziVnosBrezImenaInPobrisePreostalo() async {
+        let disk = SkenDisk(mapa: mapa)
+        let vrsta = SkenVrsta.deljena(disk)
+        let v = SkenVnos(qr: "o2.x.y", serial: Pomoc.serial(), eventId: 42, klubId: 3, uporabnikId: 7, imetnik: "ana")
+        vrsta.dodaj(v)
+        disk.zapisi(ScanKey(kid: "k", publicKey: "p"), SkenDisk.imeKljuca)
+        disk.zapisiSurovo(Data("[]".utf8), SkenVrsta.datotekaKonfliktov)
+        let a = api(vstopnice: [])
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        await SkenOdjava.poslji(token: "zeton", api: a, disk: disk, rok: 2, deviceId: "naprava-1")
+        XCTAssertEqual(vrsta.vnosi.count, 1)
+        SkenOdjava.pocisti(disk: disk)
+        XCTAssertEqual(disk.imena().filter { $0 != "vrsta" }, [])      // kljuc, konflikti, seznami so pobrisani
+        let nova = SkenVrsta(disk: disk)                               // vnos prezivi, imena imetnika ni vec
+        XCTAssertEqual(nova.vnosi.map { $0.clientScanId }, [v.clientScanId])
+        XCTAssertNil(nova.vnosi.first?.imetnik)
+        // brez zetona se ne poskusa nic
+        let b = api(vstopnice: [])
+        await SkenOdjava.poslji(token: "", api: b, disk: disk, rok: 2, deviceId: "x")
+        XCTAssertTrue(b.paketi.isEmpty)
     }
 
     func testDeviceIdJeStalenPoNamestitviInNakljucen() {

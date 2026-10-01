@@ -21,6 +21,12 @@ struct SkenPrikaz: Equatable {
 
     static func cas(_ d: Date) -> String { d.formatted(date: .omitted, time: .shortened) }
 
+    /// Cas prenosa seznama: samo ura, ce je danes, sicer datum in ura (M11).
+    static func casPrenosa(_ d: Date, zdaj: Date = Date(), koledar: Calendar = .current) -> String {
+        if koledar.isDate(d, inSameDayAs: zdaj) { return cas(d) }
+        return d.formatted(date: .abbreviated, time: .shortened)
+    }
+
     /// Iz lokalne odlocitve.
     static func iz(_ s: SkenSodba, qr: String) -> SkenPrikaz {
         let ime = s.vstopnica?.holderUsername ?? ""
@@ -53,6 +59,9 @@ struct SkenPrikaz: Equatable {
         case .preklicana:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "CANCELLED"),
                               podnaslov: String(localized: "This ticket was cancelled."))
+        case .neplacana:
+            return SkenPrikaz(barva: .rdece, naslov: String(localized: "NOT PAID"),
+                              podnaslov: String(localized: "The order for this ticket is not paid."))
         case .napacenDogodek:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG EVENT"),
                               podnaslov: String(localized: "This ticket is for a different event."))
@@ -65,8 +74,10 @@ struct SkenPrikaz: Equatable {
                               ponudiVstop: true, qr: qr)
         case .manjkaPodatkov:
             return SkenPrikaz(barva: .rumeno, naslov: String(localized: "NO DATA YET"),
-                              podnaslov: String(localized: "The ticket list is not downloaded yet. It can only be checked with a connection."),
-                              ponudiVstop: true, qr: qr)
+                              podnaslov: String(localized: "The scanner key is not downloaded yet. This ticket can only be checked with a connection."))
+        case .kljucNeujema:
+            return SkenPrikaz(barva: .rumeno, naslov: String(localized: "KEY OUTDATED"),
+                              podnaslov: String(localized: "The scanner key is out of date. Connect to the internet to update it."))
         }
     }
 
@@ -88,6 +99,28 @@ struct SkenPrikaz: Equatable {
         default: naslov = String(localized: "REFUSED")
         }
         return SkenPrikaz(barva: .rdece, naslov: naslov, podnaslov: r.message, vip: vip)
+    }
+
+    /// Dokoncen odgovor strezniga na sken, ki je bil na telefonu zelen (K2: z povezavo odloci streznik).
+    /// `sodba` je lokalna sodba (za VIP in ime imetnika pri `ok`).
+    static func iz(streznik rezultat: String, usedAt: String?, sodba: SkenSodba) -> SkenPrikaz {
+        if rezultat == "ok" { return iz(sodba, qr: "") }
+        let t = SkenCas.razcleni(usedAt).map { cas($0) } ?? ""
+        switch rezultat {
+        case "already_used":
+            return SkenPrikaz(barva: .rdece, naslov: String(localized: "ALREADY SCANNED"),
+                              podnaslov: t.isEmpty ? String(localized: "This ticket was already used.") : String(localized: "Already used at \(t)."))
+        case "transferred": return iz(SkenSodba(razlog: .prenesena, serial: sodba.serial), qr: "")
+        case "refunded": return iz(SkenSodba(razlog: .vrnjena, serial: sodba.serial), qr: "")
+        case "void": return iz(SkenSodba(razlog: .preklicana, serial: sodba.serial), qr: "")
+        case "unpaid": return iz(SkenSodba(razlog: .neplacana, serial: sodba.serial), qr: "")
+        case "wrong_club":
+            return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG CLUB"), podnaslov: String(localized: "This ticket is for another club."))
+        case "unknown":
+            return SkenPrikaz(barva: .rdece, naslov: String(localized: "UNKNOWN TICKET"), podnaslov: String(localized: "The server does not know this ticket."))
+        default:
+            return iz(SkenSodba(razlog: .neveljavna, serial: sodba.serial), qr: "")
+        }
     }
 
     /// Vratar je gosta spustil sam (stara koda brez povezave).

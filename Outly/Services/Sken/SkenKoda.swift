@@ -1,25 +1,28 @@
 import Foundation
 import CryptoKit
 
-// Sken brez povezave (backend issue #86, 1. 10. 2026): razclenjevanje in preverjanje kode QR v2.
+// Sken brez povezave (backend issue #86, 1. 10. 2026): razclenjevanje in preverjanje kod QR.
 //
 // Koda v2: "o2." + base64url(JSON) + "." + base64url(podpis Ed25519, 64 B).
 // Podpisano je UTF-8 besedilo vsega pred zadnjo piko ("o2.<b64>"). JSON: { v: 2, t: serial, e: event_id, i: ustvarjena, k: kid }.
-// Stara koda v1 ("<b64>.<hmac>") ima 2 dela in jo telefon NE more preveriti (skrivnost je samo na strezniku).
+// Koda v1 (stara): base64url(JSON) + "." + HMAC; JSON { v: 1, t: serial, e: event_id, i: ustvarjena }. Podpisa (HMAC) telefon NE more
+// preveriti (skrivnost je samo na strezniku), telo pa lahko prebere: ni berljivo ali ni v==1 -> neveljavna koda.
 // Nic od tega ne vrze izjeme: koda je vhod neznane osebe na vratih.
 
-/// Podpisano telo kode v2.
+/// Telo kode (podpisano pri v2, nepreverljivo pri v1).
 struct SkenTelo: Equatable {
     /// Serial vstopnice (UUID, male crke), kot ga hrani streznik.
     let serial: String
     let eventId: Int
+    /// Id kljuca, s katerim je podpisana koda v2; pri v1 nil.
     let kid: String?
 }
 
 /// Razclenjena koda. Podpis pri `.v2` je razclenjen, NI se preverjen: poklici `SkenPodpis.preveri`.
 enum SkenKoda: Equatable {
     case v2(telo: SkenTelo, sporocilo: String, podpis: Data)
-    case v1
+    /// Telo je berljivo (v == 1, serial je UUID), pristnosti telefon ne more preveriti.
+    case v1(telo: SkenTelo)
     case neznano
 
     static let najvecZnakov = 1024   // enako kot streznik (QR_NAJVEC_ZNAKOV)
@@ -30,18 +33,25 @@ enum SkenKoda: Equatable {
         let deli = koda.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
         if deli.count == 3 && deli[0] == "o2" {
             guard let podpis = Data(base64URL: deli[2]), podpis.count == 64,
-                  let surovo = Data(base64URL: deli[1]),
-                  let obj = (try? JSONSerialization.jsonObject(with: surovo)) as? [String: Any],
-                  (obj["v"] as? Int) == 2,
-                  let t = obj["t"] as? String, let uuid = UUID(uuidString: t),
-                  let e = Self.celo(obj["e"])
+                  let telo = Self.telo(deli[1], verzija: 2)
             else { return .neznano }
-            let telo = SkenTelo(serial: uuid.uuidString.lowercased(), eventId: e, kid: obj["k"] as? String)
             return .v2(telo: telo, sporocilo: "o2.\(deli[1])", podpis: podpis)
         }
-        // v1: dva dela v base64url (JSON.HMAC). Vsebine ne tolmacimo (ni preverljiva), samo prepoznamo obliko.
-        if deli.count == 2, Self.jeBase64URL(deli[0]), Self.jeBase64URL(deli[1]) { return .v1 }
+        if deli.count == 2, Self.jeBase64URL(deli[1]), let telo = Self.telo(deli[0], verzija: 1) {
+            return .v1(telo: telo)
+        }
         return .neznano
+    }
+
+    /// Telo iz base64url(JSON); `verzija` mora ustrezati polju `v`.
+    private static func telo(_ b64: String, verzija: Int) -> SkenTelo? {
+        guard let surovo = Data(base64URL: b64),
+              let obj = (try? JSONSerialization.jsonObject(with: surovo)) as? [String: Any],
+              (obj["v"] as? Int) == verzija,
+              let t = obj["t"] as? String, let uuid = UUID(uuidString: t),
+              let e = Self.celo(obj["e"])
+        else { return nil }
+        return SkenTelo(serial: uuid.uuidString.lowercased(), eventId: e, kid: obj["k"] as? String)
     }
 
     private static func jeBase64URL(_ s: String) -> Bool {
