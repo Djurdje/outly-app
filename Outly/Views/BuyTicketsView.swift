@@ -463,7 +463,8 @@ struct BuyTicketsView: View {
                     Spacer()
                     polje(String(localized: "TIME"), event.displayTimeShort)
                     Spacer()
-                    if !t.serialKratek.isEmpty {
+                    // Prenesena vstopnica: serial pripada prejemniku, kupcu ga ne kazi (star backend ga se poslje, #124).
+                    if !t.jePoslanaDalje && !t.serialKratek.isEmpty {
                         polje(String(localized: "TICKET"), t.serialKratek)
                     }
                 }

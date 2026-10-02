@@ -186,4 +186,21 @@ final class APITicketTests: XCTestCase {
         XCTAssertNil(narocila.first?.tickets.first?.serial)
         XCTAssertEqual(narocila.first?.tickets.last?.serial, "s7")
     }
+
+    /// Star backend: prenesena vstopnica pri kupcu ima se serial prejemnika, qr pa null -> poslana naprej.
+    func testStarBackendSerialPrisotenQrNullJePoslanaDalje() throws {
+        let t = try dekodiraj("""
+        { "id": 8, "serial": "abcdef1234567890", "status": "valid", "qr": null, "transferred": true,
+          "holder_username": "ana" }
+        """)
+        XCTAssertTrue(t.jePoslanaDalje)
+    }
+
+    /// Vstopnica brez QR, ki ni prenesena (npr. neplacana), ni "poslana naprej".
+    func testNeprenesenaBrezQrNiPoslanaDalje() throws {
+        let t = try dekodiraj("""
+        { "id": 9, "serial": "s9", "status": "pending", "qr": null, "transferred": false }
+        """)
+        XCTAssertFalse(t.jePoslanaDalje)
+    }
 }
