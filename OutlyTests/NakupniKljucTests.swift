@@ -3,6 +3,7 @@ import Foundation
 @testable import Outly
 
 /// Pravila idempotentnega kljuca nakupa (outly-backend #112 / PR #123): kdaj ostane isti UUID, kdaj se zamenja.
+@MainActor
 final class NakupniKljucTests: XCTestCase {
 
     /// Deterministicni izvor kljucev: k1, k2, ...
