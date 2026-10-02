@@ -5741,6 +5741,28 @@
         }
       }
     },
+    "Transferred": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preneseno"
+          }
+        }
+      }
+    },
+    "Transferred to @%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preneseno na @%@"
+          }
+        }
+      }
+    },
     "TEST": {
       "extractionState": "manual"
     },

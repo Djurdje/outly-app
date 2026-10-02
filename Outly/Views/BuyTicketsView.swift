@@ -463,10 +463,20 @@ struct BuyTicketsView: View {
                     Spacer()
                     polje(String(localized: "TIME"), event.displayTimeShort)
                     Spacer()
-                    polje(String(localized: "TICKET"), String(t.serial.prefix(8)).uppercased())
+                    // Prenesena vstopnica: serial pripada prejemniku, kupcu ga ne kazi (star backend ga se poslje, #124).
+                    if !t.jePoslanaDalje && !t.serialKratek.isEmpty {
+                        polje(String(localized: "TICKET"), t.serialKratek)
+                    }
                 }
-                QRCodeView(content: t.qr, size: 180)
-                    .padding(.top, 4)
+                if t.jePoslanaDalje {
+                    Text(verbatim: t.poslanaNapis)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.7))
+                        .frame(maxWidth: .infinity, minHeight: 60)
+                } else {
+                    QRCodeView(content: t.qr, size: 180)
+                        .padding(.top, 4)
+                }
             }
             .padding(18)
             .background(kartica)

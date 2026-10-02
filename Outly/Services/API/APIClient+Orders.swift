@@ -14,7 +14,9 @@ struct APITicket: Decodable, Identifiable {
     let id: Int
     let orderId: Int
     let eventId: Int
-    let serial: String
+    /// Serial vstopnice. Backend ga PRENESENI vstopnici (transferred, pri kupcu v /me/orders) ne vrne (null ali brez kljuca):
+    /// nov serial pripada prejemniku. Nikoli ga ne kazi brez preverbe — glej `serialKratek`, `jePoslanaDalje`.
+    let serial: String?
     /// "valid" | "used" | "void" | "refunded"
     let status: String
     let usedAt: String?
@@ -37,6 +39,8 @@ struct APITicket: Decodable, Identifiable {
 
     // Prenos prijatelju (008). transferred = vstopnico sem prejel (ne kupil);
     // transferable = veljavna in dogodek se ni zacel; holderUsername = trenutni imetnik.
+    // Kupcu se NIKOLI ne kaze e-naslov prejemnika (osebni podatek): backend polja `holder_email` ne bo vec vracal,
+    // star backend ga se poslje — model ga zato ne dekodira, kaze se samo holderUsername.
     let transferable: Bool
     let transferred: Bool
     let holderUsername: String
@@ -78,7 +82,7 @@ struct APITicket: Decodable, Identifiable {
         id = try c.decode(Int.self, forKey: .id)
         orderId = try c.decodeIfPresent(Int.self, forKey: .orderId) ?? 0
         eventId = try c.decodeIfPresent(Int.self, forKey: .eventId) ?? 0
-        serial = try c.decodeIfPresent(String.self, forKey: .serial) ?? ""
+        serial = (try? c.decodeIfPresent(String.self, forKey: .serial)) ?? nil   // null / manjka / napacen tip -> nil
         status = try c.decodeIfPresent(String.self, forKey: .status) ?? "valid"
         usedAt = try c.decodeIfPresent(String.self, forKey: .usedAt)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
@@ -107,6 +111,21 @@ struct APITicket: Decodable, Identifiable {
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
     var isUsed: Bool { status == "used" }
+
+    /// Samo za vstopnice NAROCILA (GET /me/orders, POST …/orders = kupcev pogled): kupec je vstopnico poslal prijatelju,
+    /// zato nima ne QR ne seriala (backend ju zadrzi za prejemnika). V GET /me/tickets (TicketsView) `transferred`
+    /// pomeni "vstopnico sem PREJEL" — tam ta lastnost ni v uporabi, prejemnik svoj serial in QR vidi.
+    var jePoslanaDalje: Bool { transferred && (qr.isEmpty || serial == nil) }
+    /// Prvih 8 znakov seriala z velikimi crkami; prazen niz, ce serial ni na voljo.
+    var serialKratek: String { String((serial ?? "").prefix(8)).uppercased() }
+    /// Cel serial z velikimi crkami; prazen niz, ce ga ni.
+    var serialVelik: String { (serial ?? "").uppercased() }
+    /// Napis namesto QR za poslano vstopnico: "Transferred to @ana" (ali "Transferred", ce username ni znan).
+    var poslanaNapis: String {
+        holderUsername.isEmpty
+            ? String(localized: "Transferred")
+            : String(localized: "Transferred to @\(holderUsername)")
+    }
     /// Napis na kartici: VALID samo za veljavno vstopnico prihodnjega dogodka;
     /// sicer USED / REFUNDED / VOID / EXPIRED (prej je bilo vse razen used "VALID").
     var statusLabel: String {
