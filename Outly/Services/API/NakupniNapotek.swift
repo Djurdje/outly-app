@@ -14,17 +14,26 @@ enum NakupniNapotek: Equatable {
     /// morda ze v Profil -> Tickets.
     case preveriProfil
 
-    /// List vstopnic: napotek samo, ce je nerazresen poskus vstopnic (vsebina brez mize).
-    static func zaVstopnice(odprtaVsebina vsebina: NakupniKljuc.Vsebina?) -> NakupniNapotek? {
-        guard let v = vsebina, v.mizaId == nil else { return nil }
-        return .moznoUspel
+    /// List vstopnic: napotek samo, ce je nerazresen poskus vstopnic (`odprta` brez mize). Izpeljan iz TRENUTNE izbire:
+    /// `.moznoUspel` (»tap the button again ... won't be charged twice«) samo, ce je trenutna vsebina enaka nerazresenemu
+    /// poskusu (isti kljuc) IN je gumb Pay na voljo; sicer `.preveriProfil` (druga kolicina = nov kljuc, ali gumba ni).
+    static func zaVstopnice(odprta: NakupniKljuc.Vsebina?, trenutna: NakupniKljuc.Vsebina,
+                            gumbNaVoljo: Bool) -> NakupniNapotek? {
+        guard let o = odprta, o.mizaId == nil else { return nil }
+        return izberi(istaVsebina: o == trenutna, gumbNaVoljo: gumbNaVoljo)
     }
 
-    /// VIP list: napotek samo, ce je nerazresen poskus mize. Miza se je obdrzala (se prosta) -> `.moznoUspel`
-    /// (ponovni pritisk preveri); ni je vec med prostimi (kupljena ali umaknjena) -> `.preveriProfil`.
-    static func zaVip(odprtaVsebina vsebina: NakupniKljuc.Vsebina?, mizaProsta: Bool) -> NakupniNapotek? {
-        guard let v = vsebina, v.mizaId != nil else { return nil }
-        return mizaProsta ? .moznoUspel : .preveriProfil
+    /// VIP list: napotek samo, ce je nerazresen poskus mize (`odprta` z mizo). `trenutna` = trenutna izbira mize in paketa
+    /// (nil = nobena miza ni izbrana, npr. lastna miza je ze »Booked«). `.moznoUspel` samo ob isti mizi in istem paketu
+    /// IN ko je gumb Reserve na voljo (prodaja odprta); sicer `.preveriProfil`.
+    static func zaVip(odprta: NakupniKljuc.Vsebina?, trenutna: NakupniKljuc.Vsebina?,
+                      gumbNaVoljo: Bool) -> NakupniNapotek? {
+        guard let o = odprta, o.mizaId != nil else { return nil }
+        return izberi(istaVsebina: trenutna == o, gumbNaVoljo: gumbNaVoljo)
+    }
+
+    private static func izberi(istaVsebina: Bool, gumbNaVoljo: Bool) -> NakupniNapotek {
+        (istaVsebina && gumbNaVoljo) ? .moznoUspel : .preveriProfil
     }
 
     /// Besedilo; ista angleska niza kot splet (`nakupBrezOdgovoraSporocilo`, `vip-kupec.js`), sl v `Localizable.xcstrings`.
