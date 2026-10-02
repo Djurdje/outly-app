@@ -1493,6 +1493,24 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertNil(predpomnilnik.cachedResponse(for: zahteva))
     }
 
+    /// Enkratno ciscenje starih API odgovorov na disku URLCache.shared: prvic pobrise, drugic ne (zastavica v UserDefaults).
+    func testStareOdgovoreNaDiskuPocistiSamoEnkrat() {
+        let ime = "outly-test-\(UUID().uuidString)"
+        let privzetosti = UserDefaults(suiteName: ime)!
+        defer { privzetosti.removePersistentDomain(forName: ime) }
+        let predpomnilnik = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil)
+        let url = URL(string: "https://outly.example/business/events/42/scan-list")!
+        let zahteva = URLRequest(url: url)
+        let odgovor = URLResponse(url: url, mimeType: "application/json", expectedContentLength: 2, textEncodingName: nil)
+        func shrani() { predpomnilnik.storeCachedResponse(CachedURLResponse(response: odgovor, data: Data("{}".utf8)), for: zahteva) }
+        shrani()
+        XCTAssertTrue(APIPredpomnilnik.enkratnoPocistiStareOdgovore(privzetosti: privzetosti, predpomnilnik: predpomnilnik))
+        XCTAssertNil(predpomnilnik.cachedResponse(for: zahteva))
+        shrani()
+        XCTAssertFalse(APIPredpomnilnik.enkratnoPocistiStareOdgovore(privzetosti: privzetosti, predpomnilnik: predpomnilnik))
+        XCTAssertNotNil(predpomnilnik.cachedResponse(for: zahteva))   // drugic ne brise
+    }
+
     /// Klici backenda ne smejo pisati odgovorov (imena imetnikov, vstopnice) na disk: API seja ima predpomnilnik samo v pomnilniku.
     func testApiSejaNimaDiskovnegaPredpomnilnika() {
         XCTAssertEqual(APIPredpomnilnik.predpomnilnik.diskCapacity, 0)

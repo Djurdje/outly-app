@@ -21,6 +21,8 @@ struct OutlyApp: App {
         // je premajhen (~0,5 MB v pomnilniku) za plakate, zato se je vsaka slika ob vsakem preklopu
         // zavihka znova prenesla in dekodirala (29. 9. 2026, "aplikacija steka").
         URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024, diskCapacity: 256 * 1024 * 1024)
+        // Odgovori API-ja so pred tem sli na ta disk (imena imetnikov vstopnic): enkrat jih pobrisemo, odslej API ne pise vec na disk.
+        APIPredpomnilnik.enkratnoPocistiStareOdgovore()
     }
 
     var body: some Scene {
