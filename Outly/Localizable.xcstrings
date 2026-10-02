@@ -3926,6 +3926,17 @@
         }
       }
     },
+    "No response from the server. Check Profile → Tickets before you try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežnik se ne odziva. Preden poskusiš znova, preveri Profil → Vstopnice."
+          }
+        }
+      }
+    },
     "No results for \"%@\".": {
       "extractionState": "manual",
       "localizations": {

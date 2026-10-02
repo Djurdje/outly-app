@@ -21,6 +21,9 @@ struct BuyTicketsView: View {
     /// Stanje skupnega akcijskega gumba (OutlyAkcijskiGumb) - nadomesca prejsnji isBuying.
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
+    /// Nerazresena vsebina ob odprtju lista (glej `predizpolni`); izgine ob naslednjem pritisku na Pay. Napotek (`napotek`)
+    /// se izpelje iz nje in iz TRENUTNE kolicine.
+    @State private var nerazresena: NakupniKljuc.Vsebina?
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
@@ -37,6 +40,17 @@ struct BuyTicketsView: View {
         return max(0, cap - event.soldCount)
     }
     private var maxQuantity: Int { min(10, max(1, remaining ?? 10)) }
+    private var soldOut: Bool { event.isSoldOut || remaining == 0 }
+
+    /// Napotek ob ponovnem odprtju po nejasnem izidu, izpeljan iz trenutne izbire: »tap the button again« samo, ce je
+    /// kolicina ista (isti kljuc) in je Pay na voljo; sicer »Check Profile -> Tickets«. Zacasna onemogocenost zaradi
+    /// navale (`naval`, nekaj sekund) napotka ne spremeni: gumb se sam spet odpre.
+    private var napotek: NakupniNapotek? {
+        NakupniNapotek.zaVstopnice(
+            odprta: nerazresena,
+            trenutna: NakupniKljuc.Vsebina(dogodekId: event.id, kolicina: quantity),
+            gumbNaVoljo: !soldOut)
+    }
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -82,6 +96,10 @@ struct BuyTicketsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 glavaDogodka
                     .padding(.top, 8)
+
+                if let napotek {
+                    NapotekKartica(besedilo: napotek.besedilo)
+                }
 
                 karticaNakupa
 
@@ -311,7 +329,6 @@ struct BuyTicketsView: View {
     }
 
     private var gumbPlacaj: some View {
-        let soldOut = event.isSoldOut || remaining == 0
         // Krog + kljukica prek skupnega OutlyAkcijskiGumb (Buy ne dobi naslovUspeha - po
         // kljukici se cel zaslon "razpre" v uspeh(purchase), glej kupi()).
         return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
@@ -525,16 +542,19 @@ struct BuyTicketsView: View {
 
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay
     /// poslje isto vsebino z istim kljucem (NakupniKljucShramba). Vsebina VIP mize (mizaId != nil) tu ne velja.
+    /// Zapomni nerazresen poskus za napotek (kolicine ne zaklene; napotek sledi trenutni izbiri, glej `napotek`).
     private func predizpolni() {
         guard !predizpolnjeno else { return }
         predizpolnjeno = true
-        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
-              v.mizaId == nil else { return }
+        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id)
+        nerazresena = prej
+        guard let v = prej, v.mizaId == nil else { return }
         quantity = min(max(v.kolicina, 1), maxQuantity)
     }
 
     private func kupi() async {
         errorMessage = nil
+        nerazresena = nil
         stanje = .nalaga
         // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, 24 h), ne v @State: ponovno odprt list isti vsebine
         // ob nejasnem izidu (timeout) dobi ISTI kljuc, zato nakup ni podvojen.

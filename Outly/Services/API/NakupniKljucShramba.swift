@@ -31,6 +31,10 @@ final class NakupniKljucShramba {
         var zadnjaUporaba: Date
         /// Izid zadnjega poskusa; nil = odgovor se ni prisel (zaNakup brez poNapaki/poUspehu), obravnavamo kot nejasen.
         var izid: NakupniIzid?
+        /// Lepljiv »nejasen izid«: nastavi ga `.nejasen` / `.vObdelavi`, ohrani ga poznejsa `.navadna` (npr. 503 pri ponovitvi
+        /// z ISTIM kljucem; prvo narocilo je lahko ze nastalo). Zbrise ga rotacija kljuca (`.kljucZavrzen`,
+        /// `.narociloNeaktivno`, nov kljuc zaradi druge vsebine) ali uspeh (zapis stran).
+        var nerazresen: Bool = false
     }
 
     private var zapisi: [Pot: Zapis] = [:]
@@ -60,7 +64,9 @@ final class NakupniKljucShramba {
         zavrziPotekle(zdaj)
         let pot = Pot(uporabnik: uporabnik, dogodekId: vsebina.dogodekId)
         var zapis = zapisi[pot] ?? Zapis(kljuc: NakupniKljuc(ustvari: ustvari), zadnjaUporaba: zdaj, izid: nil)
+        let prejsnjiKljuc = zapis.kljuc.vrednost
         let kljuc = zapis.kljuc.zaNakup(vsebina)
+        if kljuc != prejsnjiKljuc { zapis.nerazresen = false }   // druga vsebina = nov kljuc = nov nakup
         zapis.zadnjaUporaba = zdaj
         zapis.izid = nil
         zapisi[pot] = zapis
@@ -71,14 +77,16 @@ final class NakupniKljucShramba {
     /// `.nejasen` (timeout, izgubljena povezava), `.vObdelavi` (409 request_in_progress) ali odgovor se ni prisel
     /// (zaNakup brez poNapaki/poUspehu; obravnavano kot nejasno). Po dokoncni napaki (`.navadna`: 403, razprodano, 503 ...)
     /// backend kljuca ne zapomni, zato predizpolnitev ni potrebna in bi samo presenetila; po uspehu, po rotaciji kljuca
-    /// (`.kljucZavrzen`, `.narociloNeaktivno`), po izteku in po odjavi je nil. Rok zadnje uporabe se ne osvezi.
+    /// (`.kljucZavrzen`, `.narociloNeaktivno`), po izteku in po odjavi je nil. Nejasen izid je LEPLJIV: `.navadna` po njem
+    /// (npr. 503 pri ponovitvi z istim kljucem) vsebine ne skrije, dokler je kljuc isti. Rok zadnje uporabe se ne osvezi.
     /// Kljuc sam se zaradi tega NE spremeni (pravila `NakupniKljuc` ostanejo).
     func odprtaVsebina(uporabnik: Int, dogodekId: Int) -> NakupniKljuc.Vsebina? {
         zavrziPotekle(ura())
         guard let zapis = zapisi[Pot(uporabnik: uporabnik, dogodekId: dogodekId)] else { return nil }
         switch zapis.izid {
         case nil, .nejasen?, .vObdelavi?: return zapis.kljuc.vsebina
-        case .navadna?, .kljucZavrzen?, .narociloNeaktivno?: return nil
+        case .navadna?: return zapis.nerazresen ? zapis.kljuc.vsebina : nil
+        case .kljucZavrzen?, .narociloNeaktivno?: return nil
         }
     }
 
@@ -96,6 +104,11 @@ final class NakupniKljucShramba {
         zavrziPotekle(zdaj)
         guard var zapis = zapisi[pot] else { return }
         zapis.kljuc.poNapaki(izid)
+        switch izid {
+        case .nejasen, .vObdelavi: zapis.nerazresen = true
+        case .kljucZavrzen, .narociloNeaktivno: zapis.nerazresen = false
+        case .navadna: break   // ohrani prejsnji nejasen izid (isti kljuc)
+        }
         zapis.zadnjaUporaba = zdaj
         zapis.izid = izid
         zapisi[pot] = zapis
