@@ -97,7 +97,7 @@ extension APIClient {
             req.httpBody = try JSONSerialization.data(withJSONObject: json)
         }
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await APIPredpomnilnik.seja.data(for: req)
         guard let http = resp as? HTTPURLResponse else {
             throw APIError.requestFailed(-1, "No HTTP response")
         }
