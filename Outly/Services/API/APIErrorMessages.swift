@@ -145,8 +145,8 @@ extension APIError {
 
 /// Backend (semafor nakupov, outly-backend #111) ob navali odgovori 503 + `Retry-After: 5`, ko nakup
 /// ne dobi mesta v vrsti ali baza ne pride do povezave. Velja SAMO za nakupna zaslona (vstopnice, VIP
-/// mize): drugje ostane 503 splosno sporocilo (`userMessage`). Nakupa se NE ponavlja samodejno —
-/// backend nima idempotentnega kljuca (outly-backend #112), zato bi ponovitev lahko kupila dvakrat.
+/// mize): drugje ostane 503 splosno sporocilo (`userMessage`). Nakupa se NE ponavlja samodejno: uporabnik
+/// pritisne znova, in ker nakup nosi `Idempotency-Key` (NakupniKljuc, outly-backend #112), je to varno.
 enum NavalNakupa {
     /// Kako dolgo je gumb za nakup onemogocen po 503. `Retry-After` iz glave `send()` ne vrne, zato
     /// privzeta vrednost backenda (5 s).
@@ -170,8 +170,20 @@ extension Error {
         return code == 503
     }
 
-    /// Sporocilo za nakupna zaslona: naval -> posebno sporocilo, sicer enako kot `userMessage`.
+    /// Sporocilo za nakupna zaslona: izidi, ki jih doloca idempotentni kljuc (NakupniKljuc), naval -> posebno
+    /// sporocilo, sicer enako kot `userMessage`. Kljucni izidi so PRED `userMessage`, ker bi ga `translate`
+    /// ("already used") sicer pomotoma prevedel kot »This ticket was already used.«.
     var nakupUserMessage: String {
+        switch nakupniIzid {
+        case .kljucZavrzen:
+            return String(localized: "Something changed, please try again.")
+        case .vObdelavi:
+            return String(localized: "Your previous attempt is still being processed. Please try again in a moment.")
+        case .nejasen:
+            return String(localized: "Your purchase may have gone through — tap Buy again to check (you won't be charged twice).")
+        case .navadna:
+            break
+        }
         if jeNavalNakupa {
             return String(localized: "Lots of people are buying right now. Please try again in a few seconds.")
         }

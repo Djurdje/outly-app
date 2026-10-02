@@ -20,8 +20,11 @@ struct BuyTicketsView: View {
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
-    /// 503 zaradi navale: gumb je ~5 s onemogocen, nakup se ne ponovi sam (brez idempotentnega kljuca).
+    /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
+    /// Idempotentni kljuc nakupa (`Idempotency-Key`): isti pri ponovnem poskusu istega nakupa, nov ob spremembi
+    /// kolicine, po uspehu in ko ga backend zavrne (glej NakupniKljuc).
+    @State private var kljuc = NakupniKljuc()
     @Environment(\.accessibilityReduceMotion) private var manjGibanja
 
     private var koda: String { event.currency ?? "EUR" }
@@ -513,8 +516,11 @@ struct BuyTicketsView: View {
     private func kupi() async {
         errorMessage = nil
         stanje = .nalaga
+        let kljucNakupa = kljuc.zaNakup(NakupniKljuc.Vsebina(dogodekId: event.id, kolicina: quantity))
         do {
-            let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity)
+            let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
+                                                          idempotencyKey: kljucNakupa)
+            kljuc.poUspehu()
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             // Kljukica naj bo za hip vidna, preden se krog "razpre" v vstopnico.
@@ -522,11 +528,12 @@ struct BuyTicketsView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
             // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
+            kljuc.poNapaki(error.nakupniIzid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
-            if error.jeNakup503 {
+            if let premor = error.nakupPremorNanosekund {
                 naval = true
-                try? await Task.sleep(nanoseconds: NavalNakupa.premorNanosekund)
+                try? await Task.sleep(nanoseconds: premor)
                 naval = false
             }
         }

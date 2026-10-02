@@ -440,9 +440,10 @@ struct TransferResponse: Decodable {
 extension APIClient {
 
     /// POST /events/:id/orders — nakup vstopnic. V testnem nacinu takoj "placano".
-    func buyTickets(token: String, eventId: Int, quantity: Int) async throws -> PurchaseResponse {
+    /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo (201 z istim telesom).
+    func buyTickets(token: String, eventId: Int, quantity: Int, idempotencyKey: String? = nil) async throws -> PurchaseResponse {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
-                                  json: ["quantity": quantity])
+                                  json: ["quantity": quantity], idempotencyKey: idempotencyKey)
         return try decode(PurchaseResponse.self, from: data)
     }
 

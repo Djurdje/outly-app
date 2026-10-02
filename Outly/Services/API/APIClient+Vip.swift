@@ -255,12 +255,13 @@ extension APIClient {
     /// POST /events/:id/tables/:tableId/orders — nakup mize. `packageId` je obvezen, ce ima klub pakete.
     /// Odgovor je isti kot pri nakupu vstopnic (narocilo + N VIP vstopnic). 409 = miza je ze prodana.
     /// `expectedPriceCents` = cena, ki jo je kupec videl; ob drugacni ceni backend vrne 409 "The table price has changed.".
-    func buyTable(eventId: Int, tableId: Int, packageId: Int?, expectedPriceCents: Int? = nil, token: String) async throws -> PurchaseResponse {
+    /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo namesto 409 "miza ze zasedena".
+    func buyTable(eventId: Int, tableId: Int, packageId: Int?, expectedPriceCents: Int? = nil, idempotencyKey: String? = nil, token: String) async throws -> PurchaseResponse {
         var body: [String: Any] = [:]
         if let packageId { body["package_id"] = packageId }
         if let expectedPriceCents { body["expected_price_cents"] = expectedPriceCents }
         let data = try await send(path: "events/\(eventId)/tables/\(tableId)/orders", method: "POST",
-                                  token: token, json: body)
+                                  token: token, json: body, idempotencyKey: idempotencyKey)
         return try decode(PurchaseResponse.self, from: data)
     }
 
