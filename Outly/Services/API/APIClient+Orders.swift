@@ -42,8 +42,20 @@ struct APITicket: Decodable, Identifiable {
     let holderUsername: String
     let buyerUsername: String
 
+    // VIP miza (backend 025): vstopnica, ki pripada rezervirani mizi. Star backend -> false / nil.
+    let isVip: Bool
+    let tableLabel: String?
+    let tableSeats: Int?
+    let packageName: String?
+    let packageDescription: String?
+
     enum CodingKeys: String, CodingKey {
         case id, serial, status, qr, address, city, transferable, transferred
+        case isVip = "is_vip"
+        case tableLabel = "table_label"
+        case tableSeats = "table_seats"
+        case packageName = "package_name"
+        case packageDescription = "package_description"
         case holderUsername = "holder_username"
         case buyerUsername = "buyer_username"
         case orderId = "order_id"
@@ -86,6 +98,11 @@ struct APITicket: Decodable, Identifiable {
         transferred = try c.decodeIfPresent(Bool.self, forKey: .transferred) ?? false
         holderUsername = try c.decodeIfPresent(String.self, forKey: .holderUsername) ?? ""
         buyerUsername = try c.decodeIfPresent(String.self, forKey: .buyerUsername) ?? ""
+        isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
+        tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
+        tableSeats = (try? c.decodeIfPresent(Int.self, forKey: .tableSeats)) ?? nil
+        packageName = (try? c.decodeIfPresent(String.self, forKey: .packageName)) ?? nil
+        packageDescription = (try? c.decodeIfPresent(String.self, forKey: .packageDescription)) ?? nil
     }
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
@@ -123,8 +140,22 @@ struct APIOrder: Decodable, Identifiable {
     let buyerUsername: String
     let tickets: [APITicket]
 
+    // VIP miza (backend 025): narocilo mize (quantity = 1, vstopnic = table_seats). Star backend -> false / nil.
+    let isVip: Bool
+    let tableId: Int?
+    let tableLabel: String?
+    let tableSeats: Int?
+    let packageName: String?
+    let packageDescription: String?
+
     enum CodingKeys: String, CodingKey {
         case id, quantity, currency, status, tickets
+        case isVip = "is_vip"
+        case tableId = "table_id"
+        case tableLabel = "table_label"
+        case tableSeats = "table_seats"
+        case packageName = "package_name"
+        case packageDescription = "package_description"
         case publicRef = "public_ref"
         case eventId = "event_id"
         case clubId = "club_id"
@@ -164,6 +195,12 @@ struct APIOrder: Decodable, Identifiable {
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
         buyerUsername = try c.decodeIfPresent(String.self, forKey: .buyerUsername) ?? ""
         tickets = try c.decodeIfPresent([APITicket].self, forKey: .tickets) ?? []
+        isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
+        tableId = (try? c.decodeIfPresent(Int.self, forKey: .tableId)) ?? nil
+        tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
+        tableSeats = (try? c.decodeIfPresent(Int.self, forKey: .tableSeats)) ?? nil
+        packageName = (try? c.decodeIfPresent(String.self, forKey: .packageName)) ?? nil
+        packageDescription = (try? c.decodeIfPresent(String.self, forKey: .packageDescription)) ?? nil
     }
 
     var createdDate: Date? { DateParsing.parseBackendDate(createdAt) }
@@ -332,10 +369,52 @@ struct ScanResult: Decodable {
     let result: String
     let message: String
     let usedAt: String?
+    /// Podatki vstopnice (backend 025, tudi pri already_used); nil pri starem strezniku ali neveljavni kodi.
+    /// Skener iz njih pokaze VIP / mizo / paket.
+    let ticket: ScanTicketInfo?
 
     enum CodingKeys: String, CodingKey {
-        case result, message
+        case result, message, ticket
         case usedAt = "used_at"
+    }
+
+    init(result: String, message: String, usedAt: String?, ticket: ScanTicketInfo? = nil) {
+        self.result = result
+        self.message = message
+        self.usedAt = usedAt
+        self.ticket = ticket
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        result = try c.decode(String.self, forKey: .result)
+        message = try c.decode(String.self, forKey: .message)
+        usedAt = try c.decodeIfPresent(String.self, forKey: .usedAt)
+        // Napaka v neobveznem delu ne sme zavreci rezultata skena (vstop gosta je pomembnejsi).
+        ticket = (try? c.decodeIfPresent(ScanTicketInfo.self, forKey: .ticket)) ?? nil
+    }
+}
+
+/// Del vstopnice v odgovoru skena: samo tisto, kar skener prikaze vratarju.
+struct ScanTicketInfo: Decodable {
+    let isVip: Bool
+    let tableLabel: String?
+    let tableSeats: Int?
+    let packageName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case isVip = "is_vip"
+        case tableLabel = "table_label"
+        case tableSeats = "table_seats"
+        case packageName = "package_name"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
+        tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
+        tableSeats = (try? c.decodeIfPresent(Int.self, forKey: .tableSeats)) ?? nil
+        packageName = (try? c.decodeIfPresent(String.self, forKey: .packageName)) ?? nil
     }
 }
 
@@ -361,9 +440,10 @@ struct TransferResponse: Decodable {
 extension APIClient {
 
     /// POST /events/:id/orders — nakup vstopnic. V testnem nacinu takoj "placano".
-    func buyTickets(token: String, eventId: Int, quantity: Int) async throws -> PurchaseResponse {
+    /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo (201 z istim telesom).
+    func buyTickets(token: String, eventId: Int, quantity: Int, idempotencyKey: String? = nil) async throws -> PurchaseResponse {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
-                                  json: ["quantity": quantity])
+                                  json: ["quantity": quantity], idempotencyKey: idempotencyKey)
         return try decode(PurchaseResponse.self, from: data)
     }
 
@@ -403,9 +483,11 @@ extension APIClient {
 
     /// POST /business/tickets/scan — skener. 409/400/404 nosijo isto JSON obliko kot 200,
     /// zato jih tu prevedemo v ScanResult namesto v napako.
-    func scanTicket(token: String, qr: String) async throws -> ScanResult {
+    /// `clubId` (izrecen klub) in `timeout` (kratek rok na vratih) sta neobvezna; brez njiju velja kot doslej.
+    func scanTicket(token: String, qr: String, clubId: Int? = nil, timeout: TimeInterval? = nil) async throws -> ScanResult {
         do {
-            let data = try await send(path: "business/tickets/scan", method: "POST", token: token, json: ["qr": qr])
+            let data = try await send(path: "business/tickets/scan", method: "POST", token: token, json: ["qr": qr],
+                                      clubId: clubId, timeout: timeout)
             return try decode(ScanResult.self, from: data)
         } catch let api as APIError {
             if case let .requestFailed(code, raw) = api, [400, 403, 404, 409].contains(code),

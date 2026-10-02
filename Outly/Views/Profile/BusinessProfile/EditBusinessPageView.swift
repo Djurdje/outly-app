@@ -114,7 +114,7 @@ private struct ClubLogoView: View {
                 .fill(Color.white.opacity(0.06))
 
             if let urlString, !urlString.isEmpty, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
+                OutlyAsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
                         ProgressView().scaleEffect(0.9)

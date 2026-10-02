@@ -26,7 +26,7 @@ struct MyAccountView: View {
                 VStack(spacing: 10) {
 
                     if let url = userAvatarURL {
-                        AsyncImage(url: url) { phase in
+                        OutlyAsyncImage(url: url) { phase in
                             switch phase {
                             case .success(let image):
                                 image

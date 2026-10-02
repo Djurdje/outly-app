@@ -315,7 +315,7 @@ struct PersonalInfoView: View {
                 .frame(width: 70, height: 70)
 
             if let url = profileImageUrl {
-                AsyncImage(url: url) { phase in
+                OutlyAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

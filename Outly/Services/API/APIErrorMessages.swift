@@ -108,6 +108,11 @@ extension APIError {
         if t.contains("not in a club team")             { return String(localized: "You are not in a club team.") }
         // Vstopnice
         if t.contains("quantity must be")               { return String(localized: "Choose between 1 and 10 tickets.") }
+        // VIP mize (POST /events/:id/tables/:tableId/orders)
+        if t.contains("already booked")                 { return String(localized: "This table is already booked.") }
+        if t.contains("price has changed")              { return String(localized: "The table price has changed. Check the new price and try again.") }
+        if t.contains("choose a bottle package") || t.contains("package does not belong") { return String(localized: "Choose a bottle for your table.") }
+        if t.contains("table not found")                { return String(localized: "This table is not available anymore.") }
         if t.contains("not on sale")                    { return String(localized: "This event is not on sale.") }
         if t.contains("no tickets on outly")            { return String(localized: "Tickets for this event are not sold on Outly.") }
         if t.contains("already started")                { return String(localized: "This event has already started.") }
@@ -133,5 +138,57 @@ extension APIError {
         case -1: return String(localized: "No response from the server. Check your connection.")
         default: return String(localized: "Something went wrong. Please try again.")
         }
+    }
+}
+
+// MARK: - Naval pri nakupu (503)
+
+/// Backend (semafor nakupov, outly-backend #111) ob navali odgovori 503 + `Retry-After: 5`, ko nakup
+/// ne dobi mesta v vrsti ali baza ne pride do povezave. Velja SAMO za nakupna zaslona (vstopnice, VIP
+/// mize): drugje ostane 503 splosno sporocilo (`userMessage`). Nakupa se NE ponavlja samodejno: uporabnik
+/// pritisne znova, in ker nakup nosi `Idempotency-Key` (NakupniKljuc, outly-backend #112), je to varno.
+enum NavalNakupa {
+    /// Kako dolgo je gumb za nakup onemogocen po 503. `Retry-After` iz glave `send()` ne vrne, zato
+    /// privzeta vrednost backenda (5 s).
+    static let premorNanosekund: UInt64 = 5_000_000_000
+}
+
+extension Error {
+    /// 503 pri nakupu, ki ga je sprozila naval. Pozitivno ujemanje telesa (backend #111: semafor
+    /// "Too many purchases at once.", "Server busy.", "Service temporarily unavailable."); vse drugo
+    /// (HTML ob izpadu Renderja, "Payments are not available", "Auth service unavailable") ostane
+    /// pri `userMessage`.
+    var jeNavalNakupa: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 503 else { return false }
+        let t = raw.lowercased()
+        return t.contains("too many purchases") || t.contains("server busy") || t.contains("service temporarily unavailable")
+    }
+
+    /// Vsak 503 pri nakupu: gumb je kratek cas onemogocen (nakupa se ne ponavlja samodejno).
+    var jeNakup503: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, _) = api else { return false }
+        return code == 503
+    }
+
+    /// Sporocilo za nakupna zaslona: izidi, ki jih doloca idempotentni kljuc (NakupniKljuc), naval -> posebno
+    /// sporocilo, sicer enako kot `userMessage`. Kljucni izidi so PRED `userMessage`, ker bi ga `translate`
+    /// ("already used") sicer pomotoma prevedel kot »This ticket was already used.« (ali 409 kot »already booked«).
+    var nakupUserMessage: String {
+        switch nakupniIzid {
+        case .kljucZavrzen:
+            return String(localized: "Something changed, please try again.")
+        case .vObdelavi:
+            return String(localized: "Your previous attempt is still being processed. Please try again in a moment.")
+        case .narociloNeaktivno:
+            return String(localized: "Your previous order is no longer active. Tap again to buy anew.")
+        case .nejasen:
+            return String(localized: "Your purchase may have gone through — tap the button again to check (you won't be charged twice).")
+        case .navadna:
+            break
+        }
+        if jeNavalNakupa {
+            return String(localized: "Lots of people are buying right now. Please try again in a few seconds.")
+        }
+        return userMessage
     }
 }

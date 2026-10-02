@@ -102,7 +102,7 @@ struct EventPosterCard: View {
     @ViewBuilder
     private var poster: some View {
         if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
-            AsyncImage(url: url) { phase in
+            OutlyAsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()

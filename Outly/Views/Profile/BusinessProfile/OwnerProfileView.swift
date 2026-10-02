@@ -93,7 +93,7 @@ struct OwnerProfileView: View {
     private var logo: some View {
         Group {
             if let s = club?.logoUrl, !s.isEmpty, let u = URL(string: s) {
-                AsyncImage(url: u) { img in
+                OutlyAsyncImage(url: u) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().fill(Color.white.opacity(0.1))
@@ -256,7 +256,7 @@ struct ClubSetupView: View {
                 PhotosPicker(selection: $pickedLogo, matching: .images) {
                     ZStack {
                         if !logoUrl.isEmpty, let u = URL(string: logoUrl) {
-                            AsyncImage(url: u) { img in
+                            OutlyAsyncImage(url: u) { img in
                                 Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                             } placeholder: {
                                 Rectangle().fill(Color.white.opacity(0.1))

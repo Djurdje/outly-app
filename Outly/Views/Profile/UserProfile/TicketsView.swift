@@ -113,7 +113,7 @@ struct TicketsView: View {
     private func vrstica(_ t: APITicket) -> some View {
         HStack(spacing: 12) {
             if !t.posterUrl.isEmpty, let url = URL(string: t.posterUrl) {
-                AsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
+                OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
                     .frame(width: 70, height: 70)
                     .clipped()
                     .cornerRadius(12)
@@ -136,6 +136,16 @@ struct TicketsView: View {
                     Text(t.publicRef).font(.caption).foregroundColor(.gray)
                     if t.transferred && !t.buyerUsername.isEmpty {
                         Text("· from \(t.buyerUsername)").font(.caption).foregroundColor(.gray)
+                    }
+                }
+                if t.isVip {
+                    HStack(spacing: 6) {
+                        VipZnacka(kompakten: true)
+                        if let l = t.tableLabel, !l.isEmpty {
+                            Text(verbatim: VipOznaka.miza(l))
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.vipZlata)
+                        }
                     }
                 }
             }
@@ -234,7 +244,7 @@ struct TicketDetailView: View {
 struct WalletTicketCard: View {
     let ticket: APITicket
 
-    private var barva: Color { Color.outlyBlue }
+    private var barva: Color { ticket.isVip ? Color.vipZlata : Color.outlyBlue }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -245,7 +255,7 @@ struct WalletTicketCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                .stroke(ticket.isVip ? Color.vipZlata.opacity(0.55) : Color.white.opacity(0.10), lineWidth: 1)
         )
         .shadow(color: barva.opacity(0.25), radius: 24, y: 10)
         .opacity(ticket.isUsed ? 0.6 : 1)
@@ -255,11 +265,12 @@ struct WalletTicketCard: View {
         ZStack(alignment: .bottomLeading) {
             Group {
                 if !ticket.posterUrl.isEmpty, let url = URL(string: ticket.posterUrl) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: { SkeletonBlock() }
                 } else {
-                    LinearGradient(colors: [barva, Color.purple.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    // Brez plakata: barva vstopnice v temno (brez vijolicnih prelivov), kot EventPosterCard.
+                    LinearGradient(colors: [barva.opacity(0.55), Color.outlyBackground], startPoint: .topLeading, endPoint: .bottomTrailing)
                 }
             }
             .frame(height: 210)
@@ -270,7 +281,7 @@ struct WalletTicketCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     if !ticket.logoUrl.isEmpty, let url = URL(string: ticket.logoUrl) {
-                        AsyncImage(url: url) { img in
+                        OutlyAsyncImage(url: url) { img in
                             Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                         } placeholder: { Circle().fill(Color.white.opacity(0.2)) }
                         .frame(width: 26, height: 26)
@@ -281,6 +292,7 @@ struct WalletTicketCard: View {
                         .tracking(1.2)
                         .foregroundColor(.white.opacity(0.85))
                     Spacer()
+                    if ticket.isVip { VipZnacka() }
                     Text(ticket.statusLabel)
                         .font(.system(size: 10, weight: .heavy))
                         .tracking(0.8)
@@ -331,6 +343,7 @@ struct WalletTicketCard: View {
                     Spacer()
                 }
             }
+            if ticket.isVip { vipVrstica }
 
             ZStack {
                 QRCodeView(content: ticket.qr, size: 200)
@@ -357,6 +370,47 @@ struct WalletTicketCard: View {
         .padding(18)
         .frame(maxWidth: .infinity)
         .background(Color(white: 0.09))
+    }
+
+    /// VIP: miza in paket (zlat poudarek, ne ploskev cez vso kartico).
+    private var vipVrstica: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.vipZlata)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(verbatim: ticket.tableLabel.map { $0.isEmpty ? "VIP" : VipOznaka.miza($0) } ?? "VIP")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                if let paket = ticket.packageName, !paket.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bottle")
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(1)
+                            .foregroundColor(.white.opacity(0.45))
+                            .textCase(.uppercase)
+                        Text(verbatim: paket)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                        if let opis = ticket.packageDescription, !opis.isEmpty {
+                            Text(verbatim: opis)
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.vipZlata.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.vipZlata.opacity(0.35), lineWidth: 1)
+        )
     }
 
     private func polje(_ naslov: String, _ vrednost: String) -> some View {

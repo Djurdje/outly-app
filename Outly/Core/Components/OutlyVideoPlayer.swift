@@ -108,7 +108,7 @@ struct OutlyRecapVideo: View {
     private var plakat: some View {
         if !posterUrl.isEmpty, let u = URL(string: posterUrl) {
             // Past 12: scaledToFill brez okvirja raztegne zaslon.
-            AsyncImage(url: u) { img in
+            OutlyAsyncImage(url: u) { img in
                 Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             } placeholder: {
                 Rectangle().fill(Color.white.opacity(0.08))

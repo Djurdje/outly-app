@@ -19,7 +19,7 @@ struct OutlyAvatarView: View {
             if let s = avatarUrlString,
                !s.isEmpty,
                let url = URL(string: s) {
-                AsyncImage(url: url) { phase in
+                OutlyAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

@@ -33,16 +33,21 @@ extension APIClient {
     /// Ce je klic avtoriziran in streznik vrne 401, se ENKRAT poskusi osveziti
     /// dostopni zeton (SessionRefresh.handler) in klic ponovi z novim. Ce osvezitev
     /// ne uspe, 401 pride do klicatelja — SessionStore je uporabnika ze odjavil.
+    ///
+    /// `idempotencyKey`: glava `Idempotency-Key` (samo nakupni klici, glej NakupniKljuc); nil = glave ni.
     func send(
         path: String,
         method: String,
         token: String? = nil,
         json: [String: Any]? = nil,
         query: [URLQueryItem] = [],
-        retryOn401: Bool = true
+        retryOn401: Bool = true,
+        clubId: Int? = nil,
+        timeout: TimeInterval? = nil,
+        idempotencyKey: String? = nil
     ) async throws -> Data {
         do {
-            return try await sendOnce(path: path, method: method, token: token, json: json, query: query)
+            return try await sendOnce(path: path, method: method, token: token, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey)
         } catch let api as APIError {
             guard retryOn401,
                   let token, !token.isEmpty,
@@ -58,7 +63,7 @@ extension APIClient {
                 }
                 throw api
             }
-            return try await sendOnce(path: path, method: method, token: fresh, json: json, query: query)
+            return try await sendOnce(path: path, method: method, token: fresh, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey)
         }
     }
 
@@ -67,7 +72,10 @@ extension APIClient {
         method: String,
         token: String?,
         json: [String: Any]?,
-        query: [URLQueryItem]
+        query: [URLQueryItem],
+        clubId: Int?,
+        timeout: TimeInterval?,
+        idempotencyKey: String?
     ) async throws -> Data {
         guard var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
             throw APIError.invalidURL
@@ -77,21 +85,28 @@ extension APIClient {
 
         var req = URLRequest(url: url)
         req.httpMethod = method
-        req.timeoutInterval = 30
+        req.timeoutInterval = timeout ?? 30
         if let token, !token.isEmpty {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         // Vec klubov na osebo (backend 018): kateri klub urejamo, pove glava; brez nje streznik
         // vzame prvo clanstvo. Nastavi jo MyClubDetailView ob vstopu v klub (IzbraniKlub).
-        if let klub = IzbraniKlub.id {
+        // `clubId` (izrecen klub, npr. sken brez povezave) ima prednost pred globalnim IzbraniKlub: vrsta skenov se lahko
+        // posilja, ko je IzbraniKlub ze nil (MyClubsView.load ga pobrise), in streznik bi vzel napacen klub.
+        if let klub = clubId ?? IzbraniKlub.id {
             req.setValue(String(klub), forHTTPHeaderField: "X-Outly-Club")
+        }
+        // Nakup (outly-backend #112): isti kljuc pri ponovitvi istega nakupa vrne isto narocilo (glej NakupniKljuc).
+        // Ob ponovitvi po osvezitvi zetona (401) gre ISTI kljuc, zato se nakup ne podvoji.
+        if let idempotencyKey, !idempotencyKey.isEmpty {
+            req.setValue(idempotencyKey, forHTTPHeaderField: "Idempotency-Key")
         }
         if let json {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONSerialization.data(withJSONObject: json)
         }
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await APIPredpomnilnik.seja.data(for: req)
         guard let http = resp as? HTTPURLResponse else {
             throw APIError.requestFailed(-1, "No HTTP response")
         }
@@ -106,8 +121,9 @@ extension APIClient {
 
     /// GET /me. Ob prvem klicu s Supabasovim zetonom backend racun poveze (po
     /// e-naslovu) ali ustvari (username iz registracije).
-    func me(token: String) async throws -> Me {
-        let data = try await send(path: "me", method: "GET", token: token)
+    /// `timeout`: krajsi rok za hladen zagon, ko je shranjen Me (K1): Wi-Fi brez interneta ne sme 30 s drzati vratarja na vrtavki.
+    func me(token: String, timeout: TimeInterval? = nil) async throws -> Me {
+        let data = try await send(path: "me", method: "GET", token: token, timeout: timeout)
         return try decode(Me.self, from: data)
     }
 

@@ -43,9 +43,14 @@ final class APIClient: Sendable {
         return try decode(APIClub.self, from: data)
     }
 
-    func fetchEvents(clubId: Int? = nil, upcoming: Bool = true) async throws -> [APIEvent] {
+    /// GET /events (SEZNAM). Privzeto `lite=true` (backend #114): odgovor brez `description`, ki je pri
+    /// vecjem stevilu dogodkov vecina teze odgovora. Seznami opisa ne kazejo; EventDetailView ga ob
+    /// odprtju dogodka dobi sam (loadPlan / loadOpis), zato `APIEvent.description` iz seznama ostane "".
+    /// Star backend parametra ne pozna in vrne poln odgovor — dekodiranje je enako.
+    func fetchEvents(clubId: Int? = nil, upcoming: Bool = true, lite: Bool = true) async throws -> [APIEvent] {
         var q = [URLQueryItem(name: "upcoming", value: upcoming ? "true" : "false")]
         if let clubId { q.append(URLQueryItem(name: "clubId", value: "\(clubId)")) }
+        if lite { q.append(URLQueryItem(name: "lite", value: "true")) }
         let data = try await send(path: "events", method: "GET", query: q)
         return try decode([APIEvent].self, from: data)
     }

@@ -10,6 +10,7 @@ struct EventDetailView: View {
     @State private var errorText: String?
     @State private var showBuy = false
     @State private var showBarPrices = false
+    @State private var showVip = false
     @EnvironmentObject private var session: SessionStore
 
     // "I'm in" (backend migracija 020, 23. 9. 2026): moj nacrt + prijatelji, ki grejo/jih zanima.
@@ -20,10 +21,16 @@ struct EventDetailView: View {
     @State private var friendsInterested: [FriendUser] = []
     @State private var planSubmitting = false
 
-    @State private var region = MKCoordinateRegion(
+    // Opis (GET /events?lite=true ga v seznamih ne vrne): ce `event.description` ni prazen, ga uporabimo;
+    // sicer ga nalozimo ob odprtju (loadPlan za prijavljene, loadOpis za goste).
+    @State private var nalozenOpis = ""
+    private var opis: String { event.description.isEmpty ? nalozenOpis : event.description }
+
+    // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
+    @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-    )
+    ))
 
     var body: some View {
         ScrollView {
@@ -52,6 +59,9 @@ struct EventDetailView: View {
 
                 aboutBlock
 
+                // VIP mize: rezervacija po telefonu kluba (Martin, 28. 9. 2026)
+                vipBlock
+
                 Spacer(minLength: 40)
             }
         }
@@ -60,11 +70,21 @@ struct EventDetailView: View {
         .preferredColorScheme(.dark)
         .task { await loadClub() }
         .task { await loadPlan() }
+        .task { await loadOpis() }
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(eventId: event.id) }
         .sheet(isPresented: $showBuy) {
             BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"))
                 .environmentObject(session)
+        }
+        .sheet(isPresented: $showVip) {
+            // VIP mize v aplikaciji (backend 025): tloris + nakup. Brez njih ostane prejsnji list (telefon kluba).
+            if event.vipEnabled {
+                VipTablesView(event: event, clubName: club?.name ?? String(localized: "Club"))
+                    .environmentObject(session)
+            } else {
+                VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
+            }
         }
         .sheet(isPresented: $showBarPrices) {
             BarPricesView(clubName: club?.name ?? String(localized: "Club"), items: club?.barPrices ?? [])
@@ -87,7 +107,7 @@ struct EventDetailView: View {
                 if let recap = event.recapVideoURL {
                     OutlyRecapVideo(url: recap, posterUrl: headerImageUrl, playSize: 64)
                 } else if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: {
                         Rectangle().opacity(0.12)
@@ -221,7 +241,7 @@ struct EventDetailView: View {
         } label: {
             HStack(spacing: 12) {
                 if let club, !club.logoUrl.isEmpty, let url = URL(string: club.logoUrl) {
-                    AsyncImage(url: url) { img in
+                    OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: { Circle().opacity(0.12) }
                     .frame(width: 44, height: 44)
@@ -478,8 +498,8 @@ struct EventDetailView: View {
                 Spacer(minLength: 0)
 
                 if let club, let lat = club.lat, let lng = club.lng {
-                    Map(coordinateRegion: $region, annotationItems: [Pin(lat: lat, lng: lng)]) { pin in
-                        MapMarker(coordinate: CLLocationCoordinate2D(latitude: pin.lat, longitude: pin.lng))
+                    Map(position: $camera) {
+                        Marker("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng))
                     }
                     .frame(width: 150, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -488,7 +508,9 @@ struct EventDetailView: View {
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
                     .onAppear {
-                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                        camera = .region(MKCoordinateRegion(
+                            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
                     }
                 } else {
                     RoundedRectangle(cornerRadius: 18)
@@ -550,14 +572,14 @@ struct EventDetailView: View {
     // MARK: - About (opis; plakat je zdaj pasica na vrhu, zato tu ni vec kartice s sliko)
     @ViewBuilder
     private var aboutBlock: some View {
-        if !event.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if !opis.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Text("ABOUT")
                     .font(.system(size: 11, weight: .bold))
                     .tracking(1.2)
                     .foregroundStyle(.white.opacity(0.5))
 
-                Text(event.description)
+                Text(opis)
                     .font(.system(size: 15))
                     .foregroundStyle(.white.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
@@ -565,6 +587,107 @@ struct EventDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.top, 4)
+        }
+    }
+
+    // MARK: - VIP & Tables (Martin, 28. 9. 2026): zamegljen in zatemnjen plakat dogodka kot
+    // ozadje, cez napis. Kartica je gumb: odpre list s tlorisom miz (rezervacije v aplikaciji
+    // pridejo pozneje - razpored miz poslje organizator). Pod kartico sredinsko "FOR MORE
+    // QUESTIONS CALL:" in telefon kluba (tel:). Koncan dogodek kartice nima.
+    private var vipPhone: String {
+        (club?.contactPhone ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var vipTelURL: URL? {
+        let stevke = vipPhone.filter { $0.isNumber || $0 == "+" }
+        return stevke.isEmpty ? nil : URL(string: "tel:\(stevke)")
+    }
+
+    @ViewBuilder
+    private var vipBlock: some View {
+        if !event.hasEnded, club != nil {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("VIP & TABLES")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(.white.opacity(0.5))
+
+                Button {
+                    showVip = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                        Text("Reserve a VIP table")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                        if event.vipEnabled, let od = event.vipFromCents {
+                            Text("from \(Denar.evri(od, koda: event.currency ?? "EUR"))")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Color.vipZlata)
+                        }
+                        Text("Bottle service and private tables for your group.")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .multilineTextAlignment(.center)
+                        HStack(spacing: 4) {
+                            Text("See tables")
+                            Image(systemName: "chevron.right")
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .padding(.top, 4)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity, minHeight: 200)
+                    .background(vipOzadje)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                if let tel = vipTelURL {
+                    VStack(spacing: 6) {
+                        Text("FOR MORE QUESTIONS CALL:")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.55))
+                        Link(destination: tel) {
+                            Text(vipPhone)
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundStyle(Color.outlyBlue)
+                        }
+                        .accessibilityLabel(Text("Call \(vipPhone)"))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 14)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+    }
+
+    /// Zamegljen in zatemnjen plakat dogodka (ali slika kluba) za kartico VIP.
+    private var vipOzadje: some View {
+        ZStack {
+            if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
+                OutlyAsyncImage(url: url) { img in
+                    Color.clear.overlay(img.resizable().scaledToFill().blur(radius: 14, opaque: true)).clipped()
+                } placeholder: {
+                    Color(white: 0.14)
+                }
+            } else {
+                Color(white: 0.14)
+            }
+            LinearGradient(colors: [.black.opacity(0.45), .black.opacity(0.75)],
+                           startPoint: .top, endPoint: .bottom)
         }
     }
 
@@ -589,10 +712,29 @@ struct EventDetailView: View {
                 myPlan = info.myPlan
                 friendsGoing = info.friendsGoing
                 friendsInterested = info.friendsInterested
+                if event.description.isEmpty { nalozenOpis = info.description }
             }
         } catch {
             // Tiho: "I'm in" gumb ostane v zacetnem stanju, ostali zaslon dela naprej.
+            // Opis pa ne sme izginiti: isti nadomestni klic kot za goste.
+            await naloziPolniOpis()
         }
+    }
+
+    /// Opis za dogodek iz LAHKEGA seznama (GET /events?lite=true je brez `description`).
+    /// Prijavljeni ga dobijo z loadPlan (isti klic GET /events/:id), zato tu samo gost ali manjkajoc zeton;
+    /// dogodek, ki opis ze ima (iskanje, GET /events/:id), ne naredi nic. Tiho ob napaki: brez opisa se
+    /// blok "ABOUT" preprosto ne pokaze.
+    private func loadOpis() async {
+        guard !(session.isLoggedIn && !session.token.isEmpty) else { return }
+        await naloziPolniOpis()
+    }
+
+    /// GET /events/:id (javno) samo zaradi opisa; ne naredi nic, ce ga dogodek ze ima.
+    private func naloziPolniOpis() async {
+        guard event.description.isEmpty else { return }
+        guard let poln = try? await APIClient.shared.fetchEvent(id: event.id) else { return }
+        await MainActor.run { nalozenOpis = poln.description }
     }
 
     /// Preklopi "I'm in" <-> "Interested" (PUT/DELETE), optimisticno z vrnitvijo ob napaki.
@@ -638,12 +780,6 @@ struct EventDetailView: View {
 }
 
 // MARK: - Helpers
-private struct Pin: Identifiable {
-    let id = UUID()
-    let lat: Double
-    let lng: Double
-}
-
 private extension APIClub {
     var addressFull: String {
         let a = address.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -654,5 +790,53 @@ private extension APIClub {
         if !a.isEmpty { return "\(a) \(co)".trimmingCharacters(in: .whitespaces) }
         if !c.isEmpty { return "\(c) \(co)".trimmingCharacters(in: .whitespaces) }
         return co.isEmpty ? "-" : co
+    }
+}
+
+// MARK: - List "VIP tables" (Martin, 28. 9. 2026): rezervacij miz v aplikaciji se ni. Razpored
+// miz bo poslal organizator; do takrat list pove, da pride, in napoti na telefon pod kartico.
+private struct VipTablesSheet: View {
+    let clubName: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Capsule().fill(Color.white.opacity(0.25)).frame(width: 36, height: 5).padding(.top, 8)
+            Image(systemName: "table.furniture")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .padding(.top, 12)
+            Text("VIP tables")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.white)
+            Text("Table reservations in the app are coming soon. \(clubName) will publish the table layout for this event here.")
+                .font(.system(size: 15))
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Text("Until then, call the club to reserve a table.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+            Button {
+                dismiss()
+            } label: {
+                Text("Close")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.1)))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(white: 0.07).ignoresSafeArea())
+        .presentationDetents([.medium])
+        .preferredColorScheme(.dark)
     }
 }

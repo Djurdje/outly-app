@@ -11,7 +11,7 @@ struct AboutRow: View {
             Spacer()
         }
         .padding()
-        .background(Color("CardBackground"))
+        .background(Color.outlyCard)
         .cornerRadius(12)
     }
 }

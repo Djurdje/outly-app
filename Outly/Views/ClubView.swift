@@ -17,10 +17,11 @@ struct ClubDetailView: View {
     @State private var sledilci = 0
     @State private var sledenjeTece = false
 
-    @State private var region = MKCoordinateRegion(
+    // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
+    @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-    )
+    ))
 
     var body: some View {
         ScrollView {
@@ -209,7 +210,7 @@ struct ClubDetailView: View {
     private var infoBlock: some View {
         HStack(alignment: .top, spacing: 12) {
             if let logo = club?.logoUrl, !logo.isEmpty, let url = URL(string: logo) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Circle().opacity(0.12)
@@ -266,15 +267,17 @@ struct ClubDetailView: View {
     @ViewBuilder
     private var mapBlock: some View {
         if let lat = club?.lat, let lng = club?.lng {
-            Map(coordinateRegion: $region, annotationItems: [SimplePin(lat: lat, lng: lng)]) { pin in
-                MapMarker(coordinate: CLLocationCoordinate2D(latitude: pin.lat, longitude: pin.lng))
+            Map(position: $camera) {
+                Marker("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng))
             }
             .frame(height: 200)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .padding(.horizontal, 16)
             .padding(.top, 6)
             .onAppear {
-                region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                camera = .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                    span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
             }
 
             // naslov/adresa pod mapo (brez "Location" headerja)
@@ -373,12 +376,6 @@ struct ClubDetailView: View {
     }
 }
 
-private struct SimplePin: Identifiable {
-    let id = UUID()
-    let lat: Double
-    let lng: Double
-}
-
 private struct ContactRow: View {
     let label: String
     let value: String?
@@ -397,10 +394,12 @@ private struct ContactRow: View {
     }
 }
 
-// MARK: - Slideshow (do 3 slike, samodejno menjavanje, pike spodaj)
+// MARK: - Slideshow (do 3 slike, samodejno menjavanje, pike spodaj). Od 28. 9. 2026 (Martin)
+// se majhna gumba levo/desno za rocno premikanje; rocni premik ponovno zazene 4-s stevec.
 private struct ClubSlideshow: View {
     let urls: [String]
     @State private var index = 0
+    @State private var rocniPremik = 0
 
     var body: some View {
         Group {
@@ -416,9 +415,17 @@ private struct ClubSlideshow: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .always))
                 .indexViewStyle(.page(backgroundDisplayMode: .never))
+                .overlay {
+                    HStack {
+                        puscica("chevron.left", smer: -1)
+                        Spacer()
+                        puscica("chevron.right", smer: 1)
+                    }
+                    .padding(.horizontal, 10)
+                }
                 // Samodejno menjavanje na 4 s. .task se ob izginotju pogleda preklice sam;
                 // stabilnejse kot Timer.publish v stored property (ta se ob vsakem izrisu starsa ponastavi).
-                .task(id: urls.count) {
+                .task(id: "\(urls.count)-\(rocniPremik)") {
                     while !Task.isCancelled {
                         try? await Task.sleep(nanoseconds: 4_000_000_000)
                         if Task.isCancelled { break }
@@ -431,10 +438,29 @@ private struct ClubSlideshow: View {
         }
     }
 
+    /// Majhen okrogel gumb (28 pt) s tanko belo obrobo; kroži (za zadnjo sliko pride prva).
+    private func puscica(_ ikona: String, smer: Int) -> some View {
+        Button {
+            let n = max(urls.count, 1)
+            withAnimation(.easeInOut(duration: 0.35)) { index = (index + smer + n) % n }
+            rocniPremik += 1
+        } label: {
+            Image(systemName: ikona)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(Color.black.opacity(0.35)))
+                .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 0.5))
+                .contentShape(Circle().inset(by: -8))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(smer < 0 ? LocalizedStringKey("Previous photo") : LocalizedStringKey("Next photo")))
+    }
+
     private func slika(_ u: String) -> some View {
         Group {
             if let url = URL(string: u) {
-                AsyncImage(url: url) { img in
+                OutlyAsyncImage(url: url) { img in
                     Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                 } placeholder: {
                     Rectangle().opacity(0.15)

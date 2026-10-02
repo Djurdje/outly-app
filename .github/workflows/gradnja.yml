@@ -19,6 +19,16 @@
 #
 # Ce secrets manjkajo (fork, testna veja), se korak za TestFlight preskoci.
 #
+# Release prevod na pull requestu (2. 10. 2026): PR prevaja Debug (-Onone), arhiv za TestFlight
+# pa Release (-O, whole-module). Napaka prevajalnika, ki se pokaze samo z optimizacijo, je prej
+# prisla neopazena v master (Swift 6.3.3 EarlyPerfInliner, RokVrata<T>; outly-backend
+# docs/INCIDENTI.md 2026-10-02, outly-app #45/#47). Zato na PR tece se drugi job
+# "Release prevod (PR)": isti SDK (iphoneos) in ista konfiguracija (Release) kot arhiv, brez
+# podpisa. Tece vzporedno z Debug jobom (cas PR-ja se ne podaljsa: Debug ~3,5 min, Release ~1 min).
+# Poraba: GitHub zaokrozi vsak job navzgor na polno minuto, macOS stejejo 10x: Release ~2 min = +20 enot
+# na zagon PR-ja (Debug ~4 min = 40). Debug job ostane nespremenjen, ker nosi teste
+# (ENABLE_TESTABILITY, samo Debug) in simulatorski artefakt.
+#
 # Poraba: macOS-minute stejejo 10x; ena gradnja je ~8-10 min = 80-100 "minut" od
 # 2000 brezplacnih na mesec za zasebni repo (~20 potiskov na mesec).
 name: Gradnja iOS
@@ -250,3 +260,76 @@ jobs:
           name: dnevniki-gradnje
           path: build/*.log
           retention-days: 7
+
+  release-prevod:
+    name: Release prevod (PR)
+    # Samo na pull requestu: na masterju isto optimizacijo ze prevede korak "Podpisan arhiv".
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: macos-26
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode na runnerju
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Prevedi Release (iphoneos, brez podpisa)
+        # Enaki build settings kot "Podpisan arhiv": -sdk iphoneos, -configuration Release
+        # (project.pbxproj: SWIFT_COMPILATION_MODE = wholemodule, SWIFT_OPTIMIZATION_LEVEL
+        # ni povozen -> privzeti -O). Podpis izklopljen, zato brez secrets in brez keychaina.
+        # Ne podajaj SWIFT_OPTIMIZATION_LEVEL / SWIFT_COMPILATION_MODE tukaj: test bi se
+        # razlikoval od arhiva.
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild build \
+            -project Outly.xcodeproj \
+            -scheme Outly \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            -derivedDataPath build/release \
+            | tee build/release.log \
+            | grep -E "error:|BUILD (SUCCEEDED|FAILED)|Compiling|Ld " || true
+          grep -q "BUILD SUCCEEDED" build/release.log
+
+      - name: Preveri, da je bila res uporabljena optimizacija
+        # Varovalo pred tihim padcem na -Onone (npr. nekdo doda SWIFT_OPTIMIZATION_LEVEL v Release):
+        # brez tega bi zelena luc lagala. Gleda samo vrstice, ki prevajajo modul Outly
+        # ("swiftc -module-name Outly ..."), in zahteva OBA stikala (-O in -whole-module-optimization)
+        # na isti vrstici, in to na VSEH takih vrsticah (vsaj ena mora obstajati). Format vrstice je vzet iz dnevnika xcodebuild (dnevnik-release-prevoda).
+        run: |
+          VRSTICE=$(grep -E 'swiftc -module-name Outly ' build/release.log || true)
+          if [ -z "$VRSTICE" ]; then
+            echo "::error::V dnevniku ni vrstice prevajanja modula Outly (swiftc -module-name Outly) - format dnevnika se je spremenil?"
+            exit 1
+          fi
+          SLABE=$(printf '%s\n' "$VRSTICE" | awk '!(/ -O / && / -whole-module-optimization/)')
+          if [ -n "$SLABE" ]; then
+            echo "::error::Vsaj ena vrstica prevajanja modula Outly nima hkrati -O in -whole-module-optimization:"
+            printf '%s\n' "$SLABE" | cut -c1-300
+            exit 1
+          fi
+          echo "Optimizacija potrjena (-O + -whole-module-optimization)."
+
+      - name: Napake prevajalnika (povzetek)
+        if: failure()
+        run: |
+          echo "::group::Vse napake"
+          grep -E "error:|Stack dump|crashed|Please submit a bug report" build/release.log || true
+          echo "::endgroup::"
+
+      - name: Prilozi dnevnik
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dnevnik-release-prevoda
+          path: build/release.log
+          retention-days: 3

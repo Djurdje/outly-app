@@ -16,10 +16,14 @@ struct BuyTicketsView: View {
     @EnvironmentObject private var session: SessionStore
 
     @State private var quantity = 1
+    /// Izbira se predizpolni samo ob prvem prikazu (glej `predizpolni`).
+    @State private var predizpolnjeno = false
     /// Stanje skupnega akcijskega gumba (OutlyAkcijskiGumb) - nadomesca prejsnji isBuying.
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
+    /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
+    @State private var naval = false
     @Environment(\.accessibilityReduceMotion) private var manjGibanja
 
     private var koda: String { event.currency ?? "EUR" }
@@ -46,6 +50,7 @@ struct BuyTicketsView: View {
                     obrazec
                 }
             }
+            .onAppear { predizpolni() }
             .background(ozadje.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -312,8 +317,9 @@ struct BuyTicketsView: View {
         return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
             Task { await kupi() }
         }
-        .disabled(soldOut)
-        .outlySij(moc: 1.0, aktiven: !soldOut)
+        .disabled(soldOut || naval)
+        .opacity(naval ? 0.45 : 1)
+        .outlySij(moc: 1.0, aktiven: !soldOut && !naval)
     }
 
     /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.
@@ -492,7 +498,7 @@ struct BuyTicketsView: View {
             if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
                 Color.clear
                     .overlay(
-                        AsyncImage(url: url) { img in
+                        OutlyAsyncImage(url: url) { img in
                             img.resizable().scaledToFill()
                         } placeholder: {
                             Rectangle().fill(Color.white.opacity(0.08))
@@ -507,11 +513,28 @@ struct BuyTicketsView: View {
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 
+    /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay
+    /// poslje isto vsebino z istim kljucem (NakupniKljucShramba). Vsebina VIP mize (mizaId != nil) tu ne velja.
+    private func predizpolni() {
+        guard !predizpolnjeno else { return }
+        predizpolnjeno = true
+        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
+              v.mizaId == nil else { return }
+        quantity = min(max(v.kolicina, 1), maxQuantity)
+    }
+
     private func kupi() async {
         errorMessage = nil
         stanje = .nalaga
+        // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, 24 h), ne v @State: ponovno odprt list isti vsebine
+        // ob nejasnem izidu (timeout) dobi ISTI kljuc, zato nakup ni podvojen.
+        let uporabnik = session.me?.id ?? -1
+        let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
+            uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, kolicina: quantity))
         do {
-            let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity)
+            let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
+                                                          idempotencyKey: kljucNakupa)
+            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             // Kljukica naj bo za hip vidna, preden se krog "razpre" v vstopnico.
@@ -519,8 +542,14 @@ struct BuyTicketsView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
             // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
-            errorMessage = error.userMessage
+            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, izid: error.nakupniIzid)
+            errorMessage = error.nakupUserMessage
             stanje = .napaka
+            if let premor = error.nakupPremorNanosekund {
+                naval = true
+                try? await Task.sleep(nanoseconds: premor)
+                naval = false
+            }
         }
     }
 }

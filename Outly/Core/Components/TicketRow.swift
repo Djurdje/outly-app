@@ -26,7 +26,7 @@ struct TicketRow: View {
 
                 Text("View details")
                     .font(.subheadline)
-                    .foregroundColor(Color("blackColor"))
+                    .foregroundColor(Color.outlyMuted)
             }
 
             Spacer()

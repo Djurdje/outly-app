@@ -42,6 +42,12 @@ struct APIEvent: Identifiable, Decodable {
     /// (koncan IN med tremi najbolj popularnimi). Pravilo uveljavi streznik.
     let recapAllowed: Bool
 
+    /// VIP mize (backend 025): dogodek ima vklopljen VIP IN klub ima vsaj eno aktivno mizo.
+    /// Star backend polj nima -> false / nil (pravilo 2).
+    let vipEnabled: Bool
+    /// Najnizja efektivna cena vklopljene mize v centih; nil = ni VIP.
+    let vipFromCents: Int?
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -63,6 +69,8 @@ struct APIEvent: Identifiable, Decodable {
         case lifecycle
         case recapVideoUrl = "recap_video_url"
         case recapAllowed = "recap_allowed"
+        case vipEnabled = "vip_enabled"
+        case vipFromCents = "vip_from_cents"
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -91,6 +99,8 @@ struct APIEvent: Identifiable, Decodable {
         lifecycle        = (try? c.decodeIfPresent(String.self, forKey: .lifecycle)) ?? "upcoming"
         recapVideoUrl    = (try? c.decodeIfPresent(String.self, forKey: .recapVideoUrl)) ?? ""
         recapAllowed     = (try? c.decodeIfPresent(Bool.self, forKey: .recapAllowed)) ?? false
+        vipEnabled       = (try? c.decodeIfPresent(Bool.self, forKey: .vipEnabled)) ?? false
+        vipFromCents     = (try? c.decodeIfPresent(Int.self, forKey: .vipFromCents)) ?? nil
     }
 }
 
@@ -142,7 +152,43 @@ enum DateParsing {
         return f
     }()
 
+    /// Ze razclenjeni nizi (29. 9. 2026, "aplikacija steka"): `startDate` je racunana lastnost in
+    /// domaci zaslon z njo razvrsca vse dogodke veckrat na izris (Tonight, This week, Weekend, vsak
+    /// zanr posebej) — to je bilo na tisoce ISO razclenitev na izris. Niz datuma je nespremenljiv,
+    /// zato rezultat hranimo. Omejeno na 5000 vnosov (potem pocistimo), da ne raste v neskoncnost.
+    private static let zaklep = NSLock()
+    nonisolated(unsafe) private static var predpomnilnik: [String: Date?] = [:]
+
     static func parseBackendDate(_ s: String) -> Date? {
+        zaklep.lock()
+        if let d = predpomnilnik[s] { zaklep.unlock(); return d }
+        zaklep.unlock()
+        let d = razcleni(s)
+        zaklep.lock()
+        if predpomnilnik.count > 5000 { predpomnilnik.removeAll(keepingCapacity: true) }
+        predpomnilnik[s] = d
+        zaklep.unlock()
+        return d
+    }
+
+    /// DateFormatter za dani vzorec v trenutnem jeziku aplikacije — enkrat na (jezik, vzorec),
+    /// ne ob vsakem izrisu kartice (ustvarjanje DateFormatterja je drago).
+    nonisolated(unsafe) private static var oblikovalniki: [String: DateFormatter] = [:]
+
+    static func oblikovalnik(_ vzorec: String) -> DateFormatter {
+        let locale = Jezik.shared.locale
+        let kljuc = locale.identifier + "|" + vzorec
+        zaklep.lock()
+        defer { zaklep.unlock() }
+        if let f = oblikovalniki[kljuc] { return f }
+        let f = DateFormatter()
+        f.locale = locale
+        f.dateFormat = vzorec
+        oblikovalniki[kljuc] = f
+        return f
+    }
+
+    private static func razcleni(_ s: String) -> Date? {
         // pg vrne ISO niz, obicajno z milisekundami ("2026-10-10T21:00:00.000Z")
         if let d = isoFrac.date(from: s) { return d }
         if let d = iso.date(from: s) { return d }
@@ -239,18 +285,12 @@ extension APIEvent {
     /// "Fri 11 Sep · 22:00"
     var displayDayTime: String {
         guard let d = startDate else { return "" }
-        let f = DateFormatter()
-        f.locale = Jezik.shared.locale
-        f.dateFormat = "EEE d MMM · HH:mm"
-        return f.string(from: d)
+        return DateParsing.oblikovalnik("EEE d MMM · HH:mm").string(from: d)
     }
 
     /// "Sat 26 Sep" (brez ure) — kartice nacrtov prijateljev.
     var displayDayShort: String {
         guard let d = startDate else { return "" }
-        let f = DateFormatter()
-        f.locale = Jezik.shared.locale
-        f.dateFormat = "EEE d MMM"
-        return f.string(from: d)
+        return DateParsing.oblikovalnik("EEE d MMM").string(from: d)
     }
 }

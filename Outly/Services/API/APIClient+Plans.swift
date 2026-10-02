@@ -27,14 +27,18 @@ private struct EventInterestResponse: Decodable {
     enum CodingKeys: String, CodingKey { case plan }
 }
 
-/// Samo tri nova polja iz GET /events/:id, dekodirana loceno od APIEvent (manj tvegano kot
-/// siriti obstojece dekodiranje, ki ga uporablja fetchEvent(id:) brez zetona na vec mestih).
+/// Tri nova polja iz GET /events/:id (+ `description`, ker ga lahki seznam GET /events?lite=true ne vrne),
+/// dekodirana loceno od APIEvent (manj tvegano kot siriti obstojece dekodiranje, ki ga uporablja
+/// fetchEvent(id:) brez zetona na vec mestih).
 struct EventPlanInfo: Decodable {
     let myPlan: EventPlan?
     let friendsGoing: [FriendUser]
     let friendsInterested: [FriendUser]
+    /// Opis dogodka; manjkajoc ali null -> "" (pravilo 2: privzeta vrednost).
+    let description: String
 
     enum CodingKeys: String, CodingKey {
+        case description
         case myPlan = "my_plan"
         case friendsGoing = "friends_going"
         case friendsInterested = "friends_interested"
@@ -46,6 +50,7 @@ struct EventPlanInfo: Decodable {
         myPlan = p ?? nil
         friendsGoing = try c.decodeIfPresent([FriendUser].self, forKey: .friendsGoing) ?? []
         friendsInterested = try c.decodeIfPresent([FriendUser].self, forKey: .friendsInterested) ?? []
+        description = (try? c.decodeIfPresent(String.self, forKey: .description)) ?? ""
     }
 }
 

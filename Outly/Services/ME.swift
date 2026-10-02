@@ -3,7 +3,7 @@ import Foundation
 /// Uporabnik, kot ga vrne GET /me (in PATCH /me, PATCH /me/avatar).
 /// Vsa polja razen id/email/username/role so neobvezna, ker so bila dodana
 /// z migracijo 003 in so lahko NULL. Ena vrstica z NULL ne sme podreti dekodiranja.
-struct Me: Decodable {
+struct Me: Codable, Equatable {
     let id: Int
     let email: String
     let username: String
@@ -87,6 +87,32 @@ struct Me: Decodable {
         }
     }
 
+    /// Za shranjevanje zadnjega Me na disk (MeShramba): isti kljuci kot v odgovoru streznika, da ga init(from:) prebere nazaj.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(email, forKey: .email)
+        try c.encode(username, forKey: .username)
+        try c.encode(role, forKey: .role)
+        try c.encodeIfPresent(avatarUrl, forKey: .avatarUrl)
+        try c.encodeIfPresent(emailVerified, forKey: .emailVerified)
+        try c.encodeIfPresent(phone, forKey: .phone)
+        try c.encodeIfPresent(phoneVerified, forKey: .phoneVerified)
+        try c.encodeIfPresent(dateOfBirth, forKey: .dateOfBirth)
+        try c.encodeIfPresent(country, forKey: .country)
+        try c.encode(genres, forKey: .genres)
+        try c.encodeIfPresent(onboardedAt, forKey: .onboardedAt)
+        try c.encodeIfPresent(createdAt, forKey: .createdAt)
+        try c.encodeIfPresent(clubId, forKey: .clubId)
+        try c.encodeIfPresent(clubRole, forKey: .clubRole)
+        try c.encode(pendingInvites, forKey: .pendingInvites)
+        try c.encode(pendingFriendRequests, forKey: .pendingFriendRequests)
+        try c.encode(pendingReceivedTickets, forKey: .pendingReceivedTickets)
+        try c.encode(pendingClubEvents, forKey: .pendingClubEvents)
+        try c.encode(sharePlansWithFriends, forKey: .sharePlansWithFriends)
+        try c.encode(clubs, forKey: .clubs)
+    }
+
     /// Poslovni obraz v profilu: lastnik (role business, tudi brez kluba) ali clan ekipe.
     var isBusiness: Bool { role == "business" || clubRole != nil }
 
@@ -123,7 +149,7 @@ struct Me: Decodable {
 }
 
 /// Eno clanstvo iz GET /me `clubs` (migracija 018): klub in moja vloga v njem.
-struct MeClub: Decodable, Identifiable {
+struct MeClub: Codable, Identifiable, Equatable {
     let clubId: Int
     let clubName: String
     let clubLogoUrl: String
@@ -145,5 +171,13 @@ struct MeClub: Decodable, Identifiable {
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
         clubLogoUrl = try c.decodeIfPresent(String.self, forKey: .clubLogoUrl) ?? ""
         role = try c.decodeIfPresent(String.self, forKey: .role) ?? "doorman"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(clubId, forKey: .clubId)
+        try c.encode(clubName, forKey: .clubName)
+        try c.encode(clubLogoUrl, forKey: .clubLogoUrl)
+        try c.encode(role, forKey: .role)
     }
 }

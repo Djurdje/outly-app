@@ -9,7 +9,6 @@ import Foundation
 
 struct APIClub: Identifiable, Decodable {
     let id: Int
-    let ownerUserId: Int
     let name: String
     let logoUrl: String
     let bannerUrl: String
@@ -46,7 +45,6 @@ struct APIClub: Identifiable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id
-        case ownerUserId = "owner_user_id"
         case name
         case logoUrl = "logo_url"
         case bannerUrl = "banner_url"
@@ -74,7 +72,6 @@ struct APIClub: Identifiable, Decodable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id           = try c.decode(Int.self, forKey: .id)
-        ownerUserId  = try c.decodeIfPresent(Int.self, forKey: .ownerUserId) ?? 0
         name         = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
         logoUrl      = try c.decodeIfPresent(String.self, forKey: .logoUrl) ?? ""
         bannerUrl    = try c.decodeIfPresent(String.self, forKey: .bannerUrl) ?? ""
