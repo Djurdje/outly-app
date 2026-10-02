@@ -10,7 +10,8 @@ import Foundation
 ///   kljuc zavrne (422 `idempotency_key_reused`) in ko je narocilo s tem kljucem ze neaktivno (409 `order_not_active`:
 ///   refunded/cancelled ...; kljuc ostane vezan na to narocilo). Cena ni del identitete (isto kot na strezniku).
 ///
-/// Cisti tip brez UI-ja, da so pravila testabilna (OutlyTests/NakupniKljucTests). Pogled ga hrani v `@State`.
+/// Cisti tip brez UI-ja, da so pravila testabilna (OutlyTests/NakupniKljucTests). Pogledi ga NE hranijo v `@State`
+/// (list se zapre in odpre znova -> nov kljuc -> drugo narocilo), temvec prek `NakupniKljucShramba`.
 /// Stari backend glavo ignorira, zato je uporaba varna tudi pred objavo backenda.
 struct NakupniKljuc {
 
@@ -96,6 +97,17 @@ extension Error {
         if jeNakup503 { return NavalNakupa.premorNanosekund }
         if nakupniIzid == .vObdelavi { return NavalNakupa.premorVObdelaviNanosekund }
         return nil
+    }
+}
+
+extension Error {
+    /// Ali naj VIP zaslon po napaki nakupa osvezi tloris (izbira mize izgine): 409 (miza prodana, cena spremenjena,
+    /// prodaja zaprta). Izjemi: 409 `request_in_progress` (prejsnji poskus ISTE mize se obdeluje, miza je lahko ze nasa)
+    /// in 409 `order_not_active` (prejsnje narocilo ni vec aktivno, kljuc je ponastavljen; izbira ostane za nov pritisk).
+    var osveziTlorisPoNapaki: Bool {
+        guard let api = self as? APIError, case .requestFailed(let status, _) = api, status == 409 else { return false }
+        let izid = nakupniIzid
+        return izid != .vObdelavi && izid != .narociloNeaktivno
     }
 }
 

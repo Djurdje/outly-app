@@ -146,6 +146,21 @@ final class NakupniKljucTests: XCTestCase {
         XCTAssertEqual(APIError.requestFailed(500, "request_in_progress").nakupniIzid, .navadna)
     }
 
+    // MARK: - Osvezitev VIP tlorisa po napaki
+
+    func testOsveziTlorisSamoPoNavadnem409() {
+        // Miza prodana / cena spremenjena / prodaja zaprta: osvezi.
+        XCTAssertTrue(APIError.requestFailed(409, "This table is already booked.").osveziTlorisPoNapaki)
+        XCTAssertTrue(APIError.requestFailed(409, #"{"error":"table_unavailable","message":"The table price has changed."}"#).osveziTlorisPoNapaki)
+        // Izjemi: izbira ostane.
+        XCTAssertFalse(APIError.requestFailed(409, #"{"error":"request_in_progress","message":"x"}"#).osveziTlorisPoNapaki)
+        XCTAssertFalse(APIError.requestFailed(409, #"{"error":"order_not_active","message":"x"}"#).osveziTlorisPoNapaki)
+        // Ni 409 ali ni APIError.
+        XCTAssertFalse(APIError.requestFailed(422, #"{"error":"idempotency_key_reused"}"#).osveziTlorisPoNapaki)
+        XCTAssertFalse(APIError.requestFailed(503, "Server busy.").osveziTlorisPoNapaki)
+        XCTAssertFalse(URLError(.timedOut).osveziTlorisPoNapaki)
+    }
+
     // MARK: - Sporocila in premor
 
     func testSporocilaKljucnihIzidov() {
@@ -175,5 +190,123 @@ final class NakupniKljucTests: XCTestCase {
         XCTAssertNil(APIError.requestFailed(409, "This table is already booked.").nakupPremorNanosekund)
         XCTAssertNil(APIError.requestFailed(409, #"{"error":"order_not_active"}"#).nakupPremorNanosekund)
         XCTAssertNil(URLError(.timedOut).nakupPremorNanosekund)
+    }
+
+    // MARK: - Shramba (list se zapre in odpre znova)
+
+    /// Nadzorovana ura in deterministicni kljuci k1, k2, ...
+    private final class Ura {
+        var zdaj = Date(timeIntervalSince1970: 1_000_000)
+        func naprej(_ s: TimeInterval) { zdaj = zdaj.addingTimeInterval(s) }
+    }
+
+    private func shramba(_ ura: Ura, veljavnost: TimeInterval = 600) -> NakupniKljucShramba {
+        NakupniKljucShramba(veljavnost: veljavnost, ura: { ura.zdaj }, ustvari: ustvarjalnik())
+    }
+
+    func testShrambaPonovnoOdprtListIsteVsebineDobiIstiKljuc() {
+        let ura = Ura()
+        let s = shramba(ura)
+        // Prvi list: Pay -> timeout (.nejasen) -> list zapre. »Nov dostop« = isti klic z isto vsebino.
+        let prvi = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        ura.naprej(120)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(2)), prvi)
+        // Tudi po drugi navadni napaki in vObdelavi.
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .vObdelavi)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(2)), prvi)
+    }
+
+    func testShrambaPazljivoPoVsebiniInDogodku() {
+        let s = shramba(Ura())
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        // Drugacna kolicina v istem dogodku = nov nakup (pravilo NakupniKljuc).
+        let b = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+        XCTAssertNotEqual(a, b)
+        // Drug dogodek ima svoj zapis in ne povozi kljuca prvega.
+        let c = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2, dogodek: 8))
+        XCTAssertNotEqual(c, b)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(2)), b)
+        // Miza in paket znotraj dogodka.
+        let m = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10)), m)
+        XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 11)), m)
+    }
+
+    func testShrambaPoUspehuNovKljuc() {
+        let s = shramba(Ura())
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+        s.poUspehu(uporabnik: 1, dogodekId: 7)
+        XCTAssertEqual(s.steviloZapisov, 0)
+        XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(2)), a)
+    }
+
+    func testShrambaPoZavrnjenemKljucuInNeaktivnemNarocilu() {
+        let s = shramba(Ura())
+        for izid in [NakupniIzid.kljucZavrzen, .narociloNeaktivno] {
+            let a = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+            s.poNapaki(uporabnik: 1, dogodekId: 7, izid: izid)
+            let b = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+            XCTAssertNotEqual(a, b, "izid \(izid)")
+            // Novi kljuc potem ostane (ponovno odprtje ga ne zamenja).
+            XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10)), b)
+        }
+    }
+
+    func testShrambaPoIzteku() {
+        let ura = Ura()
+        let s = shramba(ura, veljavnost: 600)
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        ura.naprej(599)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)   // uporaba osvezi rok
+        ura.naprej(599)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+        ura.naprej(600)                                                      // od zadnje uporabe poteklo 10 min
+        XCTAssertEqual(s.steviloZapisov, 0)
+        XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+    }
+
+    func testShrambaNapakaOsveziRokInNeUstvariZapisa() {
+        let ura = Ura()
+        let s = shramba(ura, veljavnost: 600)
+        // Napaka brez zapisa (npr. po odjavi) zapisa ne ustvari.
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
+        XCTAssertEqual(s.steviloZapisov, 0)
+        // Nakup, ki je trajal do timeouta: rok se steje od napake.
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        ura.naprej(500)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        ura.naprej(500)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+    }
+
+    func testShrambaDrugUporabnikDobiNovKljuc() {
+        let s = shramba(Ura())
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        let b = s.zaNakup(uporabnik: 2, vsebina: vstopnice(1))
+        XCTAssertNotEqual(a, b)
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+        XCTAssertEqual(s.zaNakup(uporabnik: 2, vsebina: vstopnice(1)), b)
+        // Uspeh enega ne zadene drugega.
+        s.poUspehu(uporabnik: 1, dogodekId: 7)
+        XCTAssertEqual(s.zaNakup(uporabnik: 2, vsebina: vstopnice(1)), b)
+    }
+
+    func testShrambaOdjavaPocistiVse() {
+        let s = shramba(Ura())
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        let b = s.zaNakup(uporabnik: 1, vsebina: miza(3, dogodek: 9))
+        XCTAssertEqual(s.steviloZapisov, 2)
+        s.pocistiVse()
+        XCTAssertEqual(s.steviloZapisov, 0)
+        XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+        XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: miza(3, dogodek: 9)), b)
+    }
+
+    func testShrambaPrivzetaVeljavnostJeDesetMinut() {
+        XCTAssertEqual(NakupniKljucShramba.privzetaVeljavnost, 600)
+        let s = NakupniKljucShramba()
+        XCTAssertNotNil(UUID(uuidString: s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))))
     }
 }

@@ -128,6 +128,8 @@ final class SessionStore: ObservableObject {
         SkenOdjava.pocisti()
         refreshTask?.cancel()
         refreshTask = nil
+        // Idempotentni kljuci nakupov (samo v pomnilniku) so vezani na uporabnika: ob odjavi/zavrnjeni seji vsi stran.
+        NakupniKljucShramba.deljena.pocistiVse()
     }
 
     // MARK: - Osvezevanje

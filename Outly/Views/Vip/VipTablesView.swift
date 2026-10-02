@@ -26,9 +26,6 @@ struct VipTablesView: View {
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
-    /// Idempotentni kljuc nakupa (`Idempotency-Key`): isti pri ponovnem poskusu iste mize in paketa, nov ob spremembi
-    /// mize/paketa, po uspehu in ko ga backend zavrne (glej NakupniKljuc).
-    @State private var kljuc = NakupniKljuc()
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -484,25 +481,26 @@ struct VipTablesView: View {
     private func rezerviraj(_ m: VipTable) async {
         errorMessage = nil
         stanje = .nalaga
-        let kljucNakupa = kljuc.zaNakup(NakupniKljuc.Vsebina(dogodekId: event.id, mizaId: m.id, paketId: izbraniPaketId))
+        let uporabnik = session.me?.id ?? -1
+        let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
+            uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, mizaId: m.id, paketId: izbraniPaketId))
         do {
             let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
                                                         packageId: izbraniPaketId, expectedPriceCents: m.priceCents,
                                                         idempotencyKey: kljucNakupa, token: session.token)
-            kljuc.poUspehu()
+            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
             let izid = error.nakupniIzid
-            kljuc.poNapaki(izid)
+            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, izid: izid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
-            // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine.
-            // Izjema 409 request_in_progress: prejsnji poskus ISTE mize se se obdeluje (miza je lahko ze nasa), izbira ostane.
-            // Izjema 409 order_not_active: prejsnje narocilo je preklicano/vrnjeno, kljuc je ponastavljen; izbira ostane za nov pritisk.
-            if izid != .vObdelavi, izid != .narociloNeaktivno, let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
+            // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine
+            // (izjemi request_in_progress in order_not_active: glej `osveziTlorisPoNapaki`).
+            if error.osveziTlorisPoNapaki {
                 await naloziVip()
             }
             if let premor = error.nakupPremorNanosekund {
