@@ -133,12 +133,17 @@ final class NakupniKljucShramba {
 
     /// `session.me` se je prvic nalozil: zapisi, nastali, ko uporabnik se ni bil znan, postanejo zapisi pravega uporabnika
     /// (isti kljuc, isti izid, isti rok). Ce pot pri pravem uporabniku ze obstaja, obdrzi novejsi zapis. Klice SessionStore.
-    /// Pozneje klici z `neznanUporabnik` (zahtevek, ki je uporabnika prebral pred prihodom `me`) pristanejo na pravem uporabniku.
+    /// Ce je bil kaksen zapis neznanega, pozneje klici z `neznanUporabnik` (zahtevek, ki je uporabnika prebral pred prihodom
+    /// `me`) pristanejo na pravem uporabniku; brez zapisa preslikave ni (glej spodaj).
     func pripisiNeznanega(uporabnik: Int) {
         guard uporabnik != NakupniKljucShramba.neznanUporabnik else { return }
-        pripisaniUporabnik = uporabnik
         zavrziPotekle(ura())
         let neznani = zapisi.filter { $0.key.uporabnik == NakupniKljucShramba.neznanUporabnik }
+        // Preslikavo si zapomnimo SAMO, ce zapis neznanega obstaja: zahtevek v teku ga ima vedno (zaNakup ga ustvari takoj).
+        // Brez zapisa je nihce ne potrebuje, hkrati pa bi pozen odgovor zahtevka PREJSNJEGA uporabnika (odjava -> pocistiVse ->
+        // prijava drugega) zadel zapis novega uporabnika iste (dogodek, vrsta).
+        guard !neznani.isEmpty else { return }
+        pripisaniUporabnik = uporabnik
         for (stara, zapis) in neznani {
             zapisi[stara] = nil
             let nova = Pot(uporabnik: uporabnik, dogodekId: stara.dogodekId, vrsta: stara.vrsta)

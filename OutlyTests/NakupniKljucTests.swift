@@ -584,9 +584,28 @@ final class NakupniKljucTests: XCTestCase {
         XCTAssertEqual(s.zaNakup(uporabnik: 5, vsebina: vstopnice(3)), pravi)
     }
 
+    func testPozenOdgovorPrejsnjegaUporabnikaNeZadeneNovega() {
+        // A placa z me == nil (zapis pod -1, zahtevek v teku); odjava; prijava B; me pride; pozen odgovor A-jevega zahtevka.
+        let s = shramba(Ura())
+        let neznan = NakupniKljucShramba.neznanUporabnik
+        _ = s.zaNakup(uporabnik: neznan, vsebina: vstopnice(2))
+        s.pocistiVse()                                                     // odjava
+        s.pripisiNeznanega(uporabnik: 5)                                   // B: me nalozen, zapisa neznanega ni -> brez preslikave
+        let b = s.zaNakup(uporabnik: 5, vsebina: vstopnice(2))
+        s.poNapaki(uporabnik: 5, dogodekId: 7, vrsta: .vstopnice, izid: .navadna)
+        // Pozni odgovor A: poNapaki(-1, nejasen) ne sme oznaciti ne spremeniti B-jevega zapisa ...
+        s.poNapaki(uporabnik: neznan, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 5, dogodekId: 7, vrsta: .vstopnice))
+        // ... in poUspehu(-1) ga ne sme zbrisati.
+        s.poUspehu(uporabnik: neznan, dogodekId: 7, vrsta: .vstopnice)
+        XCTAssertEqual(s.steviloZapisov, 1)
+        XCTAssertEqual(s.zaNakup(uporabnik: 5, vsebina: vstopnice(2)), b)
+    }
+
     func testOdjavaPocistiTudiPreslikavoNeznanega() {
         let s = shramba(Ura())
         let neznan = NakupniKljucShramba.neznanUporabnik
+        _ = s.zaNakup(uporabnik: neznan, vsebina: vstopnice(3))   // zapis neznanega: pripis si zapomni preslikavo
         s.pripisiNeznanega(uporabnik: 5)
         s.pocistiVse()
         // Po odjavi (in prijavi drugega uporabnika) -1 ne sme pasti na uporabnika 5.
