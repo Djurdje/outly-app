@@ -1475,18 +1475,46 @@ final class SkenSejaTests: XCTestCase {
     }
 
     /// Manjse 8, 9: ob odjavi gre vse; tudi pokvarjene datoteke in predpomnilnik odgovorov (scan-list z imeni imetnikov).
+    /// Lasten URLCache samo v pomnilniku (brez diska): test ne deli stanja z URLCache.shared (slike, drugi testi) in ne zavisi od
+    /// asinhronega diskovnega brisanja (prej obcasno rdec: shranjen odgovor je po removeAllCachedResponses se obstajal).
     func testOdjavaBrisePokvarjeneDatotekeInPredpomnilnik() throws {
         let disk = SkenDisk(mapa: mapa)
         disk.shraniPokvarjeno("vrsta", Data("{ pokvarjeno".utf8))
         disk.shraniPokvarjeno("konflikti", Data("{ pokvarjeno".utf8))
+        let predpomnilnik = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil)
         let url = URL(string: "https://outly.example/business/events/42/scan-list")!
         let zahteva = URLRequest(url: url)
         let odgovor = URLResponse(url: url, mimeType: "application/json", expectedContentLength: 2, textEncodingName: nil)
-        URLCache.shared.storeCachedResponse(CachedURLResponse(response: odgovor, data: Data("{}".utf8)), for: zahteva)
+        predpomnilnik.storeCachedResponse(CachedURLResponse(response: odgovor, data: Data("{}".utf8)), for: zahteva)
+        XCTAssertNotNil(predpomnilnik.cachedResponse(for: zahteva))
         XCTAssertTrue(disk.imena().contains { $0.contains(".pokvarjena-") })
-        SkenOdjava.pocisti(disk: disk)
+        SkenOdjava.pocisti(disk: disk, predpomnilniki: [predpomnilnik])
         XCTAssertFalse(disk.imena().contains { $0.contains(".pokvarjena-") })
-        XCTAssertNil(URLCache.shared.cachedResponse(for: zahteva))
+        XCTAssertNil(predpomnilnik.cachedResponse(for: zahteva))
+    }
+
+    /// Enkratno ciscenje starih API odgovorov na disku URLCache.shared: prvic pobrise, drugic ne (zastavica v UserDefaults).
+    func testStareOdgovoreNaDiskuPocistiSamoEnkrat() {
+        let ime = "outly-test-\(UUID().uuidString)"
+        let privzetosti = UserDefaults(suiteName: ime)!
+        defer { privzetosti.removePersistentDomain(forName: ime) }
+        let predpomnilnik = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil)
+        let url = URL(string: "https://outly.example/business/events/42/scan-list")!
+        let zahteva = URLRequest(url: url)
+        let odgovor = URLResponse(url: url, mimeType: "application/json", expectedContentLength: 2, textEncodingName: nil)
+        func shrani() { predpomnilnik.storeCachedResponse(CachedURLResponse(response: odgovor, data: Data("{}".utf8)), for: zahteva) }
+        shrani()
+        XCTAssertTrue(APIPredpomnilnik.enkratnoPocistiStareOdgovore(privzetosti: privzetosti, predpomnilnik: predpomnilnik))
+        XCTAssertNil(predpomnilnik.cachedResponse(for: zahteva))
+        shrani()
+        XCTAssertFalse(APIPredpomnilnik.enkratnoPocistiStareOdgovore(privzetosti: privzetosti, predpomnilnik: predpomnilnik))
+        XCTAssertNotNil(predpomnilnik.cachedResponse(for: zahteva))   // drugic ne brise
+    }
+
+    /// Klici backenda ne smejo pisati odgovorov (imena imetnikov, vstopnice) na disk: API seja ima predpomnilnik samo v pomnilniku.
+    func testApiSejaNimaDiskovnegaPredpomnilnika() {
+        XCTAssertEqual(APIPredpomnilnik.predpomnilnik.diskCapacity, 0)
+        XCTAssertTrue(APIPredpomnilnik.seja.configuration.urlCache === APIPredpomnilnik.predpomnilnik)
     }
 
     // MARK: M7: klub izrecno v vsakem klicu
@@ -1616,7 +1644,7 @@ final class SkenSejaTests: XCTestCase {
         await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 2, deviceId: "naprava-1")
         XCTAssertEqual(vrsta.vnosi.count, 0)
         XCTAssertEqual(a.klubIdji, [3])        // vsak klub s svojo glavo
-        SkenOdjava.pocisti(disk: disk)
+        SkenOdjava.pocisti(disk: disk, predpomnilniki: [])
         XCTAssertEqual(disk.imena().filter { $0 != "vrsta" }, [])
     }
 
@@ -1631,7 +1659,7 @@ final class SkenSejaTests: XCTestCase {
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 2, deviceId: "naprava-1")
         XCTAssertEqual(vrsta.vnosi.count, 1)
-        SkenOdjava.pocisti(disk: disk)
+        SkenOdjava.pocisti(disk: disk, predpomnilniki: [])
         XCTAssertEqual(disk.imena().filter { $0 != "vrsta" }, [])      // kljuc, konflikti, seznami so pobrisani
         let nova = SkenVrsta(disk: disk)                               // vnos prezivi, imena imetnika ni vec
         XCTAssertEqual(nova.vnosi.map { $0.clientScanId }, [v.clientScanId])

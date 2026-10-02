@@ -29,14 +29,16 @@ enum SkenOdjava {
     }
 
     /// Pobrise vse razen neposlanih vnosov (ti ostanejo brez imen imetnikov) in predpomnilnik odgovorov.
-    static func pocisti(disk: SkenDisk = SkenDisk()) {
+    static func pocisti(disk: SkenDisk = SkenDisk(), predpomnilniki: [URLCache] = [APIPredpomnilnik.predpomnilnik, URLCache.shared]) {
         SkenVrsta.deljena(disk).pocistiPoOdjavi()
         disk.pocistiVsePoOdjavi()
-        pocistiPredpomnilnik()
+        pocistiPredpomnilnik(predpomnilniki)
     }
 
-    /// URLCache.shared hrani odgovore GET (tudi scan-list z uporabniskimi imeni imetnikov) na disku tudi po odjavi.
-    nonisolated static func pocistiPredpomnilnik() {
-        URLCache.shared.removeAllCachedResponses()
+    /// Odgovori GET (tudi scan-list z imeni imetnikov) ne smejo ostati po odjavi. API ima lasten predpomnilnik samo v pomnilniku
+    /// (APIPredpomnilnik); `URLCache.shared` pobrisemo se za odgovore, ki jih je starejsa razlicica zapisala na disk.
+    /// `predpomnilniki` je parameter, da test dela z lastnim URLCache in ne z deljenim stanjem aplikacije.
+    nonisolated static func pocistiPredpomnilnik(_ predpomnilniki: [URLCache] = [APIPredpomnilnik.predpomnilnik, URLCache.shared]) {
+        APIPredpomnilnik.pocisti(predpomnilniki)
     }
 }
