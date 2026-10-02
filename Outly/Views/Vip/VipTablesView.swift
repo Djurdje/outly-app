@@ -21,10 +21,12 @@ struct VipTablesView: View {
     @State private var napakaNalaganja: String?
     @State private var izbranaMizaId: Int?
     @State private var izbraniPaketId: Int?
+    /// Izbira se predizpolni samo ob prvem uspesnem nalaganju tlorisa (glej `naloziVip`).
+    @State private var predizpolnjeno = false
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
-    /// 503 zaradi navale: gumb je ~5 s onemogocen, nakup se ne ponovi sam (brez idempotentnega kljuca).
+    /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
 
     private let ozadje = Color(white: 0.06)
@@ -473,32 +475,55 @@ struct VipTablesView: View {
             if let pid = izbraniPaketId, !novo.packages.contains(where: { $0.id == pid }) {
                 izbraniPaketId = nil
             }
+            predizpolniIzbiro(novo)
         } catch {
             if vip == nil { napakaNalaganja = error.userMessage }
+        }
+    }
+
+    /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): miza in paket zadnjega nerazresenega poskusa, da
+    /// Reserve table poslje isto vsebino z istim kljucem (NakupniKljucShramba). Samo ob prvem nalaganju in samo ce je miza
+    /// v tlorisu se na voljo (sicer brez izbire); paket samo, ce ga klub se ponuja. Vsebina vstopnic (mizaId == nil) tu ne velja.
+    private func predizpolniIzbiro(_ novo: EventVip) {
+        guard !predizpolnjeno else { return }
+        predizpolnjeno = true
+        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
+              let mizaId = v.mizaId,
+              novo.tables.first(where: { $0.id == mizaId })?.available == true else { return }
+        izbranaMizaId = mizaId
+        if let paketId = v.paketId, novo.packages.contains(where: { $0.id == paketId }) {
+            izbraniPaketId = paketId
         }
     }
 
     private func rezerviraj(_ m: VipTable) async {
         errorMessage = nil
         stanje = .nalaga
+        let uporabnik = session.me?.id ?? -1
+        let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
+            uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, mizaId: m.id, paketId: izbraniPaketId))
         do {
             let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
                                                         packageId: izbraniPaketId, expectedPriceCents: m.priceCents,
-                                                        token: session.token)
+                                                        idempotencyKey: kljucNakupa, token: session.token)
+            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
+            let izid = error.nakupniIzid
+            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, izid: izid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
-            // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine.
-            if let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
+            // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine
+            // (izjemi request_in_progress in order_not_active: glej `osveziTlorisPoNapaki`).
+            if error.osveziTlorisPoNapaki {
                 await naloziVip()
             }
-            if error.jeNakup503 {
+            if let premor = error.nakupPremorNanosekund {
                 naval = true
-                try? await Task.sleep(nanoseconds: NavalNakupa.premorNanosekund)
+                try? await Task.sleep(nanoseconds: premor)
                 naval = false
             }
         }

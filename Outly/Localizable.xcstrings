@@ -9621,6 +9621,50 @@
           }
         }
       }
+    },
+    "Something changed, please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekaj se je spremenilo. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Your previous attempt is still being processed. Please try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prejšnji poskus se še obdeluje. Poskusi znova čez trenutek."
+          }
+        }
+      }
+    },
+    "Your previous order is no longer active. Tap again to buy anew.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoje prejšnje naročilo ni več aktivno. Pritisni znova za nov nakup."
+          }
+        }
+      }
+    },
+    "Your purchase may have gone through — tap the button again to check (you won't be charged twice).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nakup je morda uspel – ponovno tapni gumb, da preveriš (zaračunano ne bo dvakrat)."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
