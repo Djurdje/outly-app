@@ -43,15 +43,17 @@ enum SkenRok {
     /// casovnik); pocasno delo tece v ozadju naprej, rezultat se ne uporabi (vnos v vrsti ostane, posiljanje je idempotentno).
     static func zRokom<T: Sendable>(_ sekunde: Double, _ delo: @escaping @Sendable () async throws -> T) async -> Result<T, Error>? {
         await withCheckedContinuation { (k: CheckedContinuation<Result<T, Error>?, Never>) in
-            let vrata = RokVrata<T>(k)
+            // RokVrata NI genericen razred: genericen razred z deinit je v Release (-O, Xcode 26.6 / Swift 6.3.3)
+            // sesul prevajalnik v EarlyPerfInliner (gradnja master 2. 10. 2026). Rezultat zato potuje kot Any.
+            let vrata = RokVrata { izid in k.resume(returning: izid as? Result<T, Error>) }
             let opravilo = Task {
                 let r: Result<T, Error>
                 do { r = .success(try await delo()) } catch { r = .failure(error) }
-                vrata.razresi(r)
+                vrata.razresi(r, rok: false)
             }
             let casovnik = Task {
                 try? await Task.sleep(nanoseconds: UInt64(max(sekunde, 0) * 1_000_000_000))
-                vrata.razresi(nil)
+                vrata.razresi(nil, rok: true)
             }
             vrata.pripni(opravilo: opravilo, casovnik: casovnik)
         }
@@ -63,33 +65,34 @@ enum SkenRok {
 }
 
 /// Razresi continuation natanko enkrat (prvi klic); drugi klic ne naredi nic.
-private final class RokVrata<T: Sendable>: @unchecked Sendable {
+/// Namenoma negenericen (glej SkenRok.zRokom): izid je Any? (Result<T, Error> ali nil ob roku).
+private final class RokVrata: @unchecked Sendable {
     private let zapah = NSLock()
-    private var k: CheckedContinuation<Result<T, Error>?, Never>?
+    private var razresitev: ((Any?) -> Void)?
     private var opravilo: Task<Void, Never>?
     private var casovnik: Task<Void, Never>?
 
-    init(_ k: CheckedContinuation<Result<T, Error>?, Never>) { self.k = k }
+    init(_ razresitev: @escaping (Any?) -> Void) { self.razresitev = razresitev }
 
     /// Opravilo in casovnik se pripneta po zagonu; ce je odlocitev ze padla, ju takoj preklicemo.
     func pripni(opravilo: Task<Void, Never>, casovnik: Task<Void, Never>) {
         zapah.lock()
         self.opravilo = opravilo
         self.casovnik = casovnik
-        let koncano = (k == nil)
+        let koncano = (razresitev == nil)
         zapah.unlock()
         if koncano { opravilo.cancel(); casovnik.cancel() }
     }
 
-    func razresi(_ r: Result<T, Error>?) {
+    func razresi(_ izid: Any?, rok: Bool) {
         zapah.lock()
-        let kont = k
-        k = nil
+        let f = razresitev
+        razresitev = nil
         let o = opravilo, c = casovnik
         zapah.unlock()
-        guard let kont else { return }
-        kont.resume(returning: r)
-        if r == nil { o?.cancel() } else { c?.cancel() }
+        guard let f else { return }
+        f(rok ? nil : izid)
+        if rok { o?.cancel() } else { c?.cancel() }
     }
 }
 
