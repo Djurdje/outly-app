@@ -15,6 +15,7 @@ Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-bac
   Če certifikat poteče ali ga kdo prekliče, TestFlight korak pade — nov `.p12` v secrets. Številka gradnje = številka zagona workflowa.
 - Na **pull request** teče prevod za simulator + testi (Debug) in vzporedno job `Release prevod (PR)` (iphoneos, Release, `-O`, brez podpisa;
   ujame napake prevajalnika, ki se pokažejo samo z optimizacijo, incident 2. 10. 2026). TestFlight se preskoči — rdeč PR se ne sme združiti.
+  Release prevod je dogovor (rdeča lučka), ne tehnična zapora: rulesets na zasebnem brezplačnem repu ne delujejo, zato pred merge-om preveri, da je zelen.
 - Bundle ID `si.outly.app`, aplikacija v App Store Connect »Outly - Nightlife« (ime »Outly« je zasedeno), Martinov Individual
   Apple Developer račun; pozneje App Transfer na NEXT DIMENSIONS. `DEVELOPMENT_TEAM` je v projektu prazen — poda ga CI.
 - Testerji dobijo build prek TestFlighta (~5–15 min po zelenem Actions). **Vsak merge v master = nov build pri testerjih.**
