@@ -1345,15 +1345,17 @@ final class SkenSejaTests: XCTestCase {
     func testPoRokuNaslednjiSkeniNeCakajoZnova() async {
         let s1 = Pomoc.serial(), s2 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
+        // Rok 1 s, streznik odgovori sele po 2 s: cakanje na streznik bi trajalo vsaj 1 s, zato je meja 0,9 s dalec od
+        // obeh izidov (prej rok 0,3 s in meja 0,15 s: na obremenjenem CI runnerju je test padal brez napake v kodi).
         a.zakasnitevPaketa = 2
-        let seja = naredi(a, rok: 0.3)
+        let seja = naredi(a, rok: 1.0)
         await seja.odpri(dogodek)
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))   // rok poteces
         XCTAssertFalse(seja.povezava)
         let zacetek = Date()
         let p2 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s2, event: 42))
         XCTAssertEqual(p2.barva, .zeleno)
-        XCTAssertTrue(Date().timeIntervalSince(zacetek) < 0.15, "drugi sken je cakal na streznik")
+        XCTAssertTrue(Date().timeIntervalSince(zacetek) < 0.9, "drugi sken je cakal na streznik")
         // streznik spet odgovarja: periodicno posiljanje uspe in povezava je spet gor
         a.zakasnitevPaketa = 0
         await seja.pocakajPosiljanje()
