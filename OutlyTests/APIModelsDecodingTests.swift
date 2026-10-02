@@ -90,13 +90,32 @@ final class APIModelsDecodingTests: XCTestCase {
         XCTAssertEqual(e.genres, [])
     }
 
+    /// GET /events?lite=true izpusti `description` (kljuc manjka, ne null): dekodiranje ne sme pasti.
+    func testAPIEventDecodesLiteListWithoutDescription() throws {
+        let json = """
+        {
+            "id": 11,
+            "club_id": 2,
+            "title": "Lahki seznam",
+            "poster_url": "https://example.com/p.jpg",
+            "start_at": "2026-10-31T22:00:00.000Z",
+            "min_age": 18,
+            "genres": ["techno"],
+            "status": "published"
+        }
+        """
+        let e = try decode(APIEvent.self, json)
+        XCTAssertEqual(e.id, 11)
+        XCTAssertEqual(e.title, "Lahki seznam")
+        XCTAssertEqual(e.description, "")
+    }
+
     // MARK: - APIClub (bar_prices, gallery_urls, video_url)
 
     func testAPIClubDecodesBarPricesAndGallery() throws {
         let json = """
         {
             "id": 5,
-            "owner_user_id": 2,
             "name": "Klub Noc",
             "logo_url": "https://x/logo.png",
             "banner_url": "https://x/banner.png",

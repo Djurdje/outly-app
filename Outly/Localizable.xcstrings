@@ -8044,6 +8044,39 @@
     "€": {
       "extractionState": "manual"
     },
+    "All ages": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse starosti"
+          }
+        }
+      }
+    },
+    "Age limit of your club. Each event can set its own.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starostna meja kluba. Vsak dogodek lahko določi svojo."
+          }
+        }
+      }
+    },
+    "Enter an Instagram handle like @velvet.lj or a link starting with https://.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi Instagram v obliki @velvet.lj ali povezavo, ki se začne s https://."
+          }
+        }
+      }
+    },
     "Going events": {
       "extractionState": "manual",
       "localizations": {
@@ -8062,6 +8095,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zanima me"
+          }
+        }
+      }
+    },
+    "Lots of people are buying right now. Please try again in a few seconds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenutno kupuje veliko ljudi. Poskusi znova čez nekaj sekund."
+          }
+        }
+      }
+    },
+    "Minimum age": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najnižja starost"
           }
         }
       }
@@ -8227,6 +8282,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Se ni ekipe"
+          }
+        }
+      }
+    },
+    "The music styles your club is known for.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glasbeni žanri, po katerih je klub znan."
           }
         }
       }
@@ -8520,6 +8586,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Izbrano"
+          }
+        }
+      }
+    },
+    "Your Instagram handle (@name) or a link. Shown in the contact section of your club page.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj Instagram (@ime) ali povezava. Prikazan je v razdelku s kontaktom na strani kluba."
           }
         }
       }

@@ -113,6 +113,7 @@ extension APIClient {
         let data = try await send(path: "events", method: "GET", query: [
             URLQueryItem(name: "clubId", value: "\(clubId)"),
             URLQueryItem(name: "popular", value: "true"),
+            URLQueryItem(name: "lite", value: "true"),   // seznam: brez `description` (EventDetailView ga nalozi sam)
         ])
         return try decode([APIEvent].self, from: data)
     }

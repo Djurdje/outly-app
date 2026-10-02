@@ -28,6 +28,14 @@ struct ClubInfoView: View {
     @State private var clubLat: Double?
     @State private var clubLng: Double?
     @State private var clubLogoUrl = ""
+    // Instagram, najnizja starost in zanri (outly-backend#20): PATCH /business/clubs/me jih sprejme,
+    // posljemo pa jih samo, ko jih uporabnik uredi (`saveClub(changed:)`) — ce ima klub zanr, ki ga
+    // strezniski seznam ne pozna, bi poslan celoten seznam zavrnil VSE shranjevanje.
+    @State private var clubInstagram = ""
+    @State private var clubMinAge = 18
+    @State private var clubGenres: [String] = []
+    @State private var allGenres: [String] = []
+    @State private var genresFailed = false
     @State private var clubBarPrices: [BarPriceItem] = []
     @State private var showBarPricesEditor = false
 
@@ -44,6 +52,9 @@ struct ClubInfoView: View {
     // edit sheet
     @State private var activeEdit: EditField?
     @State private var editText = ""
+    @State private var editMinAge = 18
+    @State private var editGenres: Set<String> = []
+    @State private var editError: String?
 
     // pickers (IMPORTANT: presented pickers work with your button components)
     @State private var showLogoPicker = false
@@ -53,7 +64,7 @@ struct ClubInfoView: View {
     @State private var isUploadingLogo = false
 
     enum EditField: Identifiable {
-        case name, phone, website, email, description, address, city
+        case name, phone, website, instagram, email, description, address, city, minAge, genres
         var id: String { "\(self)" }
 
         var title: String {
@@ -61,10 +72,13 @@ struct ClubInfoView: View {
             case .name: return String(localized: "Club name")
             case .phone: return String(localized: "Phone number")
             case .website: return String(localized: "Website")
+            case .instagram: return String(localized: "Instagram")
             case .email: return String(localized: "Email")
             case .description: return String(localized: "About club")
             case .address: return String(localized: "Address")
             case .city: return String(localized: "City")
+            case .minAge: return String(localized: "Minimum age")
+            case .genres: return String(localized: "Music genres")
             }
         }
 
@@ -152,6 +166,9 @@ struct ClubInfoView: View {
                 infoCard(icon: "globe", title: "Website", value: clubWebsite, field: .website,
                          description: "Your official website link.")
 
+                infoCard(icon: "at", title: "Instagram", value: clubInstagram, field: .instagram,
+                         description: "Your Instagram handle (@name) or a link. Shown in the contact section of your club page.")
+
                 infoCard(icon: "envelope", title: "Email", value: clubEmail, field: .email,
                          description: "Email used for customer support and contact.")
 
@@ -165,6 +182,31 @@ struct ClubInfoView: View {
                          description: clubLat != nil
                             ? "On the map ✓"
                             : "Not on the map yet — set the address and city.")
+
+                OutlyInfoCardButton(
+                    icon: "person.badge.shield.checkmark",
+                    title: "Minimum age",
+                    value: clubMinAge == 0 ? String(localized: "All ages") : "\(clubMinAge)+",
+                    description: "Age limit of your club. Each event can set its own.",
+                    onAction: {
+                        editMinAge = clubMinAge
+                        editError = nil
+                        activeEdit = .minAge
+                    }
+                )
+
+                OutlyInfoCardButton(
+                    icon: "music.note",
+                    title: "Music genres",
+                    value: clubGenres.isEmpty ? String(localized: "Not set") : clubGenres.map { GenreNames.display($0) }.joined(separator: ", "),
+                    description: "The music styles your club is known for.",
+                    onAction: {
+                        editGenres = Set(clubGenres)
+                        editError = nil
+                        activeEdit = .genres
+                        if allGenres.isEmpty { Task { await loadGenres() } }
+                    }
+                )
 
                 // Kartice "Profile banner" tu NI vec (Martin, 22. 9. 2026): stran kluba kaze
                 // samo slideshow. Stolpec banner_url v bazi ostane, da klubi, ki imajo pasico
@@ -345,6 +387,7 @@ struct ClubInfoView: View {
             description: description,
             onAction: {
                 editText = value
+                editError = nil
                 activeEdit = field
             }
         )
@@ -355,19 +398,54 @@ struct ClubInfoView: View {
     private func editSheet(_ field: EditField) -> some View {
         NavigationStack {
             VStack(spacing: 16) {
-                if field.multiline {
-                    TextEditor(text: $editText)
-                        .frame(height: 140)
-                        .scrollContentBackground(.hidden)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .foregroundColor(.white)
-                } else {
-                    TextField(field.title, text: $editText)
-                        .padding()
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .foregroundColor(.white)
+                switch field {
+                case .minAge:
+                    Stepper(value: $editMinAge, in: 0...99) {
+                        Text("Minimum age: \(editMinAge)")
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                case .genres:
+                    if allGenres.isEmpty {
+                        if genresFailed {
+                            Text("Could not load genres.")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.6))
+                                .padding(.top, 24)
+                        } else {
+                            ProgressView().tint(.white).padding(.top, 24)
+                        }
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            OutlyGenreGrid(genres: allGenres, selected: $editGenres)
+                        }
+                    }
+                default:
+                    if field.multiline {
+                        TextEditor(text: $editText)
+                            .frame(height: 140)
+                            .scrollContentBackground(.hidden)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .foregroundColor(.white)
+                    } else {
+                        TextField(field.title, text: $editText)
+                            .keyboardType(field == .instagram ? .URL : .default)
+                            .textInputAutocapitalization(field == .instagram ? TextInputAutocapitalization.never : nil)
+                            .autocorrectionDisabled(field == .instagram)
+                            .padding()
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .foregroundColor(.white)
+                    }
+                }
+                if let editError {
+                    Text(editError)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 Spacer()
             }
@@ -378,10 +456,15 @@ struct ClubInfoView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
+                        if field == .instagram, InstagramVnos.normaliziraj(editText) == nil {
+                            editError = String(localized: "Enter an Instagram handle like @velvet.lj or a link starting with https://.")
+                            return
+                        }
                         applyEdit(field)
                         activeEdit = nil
                         Task { await saveClub(changed: field) }
                     }
+                    .disabled(field == .genres && allGenres.isEmpty)
                 }
             }
             .preferredColorScheme(.dark)
@@ -398,6 +481,9 @@ struct ClubInfoView: View {
         case .description: clubDescription = v
         case .address: clubAddress = v
         case .city: clubCity = v
+        case .instagram: clubInstagram = InstagramVnos.normaliziraj(v) ?? clubInstagram
+        case .minAge: clubMinAge = editMinAge
+        case .genres: clubGenres = allGenres.filter { editGenres.contains($0) }
         }
     }
 
@@ -422,6 +508,13 @@ struct ClubInfoView: View {
         }
     }
 
+    /// Zaprti seznam zanrov (GET /genres) za urejanje; ob napaki ostane prazen in Save je onemogocen.
+    private func loadGenres() async {
+        guard allGenres.isEmpty else { return }
+        genresFailed = false
+        if let list = try? await APIClient.shared.fetchGenres() { allGenres = list } else { genresFailed = true }
+    }
+
     private func apply(_ club: APIClub) {
         clubName = club.name
         clubPhone = club.contactPhone
@@ -433,6 +526,9 @@ struct ClubInfoView: View {
         clubLat = club.lat
         clubLng = club.lng
         clubLogoUrl = club.logoUrl
+        clubInstagram = club.instagram
+        clubMinAge = club.minAge
+        clubGenres = club.genres
         clubBarPrices = club.barPrices
         clubGalleryUrls = club.galleryUrls
         clubVideoUrl = club.videoUrl
@@ -514,6 +610,11 @@ struct ClubInfoView: View {
             "city": clubCity,
             "logo_url": clubLogoUrl,
         ]
+        // Samo polje, ki ga je uporabnik pravkar uredil (glej opombo pri clubInstagram).
+        // Instagram: stolpec je NOT NULL, zato prazen niz, ne null.
+        if field == .instagram { fields["instagram"] = clubInstagram }
+        if field == .minAge { fields["min_age"] = clubMinAge }
+        if field == .genres { fields["genres"] = clubGenres }
         // Koordinati gresta v paru (omejitev v bazi: obe ali nobena).
         if let lat = clubLat, let lng = clubLng {
             fields["lat"] = lat
@@ -571,5 +672,24 @@ struct ClubInfoView: View {
         } catch {
             await MainActor.run { errorMessage = String(localized: "Logo upload failed. \(error.userMessage)") }
         }
+    }
+}
+
+/// Vnos Instagrama kluba. Backend (`PATCH /business/clubs/me`) ga shrani, kot ga dobi: brez trimanja,
+/// brez preverbe oblike in brez omejitve dolzine; stolpec `clubs.instagram` je NOT NULL DEFAULT ''.
+/// Spletna aplikacija razume "@ime", "ime" in povezavo https://..., zato aplikacija sama poenoti vnos
+/// v "@ime" ali https povezavo in zavrne ostalo.
+enum InstagramVnos {
+    /// "" (prazno = odstrani), "@ime" ali "https://..." — nil, ce vnos ni veljaven.
+    static func normaliziraj(_ vnos: String) -> String? {
+        let t = vnos.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { return "" }
+        if t.lowercased().hasPrefix("https://") {
+            return t.count <= 200 && !t.contains(where: { $0.isWhitespace }) ? t : nil
+        }
+        let ime = t.hasPrefix("@") ? String(t.dropFirst()) : t
+        let veljavno = !ime.isEmpty && ime.count <= 30
+            && ime.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "_") }
+        return veljavno ? "@" + ime : nil
     }
 }

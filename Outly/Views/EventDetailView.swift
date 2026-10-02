@@ -21,6 +21,11 @@ struct EventDetailView: View {
     @State private var friendsInterested: [FriendUser] = []
     @State private var planSubmitting = false
 
+    // Opis (GET /events?lite=true ga v seznamih ne vrne): ce `event.description` ni prazen, ga uporabimo;
+    // sicer ga nalozimo ob odprtju (loadPlan za prijavljene, loadOpis za goste).
+    @State private var nalozenOpis = ""
+    private var opis: String { event.description.isEmpty ? nalozenOpis : event.description }
+
     // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
     @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
@@ -65,6 +70,7 @@ struct EventDetailView: View {
         .preferredColorScheme(.dark)
         .task { await loadClub() }
         .task { await loadPlan() }
+        .task { await loadOpis() }
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(eventId: event.id) }
         .sheet(isPresented: $showBuy) {
@@ -566,14 +572,14 @@ struct EventDetailView: View {
     // MARK: - About (opis; plakat je zdaj pasica na vrhu, zato tu ni vec kartice s sliko)
     @ViewBuilder
     private var aboutBlock: some View {
-        if !event.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if !opis.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Text("ABOUT")
                     .font(.system(size: 11, weight: .bold))
                     .tracking(1.2)
                     .foregroundStyle(.white.opacity(0.5))
 
-                Text(event.description)
+                Text(opis)
                     .font(.system(size: 15))
                     .foregroundStyle(.white.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
@@ -706,10 +712,29 @@ struct EventDetailView: View {
                 myPlan = info.myPlan
                 friendsGoing = info.friendsGoing
                 friendsInterested = info.friendsInterested
+                if event.description.isEmpty { nalozenOpis = info.description }
             }
         } catch {
             // Tiho: "I'm in" gumb ostane v zacetnem stanju, ostali zaslon dela naprej.
+            // Opis pa ne sme izginiti: isti nadomestni klic kot za goste.
+            await naloziPolniOpis()
         }
+    }
+
+    /// Opis za dogodek iz LAHKEGA seznama (GET /events?lite=true je brez `description`).
+    /// Prijavljeni ga dobijo z loadPlan (isti klic GET /events/:id), zato tu samo gost ali manjkajoc zeton;
+    /// dogodek, ki opis ze ima (iskanje, GET /events/:id), ne naredi nic. Tiho ob napaki: brez opisa se
+    /// blok "ABOUT" preprosto ne pokaze.
+    private func loadOpis() async {
+        guard !(session.isLoggedIn && !session.token.isEmpty) else { return }
+        await naloziPolniOpis()
+    }
+
+    /// GET /events/:id (javno) samo zaradi opisa; ne naredi nic, ce ga dogodek ze ima.
+    private func naloziPolniOpis() async {
+        guard event.description.isEmpty else { return }
+        guard let poln = try? await APIClient.shared.fetchEvent(id: event.id) else { return }
+        await MainActor.run { nalozenOpis = poln.description }
     }
 
     /// Preklopi "I'm in" <-> "Interested" (PUT/DELETE), optimisticno z vrnitvijo ob napaki.

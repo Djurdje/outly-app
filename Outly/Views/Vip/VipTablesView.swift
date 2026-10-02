@@ -24,6 +24,8 @@ struct VipTablesView: View {
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
+    /// 503 zaradi navale: gumb je ~5 s onemogocen, nakup se ne ponovi sam (brez idempotentnega kljuca).
+    @State private var naval = false
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -363,9 +365,9 @@ struct VipTablesView: View {
         OutlyAkcijskiGumb(naslov: naslovGumba(m), stanje: $stanje) {
             Task { await rezerviraj(m) }
         }
-        .disabled(!paketIzbran)
-        .opacity(paketIzbran ? 1 : 0.45)
-        .outlySij(moc: 1.0, aktiven: paketIzbran)
+        .disabled(!paketIzbran || naval)
+        .opacity(paketIzbran && !naval ? 1 : 0.45)
+        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval)
     }
 
     // MARK: - Uspeh
@@ -488,11 +490,16 @@ struct VipTablesView: View {
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
-            errorMessage = error.userMessage
+            errorMessage = error.nakupUserMessage
             stanje = .napaka
             // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine.
             if let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
                 await naloziVip()
+            }
+            if error.jeNakup503 {
+                naval = true
+                try? await Task.sleep(nanoseconds: NavalNakupa.premorNanosekund)
+                naval = false
             }
         }
     }
