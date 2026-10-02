@@ -6,8 +6,9 @@ import Foundation
 /// Pravila (dogovor z backendom):
 /// – isti kljuc pri ponovnem poskusu ISTEGA nakupa (timeout, izgubljena povezava, 503, 409 `request_in_progress`,
 ///   ponovni pritisk po napaki): backend vrne isto narocilo namesto drugega;
-/// – nov kljuc ob vsakem novem nakupu: spremenjena vsebina (dogodek, kolicina, miza, paket), po uspehu in ko backend
-///   kljuc zavrne (422 `idempotency_key_reused`). Cena ni del identitete (isto kot na strezniku).
+/// – nov kljuc ob vsakem novem nakupu: spremenjena vsebina (dogodek, kolicina, miza, paket), po uspehu, ko backend
+///   kljuc zavrne (422 `idempotency_key_reused`) in ko je narocilo s tem kljucem ze neaktivno (409 `order_not_active`:
+///   refunded/cancelled ...; kljuc ostane vezan na to narocilo). Cena ni del identitete (isto kot na strezniku).
 ///
 /// Cisti tip brez UI-ja, da so pravila testabilna (OutlyTests/NakupniKljucTests). Pogled ga hrani v `@State`.
 /// Stari backend glavo ignorira, zato je uporaba varna tudi pred objavo backenda.
@@ -46,9 +47,10 @@ struct NakupniKljuc {
         vsebina = nil
     }
 
-    /// Nakup je padel. Kljuc ostane (ponovni poskus je varen), razen ce ga je backend zavrnil.
+    /// Nakup je padel. Kljuc ostane (ponovni poskus je varen), razen ce ga je backend zavrnil (`.kljucZavrzen`)
+    /// ali je narocilo s tem kljucem ze neaktivno (`.narociloNeaktivno`): takrat je naslednji pritisk nov nakup.
     mutating func poNapaki(_ izid: NakupniIzid) {
-        guard izid == .kljucZavrzen else { return }
+        guard izid == .kljucZavrzen || izid == .narociloNeaktivno else { return }
         vrednost = ustvari()
         vsebina = nil
     }
@@ -62,6 +64,9 @@ enum NakupniIzid: Equatable {
     case vObdelavi
     /// 422 `idempotency_key_reused` (ali 400 `invalid_idempotency_key`, ki ne bi smel nastati): nov kljuc.
     case kljucZavrzen
+    /// 409 `order_not_active`: narocilo s tem kljucem ni vec aktivno (refunded/cancelled ...). Kljuc ostane vezan
+    /// nanj, zato je za nov nakup potreben NOV kljuc; razlocujemo po kodi `error`, ne po statusu 409.
+    case narociloNeaktivno
     /// Timeout / izgubljena povezava: nakup je morda uspel; isti kljuc, ponovni pritisk to preveri.
     case nejasen
 }
@@ -78,6 +83,7 @@ extension Error {
         case 422 where t.contains("idempotency_key_reused"): return .kljucZavrzen
         case 400 where t.contains("invalid_idempotency_key"): return .kljucZavrzen
         case 409 where t.contains("request_in_progress"): return .vObdelavi
+        case 409 where t.contains("order_not_active"): return .narociloNeaktivno
         // -1 = odgovor ni prispel; »Could not refresh session« pa pomeni, da nakup sploh ni bil poslan.
         case -1 where !t.contains("refresh"): return .nejasen
         default: return .navadna

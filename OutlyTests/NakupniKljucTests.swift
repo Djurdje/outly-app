@@ -37,6 +37,18 @@ final class NakupniKljucTests: XCTestCase {
         }
     }
 
+    func testPoNeaktivnemNarocilu() {
+        var k = NakupniKljuc(ustvari: ustvarjalnik())
+        let a = k.zaNakup(vstopnice(2))
+        k.poNapaki(.narociloNeaktivno)
+        // Naslednji pritisk iste vsebine je nov nakup z NOVIM kljucem (stari je vezan na neaktivno narocilo)...
+        let b = k.zaNakup(vstopnice(2))
+        XCTAssertNotEqual(a, b)
+        // ... in ob naslednji navadni napaki ostane isti (ni vrtenja kljucev).
+        k.poNapaki(.navadna)
+        XCTAssertEqual(k.zaNakup(vstopnice(2)), b)
+    }
+
     func testPrviKljucJeUUIDPrivzetegaIzvora() {
         var k = NakupniKljuc()
         XCTAssertNotNil(UUID(uuidString: k.zaNakup(vstopnice(1))))
@@ -103,6 +115,16 @@ final class NakupniKljucTests: XCTestCase {
         XCTAssertEqual(APIError.requestFailed(409, #"{"error":"request_in_progress","message":"Your previous attempt is still being processed."}"#).nakupniIzid, .vObdelavi)
     }
 
+    func testIzidNarociloNeaktivno() {
+        XCTAssertEqual(APIError.requestFailed(409, #"{"error":"order_not_active","message":"The order for this Idempotency-Key is no longer active."}"#).nakupniIzid, .narociloNeaktivno)
+        // Drugi 409 se ne zamenjajo: razlocuje koda `error`.
+        XCTAssertEqual(APIError.requestFailed(409, #"{"error":"request_in_progress","message":"x"}"#).nakupniIzid, .vObdelavi)
+        XCTAssertEqual(APIError.requestFailed(409, "This table is already booked.").nakupniIzid, .navadna)
+        XCTAssertEqual(APIError.requestFailed(409, #"{"error":"sold_out","message":"Not enough tickets left."}"#).nakupniIzid, .navadna)
+        // Koda pri napacnem statusu se ne steje.
+        XCTAssertEqual(APIError.requestFailed(500, "order_not_active").nakupniIzid, .navadna)
+    }
+
     func testIzidNejasenZaTimeoutInIzgubljenoPovezavo() {
         XCTAssertEqual(URLError(.timedOut).nakupniIzid, .nejasen)
         XCTAssertEqual(URLError(.networkConnectionLost).nakupniIzid, .nejasen)
@@ -135,6 +157,11 @@ final class NakupniKljucTests: XCTestCase {
         let vObdelavi = APIError.requestFailed(409, #"{"error":"request_in_progress","message":"x"}"#)
         XCTAssertNotEqual(vObdelavi.nakupUserMessage, vObdelavi.userMessage)
 
+        let neaktivno = APIError.requestFailed(409, #"{"error":"order_not_active","message":"The order for this Idempotency-Key is no longer active."}"#)
+        XCTAssertNotEqual(neaktivno.nakupUserMessage, neaktivno.userMessage)
+        XCTAssertEqual(neaktivno.nakupUserMessage, String(localized: "Your previous order is no longer active. Tap again to buy anew."))
+        XCTAssertNotEqual(neaktivno.nakupUserMessage, vObdelavi.nakupUserMessage)
+
         let nejasen = URLError(.timedOut)
         XCTAssertNotEqual(nejasen.nakupUserMessage, nejasen.userMessage)
 
@@ -146,6 +173,7 @@ final class NakupniKljucTests: XCTestCase {
         XCTAssertEqual(APIError.requestFailed(503, "Server busy.").nakupPremorNanosekund, 5_000_000_000)
         XCTAssertEqual(APIError.requestFailed(409, #"{"error":"request_in_progress"}"#).nakupPremorNanosekund, 2_000_000_000)
         XCTAssertNil(APIError.requestFailed(409, "This table is already booked.").nakupPremorNanosekund)
+        XCTAssertNil(APIError.requestFailed(409, #"{"error":"order_not_active"}"#).nakupPremorNanosekund)
         XCTAssertNil(URLError(.timedOut).nakupPremorNanosekund)
     }
 }

@@ -501,7 +501,8 @@ struct VipTablesView: View {
             stanje = .napaka
             // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine.
             // Izjema 409 request_in_progress: prejsnji poskus ISTE mize se se obdeluje (miza je lahko ze nasa), izbira ostane.
-            if izid != .vObdelavi, let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
+            // Izjema 409 order_not_active: prejsnje narocilo je preklicano/vrnjeno, kljuc je ponastavljen; izbira ostane za nov pritisk.
+            if izid != .vObdelavi, izid != .narociloNeaktivno, let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
                 await naloziVip()
             }
             if let premor = error.nakupPremorNanosekund {

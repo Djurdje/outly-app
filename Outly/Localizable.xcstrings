@@ -9644,13 +9644,24 @@
         }
       }
     },
-    "Your purchase may have gone through — tap Buy again to check (you won't be charged twice).": {
+    "Your previous order is no longer active. Tap again to buy anew.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nakup je morda uspel – ponovno tapni gumb za nakup, da preveriš (zaračunano ne bo dvakrat)."
+            "value": "Tvoje prejšnje naročilo ni več aktivno. Pritisni znova za nov nakup."
+          }
+        }
+      }
+    },
+    "Your purchase may have gone through — tap the button again to check (you won't be charged twice).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nakup je morda uspel – ponovno tapni gumb, da preveriš (zaračunano ne bo dvakrat)."
           }
         }
       }

@@ -172,15 +172,17 @@ extension Error {
 
     /// Sporocilo za nakupna zaslona: izidi, ki jih doloca idempotentni kljuc (NakupniKljuc), naval -> posebno
     /// sporocilo, sicer enako kot `userMessage`. Kljucni izidi so PRED `userMessage`, ker bi ga `translate`
-    /// ("already used") sicer pomotoma prevedel kot »This ticket was already used.«.
+    /// ("already used") sicer pomotoma prevedel kot »This ticket was already used.« (ali 409 kot »already booked«).
     var nakupUserMessage: String {
         switch nakupniIzid {
         case .kljucZavrzen:
             return String(localized: "Something changed, please try again.")
         case .vObdelavi:
             return String(localized: "Your previous attempt is still being processed. Please try again in a moment.")
+        case .narociloNeaktivno:
+            return String(localized: "Your previous order is no longer active. Tap again to buy anew.")
         case .nejasen:
-            return String(localized: "Your purchase may have gone through — tap Buy again to check (you won't be charged twice).")
+            return String(localized: "Your purchase may have gone through — tap the button again to check (you won't be charged twice).")
         case .navadna:
             break
         }
