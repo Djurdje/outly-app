@@ -29,6 +29,8 @@ final class NakupniKljucShramba {
     private struct Zapis {
         var kljuc: NakupniKljuc
         var zadnjaUporaba: Date
+        /// Izid zadnjega poskusa; nil = odgovor se ni prisel (zaNakup brez poNapaki/poUspehu), obravnavamo kot nejasen.
+        var izid: NakupniIzid?
     }
 
     private var zapisi: [Pot: Zapis] = [:]
@@ -57,19 +59,27 @@ final class NakupniKljucShramba {
         let zdaj = ura()
         zavrziPotekle(zdaj)
         let pot = Pot(uporabnik: uporabnik, dogodekId: vsebina.dogodekId)
-        var zapis = zapisi[pot] ?? Zapis(kljuc: NakupniKljuc(ustvari: ustvari), zadnjaUporaba: zdaj)
+        var zapis = zapisi[pot] ?? Zapis(kljuc: NakupniKljuc(ustvari: ustvari), zadnjaUporaba: zdaj, izid: nil)
         let kljuc = zapis.kljuc.zaNakup(vsebina)
         zapis.zadnjaUporaba = zdaj
+        zapis.izid = nil
         zapisi[pot] = zapis
         return kljuc
     }
 
-    /// Zadnja nerazresena vsebina tega uporabnika in dogodka (po napaki, ki kljuca ni ponastavila), sicer nil: po uspehu,
-    /// po `.kljucZavrzen` / `.narociloNeaktivno` (kljuc je rotiran, uporabnik se odloci znova; backend jo je zavrnil ali
-    /// je naroceno ze neaktivno, zato je ne vsiljujemo), po izteku, po odjavi. Rok zadnje uporabe se ne osvezi.
+    /// Vsebina zadnjega poskusa tega uporabnika in dogodka, SAMO ce je izid nejasen, tj. narocilo je morda nastalo:
+    /// `.nejasen` (timeout, izgubljena povezava), `.vObdelavi` (409 request_in_progress) ali odgovor se ni prisel
+    /// (zaNakup brez poNapaki/poUspehu; obravnavano kot nejasno). Po dokoncni napaki (`.navadna`: 403, razprodano, 503 ...)
+    /// backend kljuca ne zapomni, zato predizpolnitev ni potrebna in bi samo presenetila; po uspehu, po rotaciji kljuca
+    /// (`.kljucZavrzen`, `.narociloNeaktivno`), po izteku in po odjavi je nil. Rok zadnje uporabe se ne osvezi.
+    /// Kljuc sam se zaradi tega NE spremeni (pravila `NakupniKljuc` ostanejo).
     func odprtaVsebina(uporabnik: Int, dogodekId: Int) -> NakupniKljuc.Vsebina? {
         zavrziPotekle(ura())
-        return zapisi[Pot(uporabnik: uporabnik, dogodekId: dogodekId)]?.kljuc.vsebina
+        guard let zapis = zapisi[Pot(uporabnik: uporabnik, dogodekId: dogodekId)] else { return nil }
+        switch zapis.izid {
+        case nil, .nejasen?, .vObdelavi?: return zapis.kljuc.vsebina
+        case .navadna?, .kljucZavrzen?, .narociloNeaktivno?: return nil
+        }
     }
 
     /// Nakup je uspel: zapis stran, naslednji nakup je nov nakup.
@@ -87,6 +97,7 @@ final class NakupniKljucShramba {
         guard var zapis = zapisi[pot] else { return }
         zapis.kljuc.poNapaki(izid)
         zapis.zadnjaUporaba = zdaj
+        zapis.izid = izid
         zapisi[pot] = zapis
     }
 

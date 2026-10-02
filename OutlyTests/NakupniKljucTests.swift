@@ -327,10 +327,35 @@ final class NakupniKljucTests: XCTestCase {
         _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
         s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
         XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
-        // Ostane tudi po navadni napaki in request_in_progress; branje zapisa ne spremeni.
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
         s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .vObdelavi)
         XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
+        // Branje zapisa ne spremeni.
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
+    }
+
+    func testOdprtaVsebinaNeObstanePoDokoncniNapaki() {
+        let s = shramba(Ura())
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(4))
+        // 403, razprodano, 503 ...: backend kljuca ne zapomni, predizpolnitev bi samo presenetila.
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        // Kljuc sam se NE spremeni (pravila kljuca ostanejo): ponovni pritisk iste vsebine ga uporabi znova.
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(4)), a)
+        // Po novem nejasnem izidu je vsebina spet odprta.
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(4))
+    }
+
+    func testOdprtaVsebinaMedZahtevkomJeNejasna() {
+        // zaNakup brez poNapaki/poUspehu (odgovor se ni prisel): obravnavano kot nejasno.
+        let s = shramba(Ura())
+        _ = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), miza(3, paket: 10))
+        // Nov zaNakup po dokoncni napaki ponastavi izid na »se brez odgovora«.
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        _ = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), miza(3, paket: 10))
     }
 
     func testOdprtaVsebinaPoMizi() {

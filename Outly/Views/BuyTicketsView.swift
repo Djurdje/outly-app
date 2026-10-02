@@ -526,7 +526,7 @@ struct BuyTicketsView: View {
     private func kupi() async {
         errorMessage = nil
         stanje = .nalaga
-        // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, ~10 min), ne v @State: ponovno odprt list isti vsebine
+        // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, 24 h), ne v @State: ponovno odprt list isti vsebine
         // ob nejasnem izidu (timeout) dobi ISTI kljuc, zato nakup ni podvojen.
         let uporabnik = session.me?.id ?? -1
         let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
