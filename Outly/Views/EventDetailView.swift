@@ -26,10 +26,11 @@ struct EventDetailView: View {
     @State private var nalozenOpis = ""
     private var opis: String { event.description.isEmpty ? nalozenOpis : event.description }
 
-    @State private var region = MKCoordinateRegion(
+    // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
+    @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-    )
+    ))
 
     var body: some View {
         ScrollView {
@@ -497,8 +498,8 @@ struct EventDetailView: View {
                 Spacer(minLength: 0)
 
                 if let club, let lat = club.lat, let lng = club.lng {
-                    Map(coordinateRegion: $region, annotationItems: [Pin(lat: lat, lng: lng)]) { pin in
-                        MapMarker(coordinate: CLLocationCoordinate2D(latitude: pin.lat, longitude: pin.lng))
+                    Map(position: $camera) {
+                        Marker("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng))
                     }
                     .frame(width: 150, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -507,7 +508,9 @@ struct EventDetailView: View {
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
                     .onAppear {
-                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                        camera = .region(MKCoordinateRegion(
+                            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
                     }
                 } else {
                     RoundedRectangle(cornerRadius: 18)
@@ -713,6 +716,8 @@ struct EventDetailView: View {
             }
         } catch {
             // Tiho: "I'm in" gumb ostane v zacetnem stanju, ostali zaslon dela naprej.
+            // Opis pa ne sme izginiti: isti nadomestni klic kot za goste.
+            await naloziPolniOpis()
         }
     }
 
@@ -721,7 +726,13 @@ struct EventDetailView: View {
     /// dogodek, ki opis ze ima (iskanje, GET /events/:id), ne naredi nic. Tiho ob napaki: brez opisa se
     /// blok "ABOUT" preprosto ne pokaze.
     private func loadOpis() async {
-        guard event.description.isEmpty, !(session.isLoggedIn && !session.token.isEmpty) else { return }
+        guard !(session.isLoggedIn && !session.token.isEmpty) else { return }
+        await naloziPolniOpis()
+    }
+
+    /// GET /events/:id (javno) samo zaradi opisa; ne naredi nic, ce ga dogodek ze ima.
+    private func naloziPolniOpis() async {
+        guard event.description.isEmpty else { return }
         guard let poln = try? await APIClient.shared.fetchEvent(id: event.id) else { return }
         await MainActor.run { nalozenOpis = poln.description }
     }
@@ -769,12 +780,6 @@ struct EventDetailView: View {
 }
 
 // MARK: - Helpers
-private struct Pin: Identifiable {
-    let id = UUID()
-    let lat: Double
-    let lng: Double
-}
-
 private extension APIClub {
     var addressFull: String {
         let a = address.trimmingCharacters(in: .whitespacesAndNewlines)

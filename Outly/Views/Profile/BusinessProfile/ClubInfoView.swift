@@ -315,7 +315,6 @@ struct ClubInfoView: View {
         .preferredColorScheme(.dark)
         // Pogled je potisnjen: sistemski gumb nazaj ze obstaja (prej sta bila dva).
         .task { await loadClub() }
-        .task { await loadGenres() }
         .sheet(item: $activeEdit) { field in editSheet(field) }
         // List namesto navigationDestination(isPresented:): ta v potisnjenem pogledu v iOS 17
         // vcasih potisne prazen zaslon (Luka, build 64: Club info "zasteka", podatki sele po Nazaj).

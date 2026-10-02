@@ -17,10 +17,11 @@ struct ClubDetailView: View {
     @State private var sledilci = 0
     @State private var sledenjeTece = false
 
-    @State private var region = MKCoordinateRegion(
+    // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
+    @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-    )
+    ))
 
     var body: some View {
         ScrollView {
@@ -266,15 +267,17 @@ struct ClubDetailView: View {
     @ViewBuilder
     private var mapBlock: some View {
         if let lat = club?.lat, let lng = club?.lng {
-            Map(coordinateRegion: $region, annotationItems: [SimplePin(lat: lat, lng: lng)]) { pin in
-                MapMarker(coordinate: CLLocationCoordinate2D(latitude: pin.lat, longitude: pin.lng))
+            Map(position: $camera) {
+                Marker("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng))
             }
             .frame(height: 200)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .padding(.horizontal, 16)
             .padding(.top, 6)
             .onAppear {
-                region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                camera = .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                    span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
             }
 
             // naslov/adresa pod mapo (brez "Location" headerja)
@@ -371,12 +374,6 @@ struct ClubDetailView: View {
             errorText = error.userMessage
         }
     }
-}
-
-private struct SimplePin: Identifiable {
-    let id = UUID()
-    let lat: Double
-    let lng: Double
 }
 
 private struct ContactRow: View {

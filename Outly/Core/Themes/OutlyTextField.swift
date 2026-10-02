@@ -46,7 +46,7 @@ struct SectionCard<Content: View>: View {
             content
         }
         .padding()
-        .background(Color("CardBackground"))
+        .background(Color.outlyCard)
         .cornerRadius(16)
     }
 }

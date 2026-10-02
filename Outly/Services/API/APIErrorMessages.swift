@@ -154,12 +154,20 @@ enum NavalNakupa {
 }
 
 extension Error {
-    /// 503 pri nakupu zaradi navale. 503 z znanima besediloma (placila niso na voljo, prijavna
-    /// storitev) je nekaj drugega in ima svoje sporocilo v `userMessage`.
+    /// 503 pri nakupu, ki ga je sprozila naval. Pozitivno ujemanje telesa (backend #111: semafor
+    /// "Too many purchases at once.", "Server busy.", "Service temporarily unavailable."); vse drugo
+    /// (HTML ob izpadu Renderja, "Payments are not available", "Auth service unavailable") ostane
+    /// pri `userMessage`.
     var jeNavalNakupa: Bool {
         guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 503 else { return false }
         let t = raw.lowercased()
-        return !t.contains("payments are not available") && !t.contains("auth service unavailable")
+        return t.contains("too many purchases") || t.contains("server busy") || t.contains("service temporarily unavailable")
+    }
+
+    /// Vsak 503 pri nakupu: gumb je kratek cas onemogocen (nakupa se ne ponavlja samodejno).
+    var jeNakup503: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, _) = api else { return false }
+        return code == 503
     }
 
     /// Sporocilo za nakupna zaslona: naval -> posebno sporocilo, sicer enako kot `userMessage`.

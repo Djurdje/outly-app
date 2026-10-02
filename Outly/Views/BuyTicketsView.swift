@@ -524,7 +524,7 @@ struct BuyTicketsView: View {
             // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
             errorMessage = error.nakupUserMessage
             stanje = .napaka
-            if error.jeNavalNakupa {
+            if error.jeNakup503 {
                 naval = true
                 try? await Task.sleep(nanoseconds: NavalNakupa.premorNanosekund)
                 naval = false

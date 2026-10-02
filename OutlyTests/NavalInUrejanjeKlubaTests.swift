@@ -7,28 +7,35 @@ final class NavalInUrejanjeKlubaTests: XCTestCase {
 
     // MARK: - 503 pri nakupu
 
-    func testNavalJe503BrezZnanegaBesedila() {
-        XCTAssertTrue(APIError.requestFailed(503, "").jeNavalNakupa)
+    func testNavalJe503SZnanimiBesedili() {
+        XCTAssertTrue(APIError.requestFailed(503, "Too many purchases at once. Please try again.").jeNavalNakupa)
         XCTAssertTrue(APIError.requestFailed(503, "Server busy. Please try again.").jeNavalNakupa)
+        XCTAssertTrue(APIError.requestFailed(503, "Service temporarily unavailable. Please try again.").jeNavalNakupa)
+        XCTAssertTrue(APIError.requestFailed(503, "SERVER BUSY").jeNavalNakupa)
     }
 
-    func testPlacilaInPrijavaStaDrugi503() {
+    func testDrugi503NisoNaval() {
+        XCTAssertFalse(APIError.requestFailed(503, "").jeNavalNakupa)
+        XCTAssertFalse(APIError.requestFailed(503, "<html><body><h1>Service Unavailable</h1></body></html>").jeNavalNakupa)
         XCTAssertFalse(APIError.requestFailed(503, "Payments are not available yet.").jeNavalNakupa)
         XCTAssertFalse(APIError.requestFailed(503, "Auth service unavailable.").jeNavalNakupa)
+        // Gumb je onemogocen pri vsakem 503 na nakupu, sporocilo o navali pa ne.
+        XCTAssertTrue(APIError.requestFailed(503, "").jeNakup503)
+        XCTAssertFalse(APIError.requestFailed(409, "").jeNakup503)
     }
 
     func testDrugeKodeNisoNaval() {
         for koda in [400, 401, 403, 404, 409, 429, 500, 502, -1] {
-            XCTAssertFalse(APIError.requestFailed(koda, "").jeNavalNakupa)
+            XCTAssertFalse(APIError.requestFailed(koda, "Server busy.").jeNavalNakupa)
         }
         XCTAssertFalse(URLError(.timedOut).jeNavalNakupa)
     }
 
     func testNakupSporociloZaNavalInSplosnoZa503Drugje() {
-        let naval = APIError.requestFailed(503, "").nakupUserMessage
+        let naval = APIError.requestFailed(503, "Server busy. Please try again.").nakupUserMessage
         XCTAssertFalse(naval.isEmpty)
         // userMessage (drugi zasloni) za 503 ostane splosen.
-        XCTAssertNotEqual(APIError.requestFailed(503, "").userMessage, naval)
+        XCTAssertNotEqual(APIError.requestFailed(503, "Server busy. Please try again.").userMessage, naval)
         // Ne-naval ostane pri userMessage.
         XCTAssertEqual(APIError.requestFailed(409, "Already booked").nakupUserMessage, APIError.requestFailed(409, "Already booked").userMessage)
     }

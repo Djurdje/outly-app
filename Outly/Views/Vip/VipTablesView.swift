@@ -496,7 +496,7 @@ struct VipTablesView: View {
             if let api = error as? APIError, case .requestFailed(let status, _) = api, status == 409 {
                 await naloziVip()
             }
-            if error.jeNavalNakupa {
+            if error.jeNakup503 {
                 naval = true
                 try? await Task.sleep(nanoseconds: NavalNakupa.premorNanosekund)
                 naval = false
