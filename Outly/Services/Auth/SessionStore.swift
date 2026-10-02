@@ -216,6 +216,9 @@ final class SessionStore: ObservableObject {
     }
 
     private func meSpremenjen(prej: Me?) {
+        // Nakupni kljuci, nastali, preden je bil `me` znan (Pay takoj po hladnem zagonu), postanejo kljuci tega uporabnika:
+        // sicer bi ponovni Pay po prihodu `me` dobil nov kljuc in drugo narocilo (outly-backend #137, tocka 2).
+        if prej == nil, let m = me { NakupniKljucShramba.deljena.pripisiNeznanega(uporabnik: m.id) }
         guard let m = me, m != prej, let sub = MeShramba.sub(izZetona: token) else { return }
         if let z = shranjenMe, z.sub == sub, z.me == m { return }   // enako ze shranjeno (npr. Me iz shrambe)
         shranjenMe = MeShramba.Zapis(sub: sub, me: m)

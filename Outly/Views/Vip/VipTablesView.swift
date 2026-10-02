@@ -506,7 +506,9 @@ struct VipTablesView: View {
     private func predizpolniIzbiro(_ novo: EventVip) {
         guard !predizpolnjeno else { return }
         predizpolnjeno = true
-        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id)
+        // Samo zapis VIP mize: nerazresene vstopnice istega dogodka imajo svoj zapis (#137).
+        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? NakupniKljucShramba.neznanUporabnik,
+                                                            dogodekId: event.id, vrsta: .vipMiza)
         nerazresena = prej
         guard let v = prej, let mizaId = v.mizaId,
               novo.tables.first(where: { $0.id == mizaId })?.available == true else { return }
@@ -520,21 +522,21 @@ struct VipTablesView: View {
         errorMessage = nil
         nerazresena = nil
         stanje = .nalaga
-        let uporabnik = session.me?.id ?? -1
+        let uporabnik = session.me?.id ?? NakupniKljucShramba.neznanUporabnik
         let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
             uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, mizaId: m.id, paketId: izbraniPaketId))
         do {
             let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
                                                         packageId: izbraniPaketId, expectedPriceCents: m.priceCents,
                                                         idempotencyKey: kljucNakupa, token: session.token)
-            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id)
+            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
             let izid = error.nakupniIzid
-            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, izid: izid)
+            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza, izid: izid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
             // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine

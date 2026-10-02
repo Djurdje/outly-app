@@ -546,7 +546,9 @@ struct BuyTicketsView: View {
     private func predizpolni() {
         guard !predizpolnjeno else { return }
         predizpolnjeno = true
-        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id)
+        // Samo zapis vstopnic: nerazresen VIP istega dogodka ima svoj zapis in ga ta list ne sme niti prebrati niti povoziti (#137).
+        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? NakupniKljucShramba.neznanUporabnik,
+                                                            dogodekId: event.id, vrsta: .vstopnice)
         nerazresena = prej
         guard let v = prej, v.mizaId == nil else { return }
         quantity = min(max(v.kolicina, 1), maxQuantity)
@@ -558,13 +560,13 @@ struct BuyTicketsView: View {
         stanje = .nalaga
         // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, 24 h), ne v @State: ponovno odprt list isti vsebine
         // ob nejasnem izidu (timeout) dobi ISTI kljuc, zato nakup ni podvojen.
-        let uporabnik = session.me?.id ?? -1
+        let uporabnik = session.me?.id ?? NakupniKljucShramba.neznanUporabnik
         let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
             uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, kolicina: quantity))
         do {
             let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
                                                           idempotencyKey: kljucNakupa)
-            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id)
+            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             // Kljukica naj bo za hip vidna, preden se krog "razpre" v vstopnico.
@@ -572,7 +574,7 @@ struct BuyTicketsView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
             // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
-            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, izid: error.nakupniIzid)
+            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice, izid: error.nakupniIzid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
             if let premor = error.nakupPremorNanosekund {

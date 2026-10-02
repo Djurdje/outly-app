@@ -91,74 +91,107 @@ final class NakupniNapotekTests: XCTestCase {
     func testNejasenIzidPreziviNavadnoNapakoZIstimKljucem() {
         let s = novaShramba()
         let prvi = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
         // Ponovitev z istim kljucem: 503 (.navadna). Prvo narocilo je lahko ze nastalo -> vsebina ostane odprta.
         XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(3)), prvi)
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
-        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .navadna)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice), vstopnice(3))
         // Se ena ponovitev + navadna napaka: se vedno lepljivo; kljuc isti.
         XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(3)), prvi)
-        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))   // zahtevek v teku
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
-        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice), vstopnice(3))   // zahtevek v teku
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .navadna)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice), vstopnice(3))
     }
 
     func testVObdelaviPreziviNavadnoNapako() {
         let s = novaShramba()
         _ = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .vObdelavi)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza, izid: .vObdelavi)
         _ = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
-        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), miza(3, paket: 10))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza, izid: .navadna)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza), miza(3, paket: 10))
     }
 
     func testNavadnaNapakaBrezPrejsnjegaNejasnegaIzidaNeDaVsebine() {
         let s = novaShramba()
         _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
-        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .navadna)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice))
     }
 
     func testNejasenIzidPoUspehuJeNil() {
         let s = novaShramba()
         _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
         _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
-        s.poUspehu(uporabnik: 1, dogodekId: 7)
-        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        s.poUspehu(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice))
     }
 
     func testNejasenIzidPoRotacijiKljucaJeNil() {
         let s = novaShramba()
         for izid in [NakupniIzid.kljucZavrzen, .narociloNeaktivno] {
             _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
-            s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
-            s.poNapaki(uporabnik: 1, dogodekId: 7, izid: izid)
-            XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), "izid \(izid)")
+            s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
+            s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: izid)
+            XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice), "izid \(izid)")
             // Po rotaciji naslednja navadna napaka ne obudi starega nejasnega izida.
             _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
-            s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
-            XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), "izid \(izid)")
+            s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .navadna)
+            XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice), "izid \(izid)")
         }
     }
 
     func testNejasenIzidNeSegaNaNovKljucZaradiDrugeVsebine() {
         let s = novaShramba()
         let prvi = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
         // Druga kolicina = nov kljuc (pravilo NakupniKljuc ostane); njena navadna napaka ne podeduje nejasnega izida.
         XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(4)), prvi)
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
-        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .navadna)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice))
     }
 
     func testDrugUporabnikInDrugDogodekNistaDelezniNapotka() {
         let s = novaShramba()
         _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
-        XCTAssertNil(s.odprtaVsebina(uporabnik: 2, dogodekId: 7))
-        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 8))
-        XCTAssertNotNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 2, dogodekId: 7, vrsta: .vstopnice))
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 8, vrsta: .vstopnice))
+        XCTAssertNotNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice))
+    }
+
+    // MARK: - Vstopnice in VIP istega dogodka imata vsak svoj nerazresen izid (outly-backend #137)
+
+    func testNerazresenVipPoPayNaListuVstopnicOstaneInDaNapotek() {
+        let s = novaShramba()
+        _ = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza, izid: .nejasen)
+        // List vstopnic istega dogodka: tam ni nerazresenega poskusa (ne prebere VIP zapisa), napotka ni.
+        XCTAssertNil(NakupniNapotek.zaVstopnice(
+            odprta: s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice),
+            trenutna: vstopnice(1), gumbNaVoljo: true))
+        // Pay vstopnic uspe in zapis vstopnic izgine ...
+        _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        s.poUspehu(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice)
+        // ... VIP zapis ne: miza je (Booked) ni v izbiri -> napotek »Check Profile -> Tickets« ostane; z isto mizo »tap again«.
+        let odprtaVip = s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza)
+        XCTAssertEqual(NakupniNapotek.zaVip(odprta: odprtaVip, trenutna: nil, gumbNaVoljo: true), .preveriProfil)
+        XCTAssertEqual(NakupniNapotek.zaVip(odprta: odprtaVip, trenutna: miza(3, paket: 10), gumbNaVoljo: true), .moznoUspel)
+    }
+
+    func testNerazresenaVstopnicePoPayNaVipListuOstanejoInDajoNapotek() {
+        let s = novaShramba()
+        _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
+        XCTAssertNil(NakupniNapotek.zaVip(
+            odprta: s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza),
+            trenutna: miza(3), gumbNaVoljo: true))
+        _ = s.zaNakup(uporabnik: 1, vsebina: miza(3))
+        s.poUspehu(uporabnik: 1, dogodekId: 7, vrsta: .vipMiza)
+        let odprtaVstopnice = s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice)
+        XCTAssertEqual(NakupniNapotek.zaVstopnice(odprta: odprtaVstopnice, trenutna: vstopnice(3), gumbNaVoljo: true), .moznoUspel)
+        XCTAssertEqual(NakupniNapotek.zaVstopnice(odprta: odprtaVstopnice, trenutna: vstopnice(1), gumbNaVoljo: true), .preveriProfil)
     }
 
     // MARK: - Napotek ne spremeni kljuca
@@ -166,8 +199,8 @@ final class NakupniNapotekTests: XCTestCase {
     func testBranjeNapotkaNeSpremeniKljucaInKolicineNeZaklene() {
         let s = novaShramba()
         let prvi = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
-        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
-        let odprta = s.odprtaVsebina(uporabnik: 1, dogodekId: 7)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice, izid: .nejasen)
+        let odprta = s.odprtaVsebina(uporabnik: 1, dogodekId: 7, vrsta: .vstopnice)
         _ = NakupniNapotek.zaVstopnice(odprta: odprta, trenutna: vstopnice(3), gumbNaVoljo: true)
         XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(3)), prvi)      // ista vsebina = isti kljuc
         XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(4)), prvi)   // druga kolicina = nov kljuc
