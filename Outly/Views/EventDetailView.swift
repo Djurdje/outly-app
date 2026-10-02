@@ -21,10 +21,11 @@ struct EventDetailView: View {
     @State private var friendsInterested: [FriendUser] = []
     @State private var planSubmitting = false
 
-    @State private var region = MKCoordinateRegion(
+    // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
+    @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-    )
+    ))
 
     var body: some View {
         ScrollView {
@@ -491,8 +492,8 @@ struct EventDetailView: View {
                 Spacer(minLength: 0)
 
                 if let club, let lat = club.lat, let lng = club.lng {
-                    Map(coordinateRegion: $region, annotationItems: [Pin(lat: lat, lng: lng)]) { pin in
-                        MapMarker(coordinate: CLLocationCoordinate2D(latitude: pin.lat, longitude: pin.lng))
+                    Map(position: $camera) {
+                        Marker("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng))
                     }
                     .frame(width: 150, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -501,7 +502,9 @@ struct EventDetailView: View {
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
                     .onAppear {
-                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                        camera = .region(MKCoordinateRegion(
+                            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
                     }
                 } else {
                     RoundedRectangle(cornerRadius: 18)
@@ -752,12 +755,6 @@ struct EventDetailView: View {
 }
 
 // MARK: - Helpers
-private struct Pin: Identifiable {
-    let id = UUID()
-    let lat: Double
-    let lng: Double
-}
-
 private extension APIClub {
     var addressFull: String {
         let a = address.trimmingCharacters(in: .whitespacesAndNewlines)

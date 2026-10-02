@@ -269,7 +269,8 @@ struct WalletTicketCard: View {
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: { SkeletonBlock() }
                 } else {
-                    LinearGradient(colors: [barva, Color.purple.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    // Brez plakata: barva vstopnice v temno (brez vijolicnih prelivov), kot EventPosterCard.
+                    LinearGradient(colors: [barva.opacity(0.55), Color.outlyBackground], startPoint: .topLeading, endPoint: .bottomTrailing)
                 }
             }
             .frame(height: 210)
