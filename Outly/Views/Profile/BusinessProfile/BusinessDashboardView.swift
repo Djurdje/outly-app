@@ -625,7 +625,7 @@ struct EventTicketsView: View {
                         ForEach(tickets) { t in
                             HStack(spacing: 10) {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(t.serial.prefix(8).uppercased())
+                                    Text(verbatim: t.serialKratek.isEmpty ? t.publicRef : t.serialKratek)
                                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                                         .foregroundColor(.white)
                                     Text(t.publicRef)

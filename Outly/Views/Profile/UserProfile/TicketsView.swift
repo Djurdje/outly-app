@@ -358,9 +358,12 @@ struct WalletTicketCard: View {
             }
             .padding(.top, 4)
 
-            Text(ticket.serial.uppercased())
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(.white.opacity(0.4))
+            // Tukaj `transferred` = vstopnico sem PREJEL -> serial in QR sta moja. Serial je opcijski (model), zato brez njega vrstice ni.
+            if !ticket.serialVelik.isEmpty {
+                Text(ticket.serialVelik)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.4))
+            }
             if ticket.minAge > 0 {
                 Text("\(ticket.minAge)+ · ID checked at the door")
                     .font(.system(size: 11))
