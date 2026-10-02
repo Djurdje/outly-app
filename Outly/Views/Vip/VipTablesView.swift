@@ -25,6 +25,8 @@ struct VipTablesView: View {
     @State private var predizpolnjeno = false
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
+    /// Informativen napotek ob ponovnem odprtju po nejasnem izidu (glej `predizpolniIzbiro`); izgine ob naslednjem pritisku na Reserve.
+    @State private var napotek: NakupniNapotek?
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
@@ -115,6 +117,10 @@ struct VipTablesView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     glava
                         .padding(.top, 8)
+
+                    if let napotek {
+                        NapotekKartica(besedilo: napotek.besedilo)
+                    }
 
                     VipTloris(
                         plan: plan,
@@ -484,12 +490,18 @@ struct VipTablesView: View {
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): miza in paket zadnjega nerazresenega poskusa, da
     /// Reserve table poslje isto vsebino z istim kljucem (NakupniKljucShramba). Samo ob prvem nalaganju in samo ce je miza
     /// v tlorisu se na voljo (sicer brez izbire); paket samo, ce ga klub se ponuja. Vsebina vstopnic (mizaId == nil) tu ne velja.
+    /// Napotek: miza se obdrzi -> narocilo je morda ze nastalo (ponovni pritisk preveri); mize ni vec med prostimi
+    /// (v tlorisu »Booked«) -> Profile -> Tickets. Kolicine/mize ne zaklene.
     private func predizpolniIzbiro(_ novo: EventVip) {
         guard !predizpolnjeno else { return }
         predizpolnjeno = true
-        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
-              let mizaId = v.mizaId,
-              novo.tables.first(where: { $0.id == mizaId })?.available == true else { return }
+        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id)
+        var mizaProsta = false
+        if let id = prej?.mizaId {
+            mizaProsta = novo.tables.first(where: { $0.id == id })?.available == true
+        }
+        napotek = NakupniNapotek.zaVip(odprtaVsebina: prej, mizaProsta: mizaProsta)
+        guard let v = prej, let mizaId = v.mizaId, mizaProsta else { return }
         izbranaMizaId = mizaId
         if let paketId = v.paketId, novo.packages.contains(where: { $0.id == paketId }) {
             izbraniPaketId = paketId
@@ -498,6 +510,7 @@ struct VipTablesView: View {
 
     private func rezerviraj(_ m: VipTable) async {
         errorMessage = nil
+        napotek = nil
         stanje = .nalaga
         let uporabnik = session.me?.id ?? -1
         let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(

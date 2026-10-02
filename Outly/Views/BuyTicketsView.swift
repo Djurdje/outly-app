@@ -21,6 +21,8 @@ struct BuyTicketsView: View {
     /// Stanje skupnega akcijskega gumba (OutlyAkcijskiGumb) - nadomesca prejsnji isBuying.
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
+    /// Informativen napotek ob ponovnem odprtju po nejasnem izidu (glej `predizpolni`); izgine ob naslednjem pritisku na Pay.
+    @State private var napotek: NakupniNapotek?
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
@@ -82,6 +84,10 @@ struct BuyTicketsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 glavaDogodka
                     .padding(.top, 8)
+
+                if let napotek {
+                    NapotekKartica(besedilo: napotek.besedilo)
+                }
 
                 karticaNakupa
 
@@ -525,16 +531,19 @@ struct BuyTicketsView: View {
 
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay
     /// poslje isto vsebino z istim kljucem (NakupniKljucShramba). Vsebina VIP mize (mizaId != nil) tu ne velja.
+    /// Ob istem nerazresenem poskusu pokaze napotek, da je narocilo morda ze nastalo (kolicine ne zaklene).
     private func predizpolni() {
         guard !predizpolnjeno else { return }
         predizpolnjeno = true
-        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
-              v.mizaId == nil else { return }
+        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id)
+        napotek = NakupniNapotek.zaVstopnice(odprtaVsebina: prej)
+        guard let v = prej, v.mizaId == nil else { return }
         quantity = min(max(v.kolicina, 1), maxQuantity)
     }
 
     private func kupi() async {
         errorMessage = nil
+        napotek = nil
         stanje = .nalaga
         // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, 24 h), ne v @State: ponovno odprt list isti vsebine
         // ob nejasnem izidu (timeout) dobi ISTI kljuc, zato nakup ni podvojen.
