@@ -20,7 +20,8 @@ struct OmejenaSlika: View {
             }
         } else {
             ZStack {
-                LinearGradient(colors: [Color.outlyBlue.opacity(0.7), Color.purple.opacity(0.6)],
+                // Brez slike: samo modra v temno (pravilo: brez vijolicnih prelivov), kot EventPosterCard.
+                LinearGradient(colors: [Color.outlyBlue.opacity(0.55), Color.outlyBackground],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
                 Image(systemName: fallbackSymbol)
                     .font(.system(size: 30, weight: .bold))
@@ -86,9 +87,7 @@ struct HitCard: View {
         }
         .frame(height: 150)
         .background(
-            LinearGradient(colors: [Color(red: 0, green: 14/255, blue: 61/255),
-                                    Color(red: 25/255, green: 53/255, blue: 142/255),
-                                    Color(red: 46/255, green: 71/255, blue: 153/255)],
+            LinearGradient(colors: [Color.outlyHitStart, Color.outlyHitMid, Color.outlyHitEnd],
                            startPoint: .leading, endPoint: .trailing)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
