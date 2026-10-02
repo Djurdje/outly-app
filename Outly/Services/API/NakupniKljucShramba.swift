@@ -4,7 +4,10 @@ import Foundation
 ///
 /// Zakaj: kljuc v `@State` lista se izgubi, ko uporabnik list zapre. Scenarij: Pay -> timeout (narocilo je na strezniku
 /// ze nastalo) -> zapre in znova odpre list -> nov kljuc -> DRUGO narocilo (pri VIP mizi »already booked« za lastno mizo).
-/// Zato kljuc ostane tu: ponovno odprt list ISTE vsebine v `veljavnost` (10 min od zadnje uporabe) dobi ISTI kljuc.
+/// Zato kljuc ostane tu: ponovno odprt list ISTE vsebine v `veljavnost` od zadnje uporabe dobi ISTI kljuc. List ob odprtju
+/// prebere se `odprtaVsebina` (kolicina, miza, paket zadnjega nerazresenega poskusa) in z njo predizpolni izbiro, sicer bi
+/// ponastavljena izbira (kolicina 1) dala drugo vsebino in s tem nov kljuc.
+/// Backend kljuc hrani trajno, zato iztek ni potreben za pravilnost; 24 h je samo higiena pomnilnika (aplikacija dolgo zivi v ozadju).
 ///
 /// Zapis je vezan na (uporabnik, dogodek); znotraj zapisa velja pravilo `NakupniKljuc` (sprememba kolicine/mize/paketa = nov kljuc).
 /// Zapis se zavrze po uspehu, po 422/400 (`.kljucZavrzen`) in 409 `order_not_active` (`NakupniKljuc.poNapaki` ponastavi kljuc),
@@ -15,8 +18,8 @@ final class NakupniKljucShramba {
     /// Skupna shramba aplikacije.
     static let deljena = NakupniKljucShramba()
 
-    /// Kako dolgo od zadnje uporabe je kljuc se veljaven.
-    nonisolated static let privzetaVeljavnost: TimeInterval = 10 * 60
+    /// Kako dolgo od zadnje uporabe je kljuc se veljaven (higiena pomnilnika, ne pravilnost: backend kljuc hrani trajno).
+    nonisolated static let privzetaVeljavnost: TimeInterval = 24 * 60 * 60
 
     private struct Pot: Hashable {
         let uporabnik: Int
@@ -59,6 +62,14 @@ final class NakupniKljucShramba {
         zapis.zadnjaUporaba = zdaj
         zapisi[pot] = zapis
         return kljuc
+    }
+
+    /// Zadnja nerazresena vsebina tega uporabnika in dogodka (po napaki, ki kljuca ni ponastavila), sicer nil: po uspehu,
+    /// po `.kljucZavrzen` / `.narociloNeaktivno` (kljuc je rotiran, uporabnik se odloci znova; backend jo je zavrnil ali
+    /// je naroceno ze neaktivno, zato je ne vsiljujemo), po izteku, po odjavi. Rok zadnje uporabe se ne osvezi.
+    func odprtaVsebina(uporabnik: Int, dogodekId: Int) -> NakupniKljuc.Vsebina? {
+        zavrziPotekle(ura())
+        return zapisi[Pot(uporabnik: uporabnik, dogodekId: dogodekId)]?.kljuc.vsebina
     }
 
     /// Nakup je uspel: zapis stran, naslednji nakup je nov nakup.

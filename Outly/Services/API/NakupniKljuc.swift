@@ -24,7 +24,8 @@ struct NakupniKljuc {
     }
 
     private(set) var vrednost: String
-    private var vsebina: Vsebina?
+    /// Vsebina zadnjega poskusa, ki ni razresen (nil: se ni bilo poskusa, uspeh ali ponastavljen kljuc).
+    private(set) var vsebina: Vsebina?
     private let ustvari: () -> String
 
     /// `ustvari`: izvor novih kljucev (UUID); v testih nadomestljiv z deterministicnim.

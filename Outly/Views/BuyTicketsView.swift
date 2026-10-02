@@ -16,6 +16,8 @@ struct BuyTicketsView: View {
     @EnvironmentObject private var session: SessionStore
 
     @State private var quantity = 1
+    /// Izbira se predizpolni samo ob prvem prikazu (glej `predizpolni`).
+    @State private var predizpolnjeno = false
     /// Stanje skupnega akcijskega gumba (OutlyAkcijskiGumb) - nadomesca prejsnji isBuying.
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
@@ -48,6 +50,7 @@ struct BuyTicketsView: View {
                     obrazec
                 }
             }
+            .onAppear { predizpolni() }
             .background(ozadje.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -508,6 +511,16 @@ struct BuyTicketsView: View {
         .frame(width: width, height: height)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+
+    /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay
+    /// poslje isto vsebino z istim kljucem (NakupniKljucShramba). Vsebina VIP mize (mizaId != nil) tu ne velja.
+    private func predizpolni() {
+        guard !predizpolnjeno else { return }
+        predizpolnjeno = true
+        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
+              v.mizaId == nil else { return }
+        quantity = min(max(v.kolicina, 1), maxQuantity)
     }
 
     private func kupi() async {

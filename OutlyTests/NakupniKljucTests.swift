@@ -305,9 +305,80 @@ final class NakupniKljucTests: XCTestCase {
         XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: miza(3, dogodek: 9)), b)
     }
 
-    func testShrambaPrivzetaVeljavnostJeDesetMinut() {
-        XCTAssertEqual(NakupniKljucShramba.privzetaVeljavnost, 600)
-        let s = NakupniKljucShramba()
-        XCTAssertNotNil(UUID(uuidString: s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))))
+    func testShrambaPrivzetaVeljavnostJeEnDan() {
+        // Backend kljuc hrani trajno; iztek je samo higiena pomnilnika (pozen Pay po timeoutu mora dati isti kljuc).
+        XCTAssertEqual(NakupniKljucShramba.privzetaVeljavnost, 24 * 60 * 60)
+        let ura = Ura()
+        let s = NakupniKljucShramba(ura: { ura.zdaj }, ustvari: ustvarjalnik())
+        let a = s.zaNakup(uporabnik: 1, vsebina: vstopnice(1))
+        ura.naprej(60 * 60)   // list odprt eno uro po timeoutu
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+        ura.naprej(24 * 60 * 60)
+        XCTAssertNotEqual(s.zaNakup(uporabnik: 1, vsebina: vstopnice(1)), a)
+        let privzeta = NakupniKljucShramba()
+        XCTAssertNotNil(UUID(uuidString: privzeta.zaNakup(uporabnik: 1, vsebina: vstopnice(1))))
+    }
+
+    // MARK: - Odprta vsebina (predizpolnitev ob ponovnem odprtju lista)
+
+    func testOdprtaVsebinaJeSamoPoNerazresenemPoskusu() {
+        let s = shramba(Ura())
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))          // se ni poskusa
+        _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
+        // Ostane tudi po navadni napaki in request_in_progress; branje zapisa ne spremeni.
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .navadna)
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .vObdelavi)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), vstopnice(3))
+    }
+
+    func testOdprtaVsebinaPoMizi() {
+        let s = shramba(Ura())
+        _ = s.zaNakup(uporabnik: 1, vsebina: miza(3, paket: 10))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), miza(3, paket: 10))
+        // Uporabnikova nova izbira (druga miza) je zadnji poskus.
+        _ = s.zaNakup(uporabnik: 1, vsebina: miza(4, paket: nil))
+        XCTAssertEqual(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), miza(4, paket: nil))
+    }
+
+    func testOdprtaVsebinaPoUspehuInRotacijiKljucaJeNil() {
+        let s = shramba(Ura())
+        _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+        s.poUspehu(uporabnik: 1, dogodekId: 7)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        // 422/400 in 409 order_not_active: kljuc je rotiran, prejsnje vsebine ne vsiljujemo.
+        for izid in [NakupniIzid.kljucZavrzen, .narociloNeaktivno] {
+            _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+            s.poNapaki(uporabnik: 1, dogodekId: 7, izid: izid)
+            XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7), "izid \(izid)")
+        }
+    }
+
+    func testOdprtaVsebinaPoIzteku_OdjaviInZaDrugegaUporabnika() {
+        let ura = Ura()
+        let s = shramba(ura, veljavnost: 600)
+        _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 2, dogodekId: 7))          // drug uporabnik
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 8))          // drug dogodek
+        ura.naprej(599)
+        XCTAssertNotNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        // Branje roka ne osvezi: 599 + 1 = 600 od zadnje uporabe -> poteklo.
+        ura.naprej(1)
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+        _ = s.zaNakup(uporabnik: 1, vsebina: vstopnice(2))
+        s.pocistiVse()
+        XCTAssertNil(s.odprtaVsebina(uporabnik: 1, dogodekId: 7))
+    }
+
+    func testPredizpolnjenaVsebinaDaIstiKljucKotPrviPoskus() {
+        // Celoten scenarij: kolicina 3, timeout, zapri; nov list prebere odprtoVsebino in pri Pay poslje isto vsebino.
+        let s = shramba(Ura())
+        let prvi = s.zaNakup(uporabnik: 1, vsebina: vstopnice(3))
+        s.poNapaki(uporabnik: 1, dogodekId: 7, izid: .nejasen)
+        let predizpolnjena = s.odprtaVsebina(uporabnik: 1, dogodekId: 7)
+        XCTAssertEqual(predizpolnjena, vstopnice(3))
+        XCTAssertEqual(s.zaNakup(uporabnik: 1, vsebina: predizpolnjena ?? vstopnice(1)), prvi)
     }
 }

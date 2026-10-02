@@ -21,6 +21,8 @@ struct VipTablesView: View {
     @State private var napakaNalaganja: String?
     @State private var izbranaMizaId: Int?
     @State private var izbraniPaketId: Int?
+    /// Izbira se predizpolni samo ob prvem uspesnem nalaganju tlorisa (glej `naloziVip`).
+    @State private var predizpolnjeno = false
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
@@ -473,8 +475,24 @@ struct VipTablesView: View {
             if let pid = izbraniPaketId, !novo.packages.contains(where: { $0.id == pid }) {
                 izbraniPaketId = nil
             }
+            predizpolniIzbiro(novo)
         } catch {
             if vip == nil { napakaNalaganja = error.userMessage }
+        }
+    }
+
+    /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): miza in paket zadnjega nerazresenega poskusa, da
+    /// Reserve table poslje isto vsebino z istim kljucem (NakupniKljucShramba). Samo ob prvem nalaganju in samo ce je miza
+    /// v tlorisu se na voljo (sicer brez izbire); paket samo, ce ga klub se ponuja. Vsebina vstopnic (mizaId == nil) tu ne velja.
+    private func predizpolniIzbiro(_ novo: EventVip) {
+        guard !predizpolnjeno else { return }
+        predizpolnjeno = true
+        guard let v = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? -1, dogodekId: event.id),
+              let mizaId = v.mizaId,
+              novo.tables.first(where: { $0.id == mizaId })?.available == true else { return }
+        izbranaMizaId = mizaId
+        if let paketId = v.paketId, novo.packages.contains(where: { $0.id == paketId }) {
+            izbraniPaketId = paketId
         }
     }
 
