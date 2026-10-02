@@ -140,3 +140,33 @@ extension APIError {
         }
     }
 }
+
+// MARK: - Naval pri nakupu (503)
+
+/// Backend (semafor nakupov, outly-backend #111) ob navali odgovori 503 + `Retry-After: 5`, ko nakup
+/// ne dobi mesta v vrsti ali baza ne pride do povezave. Velja SAMO za nakupna zaslona (vstopnice, VIP
+/// mize): drugje ostane 503 splosno sporocilo (`userMessage`). Nakupa se NE ponavlja samodejno —
+/// backend nima idempotentnega kljuca (outly-backend #112), zato bi ponovitev lahko kupila dvakrat.
+enum NavalNakupa {
+    /// Kako dolgo je gumb za nakup onemogocen po 503. `Retry-After` iz glave `send()` ne vrne, zato
+    /// privzeta vrednost backenda (5 s).
+    static let premorNanosekund: UInt64 = 5_000_000_000
+}
+
+extension Error {
+    /// 503 pri nakupu zaradi navale. 503 z znanima besediloma (placila niso na voljo, prijavna
+    /// storitev) je nekaj drugega in ima svoje sporocilo v `userMessage`.
+    var jeNavalNakupa: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 503 else { return false }
+        let t = raw.lowercased()
+        return !t.contains("payments are not available") && !t.contains("auth service unavailable")
+    }
+
+    /// Sporocilo za nakupna zaslona: naval -> posebno sporocilo, sicer enako kot `userMessage`.
+    var nakupUserMessage: String {
+        if jeNavalNakupa {
+            return String(localized: "Lots of people are buying right now. Please try again in a few seconds.")
+        }
+        return userMessage
+    }
+}

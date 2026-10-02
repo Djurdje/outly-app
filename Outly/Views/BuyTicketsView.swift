@@ -20,6 +20,8 @@ struct BuyTicketsView: View {
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     @State private var purchase: PurchaseResponse?
+    /// 503 zaradi navale: gumb je ~5 s onemogocen, nakup se ne ponovi sam (brez idempotentnega kljuca).
+    @State private var naval = false
     @Environment(\.accessibilityReduceMotion) private var manjGibanja
 
     private var koda: String { event.currency ?? "EUR" }
@@ -312,8 +314,9 @@ struct BuyTicketsView: View {
         return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
             Task { await kupi() }
         }
-        .disabled(soldOut)
-        .outlySij(moc: 1.0, aktiven: !soldOut)
+        .disabled(soldOut || naval)
+        .opacity(naval ? 0.45 : 1)
+        .outlySij(moc: 1.0, aktiven: !soldOut && !naval)
     }
 
     /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.
@@ -519,8 +522,13 @@ struct BuyTicketsView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } catch {
             // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
-            errorMessage = error.userMessage
+            errorMessage = error.nakupUserMessage
             stanje = .napaka
+            if error.jeNavalNakupa {
+                naval = true
+                try? await Task.sleep(nanoseconds: NavalNakupa.premorNanosekund)
+                naval = false
+            }
         }
     }
 }
