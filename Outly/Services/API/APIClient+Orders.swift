@@ -482,9 +482,11 @@ extension APIClient {
 
     /// POST /business/tickets/scan — skener. 409/400/404 nosijo isto JSON obliko kot 200,
     /// zato jih tu prevedemo v ScanResult namesto v napako.
-    func scanTicket(token: String, qr: String) async throws -> ScanResult {
+    /// `clubId` (izrecen klub) in `timeout` (kratek rok na vratih) sta neobvezna; brez njiju velja kot doslej.
+    func scanTicket(token: String, qr: String, clubId: Int? = nil, timeout: TimeInterval? = nil) async throws -> ScanResult {
         do {
-            let data = try await send(path: "business/tickets/scan", method: "POST", token: token, json: ["qr": qr])
+            let data = try await send(path: "business/tickets/scan", method: "POST", token: token, json: ["qr": qr],
+                                      clubId: clubId, timeout: timeout)
             return try decode(ScanResult.self, from: data)
         } catch let api as APIError {
             if case let .requestFailed(code, raw) = api, [400, 403, 404, 409].contains(code),

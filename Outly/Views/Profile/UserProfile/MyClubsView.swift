@@ -292,10 +292,15 @@ struct MyClubsView: View {
         } catch let api as APIError {
             // 404 = klub se ni ustvarjen; to ni napaka za uporabnika.
             if case let .requestFailed(code, _) = api, code == 404 { return }
-            errorText = api.userMessage
+            errorText = opisNapake(api)
         } catch {
-            errorText = error.userMessage
+            errorText = opisNapake(error)
         }
+    }
+
+    /// Brez povezave (K1): seznam klubov pride iz shranjenega Me, zato ni napaka, ampak opomba; skener deluje naprej.
+    private func opisNapake(_ e: Error) -> String {
+        e.jeIzpadPovezave ? String(localized: "No connection. Showing your saved clubs; the scanner still works.") : e.userMessage
     }
 }
 
@@ -383,7 +388,7 @@ struct MyClubDetailView: View {
                         }
 
                         NavigationLink {
-                            QRScannerView()
+                            QRScannerView(clubId: clubId)
                         } label: {
                             OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan ticket")
                         }

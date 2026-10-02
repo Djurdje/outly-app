@@ -153,6 +153,19 @@ struct ProfileView: View {
             .outlyOzadje()
     }
 
+    /// Brez povezave (ali ob izpadu streznika) ostane na zaslonu uporabnik iz seje (K1: shranjen Me) namesto »Unknown user« in
+    /// surove napake; prava napaka (npr. pokvarjen odgovor) se pokaze kot doslej.
+    @MainActor
+    private func pokaziNapako(_ napaka: Error) {
+        isLoading = false
+        if napaka.jeIzpadPovezave, let shranjen = session.me {
+            user = shranjen
+            errorMessage = nil
+        } else {
+            errorMessage = napaka.userMessage
+        }
+    }
+
     func loadProfile() async {
         guard !authToken.isEmpty else { return }
 
@@ -179,14 +192,12 @@ struct ProfileView: View {
             }
 
             await MainActor.run {
-                errorMessage = apiErr.userMessage
-                isLoading = false
+                pokaziNapako(apiErr)
             }
 
         } catch {
             await MainActor.run {
-                errorMessage = error.userMessage
-                isLoading = false
+                pokaziNapako(error)
             }
         }
     }
