@@ -58,6 +58,18 @@ struct NakupniKljuc {
     }
 }
 
+/// Vrsta nakupa na istem dogodku. Vstopnice (list BuyTicketsView) in VIP miza (VipTablesView) sta DVA loceni nakupa z lastnim
+/// kljucem in lastnim nerazresenim izidom (outly-backend #137): shramba (`NakupniKljucShramba`) ju hrani vsakega v svojem zapisu.
+enum VrstaNakupa: Hashable {
+    case vstopnice
+    case vipMiza
+}
+
+extension NakupniKljuc.Vsebina {
+    /// Vrsta izhaja iz vsebine (miza => VIP), da je ne more nihce podati narobe; isto razlikovanje uporablja `NakupniNapotek`.
+    var vrsta: VrstaNakupa { mizaId == nil ? .vstopnice : .vipMiza }
+}
+
 /// Izid napacnega nakupa z vidika kljuca.
 enum NakupniIzid: Equatable {
     /// Navadna napaka (409 razprodano, 403, 503 ...): kljuc ostane, uporabnik lahko poskusi znova.
