@@ -143,15 +143,17 @@ struct SkenKonflikt: Codable, Equatable, Identifiable {
     let streznikUsedAt: String?
     let imetnik: String?
     var potrjen: Bool = false
+    /// Kdo je skeniral (me.id); konflikte (z imeni imetnikov) vidi samo ta uporabnik. nil = star zapis brez uporabnika.
+    let uporabnikId: Int?
 
     var id: String { clientScanId }
 
     enum CodingKeys: String, CodingKey {
-        case clientScanId, serial, eventId, klubId, scannedAt, result, streznikUsedAt, imetnik, potrjen
+        case clientScanId, serial, eventId, klubId, scannedAt, result, streznikUsedAt, imetnik, potrjen, uporabnikId
     }
 
     init(clientScanId: String, serial: String?, eventId: Int, klubId: Int, scannedAt: Date, result: String,
-         streznikUsedAt: String?, imetnik: String?, potrjen: Bool = false) {
+         streznikUsedAt: String?, imetnik: String?, potrjen: Bool = false, uporabnikId: Int? = nil) {
         self.clientScanId = clientScanId
         self.serial = serial
         self.eventId = eventId
@@ -161,6 +163,7 @@ struct SkenKonflikt: Codable, Equatable, Identifiable {
         self.streznikUsedAt = streznikUsedAt
         self.imetnik = imetnik
         self.potrjen = potrjen
+        self.uporabnikId = uporabnikId
     }
 
     init(from decoder: Decoder) throws {
@@ -174,6 +177,7 @@ struct SkenKonflikt: Codable, Equatable, Identifiable {
         streznikUsedAt = (try? c.decodeIfPresent(String.self, forKey: .streznikUsedAt)) ?? nil
         imetnik = (try? c.decodeIfPresent(String.self, forKey: .imetnik)) ?? nil
         potrjen = (try? c.decodeIfPresent(Bool.self, forKey: .potrjen)) ?? false
+        uporabnikId = (try? c.decodeIfPresent(Int.self, forKey: .uporabnikId)) ?? nil
     }
 }
 
@@ -192,8 +196,12 @@ final class SkenVrsta {
     private let diskVnosov: SkenDisk
     private(set) var vnosi: [SkenVnos] = []
     private(set) var konflikti: [SkenKonflikt] = []
-    /// false, ce zadnji zapis na disk ni uspel (poln disk): skeni so le v pomnilniku — vratar to mora videti.
-    private(set) var zapisUspel = true
+    /// Vnosi, katerih zapis na disk ni uspel, in ali zapis konfliktov ni uspel: ostane, dokler jih ponovni zapis ne potrdi (ne
+    /// prepise ga naslednji uspesen zapis drugega vnosa).
+    private var neuspeliVnosi: Set<String> = []
+    private var konfliktiNeshranjeni = false
+    /// false, ce kak zapis na disk ni (se) uspel (poln disk): skeni so le v pomnilniku — vratar to mora videti.
+    var zapisUspel: Bool { neuspeliVnosi.isEmpty && !konfliktiNeshranjeni }
     /// Koliko datotek vrste je bilo ob nalaganju pokvarjenih (premaknjene na stran, ne izbrisane).
     private(set) var pokvarjenihDatotek = 0
     /// Vnosi, ki jih trenutno odloca hitra pot (sken z odgovorom streznika): periodicno posiljanje jih preskoci.
@@ -263,9 +271,17 @@ final class SkenVrsta {
 
     // MARK: Zapis
 
-    private func shraniKonflikte() {
-        if konflikti.isEmpty { disk.izbrisi(Self.datotekaKonfliktov); return }
-        if !disk.zapisi(konflikti, Self.datotekaKonfliktov) { zapisUspel = false }
+    @discardableResult
+    private func shraniKonflikte() -> Bool {
+        let ok: Bool
+        if konflikti.isEmpty {
+            disk.izbrisi(Self.datotekaKonfliktov)
+            ok = true
+        } else {
+            ok = disk.zapisi(konflikti, Self.datotekaKonfliktov)
+        }
+        konfliktiNeshranjeni = !ok
+        return ok
     }
 
     /// Doda vnos. Idempotentno po `clientScanId`: drugi dodatek istega id-ja ne naredi nic (vrne false).
@@ -280,7 +296,16 @@ final class SkenVrsta {
     }
 
     private func zapisiVnos(_ v: SkenVnos) {
-        zapisUspel = diskVnosov.zapisi(v, v.clientScanId + ".json")
+        if diskVnosov.zapisi(v, v.clientScanId + ".json") { neuspeliVnosi.remove(v.clientScanId) } else { neuspeliVnosi.insert(v.clientScanId) }
+    }
+
+    /// Ponovno zapise, kar se ni uspelo zapisati (npr. disk je bil poln); klice SkenSeja ob vsakem skenu. Poceni, ce ni nicesar.
+    func ponoviNeuspele() {
+        guard !neuspeliVnosi.isEmpty || konfliktiNeshranjeni else { return }
+        for id in Array(neuspeliVnosi) {
+            if let v = vnosi.first(where: { $0.clientScanId == id }) { zapisiVnos(v) } else { neuspeliVnosi.remove(id) }
+        }
+        if konfliktiNeshranjeni { shraniKonflikte() }
     }
 
     func sprosti(_ id: String) { zadrzani.remove(id) }
@@ -288,6 +313,7 @@ final class SkenVrsta {
     /// Odstrani vnos brez konflikta (hitra pot: streznik je sken zavrnil ali potrdil, gost ni bil spuscen na pol poti).
     func odstrani(_ id: String) {
         zadrzani.remove(id)
+        neuspeliVnosi.remove(id)
         guard let idx = vnosi.firstIndex(where: { $0.clientScanId == id }) else { return }
         vnosi.remove(at: idx)
         diskVnosov.izbrisi(id + ".json")
@@ -309,13 +335,12 @@ final class SkenVrsta {
         Array(cakajoci(klub: klub, uporabnik: uporabnik).filter { !zadrzani.contains($0.clientScanId) }.prefix(Self.najvecVPaketu))
     }
 
-    /// Vsi kombinacije klub/uporabnik z neposlanimi vnosi (za posiljanje ob odjavi).
-    func neposlaniKlubi() -> [(klub: Int, uporabnik: Int?)] {
-        var videni = Set<String>()
-        var izhod: [(klub: Int, uporabnik: Int?)] = []
-        for v in vnosi {
-            let k = "\(v.klubId)|\(v.uporabnikId.map(String.init) ?? "-")"
-            if videni.insert(k).inserted { izhod.append((v.klubId, v.uporabnikId)) }
+    /// Klubi, v katerih ima ta uporabnik neposlane vnose (za posiljanje ob odjavi: zeton velja samo za njega).
+    func neposlaniKlubi(uporabnik: Int) -> [Int] {
+        var videni = Set<Int>()
+        var izhod: [Int] = []
+        for v in vnosi where v.uporabnikId == uporabnik {
+            if videni.insert(v.klubId).inserted { izhod.append(v.klubId) }
         }
         return izhod
     }
@@ -332,34 +357,51 @@ final class SkenVrsta {
     /// `error` (in vnos brez rezultata) ostane v vrsti s povecanim stevcem poskusov. Vrne stevilo odstranjenih vnosov.
     @discardableResult
     func uporabi(_ rezultati: [ScanBatchResult], poslani: [SkenVnos]) -> Int {
-        var odstranjeni = 0
-        var konfliktiSpremenjeni = false
         let poId = Dictionary(rezultati.map { ($0.clientScanId, $0) }, uniquingKeysWith: { prvi, _ in prvi })
+        var koncani: [String] = []
+        var novi: [SkenKonflikt] = []
         for p in poslani {
             guard let idx = vnosi.firstIndex(where: { $0.clientScanId == p.clientScanId }) else { continue }  // ze obdelan (ponovitev)
             if let r = poId[p.clientScanId], r.jeDokoncen {
-                let v = vnosi.remove(at: idx)
-                zadrzani.remove(v.clientScanId)
-                diskVnosov.izbrisi(v.clientScanId + ".json")
-                odstranjeni += 1
+                let v = vnosi[idx]
                 if r.result != "ok", !konflikti.contains(where: { $0.clientScanId == v.clientScanId }) {
-                    konflikti.append(SkenKonflikt(clientScanId: v.clientScanId, serial: r.serial ?? v.serial, eventId: v.eventId,
-                                                  klubId: v.klubId, scannedAt: v.scannedAt, result: r.result,
-                                                  streznikUsedAt: r.usedAt, imetnik: v.imetnik))
-                    konfliktiSpremenjeni = true
+                    novi.append(SkenKonflikt(clientScanId: v.clientScanId, serial: r.serial ?? v.serial, eventId: v.eventId,
+                                             klubId: v.klubId, scannedAt: v.scannedAt, result: r.result,
+                                             streznikUsedAt: r.usedAt, imetnik: v.imetnik, uporabnikId: v.uporabnikId))
                 }
+                koncani.append(v.clientScanId)
             } else {
                 vnosi[idx].poskusi += 1
                 zapisiVnos(vnosi[idx])
             }
         }
-        // Konflikt se zapise PO brisanju vnosa: ob ubitju vmes ostane vnos (ponovno posiljanje je idempotentno), ne izgubi se nic.
-        if konfliktiSpremenjeni { shraniKonflikte() }
+        // 1. Konflikti na disk PRED brisanjem vnosov: ubitje (ali napaka zapisa) vmes pusti vnos, ponovno posiljanje je idempotentno in
+        //    konflikt nastane znova; v obratnem vrstnem redu bi se konflikt izgubil, gost pa je ze bil spuscen.
+        var obdrzi = Set<String>()
+        if !novi.isEmpty {
+            let prej = konflikti
+            konflikti.append(contentsOf: novi)
+            if !shraniKonflikte() {
+                konflikti = prej
+                obdrzi = Set(novi.map { $0.clientScanId })
+                for id in obdrzi { if let i = vnosi.firstIndex(where: { $0.clientScanId == id }) { vnosi[i].poskusi += 1 } }
+            }
+        }
+        // 2. Sele zdaj brisanje vnosov.
+        var odstranjeni = 0
+        for id in koncani where !obdrzi.contains(id) {
+            zadrzani.remove(id)
+            neuspeliVnosi.remove(id)
+            diskVnosov.izbrisi(id + ".json")
+            vnosi.removeAll { $0.clientScanId == id }
+            odstranjeni += 1
+        }
         return odstranjeni
     }
 
-    func nepotrjeniKonflikti(klub: Int) -> [SkenKonflikt] {
-        konflikti.filter { $0.klubId == klub && !$0.potrjen }
+    /// Nepotrjeni konflikti kluba; z `uporabnik` samo tega uporabnika (imena imetnikov vidi samo, kdor je skeniral).
+    func nepotrjeniKonflikti(klub: Int, uporabnik: Int? = nil) -> [SkenKonflikt] {
+        konflikti.filter { $0.klubId == klub && !$0.potrjen && Self.istiUporabnik($0.uporabnikId, uporabnik) }
     }
 
     func potrdiKonflikt(_ id: String) {
@@ -425,10 +467,10 @@ extension SkenDisk {
         izbrisi(Self.imeDogodkov(klub: klub))
     }
 
-    /// Pobrise vse razen vrste neposlanih vnosov (`vrsta/`, `*.pokvarjena-*`), ki jo ob odjavi obdrzimo.
+    /// Pobrise vse razen vrste neposlanih vnosov (`vrsta/`), ki jo ob odjavi obdrzimo.
     func pocistiVsePoOdjavi() {
         for ime in imena() {
-            if ime == SkenVrsta.mapaVnosov || ime.contains(".pokvarjena-") { continue }
+            if ime == SkenVrsta.mapaVnosov { continue }   // pokvarjene datoteke gredo z ostalim (lahko vsebujejo imena imetnikov)
             izbrisi(ime)
         }
     }

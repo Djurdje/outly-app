@@ -23,7 +23,11 @@ final class SessionStore: ObservableObject {
     @Published private(set) var refreshToken: String = ""
 
     /// Trenutni uporabnik iz GET /me. nil = se ni nalozen (ali odjavljen).
-    @Published var me: Me? = nil
+    /// Vsak zapis `me` (tudi neposredni iz CompleteAccountView, SelectGenresView, PersonalInfoView, PreferencesView) se shrani
+    /// za hladen zagon brez povezave (K1): drugace bi na disku ostal neonboardan Me.
+    @Published var me: Me? = nil {
+        didSet { meSpremenjen(prej: oldValue) }
+    }
     /// Napaka zadnjega nalaganja /me (razumljivo sporocilo), nil ce je slo v redu.
     @Published var meLoadError: String? = nil
 
@@ -32,6 +36,9 @@ final class SessionStore: ObservableObject {
     @Published var sessionExpiredNotice: String? = nil
 
     private var refreshTask: Task<Bool, Never>?
+
+    /// Zadnji shranjen Me (z `sub` zetona). Z diska ga preberemo ENKRAT ob zagonu in ga drzimo v pomnilniku.
+    private var shranjenMe: MeShramba.Zapis?
 
     var isLoggedIn: Bool { !token.isEmpty }
 
@@ -54,6 +61,7 @@ final class SessionStore: ObservableObject {
             token = ""
             refreshToken = ""
         }
+        shranjenMe = MeShramba.preberiZapis()
         SessionRefresh.handler = { [weak self] in
             guard let self else { return nil }
             return await self.refreshAccessToken() ? self.token : nil
@@ -86,12 +94,14 @@ final class SessionStore: ObservableObject {
     /// vse. Lokalni del se zgodi VEDNO, tudi brez omrezja.
     func logout() {
         let t = token
-        // M13: neposlane skene skenerja poskusi poslati se z veljavnim zetonom (kratek rok), nato Supabase odjava.
-        // Lokalni del odjave se zgodi takoj; brez povezave skeni ostanejo na disku do naslednje prijave istega racuna.
+        // M13: neposlane skene skenerja TEGA uporabnika poskusi poslati se z veljavnim zetonom (kratek rok), nato Supabase odjava.
+        // ID zajamemo PRED clearLocalSession (ta pobrise `me`). Lokalni del odjave se zgodi takoj; brez povezave skeni ostanejo na
+        // disku do naslednje prijave istega racuna.
+        let uporabnikId = me?.id
         let imaSkene = SkenVrsta.deljena(SkenDisk()).steviloVseh > 0
         if !t.isEmpty {
             Task.detached {
-                if imaSkene { await SkenOdjava.poslji(token: t) }
+                if imaSkene, let uporabnikId { await SkenOdjava.poslji(token: t, uporabnikId: uporabnikId) }
                 try? await SupabaseAuth.shared.signOut(token: t)
             }
         }
@@ -113,6 +123,7 @@ final class SessionStore: ObservableObject {
         meLoadError = nil
         // K1: shranjen Me (brez zetonov) in shramba skenerja gresta ob odjavi/zavrnjeni seji. Neposlani skeni ostanejo na disku;
         // logout() jih prej poskusi poslati (SkenOdjava.poslji).
+        shranjenMe = nil
         MeShramba.pobrisi()
         SkenOdjava.pocisti()
         refreshTask?.cancel()
@@ -164,15 +175,12 @@ final class SessionStore: ObservableObject {
         guard !token.isEmpty else { return false }
         do {
             // Hladen zagon s shranjenim Me: kratek rok, ob izpadu itak nadaljujemo s shranjenim (K1).
-            let kratek: TimeInterval? = (me == nil && MeShramba.preberi() != nil) ? 8 : nil
+            let kratek: TimeInterval? = (me == nil && shranjenMeZaZeton() != nil) ? 8 : nil
             let fetched = try await APIClient.shared.me(token: token, timeout: kratek)
             // Samo ob dejanski spremembi (29. 9. 2026): vsaka objava `me` znova izrise vse, kar
             // opazuje sejo (tudi MainTabView z vsemi zavihki) — Home in Profile klicata /me ob
             // vsakem prikazu, torej sredi animacije preklopa zavihka.
-            if me != fetched {
-                me = fetched
-                MeShramba.shrani(fetched)   // K1: zadnji znan Me za hladen zagon brez povezave (samo ob spremembi, ne ob vsakem prikazu)
-            }
+            if me != fetched { me = fetched }   // didSet shrani Me za hladen zagon brez povezave (K1)
             if meLoadError != nil { meLoadError = nil }
             return true
         } catch let api as APIError {
@@ -189,14 +197,27 @@ final class SessionStore: ObservableObject {
     /// K1: GET /me ni uspel zaradi izpada povezave ali streznika (ne zaradi 401/403): aplikacija nadaljuje z zadnjim shranjenim Me,
     /// da vratar ob hladnem zagonu brez povezave pride do skenerja. Brez shranjenega Me ostane napaka in »Try again«.
     private func uporabiShranjenMe(ob napaka: Error) -> Bool {
-        if me != nil, napaka.jeIzpadPovezave { return true }   // ze imamo Me iz prejsnjega klica: ne prepisuj z diska
-        if let shranjen = MeShramba.nadomestniMe(ob: napaka, shranjen: MeShramba.preberi()) {
+        if me != nil, napaka.jeIzpadPovezave { return true }   // ze imamo Me iz prejsnjega klica: ne prepisuj s shranjenim
+        if let shranjen = MeShramba.nadomestniMe(ob: napaka, shranjen: shranjenMeZaZeton()) {
             me = shranjen
             meLoadError = nil
             return true
         }
         meLoadError = napaka.userMessage
         return false
+    }
+
+    /// Shranjen Me, ce pripada racunu trenutnega zetona (primerjava `sub`); Me drugega racuna se ne uporabi.
+    private func shranjenMeZaZeton() -> Me? {
+        guard let z = shranjenMe, let sub = MeShramba.sub(izZetona: token), z.sub == sub else { return nil }
+        return z.me
+    }
+
+    private func meSpremenjen(prej: Me?) {
+        guard let m = me, m != prej, let sub = MeShramba.sub(izZetona: token) else { return }
+        if let z = shranjenMe, z.sub == sub, z.me == m { return }   // enako ze shranjeno (npr. Me iz shrambe)
+        shranjenMe = MeShramba.Zapis(sub: sub, me: m)
+        MeShramba.shrani(m, sub: sub)
     }
 
     // MARK: - Selitev

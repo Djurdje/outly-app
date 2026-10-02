@@ -1,6 +1,9 @@
 import XCTest
 import Foundation
 import CryptoKit
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import Outly
 
 // Sken vstopnic brez povezave (backend issue #86): preverjanje kode v2, vrsta, odlocitev, SkenSeja z lazno API-jem,
@@ -364,6 +367,7 @@ final class SkenNapakeInCasTests: XCTestCase {
 final class MeShrambaTests: XCTestCase {
     private var mapa: URL!
     private var disk: SkenDisk!
+    private let sub = "5b0f0a4e-6c1d-4f7a-9a52-3c1d2e7b8a90"
 
     override func setUp() async throws {
         mapa = Pomoc.zacasnaMapa()
@@ -371,37 +375,70 @@ final class MeShrambaTests: XCTestCase {
     }
     override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
 
-    private func vratar() throws -> Me {
-        let json = #"""
-        {"id":7,"email":"ana@primer.si","username":"ana","role":"user","club_id":3,"club_role":"doorman",
+    private func vratar(id: Int = 7, onboardan: Bool = true) throws -> Me {
+        let onb = onboardan ? #","onboarded_at":"2026-09-01T10:00:00.000Z""# : ""
+        let json = """
+        {"id":\(id),"email":"ana@primer.si","username":"ana","role":"user","club_id":3,"club_role":"doorman",
          "clubs":[{"club_id":3,"club_name":"Klub Tri","club_logo_url":"https://x/y.png","role":"doorman"}],
-         "pending_invites":2,"genres":["techno"],"onboarded_at":"2026-09-01T10:00:00.000Z"}
-        """#
+         "pending_invites":2,"genres":["techno"]\(onb)}
+        """
         return try JSONDecoder().decode(Me.self, from: Data(json.utf8))
+    }
+
+    private func jwt(sub: String) -> String {
+        let glava = Pomoc.b64url(Data(#"{"alg":"ES256","typ":"JWT"}"#.utf8))
+        let telo = Pomoc.b64url(Data(#"{"sub":"\#(sub)","exp":1790000000}"#.utf8))
+        return "\(glava).\(telo).podpis"
     }
 
     func testMeSePrebereNazajIzDiska() throws {
         let me = try vratar()
-        XCTAssertNil(MeShramba.preberi(disk: disk))
-        XCTAssertTrue(MeShramba.shrani(me, disk: disk))
-        let nazaj = MeShramba.preberi(disk: disk)
+        XCTAssertNil(MeShramba.preberi(sub: sub, disk: disk))
+        XCTAssertTrue(MeShramba.shrani(me, sub: sub, disk: disk))
+        let nazaj = MeShramba.preberi(sub: sub, disk: disk)
         XCTAssertEqual(nazaj, me)
         XCTAssertEqual(nazaj?.clubs.first?.clubName, "Klub Tri")
         XCTAssertEqual(nazaj?.clubs.first?.role, "doorman")
         XCTAssertEqual(nazaj?.isOnboarded, true)
-        // brez zetonov: datoteka ima samo Me
+        XCTAssertEqual(MeShramba.preberiZapis(disk: disk)?.sub, sub)
+        // brez zetonov: datoteka ima samo Me in sub
         let besedilo = String(data: disk.surovo(MeShramba.ime) ?? Data(), encoding: .utf8) ?? ""
         XCTAssertFalse(besedilo.lowercased().contains("token"))
         XCTAssertFalse(besedilo.contains("Bearer"))
         MeShramba.pobrisi(disk: disk)
-        XCTAssertNil(MeShramba.preberi(disk: disk))
+        XCTAssertNil(MeShramba.preberi(sub: sub, disk: disk))
+    }
+
+    /// Pomembno 10: Me drugega racuna (drug `sub`) se ob branju zavrne.
+    func testMeDrugegaRacunaSeZavrne() throws {
+        MeShramba.shrani(try vratar(), sub: sub, disk: disk)
+        XCTAssertNil(MeShramba.preberi(sub: "00000000-0000-0000-0000-000000000000", disk: disk))
+        XCTAssertNil(MeShramba.preberi(sub: nil, disk: disk))
+        XCTAssertNotNil(MeShramba.preberi(sub: sub.uppercased(), disk: disk))   // velikost crk ni pomembna
+    }
+
+    func testSubIzZetona() {
+        XCTAssertEqual(MeShramba.sub(izZetona: jwt(sub: sub)), sub)
+        XCTAssertEqual(MeShramba.sub(izZetona: jwt(sub: sub.uppercased())), sub)
+        XCTAssertNil(MeShramba.sub(izZetona: ""))
+        XCTAssertNil(MeShramba.sub(izZetona: "a.b"))
+        XCTAssertNil(MeShramba.sub(izZetona: "a.@@@.c"))
+        XCTAssertNil(MeShramba.sub(izZetona: "a.\(Pomoc.b64url(Data("{}".utf8))).c"))
+    }
+
+    /// Pomembno 3: neonboardan Me, shranjen pred koncanim onboardingom, se ob novem shranjevanju (didSet v SessionStore) nadomesti.
+    func testShranjevanjePrepiseStarMe() throws {
+        MeShramba.shrani(try vratar(onboardan: false), sub: sub, disk: disk)
+        XCTAssertEqual(MeShramba.preberi(sub: sub, disk: disk)?.isOnboarded, false)
+        MeShramba.shrani(try vratar(onboardan: true), sub: sub, disk: disk)
+        XCTAssertEqual(MeShramba.preberi(sub: sub, disk: disk)?.isOnboarded, true)
     }
 
     /// Pred popravkom: GET /me brez povezave -> nikoli Me -> SessionLoadingView za vedno (vratar ne pride do skenerja).
     func testIzpadPovezaveUporabiShranjenMe() throws {
         let me = try vratar()
-        MeShramba.shrani(me, disk: disk)
-        let shranjen = MeShramba.preberi(disk: disk)
+        MeShramba.shrani(me, sub: sub, disk: disk)
+        let shranjen = MeShramba.preberi(sub: sub, disk: disk)
         XCTAssertEqual(MeShramba.nadomestniMe(ob: URLError(.notConnectedToInternet), shranjen: shranjen), me)
         XCTAssertEqual(MeShramba.nadomestniMe(ob: URLError(.timedOut), shranjen: shranjen), me)
         XCTAssertEqual(MeShramba.nadomestniMe(ob: APIError.requestFailed(503, ""), shranjen: shranjen), me)
@@ -423,7 +460,10 @@ final class MeShrambaTests: XCTestCase {
     func testPokvarjenaDatotekaMeNiCrash() throws {
         try FileManager.default.createDirectory(at: disk.mapa, withIntermediateDirectories: true)
         try Data("{ ni json".utf8).write(to: disk.mapa.appendingPathComponent(MeShramba.ime))
-        XCTAssertNil(MeShramba.preberi(disk: disk))
+        XCTAssertNil(MeShramba.preberi(sub: sub, disk: disk))
+        // star zapis brez `sub` (samo Me) se prav tako zavrne, ne podre
+        try JSONEncoder().encode(try vratar()).write(to: disk.mapa.appendingPathComponent(MeShramba.ime))
+        XCTAssertNil(MeShramba.preberi(sub: sub, disk: disk))
     }
 }
 
@@ -580,6 +620,44 @@ final class SkenVrstaTests: XCTestCase {
         XCTAssertEqual(Set(kasneje.konflikti.map { $0.clientScanId }), ["nepotrjen"])
     }
 
+    /// Manjse 6: konflikt se zapise PRED brisanjem vnosa. Ce zapisa konflikta ni mogoce narediti, vnos ostane (ponovno posiljanje je
+    /// idempotentno); prej je ubitje vmes (ali napaka zapisa) izgubilo konflikt, gost pa je ze bil spuscen.
+    func testKonfliktSeZapisePredBrisanjemVnosa() throws {
+        let v = SkenVrsta(disk: disk)
+        let a = vnos("a"), b = vnos("b")
+        v.dodaj(a); v.dodaj(b)
+        // zapis konfliktov ne uspe (na poti je mapa)
+        try FileManager.default.createDirectory(at: mapa.appendingPathComponent(SkenVrsta.datotekaKonfliktov), withIntermediateDirectories: true)
+        let odstranjeni = v.uporabi([ScanBatchResult(clientScanId: "a", result: "already_used"), ScanBatchResult(clientScanId: "b", result: "ok")],
+                                    poslani: [a, b])
+        XCTAssertEqual(odstranjeni, 1)                          // samo ok
+        XCTAssertEqual(v.vnosi.map { $0.clientScanId }, ["a"])  // vnos s konfliktom ostane
+        XCTAssertTrue(v.konflikti.isEmpty)
+        XCTAssertFalse(v.zapisUspel)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mapa.appendingPathComponent("vrsta/a.json").path))
+        // pot se sprosti: isti odgovor zdaj zapise konflikt in sele nato odstrani vnos
+        try FileManager.default.removeItem(at: mapa.appendingPathComponent(SkenVrsta.datotekaKonfliktov))
+        XCTAssertEqual(v.uporabi([ScanBatchResult(clientScanId: "a", result: "already_used")], poslani: [a]), 1)
+        XCTAssertTrue(v.vnosi.isEmpty)
+        XCTAssertEqual(SkenVrsta(disk: disk).konflikti.map { $0.clientScanId }, ["a"])
+        XCTAssertTrue(v.zapisUspel)
+    }
+
+    /// Manjse 7: zapisUspel ostane false, dokler ni potrjen vsak neuspel zapis (prej ga je prepisal naslednji uspesen zapis).
+    func testNeuspelZapisOstaneVidenDoPotrditve() throws {
+        let v = SkenVrsta(disk: disk)
+        v.dodaj(vnos("a"))
+        try FileManager.default.createDirectory(at: mapa.appendingPathComponent("vrsta/b.json"), withIntermediateDirectories: true)
+        v.dodaj(vnos("b"))                 // zapis ne uspe
+        XCTAssertFalse(v.zapisUspel)
+        v.dodaj(vnos("c"))                 // uspe, a ne sme skriti napake pri b
+        XCTAssertFalse(v.zapisUspel)
+        try FileManager.default.removeItem(at: mapa.appendingPathComponent("vrsta/b.json"))
+        v.ponoviNeuspele()
+        XCTAssertTrue(v.zapisUspel)
+        XCTAssertEqual(Set(SkenVrsta(disk: disk).vnosi.map { $0.clientScanId }), ["a", "b", "c"])
+    }
+
     /// P5: pokvarjena shramba vrste ne sme tiho pobrisati cakajocih skenov: ostane na strani (vrsta.pokvarjena-<cas>.json).
     func testPokvarjenaVrstaOstaneNaStrani() throws {
         let v1 = SkenVrsta(disk: disk)
@@ -652,8 +730,10 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
     var spletniOdgovor: Result<ScanResult, Error> = .success(ScanResult(result: "ok", message: "Welcome", usedAt: nil))
     var dogodkiOdgovor: Result<[SkenDogodek], Error> = .success([])
     /// Streznik odgovori sele po toliko sekundah (ali ga prekine rok).
+    /// Zakasnitve IGNORIRAJO preklic (kot nestrukturiran Task za osvezitev zetona v send(), ki ga preklic ne doseze).
     var zakasnitevPaketa: Double = 0
     var zakasnitevSpletnega: Double = 0
+    var zakasnitevSeznama: Double = 0
     private(set) var paketi: [[SkenVnos]] = []
     private(set) var deviceIdji: [String] = []
     private(set) var spletniKlici: [String] = []
@@ -664,6 +744,13 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
     init(kljuc: ScanKey, seznam: ScanList) {
         kljucOdgovor = .success(kljuc)
         seznamOdgovor = .success(Pomoc.seznamPodatki(seznam))
+    }
+
+    /// Caka, ne da bi se odzval na preklic Taska (continuation + GCD, ne Task.sleep).
+    static func neprekinljivoCakaj(_ sekunde: Double) async {
+        await withCheckedContinuation { (k: CheckedContinuation<Void, Never>) in
+            DispatchQueue.global().asyncAfter(deadline: .now() + sekunde) { k.resume() }
+        }
     }
 
     func nastaviSeznam(_ l: ScanList) { seznamOdgovor = .success(Pomoc.seznamPodatki(l)) }
@@ -687,16 +774,17 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
     }
     func seznam(token: String, klubId: Int?, dogodekId: Int) async throws -> Data {
         zabelezi(klubId, seznam: true)
+        if zakasnitevSeznama > 0 { await Self.neprekinljivoCakaj(zakasnitevSeznama) }
         return try seznamOdgovor.get()
     }
     func paket(token: String, klubId: Int?, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult] {
         zabelezi(klubId, paket: vnosi, deviceId: deviceId)
-        if zakasnitevPaketa > 0 { try await Task.sleep(nanoseconds: UInt64(zakasnitevPaketa * 1_000_000_000)) }
+        if zakasnitevPaketa > 0 { await Self.neprekinljivoCakaj(zakasnitevPaketa) }
         return try paketOdgovor(vnosi).get()
     }
     func spletniSken(token: String, klubId: Int?, qr: String, rok: Double) async throws -> ScanResult {
         zabelezi(klubId, spletni: qr)
-        if zakasnitevSpletnega > 0 { try await Task.sleep(nanoseconds: UInt64(zakasnitevSpletnega * 1_000_000_000)) }
+        if zakasnitevSpletnega > 0 { await Self.neprekinljivoCakaj(zakasnitevSpletnega) }
         return try spletniOdgovor.get()
     }
 }
@@ -838,12 +926,15 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(seja.sprejeti, 2)
         XCTAssertFalse(seja.preverjaNaStrezniku)
         // streznik spet odgovarja: vrsta se poslje z ISTIMI client_scan_id (idempotentnost), nic ne ostane
-        let poslani = a.paketi.flatMap { $0 }.map { $0.clientScanId }
+        let vVrsti = Set(SkenVrsta(disk: SkenDisk(mapa: mapa)).vnosi.map { $0.clientScanId })
+        XCTAssertEqual(vVrsti.count, 2)
         a.zakasnitevPaketa = 0
+        await seja.pocakajPosiljanje()   // morebitno ozadnje posiljanje, ki ga je sprozil drugi sken
         await seja.poslji()
         await seja.pocakajPosiljanje()
         XCTAssertEqual(seja.cakajoce, 0)
-        XCTAssertEqual(Set(a.paketi.last?.map { $0.clientScanId } ?? []), Set(poslani))
+        XCTAssertTrue(vVrsti.isSubset(of: Set(a.paketi.flatMap { $0 }.map { $0.clientScanId })))
+        XCTAssertEqual(Set(a.paketi.flatMap { $0 }.map { $0.clientScanId }), vVrsti)   // nobenih tujih id-jev: isti client_scan_id
     }
 
     func testOnlineNapakaStreznikaVelaLokalnaSodba() async {
@@ -1192,6 +1283,212 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertNil(druga.dogodkiNapaka)
     }
 
+    // MARK: Pregled tipov PR #45 (2. krog)
+
+    /// Kriticno 1: delo, ki preklica ne upostevajo (send() ob 401 caka nestrukturiran refreshAccessToken, Supabase rok 30 s), ne smejo
+    /// zadrzati vrat. Pred popravkom je withTaskGroup cakal na vse otroke: sken je trajal toliko kot pocasen streznik.
+    func testPocasenKlicKiPreklicaNeUpostevaNeZadrziVrat() async {
+        let s1 = Pomoc.serial(), s2 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
+        a.zakasnitevPaketa = 3
+        let seja = naredi(a, rok: 0.2)
+        await seja.odpri(dogodek)
+        let zacetek = Date()
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        let trajanje = Date().timeIntervalSince(zacetek)
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertTrue(trajanje < 1.5, "sken je cakal \(trajanje) s (rok 0,2 s)")
+        XCTAssertEqual(seja.cakajoce, 1)
+    }
+
+    func testPocasenSpletniSkenKiPreklicaNeUpostevaNeZadrziVrat() async {
+        let a = api(vstopnice: [])
+        a.zakasnitevSpletnega = 3
+        let seja = naredi(a, rokSpletni: 0.2)
+        await seja.odpri(dogodek)
+        let zacetek = Date()
+        let p = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
+        let trajanje = Date().timeIntervalSince(zacetek)
+        XCTAssertEqual(p.barva, .rumeno)
+        XCTAssertTrue(trajanje < 1.5, "spletni sken je cakal \(trajanje) s (rok 0,2 s)")
+    }
+
+    func testRokVrneNilBrezCakanjaNaOtroka() async {
+        let zacetek = Date()
+        let r = await SkenRok.zRokom(0.1) { () async throws -> Int in
+            await LazniApi.neprekinljivoCakaj(2)
+            return 1
+        }
+        XCTAssertNil(r)
+        XCTAssertTrue(Date().timeIntervalSince(zacetek) < 1.0)
+        // hitro delo vrne rezultat, napaka pride kot .failure
+        let ok = await SkenRok.zRokom(2) { () async throws -> Int in 7 }
+        if case .success(let v)? = ok { XCTAssertEqual(v, 7) } else { XCTFail("pricakovan uspeh") }
+        let napaka = await SkenRok.zRokom(2) { () async throws -> Int in throw URLError(.timedOut) }
+        if case .failure? = napaka {} else { XCTFail("pricakovana napaka") }
+    }
+
+    /// Kriticno 1 (odjava): SkenOdjava.poslji prav tako ne sme cakati na pocasen klic.
+    func testOdjavaNeCakaNaPocasenKlic() async {
+        let disk = SkenDisk(mapa: mapa)
+        let vrsta = SkenVrsta.deljena(disk)
+        vrsta.dodaj(SkenVnos(qr: "o2.x.y", serial: Pomoc.serial(), eventId: 42, klubId: 3, uporabnikId: 7))
+        let a = api(vstopnice: [])
+        a.zakasnitevPaketa = 3
+        let zacetek = Date()
+        await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 0.2, deviceId: "naprava-1")
+        XCTAssertTrue(Date().timeIntervalSince(zacetek) < 1.5)
+        XCTAssertEqual(vrsta.vnosi.count, 1)   // vnos ostane
+    }
+
+    /// Pomembno 4: po izteku roka se naslednji skeni ne cakajo vsak po 2 s; uspesen periodicen klic povezavo povrne.
+    func testPoRokuNaslednjiSkeniNeCakajoZnova() async {
+        let s1 = Pomoc.serial(), s2 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
+        a.zakasnitevPaketa = 2
+        let seja = naredi(a, rok: 0.3)
+        await seja.odpri(dogodek)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))   // rok poteces
+        XCTAssertFalse(seja.povezava)
+        let zacetek = Date()
+        let p2 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s2, event: 42))
+        XCTAssertEqual(p2.barva, .zeleno)
+        XCTAssertTrue(Date().timeIntervalSince(zacetek) < 0.15, "drugi sken je cakal na streznik")
+        // streznik spet odgovarja: periodicno posiljanje uspe in povezava je spet gor
+        a.zakasnitevPaketa = 0
+        await seja.pocakajPosiljanje()
+        await seja.poslji()
+        await seja.pocakajPosiljanje()
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertTrue(seja.povezava)
+    }
+
+    /// Pomembno 2: backend requireClub z IZRECNIM klubom za nepoznavalca vrne 404 »Club not found.« (ne 403): M13 mora delovati na to.
+    func testOdvzemDostopaSeSprozi404ClubNotFound() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        await seja.odpri(dogodek)
+        a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))
+        await seja.osveziSeznam()
+        XCTAssertTrue(seja.dostopOdvzet)
+        let imena = Set(SkenDisk(mapa: mapa).imena())
+        XCTAssertFalse(imena.contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        // JSON oblika istega odgovora (scan-list, scan-batch)
+        let b = api(vstopnice: [])
+        let seja2 = naredi(b)
+        await seja2.odpri(dogodek)
+        b.seznamOdgovor = .failure(APIError.requestFailed(404, #"{"error":"not_found","message":"Club not found."}"#))
+        await seja2.osveziSeznam()
+        XCTAssertTrue(seja2.dostopOdvzet)
+    }
+
+    func testOstaleNapakeNisoOdvzemDostopa() {
+        XCTAssertTrue(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(404, "Club not found.")))
+        XCTAssertTrue(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(403, "Forbidden.")))
+        XCTAssertFalse(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(403, "Email not verified.")))
+        XCTAssertFalse(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(403, "Your role in the club does not allow this.")))
+        XCTAssertFalse(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(404, #"{"error":"not_found","message":"Event not found."}"#)))
+        XCTAssertFalse(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(401, "Invalid token.")))
+        XCTAssertFalse(SkenSeja.jeOdvzemDostopaNapaka(APIError.requestFailed(503, "Auth service unavailable.")))
+        XCTAssertFalse(SkenSeja.jeOdvzemDostopaNapaka(URLError(.notConnectedToInternet)))
+    }
+
+    /// Pomembno 2: ko streznik pove, da dostopa ni vec, hitra pot ne sme dati lokalnega zelenega; vrsta se ne poskusa vec poslati.
+    func testHitraPot404NeDaZelenegaInOdvzameDostop() async {
+        let s1 = Pomoc.serial(), s2 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
+        a.paketOdgovor = { _ in .failure(APIError.requestFailed(404, "Club not found.")) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertTrue(seja.dostopOdvzet)
+        XCTAssertEqual(seja.cakajoce, 0)          // gost ni bil spuscen: vnos ne ostane
+        // naslednji skeni so rdeci brez vprasanja streznika
+        let stevilo = a.paketi.count
+        let p2 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s2, event: 42))
+        XCTAssertEqual(p2.barva, .rdece)
+        XCTAssertEqual(a.paketi.count, stevilo)
+    }
+
+    func testPoslanjeVrsteVNedogledSeKonca404() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let seja = naredi(a)
+        await seja.odpri(dogodek)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(seja.cakajoce, 1)
+        a.paketOdgovor = { _ in .failure(APIError.requestFailed(404, "Club not found.")) }
+        await seja.poslji()
+        await seja.pocakajPosiljanje()
+        XCTAssertTrue(seja.dostopOdvzet)
+        XCTAssertEqual(seja.cakajoce, 1)           // vnos ostane na disku
+        let stevilo = a.paketi.count
+        await seja.poslji()
+        XCTAssertEqual(a.paketi.count, stevilo)    // in se ne posilja vec
+    }
+
+    /// Manjse 13: osvezitev za drug dogodek ne sme pobrisati oznake osvezitve, ki je ze tecla za zdajsnji dogodek (dvojen prenos).
+    func testZakljucekOsvezitveDrugegaDogodkaNeOdklenePodvojenegaPrenosa() async throws {
+        let a = api(vstopnice: [])
+        a.zakasnitevSeznama = 0.4
+        let seja = naredi(a)
+        let ta = Task { await seja.odpri(SkenDogodek(id: 42, title: "A")) }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        let tb = Task { await seja.odpri(SkenDogodek(id: 43, title: "B")) }
+        try await Task.sleep(nanoseconds: 350_000_000)     // A je koncal (0,4 s), B tece se do ~0,5 s
+        await seja.osveziSeznam()                          // ne sme zagnati tretjega prenosa
+        await ta.value
+        await tb.value
+        XCTAssertEqual(a.seznamKlici, 2)
+    }
+
+    /// Manjse 5: zeton ob odjavi velja samo za odjavljenega uporabnika: vnosov drugih racunov na isti napravi ne posilja.
+    func testOdjavaPosljeSamoVnoseOdjavljenegaUporabnika() async {
+        let disk = SkenDisk(mapa: mapa)
+        let vrsta = SkenVrsta.deljena(disk)
+        let moj = SkenVnos(qr: "o2.moj.y", serial: Pomoc.serial(), eventId: 42, klubId: 3, uporabnikId: 7)
+        let tuj = SkenVnos(qr: "o2.tuj.y", serial: Pomoc.serial(), eventId: 42, klubId: 3, uporabnikId: 99)
+        let tujKlub = SkenVnos(qr: "o2.tuj2.y", serial: Pomoc.serial(), eventId: 5, klubId: 8, uporabnikId: 99)
+        [moj, tuj, tujKlub].forEach { vrsta.dodaj($0) }
+        let a = api(vstopnice: [])
+        await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 2, deviceId: "naprava-1")
+        XCTAssertEqual(a.paketi.flatMap { $0 }.map { $0.qr }, ["o2.moj.y"])
+        XCTAssertEqual(a.klubIdji, [3])
+        XCTAssertEqual(Set(vrsta.vnosi.map { $0.qr }), ["o2.tuj.y", "o2.tuj2.y"])
+    }
+
+    func testKonfliktiSoPoUporabniku() {
+        let vrsta = SkenVrsta(disk: SkenDisk(mapa: mapa))
+        let a = SkenVnos(clientScanId: "a", qr: "x", serial: Pomoc.serial(), eventId: 1, klubId: 1, uporabnikId: 7, imetnik: "ana")
+        let b = SkenVnos(clientScanId: "b", qr: "y", serial: Pomoc.serial(), eventId: 1, klubId: 1, uporabnikId: 99, imetnik: "bojan")
+        vrsta.dodaj(a); vrsta.dodaj(b)
+        vrsta.uporabi([ScanBatchResult(clientScanId: "a", result: "already_used"), ScanBatchResult(clientScanId: "b", result: "already_used")], poslani: [a, b])
+        XCTAssertEqual(vrsta.nepotrjeniKonflikti(klub: 1, uporabnik: 7).map { $0.imetnik }, ["ana"])
+        XCTAssertEqual(vrsta.nepotrjeniKonflikti(klub: 1, uporabnik: 99).map { $0.imetnik }, ["bojan"])
+        XCTAssertEqual(vrsta.nepotrjeniKonflikti(klub: 1).count, 2)
+        // prezivi zagon (uporabnikId je v zapisu)
+        XCTAssertEqual(SkenVrsta(disk: SkenDisk(mapa: mapa)).nepotrjeniKonflikti(klub: 1, uporabnik: 7).map { $0.imetnik }, ["ana"])
+    }
+
+    /// Manjse 8, 9: ob odjavi gre vse; tudi pokvarjene datoteke in predpomnilnik odgovorov (scan-list z imeni imetnikov).
+    func testOdjavaBrisePokvarjeneDatotekeInPredpomnilnik() throws {
+        let disk = SkenDisk(mapa: mapa)
+        disk.shraniPokvarjeno("vrsta", Data("{ pokvarjeno".utf8))
+        disk.shraniPokvarjeno("konflikti", Data("{ pokvarjeno".utf8))
+        let url = URL(string: "https://outly.example/business/events/42/scan-list")!
+        let zahteva = URLRequest(url: url)
+        let odgovor = URLResponse(url: url, mimeType: "application/json", expectedContentLength: 2, textEncodingName: nil)
+        URLCache.shared.storeCachedResponse(CachedURLResponse(response: odgovor, data: Data("{}".utf8)), for: zahteva)
+        XCTAssertTrue(disk.imena().contains { $0.contains(".pokvarjena-") })
+        SkenOdjava.pocisti(disk: disk)
+        XCTAssertFalse(disk.imena().contains { $0.contains(".pokvarjena-") })
+        XCTAssertNil(URLCache.shared.cachedResponse(for: zahteva))
+    }
+
     // MARK: M7: klub izrecno v vsakem klicu
 
     func testVsakKlicNosiIzrecenKlub() async {
@@ -1281,7 +1578,7 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(seja.cakajoce, 1)
         // povezava je spet tu, a streznik pravi 403 (ni vec clan ekipe): najprej poslji, kar caka, nato pobrisi sezname
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
-        a.seznamOdgovor = .failure(APIError.requestFailed(403, "Forbidden"))
+        a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))   // pravi odgovor requireClub za izrecen klub
         await seja.osveziSeznam()
         XCTAssertTrue(seja.dostopOdvzet)
         XCTAssertEqual(seja.cakajoce, 0)   // neposlano je bilo poslano pred brisanjem
@@ -1302,7 +1599,7 @@ final class SkenSejaTests: XCTestCase {
         let seja = naredi(a)
         await seja.odpri(dogodek)
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
-        a.seznamOdgovor = .failure(APIError.requestFailed(403, "Forbidden"))
+        a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))
         await seja.osveziSeznam()
         XCTAssertTrue(seja.dostopOdvzet)
         XCTAssertFalse(Set(SkenDisk(mapa: mapa).imena()).contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
@@ -1316,7 +1613,7 @@ final class SkenSejaTests: XCTestCase {
         disk.zapisi(SkenLokalniSkeni(), SkenDisk.imeLokalnih(klub: 3, dogodek: 42))
         disk.zapisiSurovo(Data("{}".utf8), SkenDisk.imeSeznama(klub: 3, dogodek: 42))
         let a = api(vstopnice: [])
-        await SkenOdjava.poslji(token: "zeton", api: a, disk: disk, rok: 2, deviceId: "naprava-1")
+        await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 2, deviceId: "naprava-1")
         XCTAssertEqual(vrsta.vnosi.count, 0)
         XCTAssertEqual(a.klubIdji, [3])        // vsak klub s svojo glavo
         SkenOdjava.pocisti(disk: disk)
@@ -1332,7 +1629,7 @@ final class SkenSejaTests: XCTestCase {
         disk.zapisiSurovo(Data("[]".utf8), SkenVrsta.datotekaKonfliktov)
         let a = api(vstopnice: [])
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
-        await SkenOdjava.poslji(token: "zeton", api: a, disk: disk, rok: 2, deviceId: "naprava-1")
+        await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 2, deviceId: "naprava-1")
         XCTAssertEqual(vrsta.vnosi.count, 1)
         SkenOdjava.pocisti(disk: disk)
         XCTAssertEqual(disk.imena().filter { $0 != "vrsta" }, [])      // kljuc, konflikti, seznami so pobrisani
@@ -1341,7 +1638,7 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertNil(nova.vnosi.first?.imetnik)
         // brez zetona se ne poskusa nic
         let b = api(vstopnice: [])
-        await SkenOdjava.poslji(token: "", api: b, disk: disk, rok: 2, deviceId: "x")
+        await SkenOdjava.poslji(token: "", uporabnikId: 7, api: b, disk: disk, rok: 2, deviceId: "x")
         XCTAssertTrue(b.paketi.isEmpty)
     }
 

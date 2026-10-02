@@ -36,24 +36,60 @@ enum SkenNaprava {
 }
 
 enum SkenRok {
-    /// Izvede `delo` z rokom. nil = rok je potekel (delo se prekine); .failure = delo je padlo pred rokom.
+    /// Izvede `delo` z rokom. nil = rok je potekel; .failure = delo je padlo pred rokom.
+    ///
+    /// NI strukturirana tekma (withTaskGroup bi pocakal na vse otroke): `send()` ob 401 caka refreshAccessToken() v nestrukturiranem
+    /// Tasku, ki preklica ne dobi (Supabase rok 30 s), zato bi vrata stala do 30 s. Tu odlocitev razresi PRVI, ki konca (delo ali
+    /// casovnik); pocasno delo tece v ozadju naprej, rezultat se ne uporabi (vnos v vrsti ostane, posiljanje je idempotentno).
     static func zRokom<T: Sendable>(_ sekunde: Double, _ delo: @escaping @Sendable () async throws -> T) async -> Result<T, Error>? {
-        await withTaskGroup(of: Result<T, Error>?.self) { skupina in
-            skupina.addTask {
-                do { return .success(try await delo()) } catch { return .failure(error) }
+        await withCheckedContinuation { (k: CheckedContinuation<Result<T, Error>?, Never>) in
+            let vrata = RokVrata<T>(k)
+            let opravilo = Task {
+                let r: Result<T, Error>
+                do { r = .success(try await delo()) } catch { r = .failure(error) }
+                vrata.razresi(r)
             }
-            skupina.addTask {
+            let casovnik = Task {
                 try? await Task.sleep(nanoseconds: UInt64(max(sekunde, 0) * 1_000_000_000))
-                return nil
+                vrata.razresi(nil)
             }
-            let prvi: Result<T, Error>?? = await skupina.next()
-            skupina.cancelAll()
-            return prvi ?? nil
+            vrata.pripni(opravilo: opravilo, casovnik: casovnik)
         }
     }
 
     static func sha256(_ d: Data) -> String {
         SHA256.hash(data: d).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+/// Razresi continuation natanko enkrat (prvi klic); drugi klic ne naredi nic.
+private final class RokVrata<T: Sendable>: @unchecked Sendable {
+    private let zapah = NSLock()
+    private var k: CheckedContinuation<Result<T, Error>?, Never>?
+    private var opravilo: Task<Void, Never>?
+    private var casovnik: Task<Void, Never>?
+
+    init(_ k: CheckedContinuation<Result<T, Error>?, Never>) { self.k = k }
+
+    /// Opravilo in casovnik se pripneta po zagonu; ce je odlocitev ze padla, ju takoj preklicemo.
+    func pripni(opravilo: Task<Void, Never>, casovnik: Task<Void, Never>) {
+        zapah.lock()
+        self.opravilo = opravilo
+        self.casovnik = casovnik
+        let koncano = (k == nil)
+        zapah.unlock()
+        if koncano { opravilo.cancel(); casovnik.cancel() }
+    }
+
+    func razresi(_ r: Result<T, Error>?) {
+        zapah.lock()
+        let kont = k
+        k = nil
+        let o = opravilo, c = casovnik
+        zapah.unlock()
+        guard let kont else { return }
+        kont.resume(returning: r)
+        if r == nil { o?.cancel() } else { c?.cancel() }
     }
 }
 
@@ -324,7 +360,8 @@ final class SkenSeja: ObservableObject {
     func osveziSeznam() async {
         guard let d = dogodek, osvezitevZaDogodek != d.id, !dostopOdvzet else { return }
         osvezitevZaDogodek = d.id
-        defer { osvezitevZaDogodek = nil }
+        // Oznako sprosti samo, ce je se nasa: osvezitev za drug dogodek je medtem lahko postavila svojo.
+        defer { if osvezitevZaDogodek == d.id { osvezitevZaDogodek = nil } }
         naslednjaOsvezitev = Date().addingTimeInterval(Double.random(in: Self.osvezitevSekunde))
         do {
             let podatki = try await api.seznam(token: zeton(), klubId: klubZaApi, dogodekId: d.id)
@@ -371,6 +408,8 @@ final class SkenSeja: ObservableObject {
         guard let d = dogodek else {
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "REFUSED"), podnaslov: String(localized: "Choose an event first."))
         }
+        // Streznik je ze povedal, da uporabnik ni vec v ekipi kluba: z lokalnim kljucem bi se kode se vedno dale zeleno spustiti.
+        if dostopOdvzet { zavrnjeni += 1; return SkenPrikaz.brezDostopa() }
         let sodba = SkenOdlocitev.odloci(qr: qr, dogodekId: d.id, kljuc: kljuc, indeks: indeks, lokalni: lokalni)
         switch sodba.barva {
         case .zeleno:
@@ -428,9 +467,16 @@ final class SkenSeja: ObservableObject {
                 return SkenPrikaz.iz(streznik: r.result, usedAt: r.usedAt, sodba: sodba)
             }
         case .failure(let napaka)?:
-            if await jeOdvzemDostopa(napaka) {} else { zabeleziNapako(napaka) }
+            if await jeOdvzemDostopa(napaka, poskusiPoslati: false) {
+                // Gost ni bil spuscen: vnosa ne obdrzimo kot »sprejetega«; brezDostopa pove vratarju, zakaj je rdece.
+                vrsta.odstrani(vnos.clientScanId)
+                osveziStevce()
+                zavrnjeni += 1
+                return SkenPrikaz.brezDostopa()
+            }
+            zabeleziNapako(napaka)
         case nil:
-            break   // rok je potekel: velja lokalna sodba
+            zabeleziRok()   // pocasen streznik = kot brez povezave: naslednji skeni ne cakajo vsak po 2 s (vrne ga uspesen klic)
         }
         // Brez dokoncnega odgovora: vnos ostane v vrsti in ga periodicno posiljanje poslje (idempotentno po client_scan_id).
         vrsta.sprosti(vnos.clientScanId)
@@ -461,9 +507,13 @@ final class SkenSeja: ObservableObject {
             }
             return SkenPrikaz.iz(r)
         case .failure(let napaka)?:
-            if await jeOdvzemDostopa(napaka) {} else { zabeleziNapako(napaka) }
+            if await jeOdvzemDostopa(napaka, poskusiPoslati: false) {
+                zavrnjeni += 1
+                return SkenPrikaz.brezDostopa()
+            }
+            zabeleziNapako(napaka)
         case nil:
-            break   // rok je potekel (npr. Wi-Fi brez interneta): rumeno, vratar odloci
+            zabeleziRok()   // rok je potekel (npr. Wi-Fi brez interneta): rumeno, vratar odloci
         }
         return SkenPrikaz.iz(sodba, qr: qr)
     }
@@ -546,10 +596,11 @@ final class SkenSeja: ObservableObject {
     /// posiljanja), nato pobrisemo seznami in lokalne skene kluba (imena imetnikov). Neposlani vnosi OSTANEJO na disku.
     /// Vrne true, ce je bila napaka 403.
     private func jeOdvzemDostopa(_ napaka: Error, poskusiPoslati: Bool = true) async -> Bool {
-        guard let a = napaka as? APIError, case let .requestFailed(koda, _) = a, koda == 403 else { return false }
+        guard Self.jeOdvzemDostopaNapaka(napaka) else { return false }
         if poskusiPoslati, !posiljanjeVTeku, cakajoce > 0 { await poslji() }
         dostopOdvzet = true
         disk.pocistiKlub(klubId)
+        SkenOdjava.pocistiPredpomnilnik()   // scan-list z imeni imetnikov je tudi v URLCache
         indeks = nil
         seznamHash = nil
         lokalni = [:]
@@ -558,16 +609,33 @@ final class SkenSeja: ObservableObject {
         return true
     }
 
+    /// Pravi odgovori backenda (index.js requireClub): za IZRECEN klub, v katerem uporabnik ni, 404 »Club not found.« (besedilo ali JSON);
+    /// brez glave kluba 403 »Forbidden.«. NE: 403 »Email not verified.« (drugo vprasanje), 403 »Your role in the club does not allow
+    /// this.« (clan je, samo vloga ne sme), 404 »Event not found.« (dogodka ni, klub pa je).
+    nonisolated static func jeOdvzemDostopaNapaka(_ napaka: Error) -> Bool {
+        guard let a = napaka as? APIError, case let .requestFailed(koda, besedilo) = a else { return false }
+        if koda == 404 { return besedilo.contains("Club not found") }
+        if koda == 403 { return besedilo.trimmingCharacters(in: .whitespacesAndNewlines) == "Forbidden." }
+        return false
+    }
+
     // MARK: - Stanje povezave
 
     private func osveziStevce() {
+        vrsta.ponoviNeuspele()   // neuspel zapis na disk se poskusi znova ob vsakem skenu, dokler ni potrjen
         cakajoce = vrsta.stevilo(klub: klubId, uporabnik: uporabnikId)
-        konflikti = vrsta.nepotrjeniKonflikti(klub: klubId)
+        konflikti = vrsta.nepotrjeniKonflikti(klub: klubId, uporabnik: uporabnikId)
         zapisOK = vrsta.zapisUspel
     }
 
     private func zabeleziUspeh() {
         zadnjiKlicOK = true
+        posodobiPovezavo()
+    }
+
+    /// Rok je potekel: streznik je prepocasen za vrata, zato velja kot nedosegljiv, dokler ga uspesen klic ne povrne.
+    private func zabeleziRok() {
+        zadnjiKlicOK = false
         posodobiPovezavo()
     }
 

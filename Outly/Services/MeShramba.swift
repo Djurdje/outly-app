@@ -21,18 +21,41 @@ extension Error {
 enum MeShramba {
     static let ime = "me.json"
 
+    /// Shranjen Me + `sub` zetona, s katerim je bil dobljen: Me drugega racuna (npr. po odjavi, ki se ni zgodila, ali menjavi racuna
+    /// brez odjave) se ob branju zavrne.
+    struct Zapis: Codable, Equatable {
+        let sub: String
+        let me: Me
+    }
+
     /// Application Support/Seja (locena od Sken: pobrise se ob odjavi sama zase).
     static func standardniDisk() -> SkenDisk {
         SkenDisk(mapa: SkenDisk().mapa.deletingLastPathComponent().appendingPathComponent("Seja", isDirectory: true))
     }
 
-    @discardableResult
-    static func shrani(_ me: Me, disk: SkenDisk = standardniDisk()) -> Bool {
-        disk.zapisi(me, ime)
+    /// `sub` iz JWT (brez preverjanja podpisa: samo identiteta za primerjavo z lastnim zapisom, ne za odlocanje o dostopu).
+    static func sub(izZetona token: String) -> String? {
+        let deli = token.split(separator: ".", omittingEmptySubsequences: false)
+        guard deli.count == 3, let d = Data(base64URL: String(deli[1])),
+              let o = (try? JSONSerialization.jsonObject(with: d)) as? [String: Any],
+              let sub = o["sub"] as? String, !sub.isEmpty else { return nil }
+        return sub.lowercased()
     }
 
-    static func preberi(disk: SkenDisk = standardniDisk()) -> Me? {
-        disk.preberi(Me.self, ime)
+    @discardableResult
+    static func shrani(_ me: Me, sub: String, disk: SkenDisk = standardniDisk()) -> Bool {
+        disk.zapisi(Zapis(sub: sub.lowercased(), me: me), ime)
+    }
+
+    /// Zapis z diska (brez primerjave `sub`); SessionStore ga prebere enkrat ob zagonu in ga drzi v pomnilniku.
+    static func preberiZapis(disk: SkenDisk = standardniDisk()) -> Zapis? {
+        disk.preberi(Zapis.self, ime)
+    }
+
+    /// Me z diska, ce pripada racunu z `sub`; sicer nil.
+    static func preberi(sub: String?, disk: SkenDisk = standardniDisk()) -> Me? {
+        guard let sub, let z = preberiZapis(disk: disk), z.sub == sub.lowercased() else { return nil }
+        return z.me
     }
 
     static func pobrisi(disk: SkenDisk = standardniDisk()) {

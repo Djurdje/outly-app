@@ -9511,6 +9511,28 @@
           }
         }
       }
+    },
+    "NO ACCESS": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BREZ DOSTOPA"
+          }
+        }
+      }
+    },
+    "You are no longer on this club's team. Nobody is let in from this phone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V ekipi tega kluba nisi več. S tega telefona nihče ne more noter."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

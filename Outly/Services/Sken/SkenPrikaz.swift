@@ -123,6 +123,12 @@ struct SkenPrikaz: Equatable {
         }
     }
 
+    /// Streznik je povedal, da uporabnik ni vec v ekipi kluba (404 »Club not found.« / 403 »Forbidden.«).
+    static func brezDostopa() -> SkenPrikaz {
+        SkenPrikaz(barva: .rdece, naslov: String(localized: "NO ACCESS"),
+                   podnaslov: String(localized: "You are no longer on this club's team. Nobody is let in from this phone."))
+    }
+
     /// Vratar je gosta spustil sam (stara koda brez povezave).
     static func spusceniRocno() -> SkenPrikaz {
         SkenPrikaz(barva: .zeleno, naslov: String(localized: "LET IN"),
