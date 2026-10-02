@@ -13,7 +13,8 @@ Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-bac
   Connect API ključa (`APPLE_TEAM_ID`, `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_KEY_P8`); nič se ne hrani v repu. Brez `.p12` je Xcode
   na vsakem runnerju ustvaril nov certifikat in zadel Applovo omejitev (od 20. 9. 2026, glej backend `docs/INCIDENTI.md`).
   Če certifikat poteče ali ga kdo prekliče, TestFlight korak pade — nov `.p12` v secrets. Številka gradnje = številka zagona workflowa.
-- Na **pull request** teče samo prevod za simulator (TestFlight se preskoči) — rdeč PR se ne sme združiti.
+- Na **pull request** teče prevod za simulator + testi (Debug) in vzporedno job `Release prevod (PR)` (iphoneos, Release, `-O`, brez podpisa;
+  ujame napake prevajalnika, ki se pokažejo samo z optimizacijo, incident 2. 10. 2026). TestFlight se preskoči — rdeč PR se ne sme združiti.
 - Bundle ID `si.outly.app`, aplikacija v App Store Connect »Outly - Nightlife« (ime »Outly« je zasedeno), Martinov Individual
   Apple Developer račun; pozneje App Transfer na NEXT DIMENSIONS. `DEVELOPMENT_TEAM` je v projektu prazen — poda ga CI.
 - Testerji dobijo build prek TestFlighta (~5–15 min po zelenem Actions). **Vsak merge v master = nov build pri testerjih.**
