@@ -161,6 +161,11 @@ struct TransferTicketView: View {
                 }
                 .font(.system(size: 12))
                 .foregroundColor(.white.opacity(0.5))
+
+                // Vracilo ob odpovedi gre vedno prvotnemu kupcu (outly-backend #103).
+                Text("If the event is cancelled, the refund goes to the original buyer, not to your friend.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.5))
             }
             .disabled(stanje != .miruje)
             .opacity(stanje == .miruje ? 1 : 0.6)
