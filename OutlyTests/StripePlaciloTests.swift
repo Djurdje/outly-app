@@ -166,4 +166,147 @@ final class StripePlaciloTests: XCTestCase {
         XCTAssertEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)
         XCTAssertNotNil(shramba.odprtaVsebina(uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
     }
+
+    // MARK: - Klic nazaj outly://placilo (ASWebAuthenticationSession)
+
+    private func klic(_ niz: String) -> StripePlacilo.PovratniKlic? {
+        StripePlacilo.PovratniKlic.razcleni(URL(string: niz))
+    }
+
+    func testKlicNazajUspehInPreklicZNarocilom() {
+        XCTAssertEqual(klic("outly://placilo?stanje=uspeh&narocilo=OUT-ABC123"), .uspeh(narocilo: "OUT-ABC123"))
+        XCTAssertEqual(klic("outly://placilo?stanje=preklic&narocilo=OUT-ABC123"), .preklic(narocilo: "OUT-ABC123"))
+        // Vrstni red parametrov ni pomemben, dodatni parametri se spregledajo.
+        XCTAssertEqual(klic("outly://placilo?narocilo=77&app=ios&stanje=uspeh"), .uspeh(narocilo: "77"))
+    }
+
+    func testKlicNazajBrezAliPrazenNarociloJeNil() {
+        XCTAssertEqual(klic("outly://placilo?stanje=uspeh"), .uspeh(narocilo: nil))
+        XCTAssertEqual(klic("outly://placilo?stanje=preklic&narocilo="), .preklic(narocilo: nil))
+        XCTAssertEqual(klic("outly://placilo?stanje=preklic&narocilo=%20"), .preklic(narocilo: nil))
+    }
+
+    func testKlicNazajNiObcutljivNaVelikeCrke() {
+        XCTAssertEqual(klic("OUTLY://PLACILO?stanje=USPEH&narocilo=X1"), .uspeh(narocilo: "X1"))
+        XCTAssertEqual(klic("outly://Placilo?stanje=Preklic"), .preklic(narocilo: nil))
+    }
+
+    func testKlicNazajDekodiraOdstotkovnoKodiranoNarocilo() {
+        XCTAssertEqual(klic("outly://placilo?stanje=uspeh&narocilo=OUT%2D123"), .uspeh(narocilo: "OUT-123"))
+    }
+
+    func testKlicNazajZavrneNeveljavneUrlje() {
+        XCTAssertNil(StripePlacilo.PovratniKlic.razcleni(nil))
+        XCTAssertNil(klic("https://outly.si/placilo?stanje=uspeh&app=ios&narocilo=1"))   // ni nasa shema
+        XCTAssertNil(klic("http://placilo?stanje=uspeh"))
+        XCTAssertNil(klic("outly://drugo?stanje=uspeh"))                                  // drug gostitelj
+        XCTAssertNil(klic("outly://placilo.evil.com?stanje=uspeh"))
+        XCTAssertNil(klic("outly://evil.com/placilo?stanje=uspeh"))
+        XCTAssertNil(klic("outly://placilo"))                                             // brez stanja
+        XCTAssertNil(klic("outly://placilo?narocilo=1"))
+        XCTAssertNil(klic("outly://placilo?stanje="))
+        XCTAssertNil(klic("outly://placilo?stanje=neznano&narocilo=1"))
+        XCTAssertNil(klic("outly://placilo?stanje=uspeh1"))
+        XCTAssertNil(klic("evil://placilo?stanje=uspeh"))
+    }
+
+    func testIzidSejeIzKlica() {
+        XCTAssertEqual(StripePlacilo.SejaIzid.izKlica(URL(string: "outly://placilo?stanje=uspeh&narocilo=1")), .uspeh)
+        XCTAssertEqual(StripePlacilo.SejaIzid.izKlica(URL(string: "outly://placilo?stanje=preklic&narocilo=1")), .preklic)
+        // Nerazumljiv URL ali brez URL-ja -> napaka (tiho enkratno preverjanje), nikoli »uspeh«.
+        XCTAssertEqual(StripePlacilo.SejaIzid.izKlica(URL(string: "https://outly.si/placilo?stanje=uspeh")), .napaka)
+        XCTAssertEqual(StripePlacilo.SejaIzid.izKlica(nil), .napaka)
+    }
+
+    func testSamoUspehPotrjujeVecBranjIDrugoJeTihoEnkratnoPreverjanje() {
+        XCTAssertEqual(StripePlacilo.SejaIzid.uspeh.poskusov, StripePlacilo.samodejnihBranjPoUspehu)
+        XCTAssertGreaterThan(StripePlacilo.SejaIzid.uspeh.poskusov, 1)
+        XCTAssertFalse(StripePlacilo.SejaIzid.uspeh.tiho)
+        for izid in [StripePlacilo.SejaIzid.preklic, .prekinil, .napaka] {
+            XCTAssertEqual(izid.poskusov, 1)
+            XCTAssertTrue(izid.tiho)
+        }
+    }
+
+    func testShemaVrnitveJeOutly() {
+        XCTAssertEqual(StripePlacilo.shemaVrnitve, "outly")
+    }
+
+    // MARK: - StripeNakup.preveri po vrnitvi (vstavljen bralnik, brez omrezja)
+
+    private func nakupZBralnikom(_ izid: StripePlacilo.Izid, shramba: NakupniKljucShramba) throws -> StripeNakup {
+        let s = StripeNakup(shramba: shramba, bralnik: { _, _, _ in izid })
+        XCTAssertTrue(s.odpri(try stripeOdgovor(url: "https://checkout.stripe.com/c/pay/cs"),
+                              uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+        return s
+    }
+
+    func testPreveriUspehPlacanoVrneUspesniZaslonInPozabiKljuc() async throws {
+        let shramba = novaShramba()
+        _ = shramba.zaNakup(uporabnik: 3, vsebina: NakupniKljuc.Vsebina(dogodekId: 7, kolicina: 2))
+        let s = try nakupZBralnikom(.placano(try narocilo(status: "paid", vstopnic: 2)), shramba: shramba)
+        let p = await s.preveri(token: "t", poskusov: 5)
+        XCTAssertEqual(p?.order.id, 41)
+        XCTAssertEqual(p?.tickets.count, 2)
+        XCTAssertNil(s.caka)
+        XCTAssertNil(s.napaka)
+        XCTAssertNil(shramba.odprtaVsebina(uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+    }
+
+    func testPreveriPoUspehuSePendingOstaneNaKarticiPlaciloSeVeri() async throws {
+        let s = try nakupZBralnikom(.caka, shramba: novaShramba())
+        let p = await s.preveri(token: "t", poskusov: 5)
+        XCTAssertNil(p)
+        XCTAssertNotNil(s.caka)   // kartica »Checking your payment« + »Check again«
+        XCTAssertNil(s.napaka)
+    }
+
+    func testTihoPreveriPoPreklicuPendingVrneNaNakupniListBrezNapakeKljucOstane() async throws {
+        let shramba = novaShramba()
+        let vsebina = NakupniKljuc.Vsebina(dogodekId: 7, kolicina: 2)
+        let k1 = shramba.zaNakup(uporabnik: 3, vsebina: vsebina)
+        let s = try nakupZBralnikom(.caka, shramba: shramba)
+        let p = await s.preveri(token: "t", poskusov: 1, tiho: true)
+        XCTAssertNil(p)
+        XCTAssertNil(s.caka)      // brez kartice
+        XCTAssertNil(s.napaka)    // brez napake
+        XCTAssertEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)   // ponovni Pay = isto placilo
+    }
+
+    func testTihoPreveriCeJeKupecPlacalInSeleNatoZaprlPokazeVstopnico() async throws {
+        let s = try nakupZBralnikom(.placano(try narocilo(status: "paid", vstopnic: 1)), shramba: novaShramba())
+        let p = await s.preveri(token: "t", poskusov: 1, tiho: true)
+        XCTAssertEqual(p?.tickets.count, 1)
+        XCTAssertNil(s.caka)
+    }
+
+    func testTihoPreveriOpuscenoNarociloZavrtiKljucBrezSporocila() async throws {
+        let shramba = novaShramba()
+        let vsebina = NakupniKljuc.Vsebina(dogodekId: 7, kolicina: 2)
+        let k1 = shramba.zaNakup(uporabnik: 3, vsebina: vsebina)
+        let s = try nakupZBralnikom(.opuscen, shramba: shramba)
+        let p = await s.preveri(token: "t", poskusov: 1, tiho: true)
+        XCTAssertNil(p)
+        XCTAssertNil(s.caka)
+        XCTAssertNil(s.napaka)
+        XCTAssertNotEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)
+    }
+
+    func testGlasnoPreveriOpuscenoNarociloPokazeNapako() async throws {
+        let s = try nakupZBralnikom(.opuscen, shramba: novaShramba())
+        _ = await s.preveri(token: "t", poskusov: 1)
+        XCTAssertNil(s.caka)
+        XCTAssertNotNil(s.napaka)
+    }
+
+    func testTihoPreveriNapakaBranjaBrezSporocilaInCakaOstane() async throws {
+        struct Napaka: Error {}
+        let s = StripeNakup(shramba: novaShramba(), bralnik: { _, _, _ in throw Napaka() })
+        XCTAssertTrue(s.odpri(try stripeOdgovor(url: "https://checkout.stripe.com/c/pay/cs"),
+                              uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+        let p = await s.preveri(token: "t", poskusov: 1, tiho: true)
+        XCTAssertNil(p)
+        XCTAssertNotNil(s.caka)
+        XCTAssertNil(s.napaka)
+    }
 }

@@ -31,7 +31,7 @@ struct VipTablesView: View {
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
-    /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Safari stran, narocilo v cakanju, ponovno branje.
+    /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Stripova stran (ASWebAuthenticationSession), narocilo v cakanju, ponovno branje.
     @StateObject private var stripe = StripeNakup()
 
     private let ozadje = Color(white: 0.06)
@@ -91,12 +91,10 @@ struct VipTablesView: View {
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(stanje == .nalaga)
         .task { await naloziVip() }
-        // Stripova gostovana stran; po zaprtju (Done) preberemo narocilo in pokazemo rezervacijo ali »Checking your payment«.
-        .fullScreenCover(item: $stripe.stran, onDismiss: {
-            Task { await preveriPlacilo(poskusov: StripePlacilo.samodejnihBranj) }
-        }) { stran in
-            StripeSafariView(url: stran.url) { stripe.stran = nil }
-                .ignoresSafeArea()
+        // Stripova gostovana stran v ASWebAuthenticationSession: po placilu jo outly://placilo zapre sama in takoj preberemo narocilo
+        // (uspeh: vec samodejnih branj, webhook zakasni); preklic ali zaprtje: ostanemo na listu, narocilo preverimo tiho enkrat.
+        .stripeSeja(stran: $stripe.stran) { izid in
+            Task { await preveriPlacilo(poskusov: izid.poskusov, tiho: izid.tiho) }
         }
     }
 
@@ -536,11 +534,11 @@ struct VipTablesView: View {
         }
     }
 
-    /// Po zaprtju Stripove strani (samodejno, vec poskusov) ali na »Check again« (1 poskus): ce je narocilo placano in ima
+    /// Po vrnitvi s Stripove strani (samodejno: uspeh vec poskusov, preklic/zaprtje 1 poskus tiho) ali na »Check again« (1 poskus): ce je narocilo placano in ima
     /// vstopnice, pokaze obstojeci uspesni zaslon (brez oznake TEST, ker `mode != "test"`); sicer ostane na listu.
-    private func preveriPlacilo(poskusov: Int) async {
+    private func preveriPlacilo(poskusov: Int, tiho: Bool = false) async {
         errorMessage = nil
-        if let p = await stripe.preveri(token: session.token, poskusov: poskusov) {
+        if let p = await stripe.preveri(token: session.token, poskusov: poskusov, tiho: tiho) {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } else {

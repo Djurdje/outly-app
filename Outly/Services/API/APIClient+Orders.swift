@@ -495,11 +495,17 @@ struct TransferResponse: Decodable {
 
 extension APIClient {
 
+    /// Glave nakupnih klicev (POST /events/:id/orders in …/tables/:tableId/orders). `X-Outly-Client: ios` pove backendu, da
+    /// nakup prihaja iz iOS aplikacije: pri Stripe Checkoutu nastavi success/cancel URL na outly.si/placilo?app=ios, ta stran pa
+    /// kupca vrne v aplikacijo (outly://placilo, glej StripePlacilo.PovratniKlic). Star backend glavo spregleda.
+    static let nakupneGlave: [String: String] = ["X-Outly-Client": "ios"]
+
     /// POST /events/:id/orders — nakup vstopnic. V testnem nacinu takoj "placano".
     /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo (201 z istim telesom).
     func buyTickets(token: String, eventId: Int, quantity: Int, idempotencyKey: String? = nil) async throws -> PurchaseResponse {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
-                                  json: ["quantity": quantity], idempotencyKey: idempotencyKey)
+                                  json: ["quantity": quantity], idempotencyKey: idempotencyKey,
+                                  dodatneGlave: APIClient.nakupneGlave)
         return try decode(PurchaseResponse.self, from: data)
     }
 
