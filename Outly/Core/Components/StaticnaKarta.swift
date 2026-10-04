@@ -28,6 +28,8 @@ struct StaticnaKarta: View {
                 Marker("", coordinate: koordinata)
             }
             .allowsHitTesting(false)
+            // Prozorna plast, da ima gumb kljub izklopljenemu zemljevidu obmocje za dotik.
+            .overlay { Color.clear.contentShape(Rectangle()) }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Get directions"))
