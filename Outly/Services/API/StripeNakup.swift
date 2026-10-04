@@ -1,4 +1,5 @@
-import SwiftUI
+import Foundation
+import Combine
 
 /// Stanje nakupa, ki gre prek Stripe Checkouta (list vstopnic `BuyTicketsView` in VIP list `VipTablesView` imata vsak svoj primerek).
 ///
