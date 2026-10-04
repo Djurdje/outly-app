@@ -243,8 +243,8 @@ final class VipDecodingTests: XCTestCase {
         XCTAssertEqual(v.holds.map(\.label), ["T2"])
         XCTAssertEqual(v.bookings.map(\.label), ["T3"])
         XCTAssertEqual(v.rezervirane.map(\.label), ["T2", "T3"])
-        // Prosta = ni onemogocena, arhivirana, prodana ali rezervirana; urejena po oznaki (T9 pred T10).
-        XCTAssertEqual(v.prosteMize.map(\.label), ["T9", "T10"])
+        // Prosta = ni arhivirana, prodana ali rezervirana (izklop za spletno prodajo ne velja); po oznaki (T9 pred T10).
+        XCTAssertEqual(v.prosteMize.map(\.label), ["T4", "T9", "T10"])
     }
 
     // MARK: - Oznake

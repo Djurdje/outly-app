@@ -236,8 +236,9 @@ struct VipBusinessTable: Decodable, Identifiable {
         hold = try c.decodeIfPresent(VipHold.self, forKey: .hold)
     }
 
-    /// Miza, ki jo je se mogoce oznaciti kot rezervirano: ni onemogocena, arhivirana, prodana ali ze rezervirana.
-    var jeProsta: Bool { !disabled && !archived && booking == nil && hold == nil }
+    /// Miza, ki jo je se mogoce oznaciti kot rezervirano po telefonu: ni arhivirana, prodana ali ze rezervirana.
+    /// Izklop za spletno prodajo (disabled) ne velja: klub lahko mizo proda samo po telefonu (backend to dovoli).
+    var jeProsta: Bool { !archived && booking == nil && hold == nil }
 }
 
 struct BusinessEventVip: Decodable {
