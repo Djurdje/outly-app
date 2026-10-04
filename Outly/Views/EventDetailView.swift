@@ -26,12 +26,6 @@ struct EventDetailView: View {
     @State private var nalozenOpis = ""
     private var opis: String { event.description.isEmpty ? nalozenOpis : event.description }
 
-    // Kamera zemljevida (iOS 17 Map API). Ob prikazu se premakne na klub; privzeto Ljubljana.
-    @State private var camera = MapCameraPosition.region(MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 46.0569, longitude: 14.5058),
-        span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-    ))
-
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
@@ -498,20 +492,14 @@ struct EventDetailView: View {
                 Spacer(minLength: 0)
 
                 if let club, let lat = club.lat, let lng = club.lng {
-                    Map(position: $camera) {
-                        Marker("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng))
-                    }
-                    .frame(width: 150, height: 150)
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .onAppear {
-                        camera = .region(MKCoordinateRegion(
-                            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
-                            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
-                    }
+                    // Staticen; klik -> Apple Maps / Google Maps z navodili za pot
+                    StaticnaKarta(lat: lat, lng: lng)
+                        .frame(width: 150, height: 150)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
                 } else {
                     RoundedRectangle(cornerRadius: 18)
                         .opacity(0.10)

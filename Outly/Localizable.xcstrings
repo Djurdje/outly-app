@@ -2757,6 +2757,17 @@
         }
       }
     },
+    "Get directions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navodila za pot"
+          }
+        }
+      }
+    },
     "Get ticket": {
       "extractionState": "manual",
       "localizations": {
