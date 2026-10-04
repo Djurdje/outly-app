@@ -6184,6 +6184,17 @@
         }
       }
     },
+    "This event has already ended.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek se je že končal."
+          }
+        }
+      }
+    },
     "This event has already started.": {
       "extractionState": "manual",
       "localizations": {

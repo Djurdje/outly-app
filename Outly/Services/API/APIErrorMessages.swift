@@ -116,6 +116,7 @@ extension APIError {
         if t.contains("not on sale")                    { return String(localized: "This event is not on sale.") }
         if t.contains("no tickets on outly")            { return String(localized: "Tickets for this event are not sold on Outly.") }
         if t.contains("already started")                { return String(localized: "This event has already started.") }
+        if t.contains("already ended")                  { return String(localized: "This event has already ended.") }
         if t.contains("have not opened")                { return String(localized: "Ticket sales have not opened yet.") }
         if t.contains("sales are closed")               { return String(localized: "Ticket sales are closed.") }
         if t.contains("tickets left") || t.contains("not enough tickets") { return String(localized: "Not enough tickets left.") }
