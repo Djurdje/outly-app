@@ -35,6 +35,8 @@ extension APIClient {
     /// ne uspe, 401 pride do klicatelja — SessionStore je uporabnika ze odjavil.
     ///
     /// `idempotencyKey`: glava `Idempotency-Key` (samo nakupni klici, glej NakupniKljuc); nil = glave ni.
+    /// `dodatneGlave`: dodatne glave samo za ta klic (npr. `X-Outly-Client` pri nakupu). Samo DODAJAJO: Authorization,
+    /// X-Outly-Club, Idempotency-Key in Content-Type se iz njih filtrirajo (ne glede na velike/male crke) in jih nastavi samo `send`.
     func send(
         path: String,
         method: String,
@@ -44,10 +46,11 @@ extension APIClient {
         retryOn401: Bool = true,
         clubId: Int? = nil,
         timeout: TimeInterval? = nil,
-        idempotencyKey: String? = nil
+        idempotencyKey: String? = nil,
+        dodatneGlave: [String: String] = [:]
     ) async throws -> Data {
         do {
-            return try await sendOnce(path: path, method: method, token: token, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey)
+            return try await sendOnce(path: path, method: method, token: token, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave)
         } catch let api as APIError {
             guard retryOn401,
                   let token, !token.isEmpty,
@@ -63,7 +66,7 @@ extension APIClient {
                 }
                 throw api
             }
-            return try await sendOnce(path: path, method: method, token: fresh, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey)
+            return try await sendOnce(path: path, method: method, token: fresh, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave)
         }
     }
 
@@ -75,8 +78,38 @@ extension APIClient {
         query: [URLQueryItem],
         clubId: Int?,
         timeout: TimeInterval?,
-        idempotencyKey: String?
+        idempotencyKey: String?,
+        dodatneGlave: [String: String]
     ) async throws -> Data {
+        let req = try sestaviZahtevek(path: path, method: method, token: token, json: json, query: query, clubId: clubId,
+                                      timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave)
+
+        let (data, resp) = try await APIPredpomnilnik.seja.data(for: req)
+        guard let http = resp as? HTTPURLResponse else {
+            throw APIError.requestFailed(-1, "No HTTP response")
+        }
+        if !(200...299).contains(http.statusCode) {
+            let msg = String(data: data, encoding: .utf8) ?? ""
+            throw APIError.requestFailed(http.statusCode, msg)
+        }
+        return data
+    }
+
+    /// Glave, ki jih `send` nastavi sam in jih `dodatneGlave` ne smejo nastaviti (mala crka).
+    static let zascitenaGlava: Set<String> = ["authorization", "x-outly-club", "idempotency-key", "content-type"]
+
+    /// Sestavi zahtevek (URL, glave, telo). Locen od posiljanja, da se glave dajo preveriti brez omrezja (testi).
+    func sestaviZahtevek(
+        path: String,
+        method: String,
+        token: String?,
+        json: [String: Any]?,
+        query: [URLQueryItem],
+        clubId: Int?,
+        timeout: TimeInterval?,
+        idempotencyKey: String?,
+        dodatneGlave: [String: String] = [:]
+    ) throws -> URLRequest {
         guard var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
             throw APIError.invalidURL
         }
@@ -86,6 +119,10 @@ extension APIClient {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.timeoutInterval = timeout ?? 30
+        // Dodatne glave: zasciteni imena (avtorizacija, klub, idempotentnost, tip telesa) se NIKOLI ne vzamejo iz njih.
+        for (ime, vrednost) in dodatneGlave where !Self.zascitenaGlava.contains(ime.lowercased()) {
+            req.setValue(vrednost, forHTTPHeaderField: ime)
+        }
         if let token, !token.isEmpty {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -105,16 +142,7 @@ extension APIClient {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONSerialization.data(withJSONObject: json)
         }
-
-        let (data, resp) = try await APIPredpomnilnik.seja.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw APIError.requestFailed(-1, "No HTTP response")
-        }
-        if !(200...299).contains(http.statusCode) {
-            let msg = String(data: data, encoding: .utf8) ?? ""
-            throw APIError.requestFailed(http.statusCode, msg)
-        }
-        return data
+        return req
     }
 
     // MARK: - Uporabnik

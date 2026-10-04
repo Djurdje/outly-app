@@ -261,7 +261,8 @@ extension APIClient {
         if let packageId { body["package_id"] = packageId }
         if let expectedPriceCents { body["expected_price_cents"] = expectedPriceCents }
         let data = try await send(path: "events/\(eventId)/tables/\(tableId)/orders", method: "POST",
-                                  token: token, json: body, idempotencyKey: idempotencyKey)
+                                  token: token, json: body, idempotencyKey: idempotencyKey,
+                                  dodatneGlave: APIClient.nakupneGlave)
         return try decode(PurchaseResponse.self, from: data)
     }
 
