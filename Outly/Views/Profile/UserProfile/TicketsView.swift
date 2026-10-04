@@ -16,6 +16,8 @@ struct TicketsView: View {
     private var past: [APITicket] { tickets.filter { $0.isPast && !$0.isUsed } }
     private var used: [APITicket] { tickets.filter { $0.isUsed } }
     @State private var showUsed = false
+    // VIP miza = eno narocilo z vec vstopnicami; razprte skupine (order_id). Privzeto zaprte (Martin, 4. 10. 2026).
+    @State private var odprteMize: Set<Int> = []
 
     var body: some View {
         Screen {
@@ -46,21 +48,14 @@ struct TicketsView: View {
                             Text("Upcoming")
                                 .font(.headline)
                                 .foregroundColor(.white.opacity(0.7))
-                            ForEach(upcoming) { t in
-                                NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
-                                    .buttonStyle(.plain)
-                            }
+                            ForEach(PostavkaVstopnic.zdruzi(upcoming)) { p in postavka(p) }
                         }
                         if !past.isEmpty {
                             Text("Past")
                                 .font(.headline)
                                 .foregroundColor(.white.opacity(0.7))
                                 .padding(.top, 8)
-                            ForEach(past) { t in
-                                NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
-                                    .buttonStyle(.plain)
-                                    .opacity(0.6)
-                            }
+                            ForEach(PostavkaVstopnic.zdruzi(past)) { p in postavka(p).opacity(0.6) }
                         }
                         if !used.isEmpty {
                             Button {
@@ -79,11 +74,7 @@ struct TicketsView: View {
                             }
                             .buttonStyle(.plain)
                             if showUsed {
-                                ForEach(used) { t in
-                                    NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
-                                        .buttonStyle(.plain)
-                                        .opacity(0.5)
-                                }
+                                ForEach(PostavkaVstopnic.zdruzi(used)) { p in postavka(p).opacity(0.5) }
                             }
                         }
                     }
@@ -110,7 +101,71 @@ struct TicketsView: View {
         .padding(.top, 80)
     }
 
-    private func vrstica(_ t: APITicket) -> some View {
+    // MARK: - VIP miza kot spustni seznam
+
+    @ViewBuilder
+    private func postavka(_ p: PostavkaVstopnic) -> some View {
+        switch p {
+        case .ena(let t):
+            NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
+                .buttonStyle(.plain)
+        case .miza(let orderId, let vstopnice):
+            mizaSkupina(orderId: orderId, vstopnice: vstopnice)
+        }
+    }
+
+    private func mizaSkupina(orderId: Int, vstopnice: [APITicket]) -> some View {
+        let odprta = odprteMize.contains(orderId)
+        return VStack(spacing: 8) {
+            Button {
+                withAnimation(.snappy) {
+                    if odprta { odprteMize.remove(orderId) } else { odprteMize.insert(orderId) }
+                }
+            } label: {
+                vrstica(vstopnice[0], stevilo: vstopnice.count, odprta: odprta)
+            }
+            .buttonStyle(.plain)
+
+            if odprta {
+                ForEach(Array(vstopnice.enumerated()), id: \.element.id) { i, t in
+                    NavigationLink { TicketDetailView(ticket: t) } label: { podVrstica(t, zaporedna: i + 1) }
+                        .buttonStyle(.plain)
+                }
+                .padding(.leading, 16)
+            }
+        }
+    }
+
+    /// Kompaktna vrstica ene vstopnice znotraj razprte mize.
+    private func podVrstica(_ t: APITicket, zaporedna: Int) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "ticket")
+                .foregroundColor(.vipZlata)
+            Text("Ticket \(zaporedna)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.white)
+            Text(t.statusLabel)
+                .font(.caption.weight(.bold))
+                .foregroundColor(t.statusLabel == "VALID" ? .outlyBlue : .gray)
+            if !t.serialKratek.isEmpty {
+                Text(verbatim: t.serialKratek)
+                    .font(.caption.monospaced())
+                    .foregroundColor(.gray)
+            }
+            if t.transferred && !t.buyerUsername.isEmpty {
+                Text("· from \(t.buyerUsername)").font(.caption).foregroundColor(.gray).lineLimit(1)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").foregroundColor(.gray)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.gray.opacity(0.10))
+        .cornerRadius(12)
+    }
+
+    /// `stevilo` != nil: glava VIP mize (stevilo vstopnic in puscica dol/gor namesto desne).
+    private func vrstica(_ t: APITicket, stevilo: Int? = nil, odprta: Bool = false) -> some View {
         HStack(spacing: 12) {
             if !t.posterUrl.isEmpty, let url = URL(string: t.posterUrl) {
                 OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
@@ -130,11 +185,17 @@ struct TicketsView: View {
                 Text("\(t.clubName) · \(datum(t))")
                     .font(.subheadline).foregroundColor(.gray).lineLimit(1)
                 HStack(spacing: 6) {
-                    Text(t.statusLabel)
-                        .font(.caption.weight(.bold))
-                        .foregroundColor(t.statusLabel == "VALID" ? .outlyBlue : .gray)
+                    if let stevilo {
+                        Text("\(stevilo) tickets")
+                            .font(.caption.weight(.bold))
+                            .foregroundColor(.white.opacity(0.8))
+                    } else {
+                        Text(t.statusLabel)
+                            .font(.caption.weight(.bold))
+                            .foregroundColor(t.statusLabel == "VALID" ? .outlyBlue : .gray)
+                    }
                     Text(t.publicRef).font(.caption).foregroundColor(.gray)
-                    if t.transferred && !t.buyerUsername.isEmpty {
+                    if stevilo == nil && t.transferred && !t.buyerUsername.isEmpty {
                         Text("· from \(t.buyerUsername)").font(.caption).foregroundColor(.gray)
                     }
                 }
@@ -150,7 +211,8 @@ struct TicketsView: View {
                 }
             }
             Spacer()
-            Image(systemName: "chevron.right").foregroundColor(.gray)
+            Image(systemName: stevilo == nil ? "chevron.right" : (odprta ? "chevron.up" : "chevron.down"))
+                .foregroundColor(.gray)
         }
         .padding(14)
         .background(Color.gray.opacity(0.14))
