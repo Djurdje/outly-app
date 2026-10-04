@@ -1371,6 +1371,17 @@
         }
       }
     },
+    "Check again": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveri znova"
+          }
+        }
+      }
+    },
     "Check back soon.": {
       "extractionState": "manual",
       "localizations": {
@@ -1400,6 +1411,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preverjamo tvojo prošnjo …"
+          }
+        }
+      }
+    },
+    "Checking your payment … your tickets will show up in Profile → Tickets in a few seconds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo se preverja … vstopnice se pojavijo v Profil → Vstopnice v nekaj sekundah."
           }
         }
       }
@@ -5752,6 +5774,17 @@
         }
       }
     },
+    "The payment was not completed. You can try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo ni bilo dokončano. Poskusi znova."
+          }
+        }
+      }
+    },
     "Transferred": {
       "extractionState": "manual",
       "localizations": {
@@ -7016,6 +7049,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vidnost"
+          }
+        }
+      }
+    },
+    "We couldn't open the payment page. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilne strani ni bilo mogoče odpreti. Poskusi znova."
           }
         }
       }
