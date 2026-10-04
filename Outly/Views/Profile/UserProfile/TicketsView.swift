@@ -16,8 +16,9 @@ struct TicketsView: View {
     private var past: [APITicket] { tickets.filter { $0.isPast && !$0.isUsed } }
     private var used: [APITicket] { tickets.filter { $0.isUsed } }
     @State private var showUsed = false
-    // VIP miza = eno narocilo z vec vstopnicami; razprte skupine (order_id). Privzeto zaprte (Martin, 4. 10. 2026).
-    @State private var odprteMize: Set<Int> = []
+    // VIP miza = eno narocilo z vec vstopnicami; razprte skupine ("razdelek-order_id", ker je ista miza lahko
+    // deloma v Upcoming in deloma v Used). Privzeto zaprte (Martin, 4. 10. 2026).
+    @State private var odprteMize: Set<String> = []
 
     var body: some View {
         Screen {
@@ -48,14 +49,14 @@ struct TicketsView: View {
                             Text("Upcoming")
                                 .font(.headline)
                                 .foregroundColor(.white.opacity(0.7))
-                            ForEach(PostavkaVstopnic.zdruzi(upcoming)) { p in postavka(p) }
+                            ForEach(PostavkaVstopnic.zdruzi(upcoming)) { p in postavka(p, razdelek: "upcoming") }
                         }
                         if !past.isEmpty {
                             Text("Past")
                                 .font(.headline)
                                 .foregroundColor(.white.opacity(0.7))
                                 .padding(.top, 8)
-                            ForEach(PostavkaVstopnic.zdruzi(past)) { p in postavka(p).opacity(0.6) }
+                            ForEach(PostavkaVstopnic.zdruzi(past)) { p in postavka(p, razdelek: "past").opacity(0.6) }
                         }
                         if !used.isEmpty {
                             Button {
@@ -74,7 +75,7 @@ struct TicketsView: View {
                             }
                             .buttonStyle(.plain)
                             if showUsed {
-                                ForEach(PostavkaVstopnic.zdruzi(used)) { p in postavka(p).opacity(0.5) }
+                                ForEach(PostavkaVstopnic.zdruzi(used)) { p in postavka(p, razdelek: "used").opacity(0.5) }
                             }
                         }
                     }
@@ -104,22 +105,22 @@ struct TicketsView: View {
     // MARK: - VIP miza kot spustni seznam
 
     @ViewBuilder
-    private func postavka(_ p: PostavkaVstopnic) -> some View {
+    private func postavka(_ p: PostavkaVstopnic, razdelek: String) -> some View {
         switch p {
         case .ena(let t):
             NavigationLink { TicketDetailView(ticket: t) } label: { vrstica(t) }
                 .buttonStyle(.plain)
         case .miza(let orderId, let vstopnice):
-            mizaSkupina(orderId: orderId, vstopnice: vstopnice)
+            mizaSkupina(kljuc: "\(razdelek)-\(orderId)", vstopnice: vstopnice)
         }
     }
 
-    private func mizaSkupina(orderId: Int, vstopnice: [APITicket]) -> some View {
-        let odprta = odprteMize.contains(orderId)
+    private func mizaSkupina(kljuc: String, vstopnice: [APITicket]) -> some View {
+        let odprta = odprteMize.contains(kljuc)
         return VStack(spacing: 8) {
             Button {
                 withAnimation(.snappy) {
-                    if odprta { odprteMize.remove(orderId) } else { odprteMize.insert(orderId) }
+                    if odprta { odprteMize.remove(kljuc) } else { odprteMize.insert(kljuc) }
                 }
             } label: {
                 vrstica(vstopnice[0], stevilo: vstopnice.count, odprta: odprta)

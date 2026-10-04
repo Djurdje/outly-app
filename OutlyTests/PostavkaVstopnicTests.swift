@@ -81,7 +81,7 @@ final class PostavkaVstopnicTests: XCTestCase {
         ]
         let p = PostavkaVstopnic.zdruzi(seznam)
         XCTAssertEqual(opis(p), ["miza 100: 1,3", "miza 200: 2,4"])
-        XCTAssertEqual(Set(p.map(\.id)).count, p.count, "id-ji postavk morajo biti unikatni (ForEach)")
+        XCTAssertEqual(Set(p.map { $0.id }).count, p.count, "id-ji postavk morajo biti unikatni (ForEach)")
     }
 
     func testPrazenSeznam() {
