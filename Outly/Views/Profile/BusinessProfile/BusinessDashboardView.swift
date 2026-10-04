@@ -576,6 +576,14 @@ struct EventTicketsView: View {
     @State private var delujoc: Int?
     /// VIP rezervacije (backend 025). nil = se ni naloženo ali star streznik brez poti -> razdelka ni.
     @State private var vip: BusinessEventVip?
+    /// Rezervacija po telefonu: miza za list "Mark as reserved", miza za potrditev "Release", napaka zadnjega dejanja.
+    @State private var rezervirajMizo: VipBusinessTable?
+    @State private var sprostiMizo: VipBusinessTable?
+    @State private var delujocaMiza: Int?
+    @State private var vipNapaka: String?
+
+    /// Rezervacijo po telefonu sme dodati/sprostiti samo lastnik in manager; vratar vidi, spreminjati ne more.
+    private var smeUrejatiRezervacije: Bool { session.me?.canManageClub ?? false }
 
     private var used: Int { tickets.filter { $0.isUsed }.count }
 
@@ -688,6 +696,24 @@ struct EventTicketsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .onAppear { Task { await load() } }
+        .sheet(item: $rezervirajMizo) { m in
+            VipHoldSheet(eventId: event.id, miza: m, onDone: { vip = $0 }, onNapaka: { Task { await naloziVip() } })
+                .environmentObject(session)
+        }
+        // presenting: akcija dobi svojo kopijo mize - ne zanasa se na @State, ki ga SwiftUI ob zaprtju lahko pobrise prej.
+        .confirmationDialog(
+            "Release this reservation?",
+            isPresented: Binding(get: { sprostiMizo != nil }, set: { if !$0 { sprostiMizo = nil } }),
+            titleVisibility: .visible,
+            presenting: sprostiMizo
+        ) { m in
+            Button("Release", role: .destructive) {
+                Task { await sprosti(m) }
+            }
+            Button("Cancel", role: .cancel) { sprostiMizo = nil }
+        } message: { m in
+            Text(verbatim: "\(VipOznaka.miza(m.label)) · \(m.hold?.guestName ?? "")")
+        }
     }
 
     private func stevilka(_ v: String, _ n: LocalizedStringKey) -> some View {
@@ -701,7 +727,7 @@ struct EventTicketsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - VIP rezervacije (samo branje; tloris in cene se urejajo na outly.si/app)
+    // MARK: - VIP rezervacije (tloris in cene se urejajo na outly.si/app; rezervacijo po telefonu klub doda tu)
 
     @ViewBuilder
     private var vipRezervacije: some View {
@@ -715,11 +741,20 @@ struct EventTicketsView: View {
                         .font(.title3.bold())
                         .foregroundColor(.white)
                 }
-                if !vip.bookings.isEmpty {
+                if let vipNapaka {
+                    Text(vipNapaka)
+                        .font(.system(size: 13))
+                        .foregroundColor(.red)
+                }
+                if !vip.rezervirane.isEmpty {
                     // Rezervacije so resnica tudi, ce je VIP medtem izklopljen ali tloris odstranjen.
                     VStack(spacing: 8) {
-                        ForEach(vip.bookings) { m in
-                            vrsticaRezervacije(m)
+                        ForEach(vip.rezervirane) { m in
+                            if m.booking != nil {
+                                vrsticaRezervacije(m)
+                            } else {
+                                vrsticaTelefon(m)
+                            }
                         }
                     }
                 } else if !vip.isSetUp {
@@ -729,7 +764,109 @@ struct EventTicketsView: View {
                     Text("No reservations yet")
                         .font(.subheadline).foregroundColor(.white.opacity(0.6))
                 }
+
+                if smeUrejatiRezervacije && !vip.prosteMize.isEmpty {
+                    Text("Available")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.top, 6)
+                    VStack(spacing: 8) {
+                        ForEach(vip.prosteMize) { m in
+                            vrsticaProste(m)
+                        }
+                    }
+                }
             }
+        }
+    }
+
+    /// Prosta miza + "Mark as reserved" (lastnik, manager).
+    private func vrsticaProste(_ m: VipBusinessTable) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(verbatim: VipOznaka.miza(m.label))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                if m.seats > 0 {
+                    Text("Up to \(m.seats) people")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+            }
+            Spacer(minLength: 8)
+            Button {
+                vipNapaka = nil
+                rezervirajMizo = m
+            } label: {
+                Text("Mark as reserved")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Miza, ki jo je klub rezerviral po telefonu: ime gosta, opomba, "Release" (lastnik, manager).
+    @ViewBuilder
+    private func vrsticaTelefon(_ m: VipBusinessTable) -> some View {
+        if let h = m.hold {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "phone.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.vipZlata)
+                    .frame(width: 24, height: 24)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: VipOznaka.miza(m.label))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Reserved by phone")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.vipZlata)
+                    Text(verbatim: h.guestName)
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.75))
+                    if let opomba = h.prikazanaOpomba {
+                        Text(verbatim: opomba)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
+                }
+                Spacer(minLength: 8)
+                if smeUrejatiRezervacije {
+                    Button {
+                        vipNapaka = nil
+                        sprostiMizo = m
+                    } label: {
+                        if delujocaMiza == m.id {
+                            ProgressView().tint(.white)
+                        } else {
+                            Text("Release")
+                                .font(.caption.weight(.bold))
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Capsule())
+                    .disabled(delujocaMiza != nil)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.vipZlata.opacity(0.35), lineWidth: 1)
+            )
         }
     }
 
@@ -794,6 +931,19 @@ struct EventTicketsView: View {
             vip = try await APIClient.shared.fetchBusinessEventVip(eventId: event.id, token: session.token)
         } catch {
             vip = nil
+        }
+    }
+
+    private func sprosti(_ m: VipBusinessTable) async {
+        sprostiMizo = nil
+        delujocaMiza = m.id
+        defer { delujocaMiza = nil }
+        do {
+            vip = try await APIClient.shared.releaseVipTableHold(eventId: event.id, tableId: m.id, token: session.token)
+            vipNapaka = nil
+        } catch {
+            vipNapaka = error.userMessage
+            await naloziVip()
         }
     }
 

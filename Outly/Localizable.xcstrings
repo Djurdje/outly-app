@@ -6184,6 +6184,17 @@
         }
       }
     },
+    "This event has already ended.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek se je že končal."
+          }
+        }
+      }
+    },
     "This event has already started.": {
       "extractionState": "manual",
       "localizations": {
@@ -8762,6 +8773,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rezervacij še ni"
+          }
+        }
+      }
+    },
+    "Mark as reserved": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označi kot rezervirano"
+          }
+        }
+      }
+    },
+    "Reserved by phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervirano po telefonu"
+          }
+        }
+      }
+    },
+    "Guest name": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ime gosta"
+          }
+        }
+      }
+    },
+    "Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opomba"
+          }
+        }
+      }
+    },
+    "Reserve": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezerviraj"
+          }
+        }
+      }
+    },
+    "Release": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprosti"
+          }
+        }
+      }
+    },
+    "Release this reservation?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprostim to rezervacijo?"
+          }
+        }
+      }
+    },
+    "6 guests, arriving 23:00": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 gostov, prihod ob 23.00"
           }
         }
       }

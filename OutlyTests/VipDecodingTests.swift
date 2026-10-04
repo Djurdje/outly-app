@@ -189,6 +189,64 @@ final class VipDecodingTests: XCTestCase {
         XCTAssertTrue(v.bookings.isEmpty)
     }
 
+    // MARK: - Rezervacija po telefonu (hold, 4. 10. 2026)
+
+    func testTableDecodesHoldPresent() throws {
+        let m = try decode(VipBusinessTable.self, """
+        {"id": 7, "label": "T3", "seats": 4,
+         "hold": {"guest_name": "Ana Novak", "note": "6 guests, arriving 23:00", "created_at": "2026-10-04T18:00:00.000Z"}}
+        """)
+        XCTAssertEqual(m.hold?.guestName, "Ana Novak")
+        XCTAssertEqual(m.hold?.note, "6 guests, arriving 23:00")
+        XCTAssertEqual(m.hold?.prikazanaOpomba, "6 guests, arriving 23:00")
+        XCTAssertEqual(m.hold?.createdAt, "2026-10-04T18:00:00.000Z")
+        XCTAssertFalse(m.jeProsta)
+    }
+
+    func testTableDecodesHoldNull() throws {
+        let m = try decode(VipBusinessTable.self, #"{"id": 7, "label": "T3", "seats": 4, "booking": null, "hold": null}"#)
+        XCTAssertNil(m.hold)
+        XCTAssertTrue(m.jeProsta)
+    }
+
+    func testTableDecodesWithoutHoldField() throws {
+        // Star backend polja ne pozna: dekodiranje ne sme pasti.
+        let m = try decode(VipBusinessTable.self, #"{"id": 7, "label": "T3", "seats": 4}"#)
+        XCTAssertNil(m.hold)
+        XCTAssertTrue(m.jeProsta)
+    }
+
+    func testHoldWithNullNoteHasNoDisplayNote() throws {
+        let m = try decode(VipBusinessTable.self, #"{"id": 7, "label": "T3", "hold": {"guest_name": "Ana", "note": null, "created_at": "x"}}"#)
+        XCTAssertNil(m.hold?.note)
+        XCTAssertNil(m.hold?.prikazanaOpomba)
+        let prazna = try decode(VipHold.self, #"{"guest_name": "Ana", "note": "  "}"#)
+        XCTAssertNil(prazna.prikazanaOpomba)
+        let brez = try decode(VipHold.self, "{}")
+        XCTAssertEqual(brez.guestName, "")
+    }
+
+    func testBusinessEventVipListsHoldsAndFreeTables() throws {
+        let v = try decode(BusinessEventVip.self, """
+        {"event_id": 12, "enabled": true, "currency": "EUR",
+         "plan": {"width": 24, "height": 16, "elements": []},
+         "tables": [
+           {"id": 1, "label": "T10", "seats": 4},
+           {"id": 2, "label": "T2", "seats": 4, "hold": {"guest_name": "Ana", "note": null, "created_at": "x"}},
+           {"id": 3, "label": "T3", "seats": 6, "booking": {"order_id": 9, "buyer_username": "bor", "guests": 6, "checked_in": 0}},
+           {"id": 4, "label": "T4", "seats": 4, "disabled": true},
+           {"id": 5, "label": "T5", "seats": 4, "archived": true},
+           {"id": 6, "label": "T9", "seats": 4}
+         ],
+         "packages": []}
+        """)
+        XCTAssertEqual(v.holds.map(\.label), ["T2"])
+        XCTAssertEqual(v.bookings.map(\.label), ["T3"])
+        XCTAssertEqual(v.rezervirane.map(\.label), ["T2", "T3"])
+        // Prosta = ni arhivirana, prodana ali rezervirana (izklop za spletno prodajo ne velja); po oznaki (T9 pred T10).
+        XCTAssertEqual(v.prosteMize.map(\.label), ["T4", "T9", "T10"])
+    }
+
     // MARK: - Oznake
 
     func testVipOznakaSkipsEmptyParts() {

@@ -176,6 +176,33 @@ struct VipBooking: Decodable {
     }
 }
 
+/// Rezervacija mize po telefonu (klub je mizo oznacil kot rezervirano; placilo gre mimo Outly). Backend 4. 10. 2026.
+struct VipHold: Decodable, Equatable {
+    let guestName: String
+    /// Neobvezna opomba (npr. "6 guests, arriving 23:00"); nil ali prazno = brez.
+    let note: String?
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case note
+        case guestName = "guest_name"
+        case createdAt = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        guestName = try c.decodeIfPresent(String.self, forKey: .guestName) ?? ""
+        note = try c.decodeIfPresent(String.self, forKey: .note)
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+    }
+
+    /// Opomba za prikaz; nil, ce je prazna.
+    var prikazanaOpomba: String? {
+        guard let n = note?.trimmingCharacters(in: .whitespacesAndNewlines), !n.isEmpty else { return nil }
+        return n
+    }
+}
+
 struct VipBusinessTable: Decodable, Identifiable {
     let id: Int
     let label: String
@@ -187,9 +214,11 @@ struct VipBusinessTable: Decodable, Identifiable {
     let archived: Bool
     /// nil = miza na tem dogodku ni rezervirana.
     let booking: VipBooking?
+    /// Rezervacija po telefonu. nil = ni je (ali star backend, ki polja ne pozna).
+    let hold: VipHold?
 
     enum CodingKeys: String, CodingKey {
-        case id, label, seats, disabled, archived, booking
+        case id, label, seats, disabled, archived, booking, hold
         case priceCents = "price_cents"
         case defaultPriceCents = "default_price_cents"
     }
@@ -204,7 +233,12 @@ struct VipBusinessTable: Decodable, Identifiable {
         disabled = try c.decodeIfPresent(Bool.self, forKey: .disabled) ?? false
         archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
         booking = try c.decodeIfPresent(VipBooking.self, forKey: .booking)
+        hold = try c.decodeIfPresent(VipHold.self, forKey: .hold)
     }
+
+    /// Miza, ki jo je se mogoce oznaciti kot rezervirano po telefonu: ni arhivirana, prodana ali ze rezervirana.
+    /// Izklop za spletno prodajo (disabled) ne velja: klub lahko mizo proda samo po telefonu (backend to dovoli).
+    var jeProsta: Bool { !archived && booking == nil && hold == nil }
 }
 
 struct BusinessEventVip: Decodable {
@@ -234,6 +268,27 @@ struct BusinessEventVip: Decodable {
     var bookings: [VipBusinessTable] {
         tables
             .filter { $0.booking != nil }
+            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+    }
+
+    /// Mize, ki jih je klub rezerviral po telefonu, urejene po oznaki.
+    var holds: [VipBusinessTable] {
+        tables
+            .filter { $0.hold != nil }
+            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+    }
+
+    /// Mize z rezervacijo (nakup ali telefon), urejene po oznaki (T2 pred T10).
+    var rezervirane: [VipBusinessTable] {
+        tables
+            .filter { $0.booking != nil || $0.hold != nil }
+            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+    }
+
+    /// Prosto mize, ki jih klub lahko rezervira po telefonu, urejene po oznaki.
+    var prosteMize: [VipBusinessTable] {
+        tables
+            .filter { $0.jeProsta }
             .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
     }
 
@@ -269,6 +324,22 @@ extension APIClient {
     /// GET /business/events/:id/vip — mize in rezervacije dogodka (owner, manager, doorman).
     func fetchBusinessEventVip(eventId: Int, token: String) async throws -> BusinessEventVip {
         let data = try await send(path: "business/events/\(eventId)/vip", method: "GET", token: token)
+        return try decode(BusinessEventVip.self, from: data)
+    }
+
+    /// POST /business/events/:id/tables/:tableId/hold — klub mizo oznaci kot rezervirano po telefonu (owner, manager).
+    /// Odgovor je celoten pogled kot pri `fetchBusinessEventVip`. 409 "This table is already booked." = miza je prodana ali rezervirana.
+    /// Glavo kluba (X-Outly-Club) doda `send()`.
+    func holdVipTable(eventId: Int, tableId: Int, guestName: String, note: String?, token: String) async throws -> BusinessEventVip {
+        var body: [String: Any] = ["guest_name": guestName]
+        if let note, !note.isEmpty { body["note"] = note }
+        let data = try await send(path: "business/events/\(eventId)/tables/\(tableId)/hold", method: "POST", token: token, json: body)
+        return try decode(BusinessEventVip.self, from: data)
+    }
+
+    /// DELETE /business/events/:id/tables/:tableId/hold — sprosti rezervacijo po telefonu (owner, manager). 404 = rezervacije ni.
+    func releaseVipTableHold(eventId: Int, tableId: Int, token: String) async throws -> BusinessEventVip {
+        let data = try await send(path: "business/events/\(eventId)/tables/\(tableId)/hold", method: "DELETE", token: token)
         return try decode(BusinessEventVip.self, from: data)
     }
 }
