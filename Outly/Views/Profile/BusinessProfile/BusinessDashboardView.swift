@@ -700,19 +700,19 @@ struct EventTicketsView: View {
             VipHoldSheet(eventId: event.id, miza: m, onDone: { vip = $0 }, onNapaka: { Task { await naloziVip() } })
                 .environmentObject(session)
         }
+        // presenting: akcija dobi svojo kopijo mize - ne zanasa se na @State, ki ga SwiftUI ob zaprtju lahko pobrise prej.
         .confirmationDialog(
             "Release this reservation?",
             isPresented: Binding(get: { sprostiMizo != nil }, set: { if !$0 { sprostiMizo = nil } }),
-            titleVisibility: .visible
-        ) {
+            titleVisibility: .visible,
+            presenting: sprostiMizo
+        ) { m in
             Button("Release", role: .destructive) {
-                if let m = sprostiMizo { Task { await sprosti(m) } }
+                Task { await sprosti(m) }
             }
             Button("Cancel", role: .cancel) { sprostiMizo = nil }
-        } message: {
-            if let m = sprostiMizo {
-                Text(verbatim: "\(VipOznaka.miza(m.label)) · \(m.hold?.guestName ?? "")")
-            }
+        } message: { m in
+            Text(verbatim: "\(VipOznaka.miza(m.label)) · \(m.hold?.guestName ?? "")")
         }
     }
 
