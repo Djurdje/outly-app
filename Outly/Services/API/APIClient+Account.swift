@@ -36,7 +36,7 @@ extension APIClient {
     ///
     /// `idempotencyKey`: glava `Idempotency-Key` (samo nakupni klici, glej NakupniKljuc); nil = glave ni.
     /// `dodatneGlave`: dodatne glave samo za ta klic (npr. `X-Outly-Client` pri nakupu). Samo DODAJAJO: Authorization,
-    /// X-Outly-Club, Idempotency-Key in Content-Type se nastavijo za njimi in jih povozijo, zato jih ni mogoce pokvariti.
+    /// X-Outly-Club, Idempotency-Key in Content-Type se iz njih filtrirajo (ne glede na velike/male crke) in jih nastavi samo `send`.
     func send(
         path: String,
         method: String,
@@ -95,6 +95,9 @@ extension APIClient {
         return data
     }
 
+    /// Glave, ki jih `send` nastavi sam in jih `dodatneGlave` ne smejo nastaviti (mala crka).
+    static let zascitenaGlava: Set<String> = ["authorization", "x-outly-club", "idempotency-key", "content-type"]
+
     /// Sestavi zahtevek (URL, glave, telo). Locen od posiljanja, da se glave dajo preveriti brez omrezja (testi).
     func sestaviZahtevek(
         path: String,
@@ -116,8 +119,8 @@ extension APIClient {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.timeoutInterval = timeout ?? 30
-        // Najprej dodatne glave: vse spodnje nastavitve jih po potrebi povozijo (dodatne glave ne morejo pokvariti avtorizacije).
-        for (ime, vrednost) in dodatneGlave {
+        // Dodatne glave: zasciteni imena (avtorizacija, klub, idempotentnost, tip telesa) se NIKOLI ne vzamejo iz njih.
+        for (ime, vrednost) in dodatneGlave where !Self.zascitenaGlava.contains(ime.lowercased()) {
             req.setValue(vrednost, forHTTPHeaderField: ime)
         }
         if let token, !token.isEmpty {

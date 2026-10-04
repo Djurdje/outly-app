@@ -7,7 +7,8 @@ import Combine
 /// ASWebAuthenticationSession) -> uporabnik placa (outly://placilo?stanje=uspeh) ali preklice/zapre -> `preveri` prebere
 /// GET /me/orders in poisce narocilo po `order.id`: placano z vstopnicami -> uspesni zaslon; se pending -> `caka` ostane in pogled
 /// pokaze `PlaciloSeVeriKartica` z gumbom »Check again«; narocila ni vec (opuscen/failed/cancelled) -> napaka in nov kljuc.
-/// Po preklicu/zaprtju (`tiho`) ostane kupec na nakupnem listu brez napake in brez kartice, kljuc ostane.
+/// Po izrecnem preklicu na Stripu (`tiho`) ostane kupec na nakupnem listu brez napake in brez kartice, kljuc ostane. Pri zaprtju seje
+/// ali napaki (ni gotovo, ali je placal) ostane pending narocilo na kartici »Checking your payment« z gumbom »Check again«.
 ///
 /// IDEMPOTENTNI KLJUC (`NakupniKljucShramba`): ob stripe odgovoru se NE pozabi (ponovni pritisk Pay dokler je narocilo
 /// pending vrne ISTO narocilo in isti `checkout_url`); pozabi se sele, ko je narocilo placano (`poUspehu`), ali ko narocila ni vec
@@ -67,10 +68,17 @@ final class StripeNakup: ObservableObject {
         return true
     }
 
+    /// Seje s Stripovo stranjo ni bilo mogoce zagnati: nakupni list z obstojecim sporocilom, brez kartice; narocilo ostane na strezniku,
+    /// kljuc ostane (ponovni Pay dobi isto narocilo in isti checkout_url).
+    func sejaNiZagnana() {
+        caka = nil
+        napaka = String(localized: "We couldn't open the payment page. Please try again.")
+    }
+
     /// Prebere narocilo (po uspehu `StripePlacilo.samodejnihBranjPoUspehu` poskusov, na gumb »Check again« 1).
     /// Vrne odgovor za uspesni zaslon, ce je narocilo placano in ima vstopnice; sicer nil (stanje je v `caka` / `napaka`).
     ///
-    /// `tiho` (po preklicu na Stripu ali ko kupec zapre sejo): placano -> uspesni zaslon (kupec je morda placal in sele nato zaprl);
+    /// `tiho` (samo po izrecnem preklicu `stanje=preklic`): placano -> uspesni zaslon (kupec je morda placal in sele nato zaprl);
     /// se pending -> `caka` se pobrise (nakupni list brez kartice »Checking your payment«, kljuc OSTANE, zato ponovni Pay odpre isto
     /// placilo); narocila ni vec -> kljuc se zavrti, a brez sporocila o napaki; napaka branja -> brez sporocila, `caka` ostane.
     func preveri(token: String, poskusov: Int, tiho: Bool = false) async -> PurchaseResponse? {

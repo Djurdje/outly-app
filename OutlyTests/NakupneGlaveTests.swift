@@ -52,4 +52,17 @@ final class NakupneGlaveTests: XCTestCase {
         XCTAssertEqual(r.value(forHTTPHeaderField: "Content-Type"), "application/json")
         XCTAssertEqual(r.value(forHTTPHeaderField: "X-Outly-Client"), "ios")
     }
+
+    func testDodatneGlaveNikoliNeNastavijoZascitenihGlavNitiBrezTokenaKljucaInTelesa() throws {
+        // Brez zetona, kljuca, kluba in telesa: zasciteni imena (tudi z drugimi velikimi/malimi crkami) se ne smejo pojaviti.
+        let r = try zahtevek(path: "events/12/orders", method: "GET", token: nil, json: nil, idempotencyKey: nil, dodatneGlave: [
+            "authorization": "Bearer ukraden", "AUTHORIZATION": "x", "IDEMPOTENCY-KEY": "tuj", "x-outly-club": "666",
+            "CONTENT-TYPE": "text/plain", "X-Outly-Client": "ios",
+        ])
+        XCTAssertNil(r.value(forHTTPHeaderField: "Authorization"))
+        XCTAssertNil(r.value(forHTTPHeaderField: "Idempotency-Key"))
+        XCTAssertNil(r.value(forHTTPHeaderField: "X-Outly-Club"))
+        XCTAssertNil(r.value(forHTTPHeaderField: "Content-Type"))
+        XCTAssertEqual(r.value(forHTTPHeaderField: "X-Outly-Client"), "ios")
+    }
 }

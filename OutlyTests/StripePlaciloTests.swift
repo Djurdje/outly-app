@@ -218,13 +218,17 @@ final class StripePlaciloTests: XCTestCase {
         XCTAssertEqual(StripePlacilo.SejaIzid.izKlica(nil), .napaka)
     }
 
-    func testSamoUspehPotrjujeVecBranjIDrugoJeTihoEnkratnoPreverjanje() {
+    func testSamoUspehPotrjujeVecBranjInSamoPreklicJeTiho() {
         XCTAssertEqual(StripePlacilo.SejaIzid.uspeh.poskusov, StripePlacilo.samodejnihBranjPoUspehu)
         XCTAssertGreaterThan(StripePlacilo.SejaIzid.uspeh.poskusov, 1)
         XCTAssertFalse(StripePlacilo.SejaIzid.uspeh.tiho)
-        for izid in [StripePlacilo.SejaIzid.preklic, .prekinil, .napaka] {
+        // Izrecni preklic: tiho enkratno preverjanje (brez kartice in napake).
+        XCTAssertEqual(StripePlacilo.SejaIzid.preklic.poskusov, 1)
+        XCTAssertTrue(StripePlacilo.SejaIzid.preklic.tiho)
+        // Zaprtje seje in napaka: eno branje, a NE tiho (pending ostane na kartici »Checking your payment«).
+        for izid in [StripePlacilo.SejaIzid.prekinil, .napaka, .nezagnana] {
             XCTAssertEqual(izid.poskusov, 1)
-            XCTAssertTrue(izid.tiho)
+            XCTAssertFalse(izid.tiho)
         }
     }
 
@@ -271,6 +275,37 @@ final class StripePlaciloTests: XCTestCase {
         XCTAssertNil(s.caka)      // brez kartice
         XCTAssertNil(s.napaka)    // brez napake
         XCTAssertEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)   // ponovni Pay = isto placilo
+    }
+
+    func testPoZaprtjuSejeKupcaKiJePlacalPendingOstaneNaKarticiBrezNapake() async throws {
+        // Zaprtje seje / napaka (tiho = false, 1 poskus): kupec je morda placal, preusmeritve pa ni bilo.
+        for izid in [StripePlacilo.SejaIzid.prekinil, .napaka] {
+            let s = try nakupZBralnikom(.caka, shramba: novaShramba())
+            let p = await s.preveri(token: "t", poskusov: izid.poskusov, tiho: izid.tiho)
+            XCTAssertNil(p)
+            XCTAssertNotNil(s.caka)   // kartica »Checking your payment« + »Check again« ostane
+            XCTAssertNil(s.napaka)    // brez napake
+        }
+    }
+
+    func testPoZaprtjuSejeKupecKiJePlacalVidiVstopnico() async throws {
+        let s = try nakupZBralnikom(.placano(try narocilo(status: "paid", vstopnic: 2)), shramba: novaShramba())
+        let p = await s.preveri(token: "t", poskusov: StripePlacilo.SejaIzid.prekinil.poskusov, tiho: StripePlacilo.SejaIzid.prekinil.tiho)
+        XCTAssertEqual(p?.tickets.count, 2)
+        XCTAssertNil(s.caka)
+    }
+
+    func testSejaNiZagnanaPokazeSporociloBrezKarticeKljucOstane() throws {
+        let shramba = novaShramba()
+        let vsebina = NakupniKljuc.Vsebina(dogodekId: 7, kolicina: 2)
+        let k1 = shramba.zaNakup(uporabnik: 3, vsebina: vsebina)
+        let s = StripeNakup(shramba: shramba)
+        XCTAssertTrue(s.odpri(try stripeOdgovor(url: "https://checkout.stripe.com/c/pay/cs"),
+                              uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+        s.sejaNiZagnana()
+        XCTAssertNil(s.caka)
+        XCTAssertEqual(s.napaka, "We couldn't open the payment page. Please try again.")
+        XCTAssertEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)
     }
 
     func testTihoPreveriCeJeKupecPlacalInSeleNatoZaprlPokazeVstopnico() async throws {

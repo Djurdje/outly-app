@@ -40,7 +40,7 @@ final class StripeSejaVodja: NSObject, ASWebAuthenticationPresentationContextPro
             seja = nil
             let klic = self.naKonec
             self.naKonec = nil
-            klic?(.napaka)
+            klic?(.nezagnana)
         }
     }
 

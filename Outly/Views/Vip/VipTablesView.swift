@@ -92,8 +92,14 @@ struct VipTablesView: View {
         .interactiveDismissDisabled(stanje == .nalaga)
         .task { await naloziVip() }
         // Stripova gostovana stran v ASWebAuthenticationSession: po placilu jo outly://placilo zapre sama in takoj preberemo narocilo
-        // (uspeh: vec samodejnih branj, webhook zakasni); preklic ali zaprtje: ostanemo na listu, narocilo preverimo tiho enkrat.
+        // (uspeh: vec samodejnih branj, webhook zakasni); izrecni preklic: ostanemo na listu, narocilo preverimo tiho enkrat;
+        // zaprtje seje ali napaka: narocilo preberemo enkrat, pending ostane na kartici »Checking your payment«.
         .stripeSeja(stran: $stripe.stran) { izid in
+            if izid == .nezagnana {
+                stripe.sejaNiZagnana()
+                errorMessage = stripe.napaka
+                return
+            }
             Task { await preveriPlacilo(poskusov: izid.poskusov, tiho: izid.tiho) }
         }
     }
@@ -534,7 +540,7 @@ struct VipTablesView: View {
         }
     }
 
-    /// Po vrnitvi s Stripove strani (samodejno: uspeh vec poskusov, preklic/zaprtje 1 poskus tiho) ali na »Check again« (1 poskus): ce je narocilo placano in ima
+    /// Po vrnitvi s Stripove strani (samodejno: uspeh vec poskusov, sicer 1 poskus; tiho samo po preklicu) ali na »Check again« (1 poskus): ce je narocilo placano in ima
     /// vstopnice, pokaze obstojeci uspesni zaslon (brez oznake TEST, ker `mode != "test"`); sicer ostane na listu.
     private func preveriPlacilo(poskusov: Int, tiho: Bool = false) async {
         errorMessage = nil

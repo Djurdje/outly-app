@@ -66,7 +66,9 @@ enum StripePlacilo {
         case preklic
         /// Kupec je sejo zaprl sam (`ASWebAuthenticationSessionError.canceledLogin`).
         case prekinil
-        /// Seje ni bilo mogoce zagnati ali je koncala z drugo napako ali z nerazumljivim URL-jem.
+        /// Seje ni bilo mogoce zagnati (`start()` vrne false): pokaze se »We couldn't open the payment page«, narocilo se ne bere.
+        case nezagnana
+        /// Seja je koncala z drugo napako ali z nerazumljivim URL-jem klica nazaj.
         case napaka
 
         /// Izid iz URL-ja klica nazaj (`nil` ali nerazumljiv URL -> `.napaka`).
@@ -78,9 +80,10 @@ enum StripePlacilo {
             }
         }
 
-        /// Samo `uspeh` pomeni, da naj se placilo potrdi z vec samodejnimi branji; vse drugo je tiho enkratno preverjanje
-        /// (kupec je morda placal in sele nato zaprl: potem vstopnica vseeno pride na zaslon).
-        var tiho: Bool { self != .uspeh }
+        /// Tiho (brez kartice in brez napake) je samo izrecni `preklic` s Stripove strani: kupec je sam pritisnil nazaj/Cancel na Stripu.
+        /// Pri `prekinil` (zaprl je sejo sam) in `napaka` (preusmeritve ni bilo) je kupec morda placal, pa povratni klic ni prisel:
+        /// narocilo se enkrat prebere, ce je se `pending`, ostane kartica »Checking your payment« z gumbom »Check again« (brez napake).
+        var tiho: Bool { self == .preklic }
 
         /// Koliko samodejnih branj GET /me/orders sledi izidu.
         var poskusov: Int { self == .uspeh ? StripePlacilo.samodejnihBranjPoUspehu : 1 }
