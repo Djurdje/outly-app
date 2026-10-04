@@ -31,6 +31,8 @@ struct VipTablesView: View {
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
+    /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Safari stran, narocilo v cakanju, ponovno branje.
+    @StateObject private var stripe = StripeNakup()
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -89,6 +91,13 @@ struct VipTablesView: View {
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(stanje == .nalaga)
         .task { await naloziVip() }
+        // Stripova gostovana stran; po zaprtju (Done) preberemo narocilo in pokazemo rezervacijo ali »Checking your payment«.
+        .fullScreenCover(item: $stripe.stran, onDismiss: {
+            Task { await preveriPlacilo(poskusov: StripePlacilo.samodejnihBranj) }
+        }) { stran in
+            StripeSafariView(url: stran.url) { stripe.stran = nil }
+                .ignoresSafeArea()
+        }
     }
 
     // MARK: - Vsebina
@@ -132,6 +141,12 @@ struct VipTablesView: View {
 
                     if let napotek {
                         NapotekKartica(besedilo: napotek.besedilo)
+                    }
+
+                    if stripe.caka != nil {
+                        PlaciloSeVeriKartica(preverjanje: stripe.preverjanje) {
+                            Task { await preveriPlacilo(poskusov: 1) }
+                        }
                     }
 
                     VipTloris(
@@ -271,7 +286,10 @@ struct VipTablesView: View {
                 }
             }
 
-            vrsticaPlacila
+            // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res).
+            if stripe.caka == nil {
+                vrsticaPlacila
+            }
 
             if event.minAge > 0 {
                 Text("\(event.minAge)+ · ID at the door")
@@ -385,9 +403,9 @@ struct VipTablesView: View {
         OutlyAkcijskiGumb(naslov: naslovGumba(m), stanje: $stanje) {
             Task { await rezerviraj(m) }
         }
-        .disabled(!paketIzbran || naval)
-        .opacity(paketIzbran && !naval ? 1 : 0.45)
-        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval)
+        .disabled(!paketIzbran || naval || stripe.preverjanje)
+        .opacity(paketIzbran && !naval && !stripe.preverjanje ? 1 : 0.45)
+        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval && !stripe.preverjanje)
     }
 
     // MARK: - Uspeh
@@ -518,9 +536,22 @@ struct VipTablesView: View {
         }
     }
 
+    /// Po zaprtju Stripove strani (samodejno, vec poskusov) ali na »Check again« (1 poskus): ce je narocilo placano in ima
+    /// vstopnice, pokaze obstojeci uspesni zaslon (brez oznake TEST, ker `mode != "test"`); sicer ostane na listu.
+    private func preveriPlacilo(poskusov: Int) async {
+        errorMessage = nil
+        if let p = await stripe.preveri(token: session.token, poskusov: poskusov) {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
+        } else {
+            errorMessage = stripe.napaka
+        }
+    }
+
     private func rezerviraj(_ m: VipTable) async {
         errorMessage = nil
         nerazresena = nil
+        stripe.ponastavi()
         stanje = .nalaga
         let uporabnik = session.me?.id ?? NakupniKljucShramba.neznanUporabnik
         let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
@@ -529,6 +560,18 @@ struct VipTablesView: View {
             let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
                                                         packageId: izbraniPaketId, expectedPriceCents: m.priceCents,
                                                         idempotencyKey: kljucNakupa, token: session.token)
+            if p.cakaPlacilo {
+                // Stripe: vstopnic se ni (nastanejo po webhooku), zato NE »Your VIP table is booked«. Kljuc se NE pozabi: ponovni
+                // pritisk Reserve, dokler je narocilo pending, vrne isto narocilo in isti checkout_url (miza ostane drzana).
+                // Pozabi ga StripeNakup, ko je placano.
+                if stripe.odpri(p, uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza) {
+                    stanje = .miruje
+                } else {
+                    errorMessage = String(localized: "We couldn't open the payment page. Please try again.")
+                    stanje = .napaka
+                }
+                return
+            }
             NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh

@@ -158,6 +158,9 @@ struct APIOrder: Decodable, Identifiable {
     let clubName: String
     let buyerUsername: String
     let tickets: [APITicket]
+    /// Stripe Checkout (backend 4. 10. 2026): samo pri `pending` narocilu klubov s povezanim Stripom (GET /me/orders).
+    /// Star backend ga ne posilja -> nil. Pred odpiranjem OBVEZNO prek `StripePlacilo.varenUrl`.
+    let checkoutUrl: String?
 
     // VIP miza (backend 025): narocilo mize (quantity = 1, vstopnic = table_seats). Star backend -> false / nil.
     let isVip: Bool
@@ -190,6 +193,7 @@ struct APIOrder: Decodable, Identifiable {
         case posterUrl = "poster_url"
         case clubName = "club_name"
         case buyerUsername = "buyer_username"
+        case checkoutUrl = "checkout_url"
     }
 
     init(from decoder: Decoder) throws {
@@ -214,6 +218,7 @@ struct APIOrder: Decodable, Identifiable {
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
         buyerUsername = try c.decodeIfPresent(String.self, forKey: .buyerUsername) ?? ""
         tickets = try c.decodeIfPresent([APITicket].self, forKey: .tickets) ?? []
+        checkoutUrl = (try? c.decodeIfPresent(String.self, forKey: .checkoutUrl)) ?? nil   // null / manjka / napacen tip -> nil
         isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
         tableId = (try? c.decodeIfPresent(Int.self, forKey: .tableId)) ?? nil
         tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
@@ -225,12 +230,44 @@ struct APIOrder: Decodable, Identifiable {
     var createdDate: Date? { DateParsing.parseBackendDate(createdAt) }
 }
 
-/// Odgovor POST /events/:id/orders.
+/// Odgovor POST /events/:id/orders in POST /events/:id/tables/:tableId/orders.
 struct PurchaseResponse: Decodable {
-    /// "test" ali "live"
+    /// "test" (klub brez Stripa: takoj placano, vstopnice polne) ali "stripe" (klub s Stripe Connect: narocilo `pending`,
+    /// `tickets` prazen, `checkoutUrl` = gostovana Stripe stran; vstopnice nastanejo sele po webhooku).
     let mode: String
     let order: APIOrder
     let tickets: [APITicket]
+    /// Stripe Checkout URL (samo `mode == "stripe"`). Star backend ga ne pošilja -> nil. Pred odpiranjem OBVEZNO
+    /// prek `StripePlacilo.varenUrl`.
+    let checkoutUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case mode, order, tickets
+        case checkoutUrl = "checkout_url"
+    }
+
+    init(mode: String, order: APIOrder, tickets: [APITicket], checkoutUrl: String? = nil) {
+        self.mode = mode
+        self.order = order
+        self.tickets = tickets
+        self.checkoutUrl = checkoutUrl
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try c.decode(String.self, forKey: .mode)
+        order = try c.decode(APIOrder.self, forKey: .order)
+        tickets = try c.decodeIfPresent([APITicket].self, forKey: .tickets) ?? []
+        checkoutUrl = (try? c.decodeIfPresent(String.self, forKey: .checkoutUrl)) ?? order.checkoutUrl
+    }
+
+    /// Narocilo caka placilo pri Stripu (vstopnic se ni): zaslona »You're in!« z 0 vstopnicami NE kazemo. `mode == "stripe"` ali
+    /// vsak drug nacin (ne "test") s `pending` narocilom; samo dokler je `tickets` prazen, zato ponovitev nakupa po placilu
+    /// (isti kljuc, narocilo ze placano z vstopnicami) gre naravnost na uspesni zaslon.
+    var cakaPlacilo: Bool {
+        guard mode != "test", tickets.isEmpty else { return false }
+        return mode == "stripe" || order.status == "pending"
+    }
 }
 
 /// GET /business/sales

@@ -27,6 +27,8 @@ struct BuyTicketsView: View {
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
+    /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Safari stran, narocilo v cakanju, ponovno branje.
+    @StateObject private var stripe = StripeNakup()
     @Environment(\.accessibilityReduceMotion) private var manjGibanja
 
     private var koda: String { event.currency ?? "EUR" }
@@ -87,6 +89,13 @@ struct BuyTicketsView: View {
         .preferredColorScheme(.dark)
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(stanje == .nalaga)
+        // Stripova gostovana stran; po zaprtju (Done) preberemo narocilo in pokazemo vstopnice ali »Checking your payment«.
+        .fullScreenCover(item: $stripe.stran, onDismiss: {
+            Task { await preveriPlacilo(poskusov: StripePlacilo.samodejnihBranj) }
+        }) { stran in
+            StripeSafariView(url: stran.url) { stripe.stran = nil }
+                .ignoresSafeArea()
+        }
     }
 
     // MARK: - Obrazec
@@ -101,9 +110,18 @@ struct BuyTicketsView: View {
                     NapotekKartica(besedilo: napotek.besedilo)
                 }
 
+                if stripe.caka != nil {
+                    PlaciloSeVeriKartica(preverjanje: stripe.preverjanje) {
+                        Task { await preveriPlacilo(poskusov: 1) }
+                    }
+                }
+
                 karticaNakupa
 
-                vrsticaPlacila
+                // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res).
+                if stripe.caka == nil {
+                    vrsticaPlacila
+                }
 
                 if let errorMessage {
                     HStack(alignment: .top, spacing: 8) {
@@ -334,9 +352,9 @@ struct BuyTicketsView: View {
         return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
             Task { await kupi() }
         }
-        .disabled(soldOut || naval)
-        .opacity(naval ? 0.45 : 1)
-        .outlySij(moc: 1.0, aktiven: !soldOut && !naval)
+        .disabled(soldOut || naval || stripe.preverjanje)
+        .opacity(naval || stripe.preverjanje ? 0.45 : 1)
+        .outlySij(moc: 1.0, aktiven: !soldOut && !naval && !stripe.preverjanje)
     }
 
     /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.
@@ -554,9 +572,22 @@ struct BuyTicketsView: View {
         quantity = min(max(v.kolicina, 1), maxQuantity)
     }
 
+    /// Po zaprtju Stripove strani (samodejno, vec poskusov) ali na »Check again« (1 poskus): ce je narocilo placano in ima
+    /// vstopnice, pokaze obstojeci uspesni zaslon (brez oznake TEST, ker `mode != "test"`); sicer ostane na nakupnem listu.
+    private func preveriPlacilo(poskusov: Int) async {
+        errorMessage = nil
+        if let p = await stripe.preveri(token: session.token, poskusov: poskusov) {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
+        } else {
+            errorMessage = stripe.napaka
+        }
+    }
+
     private func kupi() async {
         errorMessage = nil
         nerazresena = nil
+        stripe.ponastavi()
         stanje = .nalaga
         // Idempotentni kljuc zivi v NakupniKljucShramba (pomnilnik, 24 h), ne v @State: ponovno odprt list isti vsebine
         // ob nejasnem izidu (timeout) dobi ISTI kljuc, zato nakup ni podvojen.
@@ -566,6 +597,17 @@ struct BuyTicketsView: View {
         do {
             let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
                                                           idempotencyKey: kljucNakupa)
+            if p.cakaPlacilo {
+                // Stripe: vstopnic se ni (nastanejo po webhooku), zato NE »You're in!«. Kljuc se NE pozabi: ponovni pritisk Pay,
+                // dokler je narocilo pending, vrne isto narocilo in isti checkout_url. Pozabi ga StripeNakup, ko je placano.
+                if stripe.odpri(p, uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice) {
+                    stanje = .miruje
+                } else {
+                    errorMessage = String(localized: "We couldn't open the payment page. Please try again.")
+                    stanje = .napaka
+                }
+                return
+            }
             NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice)
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
