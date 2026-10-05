@@ -27,14 +27,16 @@ final class PrenosGostuTests: XCTestCase {
         XCTAssertTrue(back.canTransferToGuest)
     }
 
-    func testBodyWithoutGuestIsOldShape() {
-        let telo = APIClient.prenosTelo(email: "a@b.si", allowGuest: false, ageConfirmed: false)
-        XCTAssertEqual(Set(telo.keys), ["email"])
+    func testBodyWithoutGuestHasEmailAndAgeConfirmedOnly() {
+        let telo = APIClient.prenosTelo(email: "a@b.si", allowGuest: false, ageConfirmed: true)
+        XCTAssertEqual(Set(telo.keys), ["email", "age_confirmed"])
         XCTAssertEqual(telo["email"] as? String, "a@b.si")
+        XCTAssertEqual(telo["age_confirmed"] as? Bool, true)
     }
 
     func testBodyWithGuestSendsAllowGuestAndAgeConfirmed() {
         let telo = APIClient.prenosTelo(email: "a@b.si", allowGuest: true, ageConfirmed: true)
+        XCTAssertEqual(Set(telo.keys), ["email", "allow_guest", "age_confirmed"])
         XCTAssertEqual(telo["allow_guest"] as? Bool, true)
         XCTAssertEqual(telo["age_confirmed"] as? Bool, true)
         let brez = APIClient.prenosTelo(email: "a@b.si", allowGuest: true, ageConfirmed: false)

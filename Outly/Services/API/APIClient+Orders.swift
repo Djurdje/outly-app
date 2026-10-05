@@ -513,8 +513,8 @@ extension APIClient {
     /// POST /tickets/:id/transfer — posljem vstopnico prijatelju po e-naslovu.
     /// Po uspehu vstopnica ni vec moja; nov QR dobi prejemnik.
     /// `allowGuest` (samo ko `Me.canTransferToGuest`): prijatelj brez Outly racuna dobi vstopnico po e-posti.
-    /// `ageConfirmed`: potrditev starosti (kljukica), streznik jo zahteva pri dogodku z mejo (`age_confirmation_required`).
-    /// Brez `allowGuest` je telo enako kot doslej (star odjemalec/streznik).
+    /// `ageConfirmed`: potrditev starosti (kljukica pri dogodku z mejo); streznik jo zahteva za goste (`age_confirmation_required`),
+    /// pri prejemniku z racunom brez datuma rojstva jo sprejme namesto njega. Star streznik polje spregleda.
     func transferTicket(token: String, ticketId: Int, email: String,
                         allowGuest: Bool = false, ageConfirmed: Bool = false) async throws -> TransferResponse {
         let data = try await send(path: "tickets/\(ticketId)/transfer", method: "POST", token: token,
@@ -522,13 +522,10 @@ extension APIClient {
         return try decode(TransferResponse.self, from: data)
     }
 
-    /// Telo POST /tickets/:id/transfer po e-naslovu. `allow_guest` in `age_confirmed` samo pri `allowGuest`.
+    /// Telo POST /tickets/:id/transfer po e-naslovu: vedno `age_confirmed`, `allow_guest: true` samo pri `allowGuest`.
     static func prenosTelo(email: String, allowGuest: Bool, ageConfirmed: Bool) -> [String: Any] {
-        var telo: [String: Any] = ["email": email]
-        if allowGuest {
-            telo["allow_guest"] = true
-            telo["age_confirmed"] = ageConfirmed
-        }
+        var telo: [String: Any] = ["email": email, "age_confirmed": ageConfirmed]
+        if allowGuest { telo["allow_guest"] = true }
         return telo
     }
 

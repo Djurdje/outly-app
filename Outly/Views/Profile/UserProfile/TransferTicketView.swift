@@ -27,7 +27,7 @@ struct TransferTicketView: View {
     /// Sistemska potrditev pred posiljanjem (Martin, 23. 9. 2026: "ne rabi vprasati kot
     /// da poslje" velja za nakup, NE za prenos - vstopnica gre iz mojega racuna).
     @State private var pokaziPotrditev = false
-    /// Kljukica "prijatelj je star vsaj N" (nacin gost, min_age > 0). Ni vnaprej oznacena.
+    /// Kljukica "prijatelj je star vsaj N" (vsak prenos, meja > 0). Ni vnaprej oznacena.
     @State private var starostPotrjena = false
     /// Kar je uporabnik potrdil: zajeto OB ODPIRANJU dialoga, ne bere se iz @State ob pritisku na "Send"
     /// (SwiftUI ob zaprtju dialoga stanje lahko ze spremeni - past iz #63).
@@ -66,10 +66,11 @@ struct TransferTicketView: View {
     }
     /// Vpis e-naslova z moznostjo gosta (nova pot).
     private var gostNacin: Bool { kazeEmail && gostLahko }
-    /// Kljukica starosti je potrebna samo v nacinu gost, pri dogodku s starostno mejo ali vstopnici s paketom.
-    private var trebaStarost: Bool { gostNacin && starostnaMeja > 0 }
+    /// Kljukica starosti pri VSAKEM prenosu (prijatelj iz seznama, e-naslov, gost), ko je meja > 0
+    /// (dogodek s starostno mejo ali vstopnica s paketom). Stikalo `canTransferToGuest` na to ne vpliva.
+    private var trebaStarost: Bool { !friendsLoading && starostnaMeja > 0 }
     private var lahkoPoslje: Bool {
-        kazeEmail ? (emailOk && (!trebaStarost || starostPotrjena)) : selected != nil
+        (kazeEmail ? emailOk : selected != nil) && (!trebaStarost || starostPotrjena)
     }
 
     /// Ime/e-naslov prejemnika za potrditveno sporocilo in naslov uspeha ("Sent to Ana").
@@ -147,7 +148,8 @@ struct TransferTicketView: View {
             potrditev = PotrditevPrenosa(userId: nil, email: naslov, ime: naslov,
                                          gost: gostNacin, starostPotrjena: trebaStarost && starostPotrjena)
         } else if let f = selected {
-            potrditev = PotrditevPrenosa(userId: f.id, email: "", ime: f.username, gost: false, starostPotrjena: false)
+            potrditev = PotrditevPrenosa(userId: f.id, email: "", ime: f.username, gost: false,
+                                         starostPotrjena: trebaStarost && starostPotrjena)
         } else {
             return
         }
@@ -292,7 +294,7 @@ struct TransferTicketView: View {
         .animation(.easeInOut(duration: 0.3), value: stanje == .uspeh)
     }
 
-    /// Kljukica starosti (nacin gost, min_age > 0): brez nje gumb "Send ticket" ni aktiven. Ni vnaprej oznacena.
+    /// Kljukica starosti (meja > 0, vsak nacin prenosa): brez nje gumb "Send ticket" ni aktiven. Ni vnaprej oznacena.
     private var starostKljukica: some View {
         Button { starostPotrjena.toggle() } label: {
             HStack(alignment: .top, spacing: 12) {
@@ -347,7 +349,8 @@ struct TransferTicketView: View {
         stanje = .nalaga
         do {
             if let userId = p.userId {
-                _ = try await APIClient.shared.transferTicket(token: session.token, ticketId: ticket.id, userId: userId)
+                _ = try await APIClient.shared.transferTicket(token: session.token, ticketId: ticket.id, userId: userId,
+                                                              ageConfirmed: p.starostPotrjena)
             } else {
                 let odgovor = try await APIClient.shared.transferTicket(
                     token: session.token, ticketId: ticket.id, email: p.email,
