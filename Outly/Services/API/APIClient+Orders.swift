@@ -10,7 +10,7 @@ import Foundation
 
 // MARK: - Modeli
 
-struct APITicket: Decodable, Identifiable {
+struct APITicket: Codable, Identifiable {
     let id: Int
     let orderId: Int
     let eventId: Int
@@ -53,6 +53,7 @@ struct APITicket: Decodable, Identifiable {
     let packageName: String?
     let packageDescription: String?
 
+    // Encodable (sintetiziran iz CodingKeys) samo za shranjen seznam na telefonu (VstopniceShramba), ne za klice na streznik.
     enum CodingKeys: String, CodingKey {
         case id, serial, status, qr, address, city, transferable, transferred
         case isVip = "is_vip"

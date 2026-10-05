@@ -90,6 +90,7 @@ struct SkenPrikaz: Equatable {
         if r.result == "ok" {
             return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: r.message, vip: vip)
         }
+        if r.result == "event_cancelled" { return odpovedanDogodek(vip: vip) }
         let naslov: String
         switch r.result {
         case "already_used": naslov = String(localized: "ALREADY SCANNED")
@@ -114,6 +115,7 @@ struct SkenPrikaz: Equatable {
         case "refunded": return iz(SkenSodba(razlog: .vrnjena, serial: sodba.serial), qr: "")
         case "void": return iz(SkenSodba(razlog: .preklicana, serial: sodba.serial), qr: "")
         case "unpaid": return iz(SkenSodba(razlog: .neplacana, serial: sodba.serial), qr: "")
+        case "event_cancelled": return odpovedanDogodek(vip: nil)
         case "wrong_club":
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG CLUB"), podnaslov: String(localized: "This ticket is for another club."))
         case "unknown":
@@ -121,6 +123,13 @@ struct SkenPrikaz: Equatable {
         default:
             return iz(SkenSodba(razlog: .neveljavna, serial: sodba.serial), qr: "")
         }
+    }
+
+    /// Dogodek je odpovedan (backend od 5. 10. 2026, I21): vstopnica ostane placana, a na vratih ne velja vec.
+    /// Telefon brez povezave odpovedi ne pozna (seznam nima statusa dogodka), zato pride samo od streznika.
+    static func odpovedanDogodek(vip: String?) -> SkenPrikaz {
+        SkenPrikaz(barva: .rdece, naslov: String(localized: "EVENT CANCELLED"),
+                   podnaslov: String(localized: "This event was cancelled."), vip: vip)
     }
 
     /// Streznik je povedal, da uporabnik ni vec v ekipi kluba (404 »Club not found.« / 403 »Forbidden.«).
@@ -145,6 +154,7 @@ struct SkenPrikaz: Equatable {
         case "unpaid": return String(localized: "The order is not paid.")
         case "refunded": return String(localized: "The ticket was refunded.")
         case "void": return String(localized: "The ticket was cancelled.")
+        case "event_cancelled": return String(localized: "This event was cancelled.")
         case "invalid": return String(localized: "The server rejected the code.")
         default: return String(localized: "The server did not confirm this entry.")
         }

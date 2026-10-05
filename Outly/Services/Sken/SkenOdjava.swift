@@ -29,10 +29,13 @@ enum SkenOdjava {
     }
 
     /// Pobrise vse razen neposlanih vnosov (ti ostanejo brez imen imetnikov) in predpomnilnik odgovorov.
-    static func pocisti(disk: SkenDisk = SkenDisk(), predpomnilniki: [URLCache] = [APIPredpomnilnik.predpomnilnik, URLCache.shared]) {
+    /// Tudi shranjene vstopnice uporabnika (QR kode za vrata brez signala) - klice se ob odjavi, zavrnjeni seji in brisanju racuna.
+    static func pocisti(disk: SkenDisk = SkenDisk(), predpomnilniki: [URLCache] = [APIPredpomnilnik.predpomnilnik, URLCache.shared],
+                        vstopnice: VstopniceShramba = VstopniceShramba()) {
         SkenVrsta.deljena(disk).pocistiPoOdjavi()
         disk.pocistiVsePoOdjavi()
         pocistiPredpomnilnik(predpomnilniki)
+        vstopnice.pobrisi()
     }
 
     /// Odgovori GET (tudi scan-list z imeni imetnikov) ne smejo ostati po odjavi. API ima lasten predpomnilnik samo v pomnilniku
