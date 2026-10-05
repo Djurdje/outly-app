@@ -3,6 +3,7 @@ import Foundation
 @testable import Outly
 
 /// Prenos vstopnice prijatelju brez racuna (5. 10. 2026): `Me.canTransferToGuest`, telo zahtevka in napake streznika.
+@MainActor
 final class PrenosGostuTests: XCTestCase {
 
     private func decodeMe(_ extra: String) throws -> Me {
