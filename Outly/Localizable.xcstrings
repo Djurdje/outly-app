@@ -1404,6 +1404,17 @@
         }
       }
     },
+    "Check the address – the ticket will be theirs and your QR code will stop working.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveri naslov – vstopnica bo prejemnikova, tvoja koda QR pa bo prenehala veljati."
+          }
+        }
+      }
+    },
     "Checking your application…": {
       "extractionState": "manual",
       "localizations": {
@@ -1719,6 +1730,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Potrdi geslo"
+          }
+        }
+      }
+    },
+    "Confirm that your friend is old enough for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi, da je tvoj prijatelj dovolj star za ta dogodek."
           }
         }
       }
@@ -2955,6 +2977,17 @@
         }
       }
     },
+    "I confirm the person I'm sending this ticket to is at least %lld years old. They must show a valid photo ID at the door; if they are younger, the club will refuse entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrjujem, da je oseba, ki ji pošiljam vstopnico, stara vsaj %lld let. Ob vstopu mora pokazati veljaven osebni dokument s fotografijo; če je mlajša, ji klub vstop zavrne."
+          }
+        }
+      }
+    },
     "I'm in": {
       "extractionState": "manual",
       "localizations": {
@@ -2962,6 +2995,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Grem zraven"
+          }
+        }
+      }
+    },
+    "If your friend doesn't have an Outly account, we'll email them the ticket with a QR code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če tvoj prijatelj nima računa Outly, mu vstopnico s kodo QR pošljemo po e-pošti."
           }
         }
       }
@@ -5077,6 +5121,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vloga / položaj"
+          }
+        }
+      }
+    },
+    "Send ticket to %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslati vstopnico na %@?"
+          }
+        }
+      }
+    },
+    "Sending tickets to people without an Outly account is not available yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošiljanje vstopnic osebam brez računa Outly še ni na voljo."
           }
         }
       }
@@ -7577,6 +7643,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prijatelj mora v aplikaciji vnesti datum rojstva, preden prejme to vstopnico."
+          }
+        }
+      }
+    },
+    "Your friend's email": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošta tvojega prijatelja"
           }
         }
       }

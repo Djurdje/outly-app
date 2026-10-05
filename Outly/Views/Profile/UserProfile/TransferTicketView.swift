@@ -3,6 +3,8 @@ import SwiftUI
 /// Posiljanje vstopnice prijatelju (sheet iz TicketDetailView).
 /// Od 20. 9. (Martin): najprej izbira prijatelja iz seznama (GET /me/friends, prenos po
 /// user_id); vpis e-naslova ostane kot druga pot (za nekoga, ki se ni prijatelj).
+/// Od 5. 10. 2026: ce `Me.canTransferToGuest`, gre vstopnica po e-naslovu tudi prijatelju BREZ Outly racuna
+/// (streznik mu poslje mail s QR); pri dogodku s starostno mejo posiljatelj potrdi starost (kljukica).
 /// Po uspehu vstopnica izgine iz mojih (nov QR dobi prijatelj), zato zapremo tudi detajl.
 @MainActor
 struct TransferTicketView: View {
@@ -25,6 +27,26 @@ struct TransferTicketView: View {
     /// Sistemska potrditev pred posiljanjem (Martin, 23. 9. 2026: "ne rabi vprasati kot
     /// da poslje" velja za nakup, NE za prenos - vstopnica gre iz mojega racuna).
     @State private var pokaziPotrditev = false
+    /// Kljukica "prijatelj je star vsaj N" (nacin gost, min_age > 0). Ni vnaprej oznacena.
+    @State private var starostPotrjena = false
+    /// Kar je uporabnik potrdil: zajeto OB ODPIRANJU dialoga, ne bere se iz @State ob pritisku na "Send"
+    /// (SwiftUI ob zaprtju dialoga stanje lahko ze spremeni - past iz #63).
+    @State private var potrditev: PotrditevPrenosa?
+    /// `min_age` iz odgovora 400 `age_confirmation_required` (nil = se ni bilo take napake).
+    @State private var starostIzStrezniku: Int?
+    /// Sporocilo streznika po uspehu prenosa po e-naslovu (npr. "Ticket sent to ana@mail.com.").
+    @State private var uspehSporocilo: String?
+
+    /// Zajeta vrednost za potrditveni dialog in klic `posli`.
+    private struct PotrditevPrenosa {
+        /// Prijatelj iz seznama (id) ali nil = po e-naslovu.
+        let userId: Int?
+        let email: String
+        let ime: String
+        /// Posiljanje po e-naslovu z `allow_guest` (prijatelj morda nima racuna).
+        let gost: Bool
+        let starostPotrjena: Bool
+    }
 
     private var emailOk: Bool {
         let e = email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -33,7 +55,22 @@ struct TransferTicketView: View {
 
     /// Prikaz e-naslova: uporabnik ga je izbral ali pa nima prijateljev.
     private var kazeEmail: Bool { byEmail || (!friendsLoading && friends.isEmpty) }
-    private var lahkoPoslje: Bool { kazeEmail ? emailOk : selected != nil }
+    /// Prenos prijatelju brez racuna je na voljo: streznik je prizgal stikalo (`Me.canTransferToGuest`).
+    /// Tudi VIP vstopnica s paketom pijace se sme poslati gostu (Martin, 5. 10. 2026), a s strozjo potrditvijo starosti.
+    private var gostLahko: Bool { session.me?.canTransferToGuest ?? false }
+    /// Starostna meja za kljukico: pri vstopnici s paketom pijace vsaj 18 (enako kot `starostZaPaket` na strezniku).
+    /// Ce streznik zavrne z `age_confirmation_required`, ima prednost njegov `min_age` (kljukica se pokaze po napaki).
+    private var starostnaMeja: Int {
+        if let n = starostIzStrezniku { return n }
+        return ticket.packageName != nil ? max(ticket.minAge, 18) : ticket.minAge
+    }
+    /// Vpis e-naslova z moznostjo gosta (nova pot).
+    private var gostNacin: Bool { kazeEmail && gostLahko }
+    /// Kljukica starosti je potrebna samo v nacinu gost, pri dogodku s starostno mejo ali vstopnici s paketom.
+    private var trebaStarost: Bool { gostNacin && starostnaMeja > 0 }
+    private var lahkoPoslje: Bool {
+        kazeEmail ? (emailOk && (!trebaStarost || starostPotrjena)) : selected != nil
+    }
 
     /// Ime/e-naslov prejemnika za potrditveno sporocilo in naslov uspeha ("Sent to Ana").
     private var prejemnikIme: String {
@@ -81,17 +118,40 @@ struct TransferTicketView: View {
         .preferredColorScheme(.dark)
         .interactiveDismissDisabled(stanje == .nalaga)
         .task { await loadFriends() }
-        .alert(potrditevNaslov, isPresented: $pokaziPotrditev) {
-            Button("Send") { Task { await posli() } }
+        // presenting: akcija in besedilo dobita svojo kopijo - ne zanasata se na @State ob zaprtju (past iz #63).
+        .alert(potrditevNaslov, isPresented: $pokaziPotrditev, presenting: potrditev) { p in
+            Button("Send") { Task { await posli(p) } }
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Your copy stops working.")
+        } message: { p in
+            if p.gost {
+                Text("Check the address – the ticket will be theirs and your QR code will stop working.")
+            } else {
+                Text("Your copy stops working.")
+            }
         }
     }
 
-    /// "Send this ticket to Ana?" - kljuc "Send this ticket to %@?" v Localizable.xcstrings.
+    /// "Send this ticket to Ana?" / "Send ticket to ana@mail.com?" - kljuca "Send this ticket to %@?" in
+    /// "Send ticket to %@?" v Localizable.xcstrings. Bere zajeto `potrditev`, ne zivih @State vrednosti.
     private var potrditevNaslov: String {
-        String(localized: "Send this ticket to \(prejemnikIme)?")
+        guard let p = potrditev else { return "" }
+        return p.gost
+            ? String(localized: "Send ticket to \(p.ime)?")
+            : String(localized: "Send this ticket to \(p.ime)?")
+    }
+
+    /// Zajame, kar bo poslano, in odpre potrditveni dialog.
+    private func odpriPotrditev() {
+        let naslov = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        if kazeEmail {
+            potrditev = PotrditevPrenosa(userId: nil, email: naslov, ime: naslov,
+                                         gost: gostNacin, starostPotrjena: trebaStarost && starostPotrjena)
+        } else if let f = selected {
+            potrditev = PotrditevPrenosa(userId: f.id, email: "", ime: f.username, gost: false, starostPotrjena: false)
+        } else {
+            return
+        }
+        pokaziPotrditev = true
     }
 
     private var obrazec: some View {
@@ -102,7 +162,7 @@ struct TransferTicketView: View {
                     HStack { Spacer(); ProgressView().tint(.white); Spacer() }
                         .frame(height: 52)
                 } else if kazeEmail {
-                    Text("Your friend's Outly email")
+                    Text(gostNacin ? "Your friend's email" : "Your friend's Outly email")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white.opacity(0.7))
 
@@ -152,8 +212,14 @@ struct TransferTicketView: View {
                     preklop("Send by email instead") { byEmail = true; selected = nil }
                 }
 
+                if trebaStarost {
+                    starostKljukica
+                }
+
                 Group {
-                    if ticket.minAge > 0 {
+                    if gostNacin {
+                        Text("If your friend doesn't have an Outly account, we'll email them the ticket with a QR code.")
+                    } else if ticket.minAge > 0 {
                         Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account and must be \(ticket.minAge)+.")
                     } else {
                         Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account.")
@@ -181,7 +247,7 @@ struct TransferTicketView: View {
                 stanje: $stanje,
                 naslovUspeha: String(localized: "Sent to \(prejemnikIme)")
             ) {
-                pokaziPotrditev = true
+                odpriPotrditev()
             }
             // .disabled() se sklada z notranjim (stanje != .miruje) - torej AND, ne prepise.
             .disabled(!lahkoPoslje)
@@ -190,10 +256,17 @@ struct TransferTicketView: View {
 
             if stanje == .uspeh {
                 VStack(spacing: 14) {
-                    Text("It will show up under Tickets in their app.")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.55))
-                        .multilineTextAlignment(.center)
+                    if let uspehSporocilo {
+                        Text(verbatim: uspehSporocilo)
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.55))
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Text("It will show up under Tickets in their app.")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.55))
+                            .multilineTextAlignment(.center)
+                    }
 
                     Button {
                         dismiss()
@@ -219,6 +292,26 @@ struct TransferTicketView: View {
         .animation(.easeInOut(duration: 0.3), value: stanje == .uspeh)
     }
 
+    /// Kljukica starosti (nacin gost, min_age > 0): brez nje gumb "Send ticket" ni aktiven. Ni vnaprej oznacena.
+    private var starostKljukica: some View {
+        Button { starostPotrjena.toggle() } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: starostPotrjena ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 22))
+                    .foregroundColor(starostPotrjena ? .white : .white.opacity(0.5))
+                Text("I confirm the person I'm sending this ticket to is at least \(starostnaMeja) years old. They must show a valid photo ID at the door; if they are younger, the club will refuse entry.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.75))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(starostPotrjena ? AccessibilityTraits([.isButton, .isSelected]) : AccessibilityTraits.isButton)
+    }
+
     private func preklop(_ naslov: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(LocalizedStringKey(naslov))
@@ -238,19 +331,33 @@ struct TransferTicketView: View {
         }
     }
 
-    private func posli() async {
+    /// `min_age` iz telesa `{ "error": "age_confirmation_required", "min_age": N }`; sicer nil.
+    private static func starostIzNapake(_ error: Error) -> Int? {
+        guard let api = error as? APIError, case let .requestFailed(_, raw) = api,
+              let obj = (try? JSONSerialization.jsonObject(with: Data(raw.utf8))) as? [String: Any],
+              (obj["error"] as? String) == "age_confirmation_required",
+              let n = obj["min_age"] as? Int, n > 0 else { return nil }
+        return n
+    }
+
+    /// Poslje to, kar je uporabnik potrdil (`p` je zajet ob odprtju dialoga).
+    private func posli(_ p: PotrditevPrenosa) async {
         errorMessage = nil
+        uspehSporocilo = nil
         stanje = .nalaga
         do {
-            if !kazeEmail, let f = selected {
-                _ = try await APIClient.shared.transferTicket(token: session.token, ticketId: ticket.id, userId: f.id)
+            if let userId = p.userId {
+                _ = try await APIClient.shared.transferTicket(token: session.token, ticketId: ticket.id, userId: userId)
             } else {
-                _ = try await APIClient.shared.transferTicket(
-                    token: session.token, ticketId: ticket.id,
-                    email: email.trimmingCharacters(in: .whitespacesAndNewlines))
+                let odgovor = try await APIClient.shared.transferTicket(
+                    token: session.token, ticketId: ticket.id, email: p.email,
+                    allowGuest: p.gost, ageConfirmed: p.starostPotrjena)
+                // Nacin gost: streznik odgovori enotno ("Ticket sent to <email>."), ne glede na to, ali ima naslov racun.
+                if p.gost, !odgovor.message.isEmpty { uspehSporocilo = odgovor.message }
             }
             stanje = .uspeh
         } catch {
+            if let n = Self.starostIzNapake(error) { starostIzStrezniku = n; starostPotrjena = false }
             errorMessage = error.userMessage
             stanje = .napaka
         }

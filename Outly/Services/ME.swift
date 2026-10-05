@@ -38,6 +38,9 @@ struct Me: Codable, Equatable {
     let sharePlansWithFriends: Bool
     /// Vsa clanstva (lastnistvo + ekipe; backend migracija 018, vec klubov na osebo). Star backend: [].
     let clubs: [MeClub]
+    /// Prenos vstopnice prijatelju BREZ racuna po e-naslovu (backend, 5. 10. 2026). Streznik ga prizge samo za izbrane
+    /// (do objave pogojev: admin; potem vsi). Star backend polja ne poslje -> false (stara oblika prenosa).
+    let canTransferToGuest: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, email, username, role, phone, country, genres
@@ -55,6 +58,7 @@ struct Me: Codable, Equatable {
         case pendingClubEvents = "pending_club_events"
         case sharePlansWithFriends = "share_plans_with_friends"
         case clubs
+        case canTransferToGuest = "can_transfer_to_guest"
     }
 
     init(from decoder: Decoder) throws {
@@ -79,6 +83,7 @@ struct Me: Codable, Equatable {
         pendingClubEvents = try c.decodeIfPresent(Int.self, forKey: .pendingClubEvents) ?? 0
         sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
         clubs = (try? c.decodeIfPresent([MeClub].self, forKey: .clubs)) ?? []
+        canTransferToGuest = (try? c.decodeIfPresent(Bool.self, forKey: .canTransferToGuest)) ?? false
         // Postgres DATE pride kot "YYYY-MM-DD" ali kot ISO cas; obdrzimo prvih 10 znakov.
         if let raw = try c.decodeIfPresent(String.self, forKey: .dateOfBirth), raw.count >= 10 {
             dateOfBirth = String(raw.prefix(10))
@@ -111,6 +116,7 @@ struct Me: Codable, Equatable {
         try c.encode(pendingClubEvents, forKey: .pendingClubEvents)
         try c.encode(sharePlansWithFriends, forKey: .sharePlansWithFriends)
         try c.encode(clubs, forKey: .clubs)
+        try c.encode(canTransferToGuest, forKey: .canTransferToGuest)
     }
 
     /// Poslovni obraz v profilu: lastnik (role business, tudi brez kluba) ali clan ekipe.
