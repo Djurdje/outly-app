@@ -336,7 +336,7 @@ struct TransferTicketView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(.isToggle)
+        .accessibilityAddTraits(starostPotrjena ? AccessibilityTraits([.isToggle, .isSelected]) : AccessibilityTraits.isToggle)
     }
 
     private func preklop(_ naslov: String, action: @escaping () -> Void) -> some View {
