@@ -50,4 +50,47 @@ final class PrenosGostuTests: XCTestCase {
         let izklop = APIError.requestFailed(403, "{\"error\":\"guest_transfer_disabled\",\"message\":\"x\"}")
         XCTAssertEqual(izklop.userMessage, "Sending tickets to people without an Outly account is not available yet.")
     }
+
+    // MARK: - Starostna meja (PrenosStarosti)
+
+    func testLimitZeroMeansNoCheckbox() {
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 0, imaPaket: false, izStrezniku: nil), 0)
+    }
+
+    func testLimitIsMinAgeWithoutPackage() {
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 16, imaPaket: false, izStrezniku: nil), 16)
+    }
+
+    func testPackageRaisesLimitToAtLeast18() {
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 0, imaPaket: true, izStrezniku: nil), 18)
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 16, imaPaket: true, izStrezniku: nil), 18)
+    }
+
+    func testPackageWithHigherMinAgeKeepsMinAge() {
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 21, imaPaket: true, izStrezniku: nil), 21)
+    }
+
+    func testServerLimitOverrides() {
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 0, imaPaket: false, izStrezniku: 18), 18)
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 21, imaPaket: true, izStrezniku: 18), 18)
+    }
+
+    func testParsesMinAgeFromAgeConfirmationError() {
+        let napaka = APIError.requestFailed(400, "{\"error\":\"age_confirmation_required\",\"min_age\":21}")
+        XCTAssertEqual(PrenosStarosti.izNapake(napaka), 21)
+    }
+
+    func testIgnoresOtherErrors() {
+        XCTAssertNil(PrenosStarosti.izNapake(APIError.requestFailed(403, "{\"error\":\"guest_transfer_disabled\"}")))
+        XCTAssertNil(PrenosStarosti.izNapake(APIError.requestFailed(400, "{\"error\":\"age_confirmation_required\"}")))
+        XCTAssertNil(PrenosStarosti.izNapake(APIError.requestFailed(404, "No Outly account with this email")))
+        XCTAssertNil(PrenosStarosti.izNapake(APIError.decodingFailed))
+    }
+
+    func testFriendBodyHasUserIdAndAgeConfirmed() {
+        let telo = APIClient.prenosTeloPrijatelju(userId: 7, ageConfirmed: true)
+        XCTAssertEqual(Set(telo.keys), ["user_id", "age_confirmed"])
+        XCTAssertEqual(telo["user_id"] as? Int, 7)
+        XCTAssertEqual(telo["age_confirmed"] as? Bool, true)
+    }
 }

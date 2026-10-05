@@ -279,7 +279,12 @@ extension APIClient {
     /// `ageConfirmed`: kljukica starosti (pri dogodku z mejo); star streznik polje spregleda.
     func transferTicket(token: String, ticketId: Int, userId: Int, ageConfirmed: Bool = false) async throws -> TransferResponse {
         let data = try await send(path: "tickets/\(ticketId)/transfer", method: "POST", token: token,
-                                  json: ["user_id": userId, "age_confirmed": ageConfirmed])
+                                  json: APIClient.prenosTeloPrijatelju(userId: userId, ageConfirmed: ageConfirmed))
         return try decode(TransferResponse.self, from: data)
+    }
+
+    /// Telo POST /tickets/:id/transfer za prijatelja iz seznama: vedno `age_confirmed`.
+    static func prenosTeloPrijatelju(userId: Int, ageConfirmed: Bool) -> [String: Any] {
+        ["user_id": userId, "age_confirmed": ageConfirmed]
     }
 }

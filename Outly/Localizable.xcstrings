@@ -5862,6 +5862,17 @@
         }
       }
     },
+    "Ticket sent to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica poslana na %@."
+          }
+        }
+      }
+    },
     "Transferred": {
       "extractionState": "manual",
       "localizations": {
@@ -7159,6 +7170,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plačilne strani ni bilo mogoče odpreti. Poskusi znova."
+          }
+        }
+      }
+    },
+    "We'll email them the ticket with your username. Only enter the address of someone who is expecting it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelju bomo po e-pošti poslali vstopnico in tvoje uporabniško ime. Vpiši samo naslov osebe, ki vstopnico pričakuje."
           }
         }
       }
