@@ -10,6 +10,8 @@ import AVFoundation
 /// 3. Stara koda v1 se na telefonu ne da preveriti: s povezavo jo preveri obstojec POST /scan, brez nje je rumeno.
 ///
 /// Vse odlocanje je v SkenSeja (testirano); ta zaslon samo kaze stanje: povezava, stevilo cakajocih, cas zadnjega prenosa seznama.
+/// Na vratih (varnostni pregled 5. 10. 2026): zaslon med odprtim skenerjem ne ugasne, svetilka za temne prostore, kamera se po
+/// prekinitvi (klic, Control Center, reset medijskih storitev, vrnitev v ospredje) zazene znova, ista koda je po »Next« 3 s zadrzana.
 @MainActor
 struct QRScannerView: View {
     @EnvironmentObject private var session: SessionStore
@@ -26,6 +28,12 @@ struct QRScannerView: View {
     @State private var pokaziKonflikte = false
     /// Koda v1, ki jo vratar zeli spustiti sam: najprej potrdi (P4), sele nato gre v vrsto.
     @State private var zaPotrditev: String?
+    /// Po »Next« se ista koda (gost je se v kadru) 3 s ne prebere znova.
+    @State private var zadrzek = SkenZadrzek()
+    @State private var svetilka = false
+    private static let imaSvetilko = AVCaptureDevice.default(for: .video)?.hasTorch ?? false
+    /// Povecanje = kamera naj se zazene znova, ce ne tece (vrnitev v ospredje).
+    @State private var zagonKamere = 0
 
     /// `clubId`: klub, v katerem vratar dela (MyClubDetailView). Vrsta skenov je shranjena po klubu.
     init(clubId: Int? = nil) {
@@ -57,6 +65,13 @@ struct QRScannerView: View {
                     }
                     .accessibilityLabel(Text("Conflicts"))
                 }
+                if seja.dogodek != nil && dovoljenje == .authorized && Self.imaSvetilko {
+                    Button { svetilka.toggle() } label: {
+                        Image(systemName: svetilka ? "flashlight.on.fill" : "flashlight.off.fill")
+                            .foregroundColor(svetilka ? .yellow : .white)
+                    }
+                    .accessibilityLabel(Text("Flashlight"))
+                }
                 if seja.dogodek != nil {
                     Button { zamenjajDogodek() } label: { Image(systemName: "calendar") }
                         .accessibilityLabel(Text("Change event"))
@@ -86,10 +101,20 @@ struct QRScannerView: View {
             }
         }
         .task { await zacniSejo() }
+        .onAppear {
+            // Vratar telefona med vecerom ne dotika: zaslon ne sme ugasniti (velja samo, dokler je skener odprt).
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
         .onChange(of: scenePhase) { _, faza in
-            if faza == .active { seja.takojOsvezi() }
+            if faza == .active {
+                seja.takojOsvezi()
+                UIApplication.shared.isIdleTimerDisabled = true
+                zagonKamere += 1
+            }
         }
         .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+            svetilka = false
             omrezje.ustavi()
             seja.ustavi()
             // Zadnji poskus pred odhodom; kar ostane, je na disku in se poslje ob naslednjem odprtju skenerja.
@@ -112,6 +137,8 @@ struct QRScannerView: View {
     private func zamenjajDogodek() {
         prikaz = nil
         zadnjaKoda = ""
+        zadrzek.pocisti()
+        svetilka = false
         seja.zapriDogodek()
     }
 
@@ -198,7 +225,7 @@ struct QRScannerView: View {
     private var skener: some View {
         ZStack {
             if dovoljenje == .authorized {
-                KameraQR { koda in obravnavaj(koda) }
+                KameraQR(svetilka: svetilka, zagon: zagonKamere) { koda in obravnavaj(koda) }
                     .ignoresSafeArea()
                 RoundedRectangle(cornerRadius: 22)
                     .stroke(Color.white.opacity(0.9), lineWidth: 3)
@@ -410,13 +437,15 @@ struct QRScannerView: View {
     }
 
     private func naprej() {
+        // Gost, ki je ze noter, je lahko se v kadru: njegove kode 3 s ne beremo znova (sicer rdece »ALREADY SCANNED«).
+        zadrzek.zadrzi(zadnjaKoda)
         prikaz = nil
         zadnjaKoda = ""
     }
 
     private func obravnavaj(_ koda: String) {
         // Ista koda ostane v kadru vec okvirjev zapored; odlocamo samo ob spremembi in ko ni odprtega rezultata.
-        guard koda != zadnjaKoda, !obdelava, prikaz == nil else { return }
+        guard koda != zadnjaKoda, !obdelava, prikaz == nil, !zadrzek.ignoriraj(koda) else { return }
         zadnjaKoda = koda
         obdelava = true
         Task {
@@ -436,22 +465,44 @@ struct QRScannerView: View {
 // MARK: - AVFoundation most
 
 /// Kamera + branje QR. Vrne surovo vsebino kode; odlocanje je v strezniku.
+/// `svetilka`: vklop/izklop svetilke. `zagon`: ob spremembi se seja zazene znova, ce ne tece (vrnitev v ospredje).
 struct KameraQR: UIViewControllerRepresentable {
+    var svetilka: Bool = false
+    var zagon: Int = 0
     let onCode: @MainActor (String) -> Void
 
     func makeUIViewController(context: Context) -> KameraQRController {
         let c = KameraQRController()
         c.onCode = onCode
+        c.zadnjiZagon = zagon
+        c.nastaviSvetilko(svetilka)
         return c
     }
 
-    func updateUIViewController(_ uiViewController: KameraQRController, context: Context) {}
+    func updateUIViewController(_ uiViewController: KameraQRController, context: Context) {
+        uiViewController.onCode = onCode
+        uiViewController.nastaviSvetilko(svetilka)
+        if uiViewController.zadnjiZagon != zagon {
+            uiViewController.zadnjiZagon = zagon
+            uiViewController.zazeni()
+        }
+    }
 }
 
 final class KameraQRController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
     var onCode: (@MainActor (String) -> Void)?
+    var zadnjiZagon = 0
     private let session = AVCaptureSession()
     private var preview: AVCaptureVideoPreviewLayer?
+    private var naprava: AVCaptureDevice?
+    /// Zagon, ustavitev in svetilka zaporedno na eni vrsti (startRunning blokira; ne na glavni niti).
+    private let vrsta = DispatchQueue(label: "si.outly.skener.kamera")
+    /// Zaslon je viden, zato naj seja tece: po prekinitvi ali napaki jo zazenemo znova.
+    private var najTece = false
+    private var svetilka = false
+    /// Zaporedne napake seje (ponovni zagon najvec 3-krat, da se ob trajni napaki ne vrtimo; ponastavi se ob uspesnem nadaljevanju).
+    private var napakeZapored = 0
+    private var opazovalci: [NSObjectProtocol] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -460,6 +511,7 @@ final class KameraQRController: UIViewController, AVCaptureMetadataOutputObjects
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else { return }
         session.addInput(input)
+        naprava = device
 
         let output = AVCaptureMetadataOutput()
         guard session.canAddOutput(output) else { return }
@@ -481,16 +533,85 @@ final class KameraQRController: UIViewController, AVCaptureMetadataOutputObjects
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        if !session.isRunning {
-            // startRunning blokira; ne na glavni niti.
-            DispatchQueue.global(qos: .userInitiated).async { [session] in session.startRunning() }
-        }
+        najTece = true
+        napakeZapored = 0
+        opazuj()
+        zazeni()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async { [session] in session.stopRunning() }
+        najTece = false
+        prenehajOpazovati()
+        vrsta.async { [session, naprava] in
+            KameraQRController.uporabiSvetilko(false, naprava)
+            if session.isRunning { session.stopRunning() }
+        }
+    }
+
+    /// Zazene sejo, ce je zaslon viden in seja ne tece, in znova nastavi svetilko (po prekinitvi je ugasnjena).
+    func zazeni() {
+        guard najTece else { return }
+        let vklop = svetilka
+        vrsta.async { [session, naprava] in
+            if !session.isRunning { session.startRunning() }
+            KameraQRController.uporabiSvetilko(vklop, naprava)
+        }
+    }
+
+    func nastaviSvetilko(_ vklop: Bool) {
+        guard vklop != svetilka else { return }
+        svetilka = vklop
+        guard najTece else { return }   // ob naslednjem zagonu
+        vrsta.async { [naprava] in KameraQRController.uporabiSvetilko(vklop, naprava) }
+    }
+
+    /// Svetilka dela samo, ko seja tece; napako (npr. pregreta naprava) tiho spregledamo.
+    nonisolated private static func uporabiSvetilko(_ vklop: Bool, _ naprava: AVCaptureDevice?) {
+        guard let d = naprava, d.hasTorch else { return }
+        if vklop && !d.isTorchAvailable { return }
+        let nacin: AVCaptureDevice.TorchMode = vklop ? .on : .off
+        guard d.torchMode != nacin else { return }
+        do {
+            try d.lockForConfiguration()
+            d.torchMode = nacin
+            d.unlockForConfiguration()
+        } catch {}
+    }
+
+    // MARK: Prekinitve
+
+    /// Klic, Control Center, druga aplikacija s kamero: seja se ustavi (wasInterrupted) in praviloma sama nadaljuje
+    /// (interruptionEnded). Za vsak primer jo ob koncu prekinitve, po napaki seje in po resetu medijskih storitev zazenemo sami.
+    private func opazuj() {
+        guard opazovalci.isEmpty else { return }
+        let nc = NotificationCenter.default
+        opazovalci.append(nc.addObserver(forName: AVCaptureSession.interruptionEndedNotification, object: session, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                self?.napakeZapored = 0
+                self?.zazeni()
+            }
+        })
+        opazovalci.append(nc.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.poNapaki() }
+        })
+        opazovalci.append(nc.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.poNapaki() }
+        })
+    }
+
+    private func prenehajOpazovati() {
+        for o in opazovalci { NotificationCenter.default.removeObserver(o) }
+        opazovalci.removeAll()
+    }
+
+    /// Napaka seje (tudi AVError.mediaServicesWereReset): po kratkem premoru znova zazeni, najvec 3-krat zapored.
+    private func poNapaki() {
+        guard najTece, napakeZapored < 3 else { return }
+        napakeZapored += 1
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            self?.zazeni()
         }
     }
 

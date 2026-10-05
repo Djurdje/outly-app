@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Vstopnice uporabnika (GET /me/tickets). Prihajajoce zgoraj, pretekle spodaj.
-/// Dotik odpre vstopnico s kodo QR za vrata.
+/// Dotik odpre vstopnico s kodo QR za vrata. Brez signala (klet) se pokaze zadnji uspesno prenesen seznam (VstopniceShramba).
 @MainActor
 struct TicketsView: View {
     @EnvironmentObject private var session: SessionStore
@@ -9,6 +9,8 @@ struct TicketsView: View {
     @State private var tickets: [APITicket] = []
     @State private var isLoading = false
     @State private var errorText: String?
+    /// Prikazan je shranjen seznam (osvezitev ni uspela); cas zadnjega uspesnega prenosa.
+    @State private var shranjenOd: Date?
 
     // Skenirane (used) izginejo iz glavnega seznama — Martin: "ko se karta skenira, naj zgine iz profila".
     // Ostanejo dosegljive pod zloženim "Used tickets".
@@ -29,6 +31,15 @@ struct TicketsView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                         .padding(.top, 6)
+
+                    if let shranjenOd {
+                        HStack(spacing: 6) {
+                            Image(systemName: "wifi.slash")
+                            Text("Offline – last updated \(SkenPrikaz.casPrenosa(shranjenOd))")
+                        }
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                    }
 
                     if isLoading && tickets.isEmpty {
                         HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.top, 40)
@@ -227,13 +238,30 @@ struct TicketsView: View {
 
     private func load() async {
         guard session.isLoggedIn else { return }
+        let shramba = VstopniceShramba()
+        let uporabnikId = session.me?.id
+        // Slab signal: zahteva lahko visi do roka. Shranjene vstopnice so takoj vidne, osvezitev jih nato zamenja.
+        if tickets.isEmpty, let p = shramba.preberi(uporabnikId: uporabnikId) {
+            tickets = p.vstopnice
+        }
         isLoading = true
         defer { isLoading = false }
         do {
-            tickets = try await APIClient.shared.fetchMyTickets(token: session.token)
+            let sveze = try await APIClient.shared.fetchMyTickets(token: session.token)
+            tickets = sveze
             errorText = nil
+            shranjenOd = nil
+            shramba.shrani(sveze, uporabnikId: uporabnikId)
         } catch {
-            errorText = error.userMessage
+            if VstopniceShramba.pokaziShranjeno(ob: error), let p = shramba.preberi(uporabnikId: uporabnikId) {
+                tickets = p.vstopnice
+                shranjenOd = p.shranjeno
+                errorText = nil
+            } else {
+                tickets = []
+                shranjenOd = nil
+                errorText = error.userMessage
+            }
         }
     }
 }
@@ -296,7 +324,10 @@ struct TicketDetailView: View {
         .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { prikazana = true } }
         .sheet(isPresented: $showTransfer) {
             // Po prenosu vstopnica ni vec moja -> nazaj na seznam, ki se ob prikazu osvezi.
-            TransferTicketView(ticket: ticket, onTransferred: { dismiss() })
+            TransferTicketView(ticket: ticket, onTransferred: {
+                VstopniceShramba().odstrani(vstopnicaId: ticket.id)
+                dismiss()
+            })
                 .environmentObject(session)
         }
     }

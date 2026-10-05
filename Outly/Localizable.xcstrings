@@ -9863,6 +9863,50 @@
           }
         }
       }
+    },
+    "EVENT CANCELLED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DOGODEK ODPOVEDAN"
+          }
+        }
+      }
+    },
+    "This event was cancelled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek je bil odpovedan."
+          }
+        }
+      }
+    },
+    "Offline – last updated %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brez povezave – osveženo %@"
+          }
+        }
+      }
+    },
+    "Flashlight": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svetilka"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
