@@ -34,6 +34,10 @@ extension APIError {
     private static func translate(code: Int, raw: String) -> String {
         let t = raw.lowercased()
 
+        // Prenos vstopnice prijatelju brez racuna (JSON `{ error, message }`): kode PRED vsem ostalim, ker je telo celoten JSON.
+        if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }
+        if t.contains("guest_transfer_disabled")        { return String(localized: "Sending tickets to people without an Outly account is not available yet.") }
+
         // Najprej po vsebini, ker je ista koda (400) uporabljena za vec razlicnih stvari.
         if t.contains("invalid or expired code")        { return String(localized: "The code is wrong or has expired. Request a new one.") }
         if t.contains("too many attempts")              { return String(localized: "Too many wrong attempts. Request a new code.") }
