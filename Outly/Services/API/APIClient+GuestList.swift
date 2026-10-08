@@ -5,6 +5,9 @@ import Foundation
 // GET    /me/guest-lists                       -> { guest_lists: [GuestList] }  (star backend: 404 -> razdelek skrit)
 // POST   /me/guest-lists/:id/invites           { user_ids: [Int], age_confirmed? } -> 201 { guest_list, added: [Int] }
 // DELETE /me/guest-lists/:id/invites/:userId   -> 200 { guest_list }
+// GET    /me/guest-list-invites/received       -> { invites: [GuestListInviteNotification] }  (neprebrana obvestila zvonca; 404 = brez vrstic)
+// POST   /me/guest-list-invites/received/:id/seen -> { ok: true }  (idempotentno)
+// GET /me ima novo polje pending_guest_list_invites (Me.pendingGuestListInvites, privzeto 0).
 // Napake: 403 »You can only invite friends.«, 409 »Only N spots left.« / »<ime> is already on your guest list.« /
 // »This guest list is closed.«, 400 { error: "age_confirmation_required", min_age }, 403 »<ime> is under N.«,
 // 409 »Already checked in.« (odstranitev). Vsa polja imajo privzete vrednosti (pravilo 2).
@@ -152,6 +155,74 @@ struct GuestList: Decodable, Identifiable, Equatable {
     var lahkoVabi: Bool { canInvite && remaining > 0 }
 }
 
+/// Obvestilo v zvoncu: »@gostitelj te je dodal na svojo guest listo« (GET /me/guest-list-invites/received).
+/// `id` je id clanstva (guest_list_members.id), `ticketId` moja vstopnica (je v GET /me/tickets).
+struct GuestListInviteNotification: Decodable, Identifiable, Equatable {
+    let id: Int
+    let guestListId: Int
+    let ticketId: Int
+    let hostUsername: String
+    let hostAvatarUrl: String?
+    let createdAt: String
+    let event: GuestListEvent
+
+    enum CodingKeys: String, CodingKey {
+        case id, event
+        case guestListId = "guest_list_id"
+        case ticketId = "ticket_id"
+        case hostUsername = "host_username"
+        case hostAvatarUrl = "host_avatar_url"
+        case createdAt = "created_at"
+    }
+
+    init(id: Int, guestListId: Int = 0, ticketId: Int = 0, hostUsername: String = "", hostAvatarUrl: String? = nil,
+         createdAt: String = "", event: GuestListEvent = GuestListEvent()) {
+        self.id = id
+        self.guestListId = guestListId
+        self.ticketId = ticketId
+        self.hostUsername = hostUsername
+        self.hostAvatarUrl = hostAvatarUrl
+        self.createdAt = createdAt
+        self.event = event
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        guestListId = (try? c.decodeIfPresent(Int.self, forKey: .guestListId)) ?? 0
+        ticketId = (try? c.decodeIfPresent(Int.self, forKey: .ticketId)) ?? 0
+        hostUsername = (try? c.decodeIfPresent(String.self, forKey: .hostUsername)) ?? ""
+        hostAvatarUrl = (try? c.decodeIfPresent(String.self, forKey: .hostAvatarUrl)) ?? nil
+        createdAt = (try? c.decodeIfPresent(String.self, forKey: .createdAt)) ?? ""
+        event = (try? c.decodeIfPresent(GuestListEvent.self, forKey: .event)) ?? GuestListEvent()
+    }
+
+    /// "Sat 26 Sep · 22:00" ali prazen niz, ce datuma ne moremo razbrati (isti zapis kot ClubEventNotification).
+    var displayDayTime: String {
+        guard let d = event.startDate else { return "" }
+        let f = DateFormatter()
+        f.locale = Jezik.shared.locale
+        f.dateFormat = "EEE d MMM · HH:mm"
+        return f.string(from: d)
+    }
+
+    /// Podnaslov vrstice v zvoncu: »naslov dogodka · klub · datum«; prazni deli odpadejo.
+    var podnaslov: String {
+        [event.title, event.clubName, displayDayTime].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+}
+
+struct GuestListInvitesReceivedResponse: Decodable {
+    let invites: [GuestListInviteNotification]
+
+    enum CodingKeys: String, CodingKey { case invites }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        invites = try c.decodeIfPresent([GuestListInviteNotification].self, forKey: .invites) ?? []
+    }
+}
+
 /// Odgovor POST /me/guest-lists/:id/invites.
 struct GuestListInviteResult: Decodable {
     let guestList: GuestList
@@ -226,5 +297,22 @@ extension APIClient {
     func removeGuestListInvite(token: String, listId: Int, userId: Int) async throws -> GuestList {
         let data = try await send(path: "me/guest-lists/\(listId)/invites/\(userId)", method: "DELETE", token: token)
         return try decode(GuestListResponse.self, from: data).guestList
+    }
+
+    /// GET /me/guest-list-invites/received — neprebrana obvestila »X te je dodal na guest listo«. Star backend poti se nima
+    /// (404): to je »brez vrstic«, ne napaka. Vse drugo (omrezje, 5xx) se vrze naprej.
+    func fetchReceivedGuestListInvites(token: String) async throws -> [GuestListInviteNotification] {
+        do {
+            let data = try await send(path: "me/guest-list-invites/received", method: "GET", token: token)
+            return try decode(GuestListInvitesReceivedResponse.self, from: data).invites
+        } catch let api as APIError {
+            if APIClient.jeStarBackendBrezGuestList(api) { return [] }
+            throw api
+        }
+    }
+
+    /// Obvestilo o vabilu na guest listo je prebrano (dotik v zvoncu). Idempotentno.
+    func markGuestListInviteSeen(token: String, id: Int) async throws {
+        _ = try await send(path: "me/guest-list-invites/received/\(id)/seen", method: "POST", token: token)
     }
 }

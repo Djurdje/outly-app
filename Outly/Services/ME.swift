@@ -34,6 +34,8 @@ struct Me: Codable, Equatable {
     let pendingReceivedTickets: Int
     /// Stevilo neprebranih obvestil "klub, ki mu sledis, je objavil dogodek" (migracija 019).
     let pendingClubEvents: Int
+    /// Stevilo neprebranih obvestil »X te je dodal na guest listo« (backend, 8. 10. 2026). Star backend polja ne poslje -> 0.
+    let pendingGuestListInvites: Int
     /// Ali prijatelji vidijo, na katere dogodke grem ("Your friends' plans"). Privzeto true.
     let sharePlansWithFriends: Bool
     /// Vsa clanstva (lastnistvo + ekipe; backend migracija 018, vec klubov na osebo). Star backend: [].
@@ -56,6 +58,7 @@ struct Me: Codable, Equatable {
         case pendingFriendRequests = "pending_friend_requests"
         case pendingReceivedTickets = "pending_received_tickets"
         case pendingClubEvents = "pending_club_events"
+        case pendingGuestListInvites = "pending_guest_list_invites"
         case sharePlansWithFriends = "share_plans_with_friends"
         case clubs
         case canTransferToGuest = "can_transfer_to_guest"
@@ -81,6 +84,7 @@ struct Me: Codable, Equatable {
         pendingFriendRequests = try c.decodeIfPresent(Int.self, forKey: .pendingFriendRequests) ?? 0
         pendingReceivedTickets = try c.decodeIfPresent(Int.self, forKey: .pendingReceivedTickets) ?? 0
         pendingClubEvents = try c.decodeIfPresent(Int.self, forKey: .pendingClubEvents) ?? 0
+        pendingGuestListInvites = (try? c.decodeIfPresent(Int.self, forKey: .pendingGuestListInvites)) ?? 0
         sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
         clubs = (try? c.decodeIfPresent([MeClub].self, forKey: .clubs)) ?? []
         canTransferToGuest = (try? c.decodeIfPresent(Bool.self, forKey: .canTransferToGuest)) ?? false
@@ -114,6 +118,7 @@ struct Me: Codable, Equatable {
         try c.encode(pendingFriendRequests, forKey: .pendingFriendRequests)
         try c.encode(pendingReceivedTickets, forKey: .pendingReceivedTickets)
         try c.encode(pendingClubEvents, forKey: .pendingClubEvents)
+        try c.encode(pendingGuestListInvites, forKey: .pendingGuestListInvites)
         try c.encode(sharePlansWithFriends, forKey: .sharePlansWithFriends)
         try c.encode(clubs, forKey: .clubs)
         try c.encode(canTransferToGuest, forKey: .canTransferToGuest)

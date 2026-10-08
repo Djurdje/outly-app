@@ -43,6 +43,8 @@ struct HomeView: View {
     @State private var receivedTickets: [ReceivedTicket] = []
     /// Obvestila "klub, ki mu sledis, je objavil dogodek" (backend migracija 019).
     @State private var clubEvents: [ClubEventNotification] = []
+    /// Obvestila "X te je dodal na guest listo" (backend, 8. 10. 2026; star backend: 404 -> prazno).
+    @State private var guestListInvites: [GuestListInviteNotification] = []
     @State private var notificationsLoading = false
     /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
     @State private var friendPlans: [FriendPlan] = []
@@ -460,11 +462,13 @@ struct HomeView: View {
 
     /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites), prosnje
     /// za prijateljstvo (Me.pendingFriendRequests) in neprebrane prejete vstopnice
-    /// (Me.pendingReceivedTickets); drugih obvestil (APNs) se ni.
+    /// (Me.pendingReceivedTickets), obvestila klubov (Me.pendingClubEvents) in vabila na guest listo
+    /// (Me.pendingGuestListInvites); drugih obvestil (APNs) se ni.
     /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
     private var notificationCount: Int {
         (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0)
             + (me?.pendingReceivedTickets ?? 0) + (me?.pendingClubEvents ?? 0)
+            + (me?.pendingGuestListInvites ?? 0)
     }
 
     /// Meni obvestil cez domaci zaslon: zatemnjeno ozadje (dotik zapre) + kartica pod zvoncem.
@@ -475,11 +479,13 @@ struct HomeView: View {
                 .onTapGesture { zapriObvestila() }
             NotificationsMenuView(invites: $invites, friendRequests: friendRequests, receivedTickets: receivedTickets,
                                   clubEvents: clubEvents,
+                                  guestListInvites: guestListInvites,
                                   isLoading: notificationsLoading,
                                   onClose: { zapriObvestila() },
                                   onJoined: { _ in Task { await loadMe() } },
                                   onTicketSeen: { id in Task { await oznaciPrejetoVstopnico(id) } },
-                                  onClubEventSeen: { id in Task { await oznaciObvestiloKluba(id) } })
+                                  onClubEventSeen: { id in Task { await oznaciObvestiloKluba(id) } },
+                                  onGuestListInviteSeen: { id in Task { await oznaciVabiloNaGuestListo(id) } })
                 .padding(.top, 50)
                 .padding(.trailing, 16)
                 .transition(.scale(scale: 0.92, anchor: .topTrailing).combined(with: .opacity))
@@ -498,11 +504,13 @@ struct HomeView: View {
         async let f = APIClient.shared.fetchMyFriends(token: authToken)
         async let p = APIClient.shared.fetchReceivedTickets(token: authToken)
         async let k = APIClient.shared.fetchClubEventNotifications(token: authToken)
+        async let g = APIClient.shared.fetchReceivedGuestListInvites(token: authToken)
         if let vabila = try? await v { invites = vabila }
         if let prijatelji = try? await f { friendRequests = prijatelji.requestsIn }
         // Star backend brez poti -> napaka -> seznam ostane prazen (brez obvestila, ne pade).
         if let prejete = try? await p { receivedTickets = prejete }
         if let klubski = try? await k { clubEvents = klubski }
+        if let guestListe = try? await g { guestListInvites = guestListe }
         await loadMe()
     }
 
@@ -521,6 +529,15 @@ struct HomeView: View {
         receivedTickets.removeAll { $0.id == id }
         guard !authToken.isEmpty else { return }
         try? await APIClient.shared.markReceivedTicketSeen(token: authToken, id: id)
+        await loadMe()
+    }
+
+    /// Dotik obvestila "X te je dodal na guest listo": lokalno takoj izgine, streznik ga oznaci kot prebrano,
+    /// nato se osvezi stevec na zvoncu. Napaka se ne kaze — ob naslednjem nalaganju se vrne.
+    private func oznaciVabiloNaGuestListo(_ id: Int) async {
+        guestListInvites.removeAll { $0.id == id }
+        guard !authToken.isEmpty else { return }
+        try? await APIClient.shared.markGuestListInviteSeen(token: authToken, id: id)
         await loadMe()
     }
 
