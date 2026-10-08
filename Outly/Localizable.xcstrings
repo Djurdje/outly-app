@@ -89,6 +89,17 @@
         }
       }
     },
+    "%@ added you to their guest list": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ te je dodal na svojo guest listo"
+          }
+        }
+      }
+    },
     "%@ wants to be your friend": {
       "extractionState": "manual",
       "localizations": {

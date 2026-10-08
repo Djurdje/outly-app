@@ -4,7 +4,8 @@ import SwiftUI
 /// zvonec vodil na My Clubs, kar je bilo narobe. Meni lezi cez HomeView (overlay), zapre se
 /// z dotikom zunaj. Vsebina: vabila v ekipo kluba (-> ClubInvitesView, kjer se sprejme),
 /// prosnje za prijateljstvo (-> MyFriendsView) in prejete vstopnice (-> TicketsView; dotik
-/// obvestilo oznaci kot prebrano, backend migracija 017). Sprejem se ne zgodi tu — dejanje s
+/// obvestilo oznaci kot prebrano, backend migracija 017) in vabila na guest listo (-> TicketsView, kjer je moja
+/// vstopnica; dotik oznaci kot prebrano). Sprejem se ne zgodi tu — dejanje s
 /// posledicami ostane na zaslonu, ki ga ze ima. Potisnih obvestil (APNs) se ni.
 /// Spodnjih gumbov My Clubs / My Friends ni vec (Martin, 21. 9. 2026) — oba sta v profilu.
 /// Lezi znotraj NavigationStack domacega zaslona, zato NavigationLink dela.
@@ -14,6 +15,8 @@ struct NotificationsMenuView: View {
     let receivedTickets: [ReceivedTicket]
     /// "Klub, ki mu sledis, je objavil dogodek" (backend migracija 019).
     let clubEvents: [ClubEventNotification]
+    /// "X te je dodal na guest listo" (backend, 8. 10. 2026) — isti vzorec kot prejeta vstopnica.
+    let guestListInvites: [GuestListInviteNotification]
     let isLoading: Bool
     /// Zapre meni (pred navigacijo in ob dotiku zunaj).
     var onClose: () -> Void
@@ -23,8 +26,11 @@ struct NotificationsMenuView: View {
     var onTicketSeen: (Int) -> Void
     /// Dotik obvestila o novem dogodku kluba (id obvestila) — HomeView ga oznaci kot prebrano.
     var onClubEventSeen: (Int) -> Void
+    /// Dotik obvestila o vabilu na guest listo (id clanstva) — HomeView ga oznaci kot prebrano.
+    var onGuestListInviteSeen: (Int) -> Void
 
-    private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty && receivedTickets.isEmpty && clubEvents.isEmpty }
+    private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty && receivedTickets.isEmpty && clubEvents.isEmpty
+        && guestListInvites.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -96,6 +102,17 @@ struct NotificationsMenuView: View {
                         }
                         .buttonStyle(.plain)
                         .simultaneousGesture(TapGesture().onEnded { onTicketSeen(t.id); onClose() })
+                    }
+                    ForEach(guestListInvites) { g in
+                        NavigationLink {
+                            TicketsView()
+                        } label: {
+                            vrstica(slika: .oseba(g.hostAvatarUrl),
+                                    naslov: String(localized: "\(g.hostUsername) added you to their guest list"),
+                                    podnaslov: g.podnaslov.isEmpty ? String(localized: "It's in your Tickets") : g.podnaslov)
+                        }
+                        .buttonStyle(.plain)
+                        .simultaneousGesture(TapGesture().onEnded { onGuestListInviteSeen(g.id); onClose() })
                     }
                 }
                 .padding(.horizontal, 10)
