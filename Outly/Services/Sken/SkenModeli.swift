@@ -45,6 +45,9 @@ struct ScanListTicket: Codable, Equatable {
     var tableLabel: String?
     var packageName: String?
     var holderUsername: String?
+    /// Guest lista (backend 8. 10. 2026): star backend ali star seznam na disku polj nima -> false / nil.
+    var isGuestList: Bool
+    var guestListHostUsername: String?
 
     enum CodingKeys: String, CodingKey {
         case serial, status
@@ -53,10 +56,13 @@ struct ScanListTicket: Codable, Equatable {
         case tableLabel = "table_label"
         case packageName = "package_name"
         case holderUsername = "holder_username"
+        case isGuestList = "is_guest_list"
+        case guestListHostUsername = "guest_list_host_username"
     }
 
     init(serial: String, status: String = "valid", usedAt: String? = nil, isVip: Bool = false,
-         tableLabel: String? = nil, packageName: String? = nil, holderUsername: String? = nil) {
+         tableLabel: String? = nil, packageName: String? = nil, holderUsername: String? = nil,
+         isGuestList: Bool = false, guestListHostUsername: String? = nil) {
         self.serial = serial
         self.status = status
         self.usedAt = usedAt
@@ -64,6 +70,8 @@ struct ScanListTicket: Codable, Equatable {
         self.tableLabel = tableLabel
         self.packageName = packageName
         self.holderUsername = holderUsername
+        self.isGuestList = isGuestList
+        self.guestListHostUsername = guestListHostUsername
     }
 
     init(from decoder: Decoder) throws {
@@ -76,6 +84,8 @@ struct ScanListTicket: Codable, Equatable {
         tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
         packageName = (try? c.decodeIfPresent(String.self, forKey: .packageName)) ?? nil
         holderUsername = (try? c.decodeIfPresent(String.self, forKey: .holderUsername)) ?? nil
+        isGuestList = (try? c.decodeIfPresent(Bool.self, forKey: .isGuestList)) ?? false
+        guestListHostUsername = (try? c.decodeIfPresent(String.self, forKey: .guestListHostUsername)) ?? nil
     }
 }
 
