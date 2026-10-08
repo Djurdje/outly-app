@@ -5,8 +5,8 @@ import UIKit
 /// izbira bottle paketa (vstet v ceno) -> "Reserve table". Placilo je do Stripa v TESTNEM nacinu
 /// (narocilo je takoj placano, denar se ne premakne) - zaslon to pove enako kot pri vstopnicah.
 /// Prijava, starost in omejitve uveljavi streznik (isto kot pri nakupu vstopnic): napaka gre v `userMessage`.
-/// Po uspehu ima kupec N VIP vstopnic (vsaka svoja QR koda) v Profile -> Tickets in jih od tam
-/// z navadnim prenosom razdeli prijateljem.
+/// Po uspehu ima kupec N VIP vstopnic (vsaka svoja QR koda) v Profile -> Tickets. Uspesni zaslon (tudi po vrnitvi s Stripa) takoj
+/// ponudi izbiro prijateljev (najvec N-1, `VipRazdelitevBlok`); kar kupec ne poslje, ostane v Tickets in gre od tam z navadnim prenosom.
 @MainActor
 struct VipTablesView: View {
     let event: APIEvent
@@ -31,6 +31,8 @@ struct VipTablesView: View {
     @State private var purchase: PurchaseResponse?
     /// 503 zaradi navale ali 409 request_in_progress: gumb je kratek cas onemogocen, nakup se ne ponovi sam.
     @State private var naval = false
+    /// Razdelitev VIP vstopnic prijateljem tece (`VipRazdelitevBlok`): list se med posiljanjem ne sme zapreti.
+    @State private var razdeljuje = false
     /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Stripova stran (ASWebAuthenticationSession), narocilo v cakanju, ponovno branje.
     @StateObject private var stripe = StripeNakup()
 
@@ -82,14 +84,14 @@ struct VipTablesView: View {
                         Text(LocalizedStringKey(purchase == nil ? "Cancel" : "Done"))
                     }
                     .foregroundColor(.white.opacity(0.85))
-                    .disabled(stanje == .nalaga)
+                    .disabled(stanje == .nalaga || razdeljuje)
                 }
             }
             .toolbarBackground(ozadje, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
         .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(stanje == .nalaga)
+        .interactiveDismissDisabled(stanje == .nalaga || razdeljuje)
         .task { await naloziVip() }
         // Stripova gostovana stran v ASWebAuthenticationSession: po placilu jo outly://placilo zapre sama in takoj preberemo narocilo
         // (uspeh: vec samodejnih branj, webhook zakasni); izrecni preklic: ostanemo na listu, narocilo preverimo tiho enkrat;
@@ -460,23 +462,11 @@ struct VipTablesView: View {
                     .clipShape(Capsule())
                 }
 
-                Text("Send the VIP tickets to your friends from Tickets.")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 10)
-
-                Button { dismiss() } label: {
-                    Text("Done")
-                        .font(.system(size: 17, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.outlyBlue)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 6)
+                // Izbira prijateljev (najvec N-1); »Skip« in »Done« zapreta list, neposlane vstopnice ostanejo v Tickets.
+                VipRazdelitevBlok(vstopnice: p.tickets, minAge: event.minAge,
+                                  imaPaket: !(p.order.packageName ?? "").isEmpty,
+                                  zaposlen: $razdeljuje, onDone: { dismiss() })
+                    .padding(.top, 6)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 40)

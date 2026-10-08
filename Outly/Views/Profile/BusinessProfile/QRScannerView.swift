@@ -415,6 +415,24 @@ struct QRScannerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
 
+            // Guest lista (backend 8. 10. 2026): vratar vidi, da gre za gosta z liste (in cigav je).
+            if let gl = p.guestList {
+                HStack(spacing: 10) {
+                    Image(systemName: "list.clipboard.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                    Text(verbatim: gl)
+                        .font(.system(size: 17, weight: .heavy))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
             // Rumeno: aplikacija gosta ne spusti sama. Vratar odloci; sken gre v vrsto in ga streznik preveri naknadno.
             if p.ponudiVstop, let qr = p.qr {
                 Button {

@@ -9,12 +9,21 @@ struct SkenPrikaz: Equatable {
     var podnaslov: String = ""
     /// "VIP · Table T1 · paket" ali nil.
     var vip: String? = nil
+    /// "Guest list · @host" ali nil (backend 8. 10. 2026): vstopnica gostitelja ali povabljenega prijatelja.
+    var guestList: String? = nil
     /// Pojasnilo pod naslovom (npr. "ni na seznamu"), ki ne sme zginiti.
     var opomba: String? = nil
     /// Rumeno: vratar sme gosta spustiti sam (sken gre v vrsto in ga streznik preveri naknadno).
     var ponudiVstop: Bool = false
     /// Surova koda, za gumb »Let in«.
     var qr: String? = nil
+
+    /// »Guest list · @host« (brez gostitelja samo »Guest list«); nil, ce vstopnica ni z guest liste.
+    static func guestListOznaka(isGuestList: Bool, host: String?) -> String? {
+        guard isGuestList else { return nil }
+        if let host, !host.isEmpty { return String(localized: "Guest list · @\(host)") }
+        return String(localized: "Guest list")
+    }
 
     /// Za zvok/haptiko.
     var uspesen: Bool { barva == .zeleno }
@@ -34,9 +43,10 @@ struct SkenPrikaz: Equatable {
         if let v = s.vstopnica, v.isVip {
             vip = VipOznaka.vrstica(tableLabel: v.tableLabel, packageName: v.packageName)
         }
+        let gl = s.vstopnica.flatMap { guestListOznaka(isGuestList: $0.isGuestList, host: $0.guestListHostUsername) }
         switch s.razlog {
         case .veljavna:
-            return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: ime, vip: vip)
+            return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: ime, vip: vip, guestList: gl)
         case .veljavnaNiNaSeznamu:
             return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"),
                               opomba: String(localized: "Not on the list: bought after the last download. The server checks it when you are back online."))
@@ -44,12 +54,12 @@ struct SkenPrikaz: Equatable {
             let t = s.kdaj.map { cas($0) } ?? ""
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "ALREADY SCANNED"),
                               podnaslov: t.isEmpty ? String(localized: "Scanned on this phone.") : String(localized: "Scanned on this phone at \(t)."),
-                              vip: vip)
+                              vip: vip, guestList: gl)
         case .zeUporabljena:
             let t = s.kdaj.map { cas($0) } ?? ""
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "ALREADY SCANNED"),
                               podnaslov: t.isEmpty ? String(localized: "This ticket was already used.") : String(localized: "Already used at \(t)."),
-                              vip: vip)
+                              vip: vip, guestList: gl)
         case .prenesena:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "TICKET TRANSFERRED"),
                               podnaslov: String(localized: "This code is no longer valid: the ticket was sent to someone else."))
@@ -87,10 +97,11 @@ struct SkenPrikaz: Equatable {
         if let t = r.ticket, t.isVip {
             vip = VipOznaka.vrstica(tableLabel: t.tableLabel, packageName: t.packageName)
         }
+        let gl = r.ticket.flatMap { guestListOznaka(isGuestList: $0.isGuestList, host: $0.guestListHostUsername) }
         if r.result == "ok" {
-            return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: r.message, vip: vip)
+            return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: r.message, vip: vip, guestList: gl)
         }
-        if r.result == "event_cancelled" { return odpovedanDogodek(vip: vip) }
+        if r.result == "event_cancelled" { return odpovedanDogodek(vip: vip, guestList: gl) }
         let naslov: String
         switch r.result {
         case "already_used": naslov = String(localized: "ALREADY SCANNED")
@@ -99,7 +110,7 @@ struct SkenPrikaz: Equatable {
         case "unpaid": naslov = String(localized: "NOT PAID")
         default: naslov = String(localized: "REFUSED")
         }
-        return SkenPrikaz(barva: .rdece, naslov: naslov, podnaslov: r.message, vip: vip)
+        return SkenPrikaz(barva: .rdece, naslov: naslov, podnaslov: r.message, vip: vip, guestList: gl)
     }
 
     /// Dokoncen odgovor strezniga na sken, ki je bil na telefonu zelen (K2: z povezavo odloci streznik).
@@ -127,9 +138,9 @@ struct SkenPrikaz: Equatable {
 
     /// Dogodek je odpovedan (backend od 5. 10. 2026, I21): vstopnica ostane placana, a na vratih ne velja vec.
     /// Telefon brez povezave odpovedi ne pozna (seznam nima statusa dogodka), zato pride samo od streznika.
-    static func odpovedanDogodek(vip: String?) -> SkenPrikaz {
+    static func odpovedanDogodek(vip: String?, guestList: String? = nil) -> SkenPrikaz {
         SkenPrikaz(barva: .rdece, naslov: String(localized: "EVENT CANCELLED"),
-                   podnaslov: String(localized: "This event was cancelled."), vip: vip)
+                   podnaslov: String(localized: "This event was cancelled."), vip: vip, guestList: guestList)
     }
 
     /// Streznik je povedal, da uporabnik ni vec v ekipi kluba (404 »Club not found.« / 403 »Forbidden.«).

@@ -18,6 +18,9 @@ struct TicketsView: View {
     private var past: [APITicket] { tickets.filter { $0.isPast && !$0.isUsed } }
     private var used: [APITicket] { tickets.filter { $0.isUsed } }
     @State private var showUsed = false
+    /// Guest liste, kjer sem gostitelj (GET /me/guest-lists, 8. 10. 2026). Prazno = razdelek skrit (tudi ob 404 starega backenda
+    /// in ob napaki: razdelek je dodatek, vstopnice delujejo brez njega).
+    @State private var guestListe: [GuestList] = []
     // VIP miza = eno narocilo z vec vstopnicami; razprte skupine ("razdelek-order_id", ker je ista miza lahko
     // deloma v Upcoming in deloma v Used). Privzeto zaprte (Martin, 4. 10. 2026).
     @State private var odprteMize: Set<String> = []
@@ -39,6 +42,16 @@ struct TicketsView: View {
                         }
                         .font(.footnote)
                         .foregroundColor(.gray)
+                    }
+
+                    if !guestListe.isEmpty {
+                        Text("Guest lists")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.7))
+                        ForEach(guestListe) { g in
+                            NavigationLink { GuestListDetailView(lista: g, vstopnice: tickets) } label: { GuestListKartica(lista: g) }
+                                .buttonStyle(.plain)
+                        }
                     }
 
                     if isLoading && tickets.isEmpty {
@@ -96,7 +109,10 @@ struct TicketsView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { Task { await load() } }
+        .onAppear {
+            Task { await load() }
+            Task { await naloziGuestListe() }
+        }
     }
 
     private var prazno: some View {
@@ -221,6 +237,17 @@ struct TicketsView: View {
                         }
                     }
                 }
+                if t.isGuestList {
+                    HStack(spacing: 6) {
+                        GuestListZnacka(kompakten: true)
+                        if let host = t.povabilGostitelj(jaz: session.me?.username) {
+                            Text("Invited by @\(host)")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
+                    }
+                }
             }
             Spacer()
             Image(systemName: stevilo == nil ? "chevron.right" : (odprta ? "chevron.up" : "chevron.down"))
@@ -234,6 +261,15 @@ struct TicketsView: View {
     private func datum(_ t: APITicket) -> String {
         guard let d = t.startDate else { return "" }
         return "\(DateParsing.shortDate.string(from: d)) \(DateParsing.shortTime.string(from: d))"
+    }
+
+    /// Razdelek »Guest lists«: ob napaki (brez signala, 5xx) ostane, kar je ze prikazano; 404 starega backenda = prazno (glej
+    /// `APIClient.fetchMyGuestLists`).
+    private func naloziGuestListe() async {
+        guard session.isLoggedIn else { return }
+        if let sveze = try? await APIClient.shared.fetchMyGuestLists(token: session.token) {
+            guestListe = sveze
+        }
     }
 
     private func load() async {
@@ -289,6 +325,12 @@ struct TicketDetailView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
+                if let host = ticket.povabilGostitelj(jaz: session.me?.username) {
+                    Text("Invited by @\(host)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+
                 Text("Show this code at the entrance. A screenshot works too — the code is signed and valid only once.")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.5))
@@ -296,7 +338,8 @@ struct TicketDetailView: View {
                     .padding(.horizontal, 10)
 
                 // Prenos prijatelju: samo veljavna vstopnica pred zacetkom dogodka (streznik preveri znova).
-                if ticket.transferable {
+                // Vstopnica guest liste se ne prenasa (backend: 409 »Guest list tickets can't be transferred.«).
+                if ticket.transferable && !ticket.isGuestList {
                     Button { showTransfer = true } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "paperplane.fill")
@@ -387,6 +430,7 @@ struct WalletTicketCard: View {
                         .foregroundColor(.white.opacity(0.85))
                     Spacer()
                     if ticket.isVip { VipZnacka() }
+                    if ticket.isGuestList { GuestListZnacka() }
                     Text(ticket.statusLabel)
                         .font(.system(size: 10, weight: .heavy))
                         .tracking(0.8)

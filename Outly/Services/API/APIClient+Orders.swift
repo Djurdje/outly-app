@@ -53,6 +53,12 @@ struct APITicket: Codable, Identifiable {
     let packageName: String?
     let packageDescription: String?
 
+    // Guest lista (backend 8. 10. 2026): vstopnica gostitelja ali povabljenega prijatelja (narocilo z `guest_list_id`).
+    // Star backend polj nima -> false / nil. Taka vstopnica se ne prenasa (POST /tickets/:id/transfer -> 409).
+    let isGuestList: Bool
+    /// Uporabnisko ime gostitelja liste; pri gostiteljevi vstopnici je to on sam (glej `povabilGostitelj`).
+    let guestListHostUsername: String?
+
     // Encodable (sintetiziran iz CodingKeys) samo za shranjen seznam na telefonu (VstopniceShramba), ne za klice na streznik.
     enum CodingKeys: String, CodingKey {
         case id, serial, status, qr, address, city, transferable, transferred
@@ -61,6 +67,8 @@ struct APITicket: Codable, Identifiable {
         case tableSeats = "table_seats"
         case packageName = "package_name"
         case packageDescription = "package_description"
+        case isGuestList = "is_guest_list"
+        case guestListHostUsername = "guest_list_host_username"
         case holderUsername = "holder_username"
         case buyerUsername = "buyer_username"
         case orderId = "order_id"
@@ -108,10 +116,20 @@ struct APITicket: Codable, Identifiable {
         tableSeats = (try? c.decodeIfPresent(Int.self, forKey: .tableSeats)) ?? nil
         packageName = (try? c.decodeIfPresent(String.self, forKey: .packageName)) ?? nil
         packageDescription = (try? c.decodeIfPresent(String.self, forKey: .packageDescription)) ?? nil
+        isGuestList = (try? c.decodeIfPresent(Bool.self, forKey: .isGuestList)) ?? false
+        guestListHostUsername = (try? c.decodeIfPresent(String.self, forKey: .guestListHostUsername)) ?? nil
     }
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
     var isUsed: Bool { status == "used" }
+
+    /// "Invited by @host" samo pri vstopnici guest liste, ki pripada PRIJATELJU: gostitelj na svoji vstopnici vidi samo oznako
+    /// »Guest list« (backend mu vrne njegovo ime kot gostitelja). `jaz` = moje uporabnisko ime.
+    func povabilGostitelj(jaz: String?) -> String? {
+        guard isGuestList, let host = guestListHostUsername, !host.isEmpty else { return nil }
+        if let jaz, host.caseInsensitiveCompare(jaz) == .orderedSame { return nil }
+        return host
+    }
 
     /// Samo za vstopnice NAROCILA (GET /me/orders, POST …/orders = kupcev pogled): kupec je vstopnico poslal prijatelju,
     /// zato nima ne QR ne seriala (backend ju zadrzi za prejemnika). V GET /me/tickets (TicketsView) `transferred`
@@ -458,16 +476,23 @@ struct ScanTicketInfo: Decodable {
     let tableLabel: String?
     let tableSeats: Int?
     let packageName: String?
+    /// Guest lista (backend 8. 10. 2026): skener pokaze oznako »Guest list · @gostitelj«. Star backend -> false / nil.
+    let isGuestList: Bool
+    let guestListHostUsername: String?
 
     enum CodingKeys: String, CodingKey {
         case isVip = "is_vip"
         case tableLabel = "table_label"
         case tableSeats = "table_seats"
         case packageName = "package_name"
+        case isGuestList = "is_guest_list"
+        case guestListHostUsername = "guest_list_host_username"
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        isGuestList = (try? c.decodeIfPresent(Bool.self, forKey: .isGuestList)) ?? false
+        guestListHostUsername = (try? c.decodeIfPresent(String.self, forKey: .guestListHostUsername)) ?? nil
         isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
         tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
         tableSeats = (try? c.decodeIfPresent(Int.self, forKey: .tableSeats)) ?? nil

@@ -38,6 +38,15 @@ extension APIError {
         if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }
         if t.contains("guest_transfer_disabled")        { return String(localized: "Sending tickets to people without an Outly account is not available yet.") }
 
+        // Guest lista (8. 10. 2026): povabila prijateljev in prenos vstopnice z liste. Besedila backenda so kratka angleska.
+        if t.contains("only invite friends")            { return String(localized: "You can only invite friends on Outly.") }
+        if t.contains("spots left")                     { return String(localized: "There are not enough free spots left on this guest list.") }
+        if t.contains("already on your guest list")     { return String(localized: "That friend is already on your guest list.") }
+        if t.contains("guest list is closed")           { return String(localized: "This guest list is closed.") }
+        if t.range(of: #"is under \d+"#, options: .regularExpression) != nil { return String(localized: "One of these friends is too young for this event.") }
+        if t.contains("already checked in")             { return String(localized: "This friend has already checked in, so they can't be removed.") }
+        if t.contains("guest list tickets")             { return String(localized: "Guest list tickets can't be sent to someone else.") }
+
         // Najprej po vsebini, ker je ista koda (400) uporabljena za vec razlicnih stvari.
         if t.contains("invalid or expired code")        { return String(localized: "The code is wrong or has expired. Request a new one.") }
         if t.contains("too many attempts")              { return String(localized: "Too many wrong attempts. Request a new code.") }

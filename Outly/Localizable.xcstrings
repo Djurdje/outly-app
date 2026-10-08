@@ -10006,6 +10006,519 @@
           }
         }
       }
+    },
+    "You don't have any friends on Outly yet. Your tickets are waiting under Tickets: add friends, then send them from there.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na Outlyju še nimaš prijateljev. Vstopnice te čakajo v razdelku Vstopnice: dodaj prijatelje in jih pošlji od tam."
+          }
+        }
+      }
+    },
+    "Send tickets to your friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji vstopnice prijateljem"
+          }
+        }
+      }
+    },
+    "Choose up to %lld friends. You keep one ticket; any you don't send stay under Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi do %lld prijateljev. Ena vstopnica ostane tebi, neposlane ostanejo v razdelku Vstopnice."
+          }
+        }
+      }
+    },
+    "Send to friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pošlji prijateljem"
+          }
+        }
+      }
+    },
+    "Send to %lld friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Send to %lld friend"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Send to %lld friends"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pošlji %lld prijateljem"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pošlji %lld prijatelju"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pošlji %lld prijateljem"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pošlji %lld prijateljema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preskoči"
+          }
+        }
+      }
+    },
+    "Add friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj prijatelje"
+          }
+        }
+      }
+    },
+    "Tickets sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice poslane"
+          }
+        }
+      }
+    },
+    "Some tickets weren't sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekatere vstopnice niso bile poslane"
+          }
+        }
+      }
+    },
+    "Tickets that weren't sent are still yours, under Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neposlane vstopnice so še vedno tvoje, v razdelku Vstopnice."
+          }
+        }
+      }
+    },
+    "Sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslano"
+          }
+        }
+      }
+    },
+    "%lld of %lld selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbrano: %lld od %lld"
+          }
+        }
+      }
+    },
+    "I confirm all selected friends are at least %lld years old. They must show a valid photo ID at the door; if they are younger, the club will refuse entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrjujem, da so vsi izbrani prijatelji stari vsaj %lld let. Ob vstopu morajo pokazati veljaven osebni dokument s fotografijo; če je kdo mlajši, mu klub vstop zavrne."
+          }
+        }
+      }
+    },
+    "Guest list": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam gostov"
+          }
+        }
+      }
+    },
+    "Guest lists": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznami gostov"
+          }
+        }
+      }
+    },
+    "Guest list · @%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam gostov · @%@"
+          }
+        }
+      }
+    },
+    "Spots left: %lld of %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prosta mesta: %lld od %lld"
+          }
+        }
+      }
+    },
+    "Invite friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi prijatelje"
+          }
+        }
+      }
+    },
+    "Invite %lld friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Invite %lld friend"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Invite %lld friends"
+                }
+              }
+            }
+          }
+        },
+        "sl": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Povabi %lld prijatelje"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Povabi %lld prijatelja"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Povabi %lld prijateljev"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Povabi %lld prijatelja"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "This guest list is closed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta seznam gostov je zaprt."
+          }
+        }
+      }
+    },
+    "All spots are taken. Remove a friend to free one up.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsa mesta so zasedena. Odstrani prijatelja, da sprostiš mesto."
+          }
+        }
+      }
+    },
+    "Invited": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabljen"
+          }
+        }
+      }
+    },
+    "Invited friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabljeni prijatelji"
+          }
+        }
+      }
+    },
+    "Nobody invited yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nihče še ni povabljen."
+          }
+        }
+      }
+    },
+    "Your QR code": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja QR koda"
+          }
+        }
+      }
+    },
+    "Show it at the entrance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaži jo pri vhodu"
+          }
+        }
+      }
+    },
+    "Your ticket is under Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoja vstopnica je v razdelku Vstopnice."
+          }
+        }
+      }
+    },
+    "Remove %@ from your guest list?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstranim uporabnika %@ s seznama gostov?"
+          }
+        }
+      }
+    },
+    "Their ticket will stop working and the spot becomes free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica bo prenehala veljati, mesto pa se sprosti."
+          }
+        }
+      }
+    },
+    "Each friend gets their own ticket with their own QR code. They can arrive separately.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsak prijatelj dobi svojo vstopnico s svojo QR kodo. Lahko pridejo ločeno."
+          }
+        }
+      }
+    },
+    "You don't have any friends on Outly yet. Add friends in Profile, under My friends, then invite them here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na Outlyju še nimaš prijateljev. Dodaj jih v Profilu pod Moji prijatelji, nato jih povabi tukaj."
+          }
+        }
+      }
+    },
+    "All your friends are already on this guest list.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsi tvoji prijatelji so že na tem seznamu gostov."
+          }
+        }
+      }
+    },
+    "Invited by @%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabil te je @%@"
+          }
+        }
+      }
+    },
+    "You can only invite friends on Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabiš lahko samo prijatelje na Outlyju."
+          }
+        }
+      }
+    },
+    "There are not enough free spots left on this guest list.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na tem seznamu gostov ni dovolj prostih mest."
+          }
+        }
+      }
+    },
+    "That friend is already on your guest list.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta prijatelj je že na tvojem seznamu gostov."
+          }
+        }
+      }
+    },
+    "One of these friends is too young for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eden od teh prijateljev je premlad za ta dogodek."
+          }
+        }
+      }
+    },
+    "This friend has already checked in, so they can't be removed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta prijatelj je že vstopil, zato ga ni mogoče odstraniti."
+          }
+        }
+      }
+    },
+    "Guest list tickets can't be sent to someone else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnic s seznama gostov ni mogoče poslati komu drugemu."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
