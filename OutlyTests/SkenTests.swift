@@ -47,6 +47,19 @@ private enum Pomoc {
     }
 
     static func seznamPodatki(_ l: ScanList) -> Data { try! JSONEncoder().encode(l) }
+
+    /// Objavljen dogodek z zacetkom in koncem (konec nil = brez `endAt`).
+    static func dogodek(_ id: Int, title: String = "Noc", zacetek: Date, konec: Date? = nil, status: String = "published") -> SkenDogodek {
+        SkenDogodek(id: id, title: title, startAt: SkenCas.niz(zacetek), endAt: konec.map { SkenCas.niz($0) }, status: status)
+    }
+
+    /// Sedanji cas na cele sekunde: ISO niz z milisekundami zaokrozuje, zato bi se tocne meje okna sicer premaknile za delec ms.
+    static func sedajNaSekundo() -> Date { Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down)) }
+
+    /// Dogodek, ki traja zdaj (zacel pred uro, konec cez 5 ur).
+    static func aktivenDogodek(_ id: Int, title: String = "Noc") -> SkenDogodek {
+        dogodek(id, title: title, zacetek: Date().addingTimeInterval(-3600), konec: Date().addingTimeInterval(5 * 3600))
+    }
 }
 
 // MARK: - Razclenjevanje in podpis
@@ -279,6 +292,205 @@ final class SkenOdlocitevTests: XCTestCase {
         // koda, ki ni v1 ali v2, je neveljavna (ne »stara koda«, ki bi ponudila »Let in«)
         XCTAssertEqual(odloci("abc.def", seznam: nil).razlog, .neveljavna)
         XCTAssertEqual(odloci("e30.0123456789abcdef", seznam: nil).razlog, .neveljavna)
+    }
+}
+
+// MARK: - Casovno okno (8. 10. 2026: vratar ne izbira dogodka)
+
+@MainActor
+final class SkenOknoTests: XCTestCase {
+    private let t0 = Date(timeIntervalSince1970: 1_790_000_000)
+    private let ura: TimeInterval = 3600
+
+    private func dogodek(_ zacetek: Date, konec: Date? = nil, status: String = "published") -> SkenDogodek {
+        Pomoc.dogodek(1, zacetek: zacetek, konec: konec, status: status)
+    }
+
+    func testKonstanteSo12UrPredIn6UrPo() {
+        XCTAssertEqual(SkenOkno.predZacetkom, 12 * ura)
+        XCTAssertEqual(SkenOkno.poKoncu, 6 * ura)
+        XCTAssertEqual(SkenOkno.privzetoTrajanje, 12 * ura)
+    }
+
+    /// Meje so vkljucene: tocno 12 h pred zacetkom je ze aktivno, ena sekunda prej se ne.
+    func testMejaPredZacetkom() {
+        let d = dogodek(t0, konec: t0.addingTimeInterval(4 * ura))
+        XCTAssertFalse(SkenOkno.jeAktiven(d, zdaj: t0.addingTimeInterval(-12 * ura - 1)))
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: t0.addingTimeInterval(-12 * ura)))
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: t0.addingTimeInterval(-12 * ura + 1)))
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: t0))
+    }
+
+    /// Tocno 6 h po koncu je se aktivno, sekundo kasneje ne vec.
+    func testMejaPoKoncu() {
+        let konec = t0.addingTimeInterval(4 * ura)
+        let d = dogodek(t0, konec: konec)
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: konec))
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: konec.addingTimeInterval(6 * ura - 1)))
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: konec.addingTimeInterval(6 * ura)))
+        XCTAssertFalse(SkenOkno.jeAktiven(d, zdaj: konec.addingTimeInterval(6 * ura + 1)))
+    }
+
+    /// Brez `endAt` dogodek traja 12 h, torej je aktiven do zacetek + 18 h.
+    func testBrezEndAtTrajaDvanajstUrInSeSestUr() {
+        let d = dogodek(t0)
+        XCTAssertEqual(SkenOkno.konec(d), t0.addingTimeInterval(12 * ura))
+        XCTAssertTrue(SkenOkno.jeAktiven(d, zdaj: t0.addingTimeInterval(18 * ura)))
+        XCTAssertFalse(SkenOkno.jeAktiven(d, zdaj: t0.addingTimeInterval(18 * ura + 1)))
+    }
+
+    /// `endAt` pred ali ob zacetku je napaka v podatkih: velja privzeto trajanje (dogodek ne sme biti aktiven samo 6 h).
+    func testEndAtPredZacetkomVelaPrivzetoTrajanje() {
+        XCTAssertEqual(SkenOkno.konec(dogodek(t0, konec: t0.addingTimeInterval(-ura))), t0.addingTimeInterval(12 * ura))
+        XCTAssertEqual(SkenOkno.konec(dogodek(t0, konec: t0)), t0.addingTimeInterval(12 * ura))
+        XCTAssertEqual(SkenOkno.konec(SkenDogodek(id: 1, title: "x", startAt: SkenCas.niz(t0), endAt: "ni datum")), t0.addingTimeInterval(12 * ura))
+    }
+
+    func testNeobjavljenInNeberljivDogodekNistaAktivna() {
+        XCTAssertFalse(SkenOkno.jeAktiven(dogodek(t0, status: "draft"), zdaj: t0))
+        XCTAssertFalse(SkenOkno.jeAktiven(dogodek(t0, status: "cancelled"), zdaj: t0))
+        XCTAssertFalse(SkenOkno.jeAktiven(SkenDogodek(id: 1, title: "x", startAt: ""), zdaj: t0))
+        XCTAssertFalse(SkenOkno.jeAktiven(SkenDogodek(id: 1, title: "x", startAt: "jutri zvecer"), zdaj: t0))
+        XCTAssertNil(SkenOkno.odprtoOd(SkenDogodek(id: 1, title: "x", startAt: "")))
+    }
+
+    func testAktivniSoUrejeniPoZacetkuInIdju() {
+        let seznam = [
+            Pomoc.dogodek(3, zacetek: t0.addingTimeInterval(2 * ura)),
+            Pomoc.dogodek(1, zacetek: t0.addingTimeInterval(-ura)),
+            Pomoc.dogodek(2, zacetek: t0.addingTimeInterval(2 * ura)),   // enak zacetek kot 3 -> po id-ju
+            Pomoc.dogodek(4, zacetek: t0.addingTimeInterval(40 * ura)),  // se zaprto
+            Pomoc.dogodek(5, zacetek: t0, status: "draft"),
+        ]
+        XCTAssertEqual(SkenOkno.aktivni(seznam, zdaj: t0).map { $0.id }, [1, 2, 3])
+    }
+
+    func testNaslednjiJeNajzgodnejsiDogodekKiSeNiOdprt() {
+        let seznam = [
+            Pomoc.dogodek(1, zacetek: t0.addingTimeInterval(-ura)),                      // ze aktiven
+            Pomoc.dogodek(2, zacetek: t0.addingTimeInterval(40 * ura)),
+            Pomoc.dogodek(3, zacetek: t0.addingTimeInterval(30 * ura)),                  // odpre se cez 18 h
+            Pomoc.dogodek(4, zacetek: t0.addingTimeInterval(13 * ura), status: "draft"), // neobjavljen
+            Pomoc.dogodek(5, zacetek: t0.addingTimeInterval(-100 * ura), konec: t0.addingTimeInterval(-90 * ura)),   // mimo
+        ]
+        XCTAssertEqual(SkenOkno.naslednji(seznam, zdaj: t0)?.id, 3)
+        XCTAssertEqual(SkenOkno.odprtoOd(seznam[2]), t0.addingTimeInterval(18 * ura))
+        // tocno ob odprtju dogodek ni vec »naslednji« (je aktiven)
+        XCTAssertEqual(SkenOkno.naslednji(seznam, zdaj: t0.addingTimeInterval(18 * ura))?.id, 2)
+        XCTAssertNil(SkenOkno.naslednji([seznam[0], seznam[3], seznam[4]], zdaj: t0))
+        XCTAssertNil(SkenOkno.naslednji([], zdaj: t0))
+    }
+}
+
+// MARK: - Odlocitev z vec aktivnimi dogodki
+
+@MainActor
+final class SkenOdlocitevVecDogodkovTests: XCTestCase {
+    private let kljuc = Curve25519.Signing.PrivateKey()
+    private let a = 42, b = 43
+
+    private func odloci(_ qr: String, aktivni: Set<Int>? = nil, indeksi: [Int: ScanList] = [:], lokalni: [Int: [String: Date]] = [:],
+                        kljucPodatek: ScanKey?? = nil) -> SkenSodba {
+        SkenOdlocitev.odloci(qr: qr, aktivni: aktivni ?? [a, b], kljuc: kljucPodatek ?? Pomoc.scanKey(kljuc),
+                             indeksi: indeksi.mapValues { SkenIndeks($0) }, lokalni: lokalni)
+    }
+
+    func testKodaPoveDogodekInUporabiSeznamTistega() {
+        let sa = Pomoc.serial(), sb = Pomoc.serial()
+        let indeksi = [
+            a: ScanList(eventId: a, tickets: [ScanListTicket(serial: sa, holderUsername: "ana")]),
+            b: ScanList(eventId: b, tickets: [ScanListTicket(serial: sb, isVip: true, tableLabel: "T9", holderUsername: "bojan")]),
+        ]
+        let ra = odloci(Pomoc.koda(kljuc, serial: sa, event: a), indeksi: indeksi)
+        XCTAssertEqual(ra.razlog, .veljavna)
+        XCTAssertEqual(ra.dogodekId, a)
+        XCTAssertEqual(ra.vstopnica?.holderUsername, "ana")
+        let rb = odloci(Pomoc.koda(kljuc, serial: sb, event: b), indeksi: indeksi)
+        XCTAssertEqual(rb.razlog, .veljavna)
+        XCTAssertEqual(rb.dogodekId, b)
+        XCTAssertEqual(rb.vstopnica?.tableLabel, "T9")
+        // vstopnica dogodka B ni na seznamu dogodka A: koda nosi B, torej se isce samo na seznamu B
+        let sc = Pomoc.serial()
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: sc, event: b), indeksi: indeksi).razlog, .veljavnaNiNaSeznamu)
+    }
+
+    func testStanjeInLokalniSkeniSoLocenaPoDogodkih() {
+        let s = Pomoc.serial()
+        let cas = Date(timeIntervalSince1970: 1_790_000_000)
+        let indeksi = [
+            a: ScanList(eventId: a, tickets: [ScanListTicket(serial: s, status: "used", usedAt: "2026-10-01T21:15:00.000Z")]),
+            b: ScanList(eventId: b, tickets: []),
+        ]
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: a), indeksi: indeksi).razlog, .zeUporabljena)
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: b), indeksi: indeksi).razlog, .veljavnaNiNaSeznamu)
+        let lokalni = [a: [s: cas]]
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: a), lokalni: lokalni).razlog, .zeUporabljenaLokalno)
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: b), lokalni: lokalni).razlog, .veljavnaNiNaSeznamu)
+    }
+
+    /// Dogodek iz kode ni med aktivnimi (izven okna, neobjavljen ali neznan): rdece z novim razlogom, tudi ce je podpis veljaven.
+    func testDogodekIzvenAktivnihJeNijeZaDanes() {
+        let s = Pomoc.serial()
+        let r = odloci(Pomoc.koda(kljuc, serial: s, event: 50))
+        XCTAssertEqual(r.razlog, .nijeZaDanes)
+        XCTAssertEqual(r.barva, .rdece)
+        XCTAssertFalse(r.spusti)
+        XCTAssertEqual(r.dogodekId, 50)
+        XCTAssertEqual(r.serial, s)
+        // ni aktivnih dogodkov
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: a), aktivni: []).razlog, .nijeZaDanes)
+        // koda v1
+        XCTAssertEqual(odloci(Pomoc.kodaV1(serial: s, event: 50)).razlog, .nijeZaDanes)
+        // brez kljuca (telefon ga se nima) za dogodek izven okna ni rumeno: rdece je varno in dokoncno
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: 50), kljucPodatek: .some(nil)).razlog, .nijeZaDanes)
+        // ponarejen podpis za dogodek izven okna je tudi rdec
+        let tuj = Curve25519.Signing.PrivateKey()
+        XCTAssertEqual(odloci(Pomoc.koda(tuj, serial: s, event: 50)).barva, .rdece)
+    }
+
+    func testKodaKiNiRazclenljivaOstaneNeveljavna() {
+        for smeti in ["", "https://example.com/x", "abc.def", "o2.@@@.@@@", String(repeating: "a", count: 2000)] {
+            let r = odloci(smeti)
+            XCTAssertEqual(r.razlog, .neveljavna, smeti)
+            XCTAssertNil(r.dogodekId)
+        }
+    }
+
+    func testKodaV1ZaAktivenDogodekJeRumenaZDogodkom() {
+        let s = Pomoc.serial()
+        let r = odloci(Pomoc.kodaV1(serial: s, event: b))
+        XCTAssertEqual(r.razlog, .staraKoda)
+        XCTAssertEqual(r.barva, .rumeno)
+        XCTAssertEqual(r.dogodekId, b)
+        // negativni podatki tistega dogodka veljajo tudi za v1
+        let rdece = odloci(Pomoc.kodaV1(serial: s, event: b), lokalni: [b: [s: Date()]])
+        XCTAssertEqual(rdece.razlog, .zeUporabljenaLokalno)
+    }
+
+    /// Koda v1: event_id ni podpisan, zato lokalni skeni drugih aktivnih dogodkov veljajo kot negativen dokaz. Koda v2 (podpisana) ne.
+    func testKodaV1JeRdecaCeJeLokalnoSkeniranaPodDrugimDogodkom() {
+        let s = Pomoc.serial()
+        let cas = Date(timeIntervalSince1970: 1_790_000_000)
+        let lokalni = [a: [s: cas]]
+        let v1 = odloci(Pomoc.kodaV1(serial: s, event: b), lokalni: lokalni)
+        XCTAssertEqual(v1.razlog, .zeUporabljenaLokalno)
+        XCTAssertEqual(v1.kdaj, cas)
+        XCTAssertEqual(v1.barva, .rdece)
+        // dogodek, ki ni aktiven, ne daje dokaza (lokalni skeni so samo za aktivne)
+        XCTAssertEqual(odloci(Pomoc.kodaV1(serial: s, event: b), aktivni: [b], lokalni: lokalni).razlog, .staraKoda)
+        // v2: podpis velja, dogodek je zanesljiv -> serial pod drugim dogodkom ne vpliva
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: s, event: b), lokalni: lokalni).razlog, .veljavnaNiNaSeznamu)
+        XCTAssertEqual(SkenOdlocitev.lokalniSkenKjerkoli(serial: s, aktivni: [a, b], lokalni: lokalni, najprej: b), cas)
+        XCTAssertNil(SkenOdlocitev.lokalniSkenKjerkoli(serial: Pomoc.serial(), aktivni: [a, b], lokalni: lokalni, najprej: b))
+    }
+
+    func testNijeZaDanesImaPravilenPrikaz() {
+        let p = SkenPrikaz.iz(SkenSodba(razlog: .nijeZaDanes, serial: Pomoc.serial(), dogodekId: 50), qr: "x")
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertEqual(p.naslov, "NOT TODAY'S EVENT")
+        XCTAssertEqual(p.podnaslov, "This ticket is not for today's event.")
+        XCTAssertFalse(p.ponudiVstop)
+        XCTAssertFalse(p.uspesen)
     }
 }
 
@@ -722,10 +934,49 @@ final class SkenVrstaTests: XCTestCase {
 
 // MARK: - SkenSeja
 
+/// Vrata za lazni API: klic obstoji, dokler test ne pokliče `odpri()` (nic ne cakamo na pravi cas).
+private final class Vrata: @unchecked Sendable {
+    private let zapah = NSLock()
+    private var odprta = false
+    private var cakalci: [CheckedContinuation<Void, Never>] = []
+
+    func pocakaj() async {
+        await withCheckedContinuation { (k: CheckedContinuation<Void, Never>) in
+            if !dodaj(k) { k.resume() }
+        }
+    }
+
+    // Zapah samo v sinhronih pomoznih funkcijah (NSLock v async funkciji je v Swift 6 napaka).
+    private func dodaj(_ k: CheckedContinuation<Void, Never>) -> Bool {
+        zapah.lock()
+        defer { zapah.unlock() }
+        if odprta { return false }
+        cakalci.append(k)
+        return true
+    }
+
+    func odpri() {
+        zapah.lock()
+        odprta = true
+        let vsi = cakalci
+        cakalci = []
+        zapah.unlock()
+        vsi.forEach { $0.resume() }
+    }
+}
+
+/// Ura, ki jo test premika sam.
+private final class TestnaUra {
+    var zdaj: Date
+    init(_ zdaj: Date) { self.zdaj = zdaj }
+}
+
 private final class LazniApi: SkenApi, @unchecked Sendable {
     private let zapah = NSLock()
     var kljucOdgovor: Result<ScanKey, Error>
     var seznamOdgovor: Result<Data, Error>
+    /// Odgovor scan-list po dogodku; brez vnosa velja `seznamOdgovor`.
+    var seznamPoDogodku: [Int: Result<Data, Error>] = [:]
     var paketOdgovor: ([SkenVnos]) -> Result<[ScanBatchResult], Error> = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
     var spletniOdgovor: Result<ScanResult, Error> = .success(ScanResult(result: "ok", message: "Welcome", usedAt: nil))
     var dogodkiOdgovor: Result<[SkenDogodek], Error> = .success([])
@@ -734,16 +985,29 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
     var zakasnitevPaketa: Double = 0
     var zakasnitevSpletnega: Double = 0
     var zakasnitevSeznama: Double = 0
+    /// Klic ostane obvisel, dokler se vrata ne odprejo.
+    var vrataSeznama: Vrata?
+    var vrataPaketa: Vrata?
     private(set) var paketi: [[SkenVnos]] = []
     private(set) var deviceIdji: [String] = []
     private(set) var spletniKlici: [String] = []
     private(set) var klubIdji: [Int?] = []
     private(set) var kljucKlici = 0
     private(set) var seznamKlici = 0
+    private(set) var seznamDogodki: [Int] = []
+    private(set) var dogodkiKlici = 0
+    /// Za vsak klic scan-list: ali je bil zahtevan mimo predpomnilnika.
+    private(set) var svezeKlici: [Bool] = []
+    private func zabeleziSveze(_ sveze: Bool) {
+        zapah.lock()
+        svezeKlici.append(sveze)
+        zapah.unlock()
+    }
 
     init(kljuc: ScanKey, seznam: ScanList) {
         kljucOdgovor = .success(kljuc)
         seznamOdgovor = .success(Pomoc.seznamPodatki(seznam))
+        dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42)])
     }
 
     /// Caka, ne da bi se odzval na preklic Taska (continuation + GCD, ne Task.sleep).
@@ -756,29 +1020,39 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
     func nastaviSeznam(_ l: ScanList) { seznamOdgovor = .success(Pomoc.seznamPodatki(l)) }
 
     // Zapah samo v sinhronih pomoznih funkcijah (NSLock v async funkciji je v Swift 6 napaka).
-    private func zabelezi(_ klub: Int?, kljuc: Bool = false, seznam: Bool = false, paket: [SkenVnos]? = nil, deviceId: String? = nil, spletni: String? = nil) {
+    private func zabelezi(_ klub: Int?, kljuc: Bool = false, seznam: Bool = false, dogodek: Int? = nil, dogodki: Bool = false, paket: [SkenVnos]? = nil, deviceId: String? = nil, spletni: String? = nil) {
         zapah.lock()
         defer { zapah.unlock() }
         klubIdji.append(klub)
         if kljuc { kljucKlici += 1 }
         if seznam { seznamKlici += 1 }
+        if let dogodek { seznamDogodki.append(dogodek) }
+        if dogodki { dogodkiKlici += 1 }
         if let paket { paketi.append(paket) }
         if let deviceId { deviceIdji.append(deviceId) }
         if let spletni { spletniKlici.append(spletni) }
     }
 
-    func dogodki(token: String, klubId: Int?) async throws -> [SkenDogodek] { zabelezi(klubId); return try dogodkiOdgovor.get() }
+    func dogodki(token: String, klubId: Int?) async throws -> [SkenDogodek] {
+        zabelezi(klubId, dogodki: true)
+        return try dogodkiOdgovor.get()
+    }
     func kljuc(token: String, klubId: Int?) async throws -> ScanKey {
         zabelezi(klubId, kljuc: true)
         return try kljucOdgovor.get()
     }
-    func seznam(token: String, klubId: Int?, dogodekId: Int) async throws -> Data {
-        zabelezi(klubId, seznam: true)
+    func seznam(token: String, klubId: Int?, dogodekId: Int, sveze: Bool) async throws -> Data {
+        zabelezi(klubId, seznam: true, dogodek: dogodekId)
+        zabeleziSveze(sveze)
+        let vrata = vrataSeznama
+        if let vrata { await vrata.pocakaj() }
         if zakasnitevSeznama > 0 { await Self.neprekinljivoCakaj(zakasnitevSeznama) }
-        return try seznamOdgovor.get()
+        return try (seznamPoDogodku[dogodekId] ?? seznamOdgovor).get()
     }
     func paket(token: String, klubId: Int?, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult] {
         zabelezi(klubId, paket: vnosi, deviceId: deviceId)
+        let vrata = vrataPaketa
+        if let vrata { await vrata.pocakaj() }
         if zakasnitevPaketa > 0 { await Self.neprekinljivoCakaj(zakasnitevPaketa) }
         return try paketOdgovor(vnosi).get()
     }
@@ -793,7 +1067,7 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
 final class SkenSejaTests: XCTestCase {
     private var mapa: URL!
     private let kljuc = Curve25519.Signing.PrivateKey()
-    private let dogodek = SkenDogodek(id: 42, title: "Noc")
+    private let dogodek = Pomoc.aktivenDogodek(42)
 
     override func setUp() async throws { mapa = Pomoc.zacasnaMapa() }
     override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
@@ -814,12 +1088,22 @@ final class SkenSejaTests: XCTestCase {
 
     private func zdaj() -> Date { Date() }
 
+    /// Caka na POGOJ (ne na cas): gornja meja je samo varovalka pred obvisanjem testa.
+    private func pocakaj(_ pogoj: () -> Bool, rok: Double = 30) async -> Bool {
+        let konec = Date().addingTimeInterval(rok)
+        while !pogoj() && Date() < konec { try? await Task.sleep(nanoseconds: 2_000_000) }
+        return pogoj()
+    }
+
+    /// Neposlani vnosi, kot jih vidi nov zagon aplikacije (vsak vnos je datoteka na disku).
+    private func vnosiNaDisku() -> [SkenVnos] { SkenVrsta(disk: SkenDisk(mapa: mapa)).vnosi }
+
     func testZelenoTakojInDvojniSkenJeRdece() async {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1, isVip: true, tableLabel: "T1", packageName: "Jameson", holderUsername: "ana")])
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }   // streznik ni dosegljiv
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         XCTAssertEqual(seja.priprava, .pripravljen)
 
         let qr = Pomoc.koda(kljuc, serial: s1, event: 42)
@@ -844,7 +1128,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "already_used", usedAt: "2026-10-01T20:59:00.000Z") }) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .rdece)
         XCTAssertEqual(p.naslov, String(localized: "ALREADY SCANNED"))
@@ -858,7 +1142,7 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let qr = Pomoc.koda(kljuc, serial: s1, event: 42)
         let p = await seja.skeniraj(qr)
         XCTAssertEqual(p.barva, .zeleno)
@@ -876,7 +1160,7 @@ final class SkenSejaTests: XCTestCase {
         var odgovor = "ok"
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: odgovor, usedAt: nil) }) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let rdeci = ["already_used", "transferred", "refunded", "void", "unpaid", "invalid", "wrong_club", "unknown"]
         for r in rdeci {
             odgovor = r
@@ -897,7 +1181,7 @@ final class SkenSejaTests: XCTestCase {
         var odgovor = "unpaid"
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: odgovor) }) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let qr = Pomoc.koda(kljuc, serial: s1, event: 42)
         let prvi = await seja.skeniraj(qr)
         XCTAssertEqual(prvi.barva, .rdece)
@@ -914,7 +1198,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
         a.zakasnitevPaketa = 10
         let seja = naredi(a, rok: 0.2)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let zacetek = Date()
         let p1 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         let p2 = await seja.skeniraj(Pomoc.koda(kljuc, serial: s2, event: 42))
@@ -942,7 +1226,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         a.paketOdgovor = { _ in .failure(APIError.requestFailed(503, "")) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .zeleno)
         XCTAssertEqual(seja.cakajoce, 1)
@@ -954,7 +1238,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, result: "error") }) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .zeleno)
         XCTAssertEqual(seja.cakajoce, 1)
@@ -965,7 +1249,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [])
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         seja.omrezjeSpremenjeno(gor: false)
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
         XCTAssertEqual(p.barva, .zeleno)
@@ -975,7 +1259,7 @@ final class SkenSejaTests: XCTestCase {
     func testNiNaSeznamuZPovezavoOdlociStreznik() async {
         let a = api(vstopnice: [])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let kupljena = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))   // streznik: ok
         XCTAssertEqual(kupljena.barva, .zeleno)
         XCTAssertNil(kupljena.opomba)                                                              // streznik je potrdil, opombe ni
@@ -988,7 +1272,7 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let qr = Pomoc.koda(kljuc, serial: s1, event: 42)
         _ = await seja.skeniraj(qr)
         await seja.poslji()
@@ -1008,7 +1292,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         seja.omrezjeSpremenjeno(gor: false)
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))   // brez povezave: zeleno, gost gre noter
         XCTAssertEqual(p.barva, .zeleno)
@@ -1032,7 +1316,7 @@ final class SkenSejaTests: XCTestCase {
             padi ? .failure(URLError(.notConnectedToInternet)) : .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") })
         }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         await seja.poslji()
         await seja.pocakajPosiljanje()
@@ -1054,7 +1338,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         a.paketOdgovor = { _ in .failure(URLError(.cancelled)) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .zeleno)
         XCTAssertTrue(seja.povezava)
@@ -1065,15 +1349,16 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let prva = naredi(a)
-        await prva.odpri(dogodek)                 // prenese in shrani
+        await prva.naloziDogodke()                 // prenese in shrani
         XCTAssertNotNil(prva.zadnjiPrenos)
 
         let brez = api(vstopnice: [])
         brez.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
         brez.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
         brez.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        brez.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))   // aktivni dogodki iz shranjenega seznama in ure telefona
         let druga = naredi(brez)                    // nova seja = ponovni zagon aplikacije, brez povezave
-        await druga.odpri(dogodek)
+        await druga.naloziDogodke()
         XCTAssertEqual(druga.priprava, .pripravljen)
         XCTAssertFalse(druga.povezava)
         let p = await druga.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
@@ -1082,7 +1367,7 @@ final class SkenSejaTests: XCTestCase {
 
         // vrsta in lokalni skeni prezivijo zaprtje aplikacije
         let tretja = naredi(brez)
-        await tretja.odpri(dogodek)
+        await tretja.naloziDogodke()
         XCTAssertEqual(tretja.cakajoce, 1)
         let ponovno = await tretja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(ponovno.barva, .rdece)
@@ -1093,7 +1378,7 @@ final class SkenSejaTests: XCTestCase {
         a.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
         a.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         guard case .manjkaPodatkov = seja.priprava else { return XCTFail("pricakovan manjkaPodatkov, dobljeno \(seja.priprava)") }
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
         XCTAssertEqual(p.barva, .rumeno)
@@ -1105,7 +1390,7 @@ final class SkenSejaTests: XCTestCase {
     func testKljucJeGlobalenInDelaZaDrugDogodekBrezSeznama() async {
         let a = api(vstopnice: [])
         let prva = naredi(a)
-        await prva.odpri(dogodek)
+        await prva.naloziDogodke()
         XCTAssertTrue(FileManager.default.fileExists(atPath: mapa.appendingPathComponent(SkenDisk.imeKljuca).path))
 
         let brez = api(vstopnice: [])
@@ -1113,12 +1398,14 @@ final class SkenSejaTests: XCTestCase {
         brez.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
         brez.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let druga = naredi(brez)
-        await druga.odpri(SkenDogodek(id: 77, title: "Drug dogodek"))   // seznama za ta dogodek ni, kljuc pa je
+        brez.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(77, title: "Drug dogodek")])
+        await druga.naloziDogodke()   // seznama za ta dogodek ni, kljuc pa je
         XCTAssertEqual(druga.priprava, .pripravljen)
         let dobra = await druga.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 77))
         XCTAssertEqual(dobra.barva, .zeleno)
         let napacenDogodek = await druga.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42))
         XCTAssertEqual(napacenDogodek.barva, .rdece)
+        XCTAssertEqual(napacenDogodek.naslov, "NOT TODAY'S EVENT")   // dogodek 42 ni med aktivnimi
         let ponaredek = await druga.skeniraj(Pomoc.koda(Curve25519.Signing.PrivateKey(), serial: Pomoc.serial(), event: 77))
         XCTAssertEqual(ponaredek.barva, .rdece)
     }
@@ -1126,7 +1413,7 @@ final class SkenSejaTests: XCTestCase {
     func testStaraKodaBrezPovezaveJeRumenaSPovezavoGreNaStreznik() async {
         let a = api(vstopnice: [])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let v1 = Pomoc.kodaV1(serial: Pomoc.serial(), event: 42)
 
         // s povezavo: obstojec POST /scan
@@ -1157,7 +1444,7 @@ final class SkenSejaTests: XCTestCase {
     func testSpustiRocnoSamoZaV1ZaTaDogodek() async {
         let a = api(vstopnice: [])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         XCTAssertEqual(seja.spustiRocno(qr: Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 42)).barva, .rdece)   // v2
         XCTAssertEqual(seja.spustiRocno(qr: "abc.def").barva, .rdece)
         XCTAssertEqual(seja.spustiRocno(qr: "e30.0123456789abcdef").barva, .rdece)
@@ -1172,7 +1459,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [])
         a.zakasnitevSpletnega = 10
         let seja = naredi(a, rokSpletni: 0.2)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let zacetek = Date()
         let p = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
         XCTAssertTrue(Date().timeIntervalSince(zacetek) < 3)
@@ -1186,7 +1473,7 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = LazniApi(kljuc: Pomoc.scanKey(kljuc), seznam: ScanList(eventId: 42, kid: "kid1", tickets: [], transferredSerials: [s1]))
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let prenesena = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         let drugDogodek = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 5))
         XCTAssertEqual(prenesena.barva, .rdece)
@@ -1198,7 +1485,7 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1, status: "unpaid")])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .rdece)
         XCTAssertEqual(p.naslov, String(localized: "NOT PAID"))
@@ -1210,12 +1497,12 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         // streznik zamenja skrivnost -> nov par in nov kid
         let novi = Curve25519.Signing.PrivateKey()
         a.kljucOdgovor = .success(Pomoc.scanKey(novi, kid: "kid2"))
         a.nastaviSeznam(ScanList(eventId: 42, kid: "kid2", tickets: [ScanListTicket(serial: s1)]))
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         let noviSken = await seja.skeniraj(Pomoc.koda(novi, serial: s1, event: 42, kid: "kid2"))
         XCTAssertEqual(noviSken.barva, .zeleno)
         // koda s starim kljucem (drug kid) ni ponaredek, ampak zastarela: rumeno, ne rdece (M10)
@@ -1230,10 +1517,10 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         a.kljucOdgovor = .failure(URLError(.timedOut))
         a.nastaviSeznam(ScanList(eventId: 42, kid: "kid2", tickets: [ScanListTicket(serial: s1)]))
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         a.spletniOdgovor = .failure(URLError(.timedOut))   // tudi spletni sken ne uspe
         let novi = Curve25519.Signing.PrivateKey()
         let koda = Pomoc.koda(novi, serial: s1, event: 42, kid: "kid2")
@@ -1255,32 +1542,668 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [])
         a.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
         let seja = naredi(a, kljucOdmik: 20)
-        await seja.odpri(dogodek)       // en poskus
+        await seja.naloziDogodke()       // en poskus
         _ = await seja.osveziKljuc()
         _ = await seja.osveziKljuc()
         XCTAssertEqual(a.kljucKlici, 1)
     }
 
-    func testDogodkiSeShranijoInPonujajoPravePrihajajoce() async {
+    func testAktivniDogodkiIzSeznamaInShranjenSeznamBrezPovezave() async {
         let a = api(vstopnice: [])
         let zdaj = Date()
-        func iso(_ ure: Double) -> String { SkenCas.niz(zdaj.addingTimeInterval(ure * 3600)) }
+        func ob(_ ure: Double) -> Date { zdaj.addingTimeInterval(ure * 3600) }
         a.dogodkiOdgovor = .success([
-            SkenDogodek(id: 1, title: "Jutri", startAt: iso(24)),
-            SkenDogodek(id: 2, title: "Osnutek", startAt: iso(5), status: "draft"),
-            SkenDogodek(id: 3, title: "Davno", startAt: iso(-72), endAt: iso(-66), status: "published", lifecycle: "ended"),
-            SkenDogodek(id: 4, title: "Zdaj", startAt: iso(-2), status: "published", lifecycle: "live"),
+            Pomoc.dogodek(1, title: "Jutri", zacetek: ob(24)),                              // okno se odpre cez 12 h
+            Pomoc.dogodek(2, title: "Osnutek", zacetek: ob(5), status: "draft"),            // neobjavljen
+            Pomoc.dogodek(3, title: "Davno", zacetek: ob(-72), konec: ob(-66)),             // okno zaprto 60 h nazaj
+            Pomoc.dogodek(4, title: "Zdaj", zacetek: ob(-2)),
+            Pomoc.dogodek(5, title: "Pozno zvecer", zacetek: ob(10)),                       // okno se je odprlo pred 2 h
+            Pomoc.dogodek(6, title: "Pojutrisnjem", zacetek: ob(48)),
         ])
         let prva = naredi(a)
         await prva.naloziDogodke()
-        XCTAssertEqual(prva.ponujeniDogodki.map { $0.id }, [4, 1])
+        XCTAssertEqual(prva.aktivni.map { $0.id }, [4, 5])
+        XCTAssertEqual(prva.naslednji?.id, 1)   // naslednje odprtje: dogodek 1, cez 12 h
+        XCTAssertEqual(prva.priprava, .pripravljen)
 
         let brez = api(vstopnice: [])
         brez.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
         let druga = naredi(brez)
-        await druga.naloziDogodke()   // brez povezave: shranjen seznam
-        XCTAssertEqual(druga.ponujeniDogodki.map { $0.id }, [4, 1])
+        await druga.naloziDogodke()   // brez povezave: shranjen seznam dogodkov in ura telefona
+        XCTAssertEqual(druga.aktivni.map { $0.id }, [4, 5])
+        XCTAssertEqual(druga.naslednji?.id, 1)
         XCTAssertNil(druga.dogodkiNapaka)
+    }
+
+    /// Brez shranjenega seznama in brez povezave ni aktivnih dogodkov: napaka je vidna, zaslon ne pokaze »ni dogodka« kot dejstva.
+    func testBrezSeznamaDogodkovInBrezPovezaveJeNapaka() async {
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        XCTAssertTrue(seja.aktivni.isEmpty)
+        XCTAssertNotNil(seja.dogodkiNapaka)
+        XCTAssertTrue(seja.dogodkiNalozeni)
+        XCTAssertEqual(seja.priprava, .brezDogodka)
+    }
+
+    // MARK: Brez izbire dogodka (8. 10. 2026)
+
+    /// Skener je pripravljen takoj po nalaganju: brez izbire dogodka, dogodek pove koda.
+    func testSkenerBrezIzbireDogodka() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1, holderUsername: "ana")])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        XCTAssertEqual(seja.priprava, .pripravljen)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertEqual(p.podnaslov, "ana")
+    }
+
+    /// Dva dogodka hkrati: vsak ima svoj seznam, svoje lokalne skene in svoj vnos v vrsti; koda pove, za katerega je.
+    func testDvaAktivnaDogodkaKodaPoveZaKaterega() async {
+        let sa = Pomoc.serial(), sb = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: sa, holderUsername: "ana")])
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42, title: "Sobota"), Pomoc.aktivenDogodek(43, title: "After")])
+        a.seznamPoDogodku[43] = .success(Pomoc.seznamPodatki(ScanList(eventId: 43, kid: "kid1", tickets: [
+            ScanListTicket(serial: sb, isVip: true, tableLabel: "T9", holderUsername: "bojan")])))
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        XCTAssertEqual(Set(seja.aktivni.map { $0.id }), [42, 43])
+        XCTAssertEqual(Set(a.seznamDogodki), [42, 43])   // seznam VSAKEGA aktivnega dogodka
+
+        let pa = await seja.skeniraj(Pomoc.koda(kljuc, serial: sa, event: 42))
+        XCTAssertEqual(pa.barva, .zeleno)
+        XCTAssertEqual(pa.podnaslov, "ana")
+        let pb = await seja.skeniraj(Pomoc.koda(kljuc, serial: sb, event: 43))
+        XCTAssertEqual(pb.barva, .zeleno)
+        XCTAssertEqual(pb.podnaslov, "bojan")
+        XCTAssertNotNil(pb.vip)
+        // vstopnica enega dogodka ni na seznamu drugega, a koda nosi svoj dogodek -> zeleno z opombo, ne »napacen dogodek«
+        let pc = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 43))
+        XCTAssertEqual(pc.barva, .zeleno)
+        XCTAssertNotNil(pc.opomba)
+        // ponovni sken je rdec samo v svojem dogodku
+        let ponovno = await seja.skeniraj(Pomoc.koda(kljuc, serial: sa, event: 42))
+        XCTAssertEqual(ponovno.barva, .rdece)
+        XCTAssertEqual(ponovno.naslov, "ALREADY SCANNED")
+        XCTAssertEqual(seja.cakajoce, 3)
+        XCTAssertEqual(Set(vnosiNaDisku().map { $0.eventId }), [42, 43])
+        XCTAssertEqual(vnosiNaDisku().first { $0.serial == sb }?.eventId, 43)
+
+        // lokalni skeni so na disku po dogodku
+        let disk = SkenDisk(mapa: mapa)
+        XCTAssertEqual(disk.preberi(SkenLokalniSkeni.self, SkenDisk.imeLokalnih(klub: 1, dogodek: 42))?.casi.keys.sorted(), [sa])
+        XCTAssertEqual(disk.preberi(SkenLokalniSkeni.self, SkenDisk.imeLokalnih(klub: 1, dogodek: 43))?.casi.count, 2)
+    }
+
+    /// Koda za dogodek kluba, ki je izven okna, ali za neznan dogodek: rdece, nov razlog, brez omrezja.
+    func testKodaZaDogodekIzvenOknaJeRdecaBrezOmrezja() async {
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([
+            Pomoc.aktivenDogodek(42),
+            Pomoc.dogodek(50, title: "Cez teden", zacetek: Date().addingTimeInterval(30 * 3600)),   // okno se odpre cez 18 h
+            Pomoc.dogodek(51, title: "Prejsnji teden", zacetek: Date().addingTimeInterval(-200 * 3600)),
+        ])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        let omrezniKlici = a.klubIdji.count
+        for (qr, ime) in [(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 50), "izven okna (prihodnji)"),
+                          (Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 51), "izven okna (pretekli)"),
+                          (Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 999), "neznan dogodek"),
+                          (Pomoc.kodaV1(serial: Pomoc.serial(), event: 50), "v1 izven okna")] {
+            let p = await seja.skeniraj(qr)
+            XCTAssertEqual(p.barva, .rdece, ime)
+            XCTAssertEqual(p.naslov, "NOT TODAY'S EVENT", ime)
+            XCTAssertEqual(p.podnaslov, "This ticket is not for today's event.", ime)
+        }
+        XCTAssertEqual(seja.zavrnjeni, 4)
+        XCTAssertEqual(seja.cakajoce, 0)
+        XCTAssertEqual(a.klubIdji.count, omrezniKlici)   // nobenega klica na streznik
+        // koda, ki je ni mogoce razclenit, ostane »neveljavna«
+        let smeti = await seja.skeniraj("https://example.com")
+        XCTAssertEqual(smeti.naslov, "INVALID CODE")
+    }
+
+    /// Brez aktivnega dogodka: skener je zaprt, seja pove, kdaj se odpre naslednji, vsaka koda je rdeca.
+    func testBrezAktivnegaDogodkaJeNaslednjiInKodeSoRdece() async {
+        let a = api(vstopnice: [])
+        let odpre = Date().addingTimeInterval(30 * 3600)
+        a.dogodkiOdgovor = .success([
+            Pomoc.dogodek(7, title: "Pojutrisnjem", zacetek: Date().addingTimeInterval(60 * 3600)),
+            Pomoc.dogodek(6, title: "Jutri", zacetek: odpre),
+            Pomoc.dogodek(5, title: "Osnutek", zacetek: Date().addingTimeInterval(20 * 3600), status: "draft"),
+        ])
+        let seja = naredi(a)
+        XCTAssertEqual(seja.priprava, .nalaga)
+        await seja.naloziDogodke()
+        XCTAssertTrue(seja.aktivni.isEmpty)
+        XCTAssertEqual(seja.priprava, .brezDogodka)
+        XCTAssertEqual(seja.naslednji?.id, 6)
+        let od = SkenOkno.odprtoOd(seja.naslednji!)
+        XCTAssertEqual(od?.timeIntervalSince1970 ?? 0, odpre.addingTimeInterval(-12 * 3600).timeIntervalSince1970, accuracy: 0.01)
+        XCTAssertTrue(a.seznamDogodki.isEmpty)    // seznamov izven okna ne prenasamo
+        XCTAssertEqual(a.kljucKlici, 0)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 6))
+        XCTAssertEqual(p.naslov, "NOT TODAY'S EVENT")
+    }
+
+    /// Dogodek, ki med sejo vstopi v okno, se doda (stanje + prenos seznama); tisti, ki izstopi, se odstrani, podatki na disku ostanejo.
+    func testDogodekVstopiInIzstopiIzOknaMedSejo() async {
+        let s1 = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: s1)])
+        let zdaj = Date()
+        a.dogodkiOdgovor = .success([
+            Pomoc.aktivenDogodek(42),
+            Pomoc.dogodek(43, title: "Pozneje", zacetek: zdaj.addingTimeInterval(13 * 3600)),   // okno se odpre cez 1 h
+        ])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        XCTAssertEqual(seja.naslednji?.id, 43)
+        XCTAssertEqual(a.seznamDogodki, [42])
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+
+        // ura telefona se premakne za 90 min: 43 vstopi v okno
+        seja.uskladiAktivne(zdaj: zdaj.addingTimeInterval(5400))
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42, 43])
+        XCTAssertNil(seja.naslednji)
+        XCTAssertNil(seja.zadnjiPrenos)   // za 43 seznam se ni prenesen
+        await seja.osveziSeznam(43)
+        XCTAssertEqual(a.seznamDogodki, [42, 43])
+        XCTAssertNotNil(seja.zadnjiPrenos)
+
+        // ... in cez 40 h oba izstopita (42: konec +12 h +6 h; 43: +13 h +12 h +6 h)
+        seja.uskladiAktivne(zdaj: zdaj.addingTimeInterval(40 * 3600))
+        XCTAssertTrue(seja.aktivni.isEmpty)
+        XCTAssertEqual(seja.priprava, .brezDogodka)
+        XCTAssertNil(seja.zadnjiPrenos)
+        let imena = Set(SkenDisk(mapa: mapa).imena())
+        XCTAssertTrue(imena.contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        XCTAssertTrue(imena.contains(SkenDisk.imeLokalnih(klub: 1, dogodek: 42)))
+
+        // ura se vrne: dogodek 42 je spet aktiven in lokalni skeni so z diska nazaj (ista koda je spet rdeca)
+        seja.uskladiAktivne(zdaj: zdaj)
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        let ponovno = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(ponovno.barva, .rdece)
+        XCTAssertEqual(ponovno.naslov, "ALREADY SCANNED")
+    }
+
+    /// Dogodek, ki je vstopil v okno med dvema tikoma, je ob skenu ze aktiven (sken sam preracuna mnozico). Ura je podtaknjena.
+    func testSkenPreracunaMnozicoAktivnih() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([
+            Pomoc.dogodek(42, zacetek: t0.addingTimeInterval(-3600), konec: t0.addingTimeInterval(5 * 3600)),
+            Pomoc.dogodek(43, title: "Skoraj", zacetek: t0.addingTimeInterval(13 * 3600)),   // okno se odpre cez 1 h
+        ])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        let prej = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 43))
+        XCTAssertEqual(prej.naslov, "NOT TODAY'S EVENT")
+        ura.zdaj = t0.addingTimeInterval(3600 - 1)
+        let tikPrej = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 43))
+        XCTAssertEqual(tikPrej.naslov, "NOT TODAY'S EVENT")   // sekundo pred odprtjem
+        ura.zdaj = t0.addingTimeInterval(3600)                // tocno 12 h pred zacetkom
+        let potem = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 43))
+        XCTAssertEqual(potem.barva, .zeleno)   // seznama se ni, kljuc pa je: zeleno z opombo (streznik preveri)
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42, 43])
+    }
+
+    /// Tik (vsako sekundo): dogodek, ki vstopi v okno, sam dobi stanje, a prvi prenos seznama cez 0-30 s (razprsitev); brez izbire dogodka.
+    func testTikSamDodaDogodekKiVstopiVOknoZRazprsitvijo() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([
+            Pomoc.dogodek(42, zacetek: t0.addingTimeInterval(-3600), konec: t0.addingTimeInterval(5 * 3600)),
+            Pomoc.dogodek(43, title: "Skoraj", zacetek: t0.addingTimeInterval(13 * 3600)),   // okno se odpre cez 1 h
+        ])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        XCTAssertEqual(a.seznamDogodki, [42])          // ob odprtju skenerja gre prenos takoj
+
+        ura.zdaj = t0.addingTimeInterval(3600)
+        seja.tik()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42, 43])
+        let naslednja = seja.naslednjaOsvezitevSeznama(dogodek: 43)
+        XCTAssertNotNil(naslednja)
+        XCTAssertTrue((naslednja ?? .distantPast) >= ura.zdaj && (naslednja ?? .distantFuture) <= ura.zdaj.addingTimeInterval(30))
+        XCTAssertFalse(a.seznamDogodki.contains(43))   // tik ni takoj sprozil prenosa
+
+        ura.zdaj = t0.addingTimeInterval(3600 + 31)
+        seja.tik()
+        let prenesen = await pocakaj { a.seznamDogodki.contains(43) }
+        XCTAssertTrue(prenesen)                         // zdaj je prenos zapadel
+    }
+
+    /// Dogodek, ki ga ustvari odprtje skenerja ali odgovor strezniga (ne tik), prenese seznam takoj.
+    func testStanjeIzSkenaAliOdgovoraImaPrenosTakoj() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([Pomoc.dogodek(42, zacetek: t0.addingTimeInterval(-3600)),
+                                     Pomoc.dogodek(43, zacetek: t0.addingTimeInterval(13 * 3600))])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        ura.zdaj = t0.addingTimeInterval(3700)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 43))   // sken ustvari stanje
+        XCTAssertEqual(seja.naslednjaOsvezitevSeznama(dogodek: 43), .distantPast)
+    }
+
+    /// Seznam z diska velja takoj ob hladnem zagonu brez povezave: koda, ki je na seznamu `used`, je rdeca.
+    func testSeznamZDiskaVelaPriHladnemZagonu() async {
+        let sUsed = Pomoc.serial(), sOk = Pomoc.serial()
+        let a = api(vstopnice: [ScanListTicket(serial: sUsed, status: "used", usedAt: "2026-10-08T21:15:00.000Z"), ScanListTicket(serial: sOk)])
+        await naredi(a).naloziDogodke()
+        let brez = api(vstopnice: [])
+        brez.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        brez.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
+        brez.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
+        let seja = naredi(brez)
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        XCTAssertNotNil(seja.zadnjiPrenos)
+        let rdece = await seja.skeniraj(Pomoc.koda(kljuc, serial: sUsed, event: 42))
+        XCTAssertEqual(rdece.barva, .rdece)
+        XCTAssertEqual(rdece.naslov, "ALREADY SCANNED")
+        let zeleno = await seja.skeniraj(Pomoc.koda(kljuc, serial: sOk, event: 42))
+        XCTAssertEqual(zeleno.barva, .zeleno)
+    }
+
+    /// `zadnjiPrenos` je prenos NAJSTAREJSEGA med aktivnimi; dokler kateri ni prenesen, ga ni.
+    func testZadnjiPrenosJeNajstarejsiMedAktivnimi() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42), Pomoc.aktivenDogodek(43)])
+        a.seznamPoDogodku[43] = .failure(URLError(.notConnectedToInternet))
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertNil(seja.zadnjiPrenos)             // 43 se ni bil prenesen
+        a.seznamPoDogodku[43] = .success(Pomoc.seznamPodatki(ScanList(eventId: 43, kid: "kid1")))
+        ura.zdaj = t0.addingTimeInterval(60)
+        await seja.osveziSeznam(43)
+        XCTAssertEqual(seja.zadnjiPrenos, t0)       // najstarejsi je prenos dogodka 42
+    }
+
+    /// Periodicna osvezitev seznama dogodkov: novi dogodek postane aktiven, preklican/neobjavljen preneha biti.
+    func testOsvezitevSeznamaDogodkovSpremeniAktivne() async {
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42), Pomoc.aktivenDogodek(44, title: "Dodan")])
+        await seja.osveziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42, 44])
+        a.dogodkiOdgovor = .success([Pomoc.dogodek(44, title: "Dodan", zacetek: Date().addingTimeInterval(-3600), status: "draft")])
+        await seja.osveziDogodke()
+        XCTAssertTrue(seja.aktivni.isEmpty)
+        // neuspela osvezitev ohrani stari seznam
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42)])
+        await seja.osveziDogodke()
+        a.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        await seja.osveziDogodke()
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        XCTAssertNil(seja.dogodkiNapaka)
+    }
+
+    /// Rocno spustitev kode v1 odloca dogodek iz kode: vnos nosi svoj dogodek, izven okna je zavrnjeno.
+    func testSpustiRocnoZVecDogodki() async {
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42), Pomoc.aktivenDogodek(43)])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        let s43 = Pomoc.serial()
+        let p = seja.spustiRocno(qr: Pomoc.kodaV1(serial: s43, event: 43))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertEqual(vnosiNaDisku().map { $0.eventId }, [43])
+        let ponovno = seja.spustiRocno(qr: Pomoc.kodaV1(serial: s43, event: 43))
+        XCTAssertEqual(ponovno.naslov, "ALREADY SCANNED")
+        let izven = seja.spustiRocno(qr: Pomoc.kodaV1(serial: Pomoc.serial(), event: 50))
+        XCTAssertEqual(izven.barva, .rdece)
+        XCTAssertEqual(izven.naslov, "NOT TODAY'S EVENT")
+        XCTAssertEqual(vnosiNaDisku().count, 1)
+        // po sinhronizaciji gre vnos na streznik s svojo kodo
+        await seja.poslji()
+        XCTAssertEqual(a.paketi.flatMap { $0 }.map { $0.eventId }, [43])
+    }
+
+    /// Koda v1 za aktiven dogodek: s povezavo gre na streznik, brez nje je rumeno z ponudbo »Let in« (dosedanji tok).
+    func testKodaV1VOknuGreNaStreznikIzvenOknaNe() async {
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        let vOknu = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
+        XCTAssertEqual(a.spletniKlici.count, 1)
+        XCTAssertEqual(vOknu.barva, .zeleno)   // streznik (laz) odgovori »ok«
+        let izven = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 9))
+        XCTAssertEqual(izven.naslov, "NOT TODAY'S EVENT")
+        XCTAssertEqual(a.spletniKlici.count, 1)   // izven okna streznika ne vprasamo
+    }
+
+    // MARK: Pregled PR #68 (logika)
+
+    /// Odmik ponovnega poskusa GET /business/events: eksponenten 30 s ... 300 s z jitterjem.
+    func testOdmikDogodkovPoNapakahJeEksponentenZJitterjem() {
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(1, jitter: 1), 30)
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(2, jitter: 1), 60)
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(3, jitter: 1), 120)
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(4, jitter: 1), 240)
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(5, jitter: 1), 300)
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(40, jitter: 1.25), 300)   // zgornja meja velja tudi z jitterjem
+        XCTAssertEqual(SkenSeja.odmikDogodkovPoNapakah(1, jitter: 0.75), 22.5)
+        for n in 1...8 {
+            let o = SkenSeja.odmikDogodkovPoNapakah(n)
+            XCTAssertTrue(o > 0 && o <= 300)
+        }
+    }
+
+    /// Ob zaporednih napakah se seznam dogodkov ne ponavlja na fiksnih 30 s; uspeh vrne redni razmik ~10 min.
+    func testOsvezitevDogodkovOdlagaZBackoffomInSeVrne() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        func odmik() -> Double { seja.osvezitevDogodkovOb.timeIntervalSince(ura.zdaj) }
+        XCTAssertTrue((22.5...37.5).contains(odmik()), "1. napaka: \(odmik())")
+        await seja.osveziDogodke()
+        XCTAssertTrue((45...75).contains(odmik()), "2. napaka: \(odmik())")
+        await seja.osveziDogodke()
+        XCTAssertTrue((90...150).contains(odmik()), "3. napaka: \(odmik())")
+        for _ in 0..<6 { await seja.osveziDogodke() }
+        XCTAssertTrue(odmik() <= 300, "najvec 300 s: \(odmik())")
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42)])
+        await seja.osveziDogodke()
+        XCTAssertTrue((540...660).contains(odmik()), "po uspehu: \(odmik())")
+        a.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        await seja.osveziDogodke()
+        XCTAssertTrue((22.5...37.5).contains(odmik()), "stevec napak se je ponastavil: \(odmik())")
+    }
+
+    /// Vrnitev povezave / aplikacije v ospredje: osvezitve (dogodki, seznami) z jitterjem 0-15 s, ne vse takoj.
+    func testTakojOsveziRazprsiOsvezitve() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        for _ in 0..<20 {
+            seja.takojOsvezi()
+            let seznam = seja.naslednjaOsvezitevSeznama(dogodek: 42) ?? .distantPast
+            XCTAssertTrue(seznam >= t0 && seznam <= t0.addingTimeInterval(15))
+            XCTAssertTrue(seja.osvezitevDogodkovOb >= t0 && seja.osvezitevDogodkovOb <= t0.addingTimeInterval(15))
+        }
+    }
+
+    /// Zavrnjena koda (dogodek ni aktiven) ob povezavi enkrat znova nalozi dogodke (najvec 1x/min); naslednji sken je pravilen.
+    func testRdecaKodaZaradiStarihDogodkovPonovnoNaloziDogodke() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertEqual(a.dogodkiKlici, 1)
+        // klub je med vecerom objavil dogodek 50 (ze v oknu), telefon ga se ne pozna
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42), Pomoc.aktivenDogodek(50, title: "Dodan")])
+        let prva = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 50))
+        XCTAssertEqual(prva.naslov, "NOT TODAY'S EVENT")
+        let nalozeno = await pocakaj { a.dogodkiKlici == 2 && seja.aktivni.count == 2 }
+        XCTAssertTrue(nalozeno)
+        let druga = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 50))
+        XCTAssertEqual(druga.barva, .zeleno)   // naslednji sken je pravilen
+        // nov rdec sken v isti minuti ne sprozi novega nalaganja
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 999))
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 998))
+        for _ in 0..<50 { await Task.yield() }
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(a.dogodkiKlici, 2)
+        // cez minuto spet
+        ura.zdaj = t0.addingTimeInterval(61)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 997))
+        let spet = await pocakaj { a.dogodkiKlici == 3 }
+        XCTAssertTrue(spet)
+        // brez povezave nalaganja ne poskusamo
+        ura.zdaj = t0.addingTimeInterval(200)
+        seja.omrezjeSpremenjeno(gor: false)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 996))
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(a.dogodkiKlici, 3)
+    }
+
+    /// Zavrnjena koda za ZNAN dogodek (izven okna) ne sprozi nalaganja, dokler je seznam dogodkov svez; ko je starejsi od 5 min, ga.
+    func testRdecaKodaZaZnanDogodekNaloziSamoCeJeSeznamStar() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42), Pomoc.dogodek(60, title: "Cez teden", zacetek: t0.addingTimeInterval(100 * 3600))])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertEqual(a.dogodkiKlici, 1)
+        ura.zdaj = t0.addingTimeInterval(120)
+        let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 60))
+        XCTAssertEqual(p.naslov, "NOT TODAY'S EVENT")
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(a.dogodkiKlici, 1)            // znan dogodek, seznam star 2 min: brez klica
+        ura.zdaj = t0.addingTimeInterval(301)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 60))
+        let nalozeno = await pocakaj { a.dogodkiKlici == 2 }
+        XCTAssertTrue(nalozeno)                       // seznam star > 5 min
+    }
+
+    /// Ce nalaganje dogodkov pada, rdeca koda ne klice streznika vsako minuto: velja backoff (30 s ... 300 s).
+    func testRdecaKodaNeBombardiraPadlegaStreznika() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .failure(APIError.requestFailed(400, "Bad request."))   // ne izpad povezave: `povezava` ostane true
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()                  // 1. napaka
+        await seja.osveziDogodke()                  // 2.
+        await seja.osveziDogodke()                  // 3. -> odmik 90-150 s
+        XCTAssertEqual(a.dogodkiKlici, 3)
+        XCTAssertTrue(seja.osvezitevDogodkovOb.timeIntervalSince(t0) >= 90)
+        XCTAssertTrue(seja.povezava)
+        ura.zdaj = t0.addingTimeInterval(70)         // minuta med dvema nalaganjema je mimo, backoff se ni
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 777))   // neznan dogodek
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(a.dogodkiKlici, 3)
+        ura.zdaj = seja.osvezitevDogodkovOb.addingTimeInterval(1)
+        _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: Pomoc.serial(), event: 777))
+        let naslednji = await pocakaj { a.dogodkiKlici == 4 }
+        XCTAssertTrue(naslednji)
+    }
+
+    /// Ura telefona: svez seznam s `generated_at` > 5 min stran od ure telefona (v obe smeri) prizge opozorilo; okna ne popravljamo.
+    func testNapacnaUraTelefonaJeOpozorilo() async {
+        let nic = Date(timeIntervalSince1970: 1_790_000_000)
+        XCTAssertFalse(SkenSeja.jeUraNapacna(generatedAt: SkenCas.niz(nic.addingTimeInterval(-299)), zdaj: nic))
+        XCTAssertFalse(SkenSeja.jeUraNapacna(generatedAt: SkenCas.niz(nic.addingTimeInterval(299)), zdaj: nic))
+        XCTAssertTrue(SkenSeja.jeUraNapacna(generatedAt: SkenCas.niz(nic.addingTimeInterval(-301)), zdaj: nic))
+        XCTAssertTrue(SkenSeja.jeUraNapacna(generatedAt: SkenCas.niz(nic.addingTimeInterval(301)), zdaj: nic))
+        XCTAssertFalse(SkenSeja.jeUraNapacna(generatedAt: "", zdaj: nic))
+        XCTAssertFalse(SkenSeja.jeUraNapacna(generatedAt: "ni datum", zdaj: nic))
+
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        // streznik je na 1 h pred telefonom (telefon je prehiteval)
+        a.nastaviSeznam(ScanList(eventId: 42, generatedAt: SkenCas.niz(t0.addingTimeInterval(-3600)), kid: "kid1"))
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertTrue(seja.uraNapacna)
+        XCTAssertEqual(a.svezeKlici, [false])      // dokler ura ni sumljiva, gre prenos prek predpomnilnika (ETag/304)
+        // ura je se napacna in odgovor nespremenjen: opozorilo ostane, prenos pa gre mimo predpomnilnika
+        await seja.osveziSeznam(42)
+        XCTAssertTrue(seja.uraNapacna)
+        XCTAssertEqual(a.svezeKlici, [false, true])
+        // uporabnik popravi uro (telefon zdaj kaze streznikov cas), vsebina seznama je ENAKA: svez odgovor ugasne opozorilo
+        ura.zdaj = t0.addingTimeInterval(-3600)
+        await seja.osveziSeznam(42)
+        XCTAssertFalse(seja.uraNapacna)
+        XCTAssertEqual(a.svezeKlici, [false, true, true])
+        // opozorila ni vec: naslednji prenos je spet navaden (ETag/304)
+        await seja.osveziSeznam(42)
+        XCTAssertEqual(a.svezeKlici, [false, true, true, false])
+        ura.zdaj = t0
+        // spremenjen svez seznam z ujemajoco uro opozorila ne prizge
+        a.nastaviSeznam(ScanList(eventId: 42, generatedAt: SkenCas.niz(t0), kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial())]))
+        await seja.osveziSeznam(42)
+        XCTAssertFalse(seja.uraNapacna)
+        // telefon zaostaja: streznikov cas je v prihodnosti
+        a.nastaviSeznam(ScanList(eventId: 42, generatedAt: SkenCas.niz(t0.addingTimeInterval(1800)), kid: "kid1"))
+        await seja.osveziSeznam(42)
+        XCTAssertTrue(seja.uraNapacna)
+        // okna ne popravljamo: aktivni dogodek ostane aktiven po telefonovi uri
+        XCTAssertEqual(seja.aktivni.map { $0.id }, [42])
+        // dogodek izstopi: opozorila ni (nima vec kaj opozarjati)
+        seja.uskladiAktivne(zdaj: t0.addingTimeInterval(40 * 3600))
+        XCTAssertFalse(seja.uraNapacna)
+    }
+
+    /// Zaslon brez dogodka pokaze, kdaj je bil seznam dogodkov osvezen: ob prenosu, ob hladnem zagonu pa iz datoteke na disku.
+    func testCasOsvezitveSeznamaDogodkov() async {
+        let t0 = Date(timeIntervalSince1970: 1_790_000_000)
+        let a = api(vstopnice: [])
+        let seja = naredi(a)
+        seja.ura = { t0 }
+        XCTAssertNil(seja.dogodkiPosodobljeni)
+        await seja.naloziDogodke()
+        XCTAssertEqual(seja.dogodkiPosodobljeni, t0)
+
+        let brez = api(vstopnice: [])
+        brez.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        let druga = naredi(brez)
+        await druga.naloziDogodke()
+        XCTAssertNotNil(druga.dogodkiPosodobljeni)   // cas zapisa datoteke
+        XCTAssertTrue(abs((druga.dogodkiPosodobljeni ?? .distantPast).timeIntervalSinceNow) < 120)
+    }
+
+    /// Koda v1: event_id ni podpisan, zato lokalni skeni VSEH aktivnih dogodkov veljajo kot dokaz »ze skenirano«.
+    func testKodaV1JeRdecaCeJeBilaSkeniranaPodDrugimAktivnimDogodkom() async {
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42), Pomoc.aktivenDogodek(43)])
+        let seja = naredi(a)
+        await seja.naloziDogodke()
+        let s = Pomoc.serial()
+        XCTAssertEqual(seja.spustiRocno(qr: Pomoc.kodaV1(serial: s, event: 42)).barva, .zeleno)
+        let p = await seja.skeniraj(Pomoc.kodaV1(serial: s, event: 43))
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertEqual(p.naslov, "ALREADY SCANNED")
+        XCTAssertTrue(a.spletniKlici.isEmpty)   // odlocitev je lokalna
+        XCTAssertEqual(seja.spustiRocno(qr: Pomoc.kodaV1(serial: s, event: 43)).naslov, "ALREADY SCANNED")
+        XCTAssertEqual(vnosiNaDisku().count, 1)
+    }
+
+    /// Dogodek izstopi iz okna, medtem ko sken caka na streznik: lokalni zapis (zeleno) ne izgine, zavrnitev ga pobrise z diska.
+    func testDogodekIzstopiMedCakanjemNaStreznik() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        for streznikPraviOk in [true, false] {
+            let s1 = Pomoc.serial()
+            let a = api(vstopnice: [ScanListTicket(serial: s1)])
+            a.dogodkiOdgovor = .success([Pomoc.dogodek(42, zacetek: t0.addingTimeInterval(-3600), konec: t0.addingTimeInterval(5 * 3600))])
+            if !streznikPraviOk {
+                a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "already_used") }) }
+            }
+            let vrata = Vrata()
+            a.vrataPaketa = vrata
+            let seja = naredi(a, rok: 30)
+            seja.ura = { ura.zdaj }
+            await seja.naloziDogodke()
+            let sken = Task { await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42)) }
+            let poslano = await pocakaj { a.paketi.count == 1 }
+            XCTAssertTrue(poslano)
+            seja.uskladiAktivne(zdaj: t0.addingTimeInterval(40 * 3600))   // dogodek izstopi iz okna
+            XCTAssertTrue(seja.aktivni.isEmpty)
+            vrata.odpri()
+            let p = await sken.value
+            let lokalni = SkenDisk(mapa: mapa).preberi(SkenLokalniSkeni.self, SkenDisk.imeLokalnih(klub: 1, dogodek: 42))?.casi ?? [:]
+            if streznikPraviOk {
+                XCTAssertEqual(p.barva, .zeleno)
+                XCTAssertNotNil(lokalni[s1], "lokalni zapis zelenega skena mora ostati")
+            } else {
+                XCTAssertEqual(p.barva, .rdece)
+                XCTAssertNil(lokalni[s1], "strezniska zavrnitev pobrise lokalni zapis tudi za izstopil dogodek")
+            }
+            try? FileManager.default.removeItem(at: mapa)
+            try? FileManager.default.createDirectory(at: mapa, withIntermediateDirectories: true)
+        }
+    }
+
+    /// Vrsta na disku iz prejsnje razlicice (vnos za dogodek, ki ni vec / se ni aktiven) se po zagonu poslje.
+    func testObstojecaVrstaNaDiskuSePosljeBrezAktivnegaDogodka() async {
+        let serial = Pomoc.serial()
+        let id = UUID().uuidString.lowercased()
+        let json = #"{"clientScanId":"\#(id)","qr":"o2.x.y","serial":"\#(serial)","eventId":50,"klubId":1,"uporabnikId":7,"scannedAt":780000000}"#
+        SkenDisk(mapa: mapa).podmapa(SkenVrsta.mapaVnosov).zapisiSurovo(Data(json.utf8), id + ".json")
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([])    // nobenega aktivnega dogodka
+        let seja = naredi(a)
+        XCTAssertEqual(seja.cakajoce, 1)
+        await seja.naloziDogodke()
+        XCTAssertTrue(seja.aktivni.isEmpty)
+        await seja.poslji()
+        await seja.pocakajPosiljanje()
+        XCTAssertEqual(a.paketi.flatMap { $0 }.map { $0.clientScanId }, [id])
+        XCTAssertEqual(a.paketi.flatMap { $0 }.first?.eventId, 50)
+        XCTAssertEqual(seja.cakajoce, 0)
+    }
+
+    /// Dogodek izstopi in znova vstopi, medtem ko stari prenos seznama se visi: stari rezultat ne sme odkleniti oznake novega vstopa.
+    func testZaostaliPrenosStaregaVstopaNeOdklenePrenosaNovega() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = api(vstopnice: [])
+        a.dogodkiOdgovor = .success([Pomoc.dogodek(42, zacetek: t0.addingTimeInterval(-3600), konec: t0.addingTimeInterval(5 * 3600))])
+        let seja = naredi(a)
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
+        XCTAssertEqual(a.seznamKlici, 1)
+
+        let staraVrata = Vrata()
+        a.vrataSeznama = staraVrata
+        let stari = Task { await seja.osveziSeznam(42) }               // stari vstop: prenos visi
+        let zacet = await pocakaj { a.seznamKlici == 2 }
+        XCTAssertTrue(zacet)
+        seja.uskladiAktivne(zdaj: t0.addingTimeInterval(40 * 3600))    // izstop
+        seja.uskladiAktivne(zdaj: t0)                                  // nov vstop
+        let novaVrata = Vrata()
+        a.vrataSeznama = novaVrata
+        let novi = Task { await seja.osveziSeznam(42) }                // nov vstop: prenos visi
+        let zacet2 = await pocakaj { a.seznamKlici == 3 }
+        XCTAssertTrue(zacet2)
+
+        staraVrata.odpri()
+        await stari.value                                              // stari prenos konca: njegov defer ne sme posegati v nov vstop
+        let cetrti = Task { await seja.osveziSeznam(42) }              // nov prenos se vedno tece -> ne sme se zagnati se enkrat
+        for _ in 0..<50 { await Task.yield() }
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(a.seznamKlici, 3)
+        novaVrata.odpri()                                              // sele zdaj, da test ob napaki ne obvisi
+        await cetrti.value
+        await novi.value
+        XCTAssertNotNil(seja.zadnjiPrenos)
     }
 
     // MARK: Pregled tipov PR #45 (2. krog)
@@ -1292,7 +2215,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
         a.zakasnitevPaketa = 3
         let seja = naredi(a, rok: 0.2)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let zacetek = Date()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         let trajanje = Date().timeIntervalSince(zacetek)
@@ -1305,7 +2228,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [])
         a.zakasnitevSpletnega = 3
         let seja = naredi(a, rokSpletni: 0.2)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let zacetek = Date()
         let p = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
         let trajanje = Date().timeIntervalSince(zacetek)
@@ -1349,7 +2272,7 @@ final class SkenSejaTests: XCTestCase {
         // obeh izidov (prej rok 0,3 s in meja 0,15 s: na obremenjenem CI runnerju je test padal brez napake v kodi).
         a.zakasnitevPaketa = 2
         let seja = naredi(a, rok: 1.0)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))   // rok poteces
         XCTAssertFalse(seja.povezava)
         let zacetek = Date()
@@ -1371,18 +2294,17 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a)
         await seja.naloziDogodke()
-        await seja.odpri(dogodek)
         a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         XCTAssertTrue(seja.dostopOdvzet)
         let imena = Set(SkenDisk(mapa: mapa).imena())
         XCTAssertFalse(imena.contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
         // JSON oblika istega odgovora (scan-list, scan-batch)
         let b = api(vstopnice: [])
         let seja2 = naredi(b)
-        await seja2.odpri(dogodek)
+        await seja2.naloziDogodke()
         b.seznamOdgovor = .failure(APIError.requestFailed(404, #"{"error":"not_found","message":"Club not found."}"#))
-        await seja2.osveziSeznam()
+        await seja2.osveziSeznam(42)
         XCTAssertTrue(seja2.dostopOdvzet)
     }
 
@@ -1403,7 +2325,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1), ScanListTicket(serial: s2)])
         a.paketOdgovor = { _ in .failure(APIError.requestFailed(404, "Club not found.")) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .rdece)
         XCTAssertTrue(seja.dostopOdvzet)
@@ -1420,7 +2342,7 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(seja.cakajoce, 1)
         a.paketOdgovor = { _ in .failure(APIError.requestFailed(404, "Club not found.")) }
@@ -1433,19 +2355,31 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertEqual(a.paketi.count, stevilo)    // in se ne posilja vec
     }
 
-    /// Manjse 13: osvezitev za drug dogodek ne sme pobrisati oznake osvezitve, ki je ze tecla za zdajsnji dogodek (dvojen prenos).
-    func testZakljucekOsvezitveDrugegaDogodkaNeOdklenePodvojenegaPrenosa() async throws {
+    /// Manjse 13: osvezitev enega dogodka ne sme odkleniti ali pobrisati oznake osvezitve drugega, ki ze tece (dvojen prenos).
+    /// Prenosa visita na vratih, dokler jih test ne odpre: nic ne temelji na pravem casu.
+    func testZakljucekOsvezitveDrugegaDogodkaNeOdklenePodvojenegaPrenosa() async {
         let a = api(vstopnice: [])
-        a.zakasnitevSeznama = 0.4
+        a.dogodkiOdgovor = .success([Pomoc.aktivenDogodek(42, title: "A"), Pomoc.aktivenDogodek(43, title: "B")])
+        let vrata = Vrata()
+        a.vrataSeznama = vrata
         let seja = naredi(a)
-        let ta = Task { await seja.odpri(SkenDogodek(id: 42, title: "A")) }
-        try await Task.sleep(nanoseconds: 100_000_000)
-        let tb = Task { await seja.odpri(SkenDogodek(id: 43, title: "B")) }
-        try await Task.sleep(nanoseconds: 350_000_000)     // A je koncal (0,4 s), B tece se do ~0,5 s
-        await seja.osveziSeznam()                          // ne sme zagnati tretjega prenosa
-        await ta.value
-        await tb.value
+        let nalaganje = Task { await seja.naloziDogodke() }    // prenos A visi na vratih
+        let zacet = await pocakaj { a.seznamKlici == 1 }
+        XCTAssertTrue(zacet)
+        let drugi = Task { await seja.osveziSeznam(43) }       // B tece vzporedno
+        let zacet2 = await pocakaj { a.seznamKlici == 2 }
+        XCTAssertTrue(zacet2)
+        let dvojnikA = Task { await seja.osveziSeznam(42) }    // A ze tece: ne sme zagnati drugega prenosa
+        let dvojnikB = Task { await seja.osveziSeznam(43) }    // B ze tece: ne sme zagnati drugega prenosa
+        for _ in 0..<50 { await Task.yield() }
+        try? await Task.sleep(nanoseconds: 30_000_000)         // (negativni preizkus: poskusa bi morala koncati takoj)
         XCTAssertEqual(a.seznamKlici, 2)
+        vrata.odpri()                                          // sele zdaj, da test ob napaki ne obvisi
+        await dvojnikA.value
+        await dvojnikB.value
+        await nalaganje.value
+        await drugi.value
+        XCTAssertEqual(Set(a.seznamDogodki), [42, 43])
     }
 
     /// Manjse 5: zeton ob odjavi velja samo za odjavljenega uporabnika: vnosov drugih racunov na isti napravi ne posilja.
@@ -1526,7 +2460,6 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a, klub: 5)
         await seja.naloziDogodke()
-        await seja.odpri(dogodek)
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         _ = await seja.skeniraj(Pomoc.kodaV1(serial: Pomoc.serial(), event: 42))
         await seja.poslji()
@@ -1535,7 +2468,7 @@ final class SkenSejaTests: XCTestCase {
         // klub 0 (ni znan): glava se ne poslje
         let b = api(vstopnice: [])
         let brezKluba = naredi(b, klub: 0)
-        await brezKluba.odpri(dogodek)
+        await brezKluba.naloziDogodke()
         XCTAssertEqual(Set(b.klubIdji.map { $0 ?? -1 }), [-1])
     }
 
@@ -1545,20 +2478,22 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        let ura = TestnaUra(Date())
+        seja.ura = { ura.zdaj }
+        await seja.naloziDogodke()
         let datoteka = mapa.appendingPathComponent(SkenDisk.imeSeznama(klub: 1, dogodek: 42))
         XCTAssertTrue(FileManager.default.fileExists(atPath: datoteka.path))
         try Data("marker".utf8).write(to: datoteka)
         let prej = seja.zadnjiPrenos
-        try await Task.sleep(nanoseconds: 20_000_000)
-        await seja.osveziSeznam()   // isti odgovor
+        ura.zdaj = ura.zdaj.addingTimeInterval(30)
+        await seja.osveziSeznam(42)   // isti odgovor
         XCTAssertEqual(try String(contentsOf: datoteka, encoding: .utf8), "marker")   // ni bil ponovno zapisan
         XCTAssertTrue((seja.zadnjiPrenos ?? .distantPast) > (prej ?? .distantFuture))     // cas prenosa se je osvezil
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))           // indeks je ostal
         XCTAssertEqual(p.barva, .zeleno)
         // spremenjen odgovor se zapise
         a.nastaviSeznam(ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: s1), ScanListTicket(serial: Pomoc.serial())]))
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         XCTAssertNotEqual(try String(contentsOf: datoteka, encoding: .utf8), "marker")
     }
 
@@ -1568,15 +2503,15 @@ final class SkenSejaTests: XCTestCase {
         let s1 = Pomoc.serial()
         let a = LazniApi(kljuc: Pomoc.scanKey(kljuc), seznam: ScanList(eventId: 42, kid: "kid1", tickets: [], transferredSerials: [s1]))
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         a.seznamOdgovor = .success(Data(#"{"event_id":42,"tickets":"pokvarjeno"}"#.utf8))
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         let p = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p.barva, .rdece)   // vstopnica je se vedno »prenesena«, praznega seznama ni
         // tudi na disku je ostal star seznam
         let druga = naredi(a)
         a.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
-        await druga.odpri(dogodek)
+        await druga.naloziDogodke()
         let p2 = await druga.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(p2.barva, .rdece)
     }
@@ -1586,7 +2521,7 @@ final class SkenSejaTests: XCTestCase {
     func testSvezSeznamNiStarInUspesnoOsvezevanjeBrisePogoj() async {
         let a = api(vstopnice: [])
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         XCTAssertFalse(seja.seznamStar)
         XCTAssertNotNil(seja.zadnjiPrenos)
     }
@@ -1599,7 +2534,6 @@ final class SkenSejaTests: XCTestCase {
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let seja = naredi(a)
         await seja.naloziDogodke()
-        await seja.odpri(dogodek)
         seja.omrezjeSpremenjeno(gor: false)
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         XCTAssertEqual(seja.cakajoce, 1)
@@ -1609,7 +2543,7 @@ final class SkenSejaTests: XCTestCase {
         // povezava je spet tu, a streznik pravi 403 (ni vec clan ekipe): najprej poslji, kar caka, nato pobrisi sezname
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
         a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))   // pravi odgovor requireClub za izrecen klub
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         XCTAssertTrue(seja.dostopOdvzet)
         XCTAssertEqual(seja.cakajoce, 0)   // neposlano je bilo poslano pred brisanjem
         let imena = Set(SkenDisk(mapa: mapa).imena())
@@ -1627,10 +2561,10 @@ final class SkenSejaTests: XCTestCase {
         let a = api(vstopnice: [ScanListTicket(serial: s1)])
         a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
         let seja = naredi(a)
-        await seja.odpri(dogodek)
+        await seja.naloziDogodke()
         _ = await seja.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
         a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))
-        await seja.osveziSeznam()
+        await seja.osveziSeznam(42)
         XCTAssertTrue(seja.dostopOdvzet)
         XCTAssertFalse(Set(SkenDisk(mapa: mapa).imena()).contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
         XCTAssertEqual(SkenVrsta(disk: SkenDisk(mapa: mapa)).vnosi.count, 1)   // vnos je se na disku

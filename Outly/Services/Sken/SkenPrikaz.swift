@@ -75,6 +75,9 @@ struct SkenPrikaz: Equatable {
         case .napacenDogodek:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG EVENT"),
                               podnaslov: String(localized: "This ticket is for a different event."))
+        case .nijeZaDanes:
+            return SkenPrikaz(barva: .rdece, naslov: String(localized: "NOT TODAY'S EVENT"),
+                              podnaslov: String(localized: "This ticket is not for today's event."))
         case .neveljavna:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "INVALID CODE"),
                               podnaslov: String(localized: "This is not a valid Outly ticket."))

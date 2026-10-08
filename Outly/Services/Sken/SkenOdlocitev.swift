@@ -31,8 +31,11 @@ struct SkenSodba: Equatable {
         case preklicana
         /// Narocilo ni placano (seznam jo vrne s statusom `unpaid`) -> rdece.
         case neplacana
-        /// Koda je za drug dogodek -> rdece.
+        /// Koda je za drug dogodek -> rdece. (Pri skenerju brez izbire dogodka je to samo se varovalka enojne odlocitve;
+        /// drug dogodek obravnava `nijeZaDanes`.)
         case napacenDogodek
+        /// Dogodek iz kode ni med aktivnimi (izven okna -12 h ... +6 h, neobjavljen ali neznan) -> rdece.
+        case nijeZaDanes
         /// Podpis ne ustreza ali koda ni berljiva -> rdece.
         case neveljavna
         /// Koda v1: telefon je ne more preveriti -> rumeno, potrebna povezava (ali vratarjeva odlocitev).
@@ -51,6 +54,8 @@ struct SkenSodba: Equatable {
     var kdaj: Date? = nil
     /// Vstopnica iz seznama (VIP, miza, imetnik), ce je na njem.
     var vstopnica: ScanListTicket? = nil
+    /// Dogodek iz kode (nastavi odlocitev z vec dogodki); nil, ce kode ni bilo mogoce razclenit.
+    var dogodekId: Int? = nil
 
     var barva: Barva {
         switch razlog {
@@ -65,6 +70,46 @@ struct SkenSodba: Equatable {
 }
 
 enum SkenOdlocitev {
+    /// Odlocitev brez izbranega dogodka: dogodek pove koda. Ni med `aktivni` -> `nijeZaDanes`; sicer dosedanja odlocitev z
+    /// indeksom in lokalnimi skeni TISTEGA dogodka. Koda, ki je ni mogoce razclenit, ostane `neveljavna`.
+    /// - Parameters:
+    ///   - aktivni: id-ji dogodkov v casovnem oknu (SkenOkno).
+    ///   - indeksi: seznam vstopnic po dogodku (manjka = se ni prenesen).
+    ///   - lokalni: po dogodku: serial (male crke) -> cas lokalnega skena na tej napravi.
+    static func odloci(qr: String, aktivni: Set<Int>, kljuc: ScanKey?, indeksi: [Int: SkenIndeks],
+                       lokalni: [Int: [String: Date]]) -> SkenSodba {
+        let telo: SkenTelo
+        let razclenjena = SkenKoda.razcleni(qr)
+        switch razclenjena {
+        case .neznano: return SkenSodba(razlog: .neveljavna)
+        case let .v1(t): telo = t
+        case let .v2(t, _, _): telo = t
+        }
+        guard aktivni.contains(telo.eventId) else {
+            return SkenSodba(razlog: .nijeZaDanes, serial: telo.serial, dogodekId: telo.eventId)
+        }
+        var sodba = odloci(qr: qr, dogodekId: telo.eventId, kljuc: kljuc, indeks: indeksi[telo.eventId],
+                           lokalni: lokalni[telo.eventId] ?? [:])
+        sodba.dogodekId = telo.eventId
+        // Koda v1: event_id ni podpisan, zato ga ne smemo vzeti kot dokaz, da vstopnica ni bila ze skenirana pod drugim aktivnim
+        // dogodkom. Lokalni skeni VSEH aktivnih dogodkov so samo negativen dokaz (rdece nikoli ne skodi).
+        if case .v1 = razclenjena, sodba.razlog == .staraKoda,
+           let cas = lokalniSkenKjerkoli(serial: telo.serial, aktivni: aktivni, lokalni: lokalni, najprej: telo.eventId) {
+            return SkenSodba(razlog: .zeUporabljenaLokalno, serial: telo.serial, kdaj: cas, dogodekId: telo.eventId)
+        }
+        return sodba
+    }
+
+    /// Cas lokalnega skena serial-a pod katerimkoli aktivnim dogodkom (najprej pod `najprej`); nil = ni bil skeniran na tej napravi.
+    static func lokalniSkenKjerkoli(serial: String, aktivni: Set<Int>, lokalni: [Int: [String: Date]], najprej: Int) -> Date? {
+        if aktivni.contains(najprej), let cas = lokalni[najprej]?[serial] { return cas }
+        for id in aktivni.sorted() where id != najprej {
+            if let cas = lokalni[id]?[serial] { return cas }
+        }
+        return nil
+    }
+
+    /// Odlocitev za EN dogodek (jedro; zgornja funkcija jo poklice za dogodek iz kode).
     /// - Parameters:
     ///   - kljuc: javni kljuc (z `kid`) ali nil, ce ga se nimamo.
     ///   - indeks: seznam dogodka ali nil, ce ga se nimamo.

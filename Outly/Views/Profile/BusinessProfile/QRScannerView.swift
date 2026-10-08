@@ -4,7 +4,9 @@ import AVFoundation
 
 /// Skener QR za vrata, ki dela tudi brez povezave (backend issue #86).
 ///
-/// 1. Vratar izbere dogodek. Javni kljuc in seznam vstopnic se prenesejo na telefon (in osvezujejo na ~2 min).
+/// 1. Vratar NE izbira dogodka (8. 10. 2026): skener se odpre takoj. Aktivni so dogodki kluba od 12 h pred zacetkom do 6 h po koncu;
+///    dogodek pove koda QR. Javni kljuc in seznami vstopnic aktivnih dogodkov se prenesejo na telefon (in osvezujejo na ~2 min).
+///    Brez aktivnega dogodka zaslon pove, kdaj se odpre naslednji.
 /// 2. Koda v2 se preveri LOKALNO (podpis Ed25519, dogodek, seznam, ze skenirano na tem telefonu): zeleno takoj,
 ///    sken gre v trajno vrsto, ki se poslje prek scan-batch takoj in periodicno. Streznik ostane razsodnik.
 /// 3. Stara koda v1 se na telefonu ne da preveriti: s povezavo jo preveri obstojec POST /scan, brez nje je rumeno.
@@ -43,13 +45,13 @@ struct QRScannerView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            if seja.dogodek == nil {
-                izbiraDogodka
+            if seja.aktivni.isEmpty {
+                brezDogodka
             } else {
                 skener
             }
         }
-        .navigationTitle(seja.dogodek?.title ?? String(localized: "Scan tickets"))
+        .navigationTitle(naslovZaslona)
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .toolbar {
@@ -65,16 +67,18 @@ struct QRScannerView: View {
                     }
                     .accessibilityLabel(Text("Conflicts"))
                 }
-                if seja.dogodek != nil && dovoljenje == .authorized && Self.imaSvetilko {
+                if !seja.aktivni.isEmpty && dovoljenje == .authorized && Self.imaSvetilko {
                     Button { svetilka.toggle() } label: {
                         Image(systemName: svetilka ? "flashlight.on.fill" : "flashlight.off.fill")
                             .foregroundColor(svetilka ? .yellow : .white)
                     }
                     .accessibilityLabel(Text("Flashlight"))
                 }
-                if seja.dogodek != nil {
-                    Button { zamenjajDogodek() } label: { Image(systemName: "calendar") }
-                        .accessibilityLabel(Text("Change event"))
+                if !seja.aktivni.isEmpty {
+                    // Dosegljivo tudi med skeniranjem: klub je dogodek objavil ali prestavil, telefon pa ima star seznam dogodkov.
+                    Button { Task { await seja.naloziDogodke() } } label: { Image(systemName: "arrow.clockwise") }
+                        .disabled(seja.dogodkiNalaga)
+                        .accessibilityLabel(Text("Reload events"))
                 }
             }
         }
@@ -101,6 +105,15 @@ struct QRScannerView: View {
             }
         }
         .task { await zacniSejo() }
+        .onChange(of: seja.aktivni.isEmpty) { _, prazen in
+            // Okno zadnjega dogodka se je zaprlo: skener izgine, zato ne ostane odprt rezultat, zadrzek ali prizgana svetilka.
+            if prazen {
+                prikaz = nil
+                zadnjaKoda = ""
+                zadrzek.pocisti()
+                svetilka = false
+            }
+        }
         .onAppear {
             // Vratar telefona med vecerom ne dotika: zaslon ne sme ugasniti (velja samo, dokler je skener odprt).
             UIApplication.shared.isIdleTimerDisabled = true
@@ -123,6 +136,15 @@ struct QRScannerView: View {
         }
     }
 
+    /// En aktivni dogodek: njegov naslov; vec: »2 events« (naslovi so v statusni vrstici); nobenega: »Scan tickets«.
+    private var naslovZaslona: String {
+        switch seja.aktivni.count {
+        case 0: return String(localized: "Scan tickets")
+        case 1: return seja.aktivni[0].title
+        case let n: return String(localized: "\(n) events")
+        }
+    }
+
     /// Poveze sejo z zetonom in uporabnikom, zazene tik (posiljanje, osvezevanje) in nalozi dogodke.
     private func zacniSejo() async {
         let store: SessionStore = session
@@ -134,56 +156,48 @@ struct QRScannerView: View {
         await seja.naloziDogodke()
     }
 
-    private func zamenjajDogodek() {
-        prikaz = nil
-        zadnjaKoda = ""
-        zadrzek.pocisti()
-        svetilka = false
-        seja.zapriDogodek()
-    }
+    // MARK: - Brez aktivnega dogodka
 
-    // MARK: - Izbira dogodka
-
-    private var izbiraDogodka: some View {
+    private var brezDogodka: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 stanjeVrstica(prikaziSeznam: false)
 
-                Text("Choose an event")
-                    .font(.title2.bold())
-                    .foregroundColor(.white)
-                    .padding(.top, 6)
-                Text("The ticket list is downloaded to this phone, so scanning keeps working without a connection.")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.65))
-
-                if seja.dogodkiNalaga && seja.dogodki.isEmpty {
+                if seja.dostopOdvzet {
+                    EmptyView()   // razlog pove statusna vrstica
+                } else if !seja.dogodkiNalozeni {
                     HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.vertical, 30)
                 } else if let napaka = seja.dogodkiNapaka {
                     VStack(spacing: 10) {
                         Text(verbatim: napaka).foregroundColor(.red).font(.subheadline).multilineTextAlignment(.center)
-                        Button("Try again") { Task { await seja.naloziDogodke() } }
-                            .foregroundColor(.white)
+                        gumbPonovnoNalozi
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
-                } else if seja.ponujeniDogodki.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "calendar.badge.exclamationmark")
+                } else {
+                    VStack(spacing: 10) {
+                        Image(systemName: "calendar.badge.clock")
                             .font(.system(size: 34))
                             .foregroundColor(.white.opacity(0.6))
-                        Text("No events to scan")
+                        Text("No event right now")
                             .font(.headline).foregroundColor(.white)
-                        Text("Published events of your club show up here.")
+                        Text("Scanning opens \(Int(SkenOkno.predZacetkom / 3600)) hours before the event starts.")
                             .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                            .multilineTextAlignment(.center)
+                        if let n = seja.naslednji, let od = SkenOkno.odprtoOd(n) {
+                            Text(verbatim: String(localized: "Next: \(n.title) · scanning from \(SkenPrikaz.casPrenosa(od))"))
+                                .font(.subheadline.weight(.semibold)).foregroundColor(.white.opacity(0.85))
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 4)
+                        }
+                        if let t = seja.dogodkiPosodobljeni {
+                            Text("Events updated \(SkenPrikaz.casPrenosa(t))")
+                                .font(.footnote).foregroundColor(.white.opacity(0.5))
+                        }
+                        gumbPonovnoNalozi.padding(.top, 8)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 30)
-                } else {
-                    ForEach(seja.ponujeniDogodki) { d in
-                        Button { Task { await seja.odpri(d) } } label: { vrsticaDogodka(d) }
-                            .buttonStyle(.plain)
-                    }
                 }
             }
             .padding(.horizontal, 18)
@@ -192,32 +206,17 @@ struct QRScannerView: View {
         }
     }
 
-    private func vrsticaDogodka(_ d: SkenDogodek) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: d.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.leading)
-                if let t = SkenCas.razcleni(d.startAt) {
-                    Text(verbatim: t.formatted(date: .abbreviated, time: .shortened))
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.6))
-                }
+    private var gumbPonovnoNalozi: some View {
+        Button {
+            Task { await seja.naloziDogodke() }
+        } label: {
+            HStack(spacing: 8) {
+                if seja.dogodkiNalaga { ProgressView().tint(.white) }
+                Text("Reload events")
             }
-            Spacer()
-            if d.lifecycle == "live" {
-                Text("Live")
-                    .font(.caption.weight(.bold))
-                    .foregroundColor(.green)
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white.opacity(0.4))
+            .foregroundColor(.white)
         }
-        .padding(16)
-        .background(Color.white.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .disabled(seja.dogodkiNalaga)
     }
 
     // MARK: - Skener
@@ -280,6 +279,11 @@ struct QRScannerView: View {
     /// Vedno vidno: povezava, koliko skenov caka, cas zadnjega prenosa seznama (+ stevec vstopov).
     private func stanjeVrstica(prikaziSeznam: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
+            if prikaziSeznam && seja.aktivni.count > 1 {
+                ForEach(seja.aktivni) { d in
+                    Text(verbatim: d.title).lineLimit(1)
+                }
+            }
             HStack(spacing: 14) {
                 HStack(spacing: 6) {
                     Circle()
@@ -313,6 +317,11 @@ struct QRScannerView: View {
             }
             if seja.dostopOdvzet {
                 Text("You are no longer on this club's team. The downloaded lists were removed from this phone.")
+                    .foregroundColor(.red)
+            }
+            if seja.uraNapacna {
+                // Okno skeniranja se racuna po uri telefona: pri napacni uri je »NOT TODAY'S EVENT« lahko napacen.
+                Text("The time on this phone is wrong — check date and time settings.")
                     .foregroundColor(.red)
             }
             if !seja.zapisOK {
@@ -350,7 +359,7 @@ struct QRScannerView: View {
                 Text("Until the list is downloaded, tickets can only be checked with a connection.")
                     .font(.footnote).foregroundColor(.white.opacity(0.8))
                 Button("Try again") {
-                    if let d = seja.dogodek { Task { await seja.odpri(d) } }
+                    Task { await seja.naloziDogodke() }
                 }
                 .font(.footnote.weight(.bold)).foregroundColor(.white)
             }

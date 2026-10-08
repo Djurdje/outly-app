@@ -61,6 +61,12 @@ struct SkenDisk {
         try? FileManager.default.removeItem(at: mapa.appendingPathComponent(ime))
     }
 
+    /// Cas zadnje spremembe datoteke (npr. kdaj je bil prenesen seznam dogodkov); nil, ce datoteke ni.
+    func spremenjeno(_ ime: String) -> Date? {
+        let atributi = try? FileManager.default.attributesOfItem(atPath: mapa.appendingPathComponent(ime).path)
+        return atributi?[.modificationDate] as? Date
+    }
+
     func imena() -> [String] {
         (try? FileManager.default.contentsOfDirectory(atPath: mapa.path)) ?? []
     }

@@ -211,9 +211,33 @@
           }
         },
         "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld dogodkov"
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dogodki"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dogodek"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dogodkov"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dogodka"
+                }
+              }
+            }
           }
         }
       }
@@ -9215,68 +9239,90 @@
         }
       }
     },
-    "Change event": {
+    "NOT TODAY'S EVENT": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zamenjaj dogodek"
+            "value": "NI ZA DANES"
           }
         }
       }
     },
-    "Choose an event": {
+    "This ticket is not for today's event.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Izberi dogodek"
+            "value": "Ta vstopnica ni za današnji dogodek."
           }
         }
       }
     },
-    "The ticket list is downloaded to this phone, so scanning keeps working without a connection.": {
+    "No event right now": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seznam vstopnic se prenese v telefon, zato skeniranje deluje tudi brez povezave."
+            "value": "Zdaj ni dogodka"
           }
         }
       }
     },
-    "No events to scan": {
+    "Scanning opens %lld hours before the event starts.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ni dogodkov za skeniranje"
+            "value": "Skeniranje se odpre %lld ur pred začetkom dogodka."
           }
         }
       }
     },
-    "Published events of your club show up here.": {
+    "Next: %@ · scanning from %@": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tukaj se prikažejo objavljeni dogodki tvojega kluba."
+            "value": "Naslednji: %@ · skeniranje od %@"
           }
         }
       }
     },
-    "Live": {
+    "The time on this phone is wrong — check date and time settings.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "V teku"
+            "value": "Ura na telefonu je napačna — preveri datum in uro v nastavitvah."
+          }
+        }
+      }
+    },
+    "Events updated %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki posodobljeni %@"
+          }
+        }
+      }
+    },
+    "Reload events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Znova naloži dogodke"
           }
         }
       }
@@ -9761,17 +9807,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ključa za skener ni bilo mogoče prenesti."
-          }
-        }
-      }
-    },
-    "Choose an event first.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Najprej izberi dogodek."
           }
         }
       }

@@ -47,10 +47,11 @@ extension APIClient {
         clubId: Int? = nil,
         timeout: TimeInterval? = nil,
         idempotencyKey: String? = nil,
-        dodatneGlave: [String: String] = [:]
+        dodatneGlave: [String: String] = [:],
+        cachePolicy: URLRequest.CachePolicy? = nil
     ) async throws -> Data {
         do {
-            return try await sendOnce(path: path, method: method, token: token, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave)
+            return try await sendOnce(path: path, method: method, token: token, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave, cachePolicy: cachePolicy)
         } catch let api as APIError {
             guard retryOn401,
                   let token, !token.isEmpty,
@@ -66,7 +67,7 @@ extension APIClient {
                 }
                 throw api
             }
-            return try await sendOnce(path: path, method: method, token: fresh, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave)
+            return try await sendOnce(path: path, method: method, token: fresh, json: json, query: query, clubId: clubId, timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave, cachePolicy: cachePolicy)
         }
     }
 
@@ -79,10 +80,11 @@ extension APIClient {
         clubId: Int?,
         timeout: TimeInterval?,
         idempotencyKey: String?,
-        dodatneGlave: [String: String]
+        dodatneGlave: [String: String],
+        cachePolicy: URLRequest.CachePolicy? = nil
     ) async throws -> Data {
         let req = try sestaviZahtevek(path: path, method: method, token: token, json: json, query: query, clubId: clubId,
-                                      timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave)
+                                      timeout: timeout, idempotencyKey: idempotencyKey, dodatneGlave: dodatneGlave, cachePolicy: cachePolicy)
 
         let (data, resp) = try await APIPredpomnilnik.seja.data(for: req)
         guard let http = resp as? HTTPURLResponse else {
@@ -108,7 +110,8 @@ extension APIClient {
         clubId: Int?,
         timeout: TimeInterval?,
         idempotencyKey: String?,
-        dodatneGlave: [String: String] = [:]
+        dodatneGlave: [String: String] = [:],
+        cachePolicy: URLRequest.CachePolicy? = nil
     ) throws -> URLRequest {
         guard var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
             throw APIError.invalidURL
@@ -119,6 +122,8 @@ extension APIClient {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.timeoutInterval = timeout ?? 30
+        // Izrecna politika predpomnilnika (npr. scan-list brez 304, ko je treba svez `generated_at`); privzeto protokolna.
+        if let cachePolicy { req.cachePolicy = cachePolicy }
         // Dodatne glave: zasciteni imena (avtorizacija, klub, idempotentnost, tip telesa) se NIKOLI ne vzamejo iz njih.
         for (ime, vrednost) in dodatneGlave where !Self.zascitenaGlava.contains(ime.lowercased()) {
             req.setValue(vrednost, forHTTPHeaderField: ime)
