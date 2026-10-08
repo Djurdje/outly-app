@@ -15,8 +15,10 @@ extension APIClient {
     }
 
     /// Surov odgovor: SkenSeja ga zgosti (nespremenjen seznam se ne dekodira znova) in dekodira izven glavne niti.
-    func fetchScanListData(token: String, eventId: Int, clubId: Int? = nil) async throws -> Data {
-        try await send(path: "business/events/\(eventId)/scan-list", method: "GET", token: token, clubId: clubId)
+    /// `sveze`: mimo predpomnilnika (brez If-None-Match, torej 200 s svezim `generated_at`); privzeto ETag/304.
+    func fetchScanListData(token: String, eventId: Int, clubId: Int? = nil, sveze: Bool = false) async throws -> Data {
+        try await send(path: "business/events/\(eventId)/scan-list", method: "GET", token: token, clubId: clubId,
+                       cachePolicy: sveze ? .reloadIgnoringLocalCacheData : nil)
     }
 
     /// GET /business/events za izrecen klub (fetchMyBusinessEvents vzame globalni IzbraniKlub).
@@ -60,8 +62,8 @@ struct SkenApiZivi: SkenApi {
         try await APIClient.shared.fetchScanKey(token: token, clubId: klubId)
     }
 
-    func seznam(token: String, klubId: Int?, dogodekId: Int) async throws -> Data {
-        try await APIClient.shared.fetchScanListData(token: token, eventId: dogodekId, clubId: klubId)
+    func seznam(token: String, klubId: Int?, dogodekId: Int, sveze: Bool) async throws -> Data {
+        try await APIClient.shared.fetchScanListData(token: token, eventId: dogodekId, clubId: klubId, sveze: sveze)
     }
 
     func paket(token: String, klubId: Int?, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult] {

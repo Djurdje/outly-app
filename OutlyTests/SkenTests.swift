@@ -996,6 +996,13 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
     private(set) var seznamKlici = 0
     private(set) var seznamDogodki: [Int] = []
     private(set) var dogodkiKlici = 0
+    /// Za vsak klic scan-list: ali je bil zahtevan mimo predpomnilnika.
+    private(set) var svezeKlici: [Bool] = []
+    private func zabeleziSveze(_ sveze: Bool) {
+        zapah.lock()
+        svezeKlici.append(sveze)
+        zapah.unlock()
+    }
 
     init(kljuc: ScanKey, seznam: ScanList) {
         kljucOdgovor = .success(kljuc)
@@ -1034,8 +1041,9 @@ private final class LazniApi: SkenApi, @unchecked Sendable {
         zabelezi(klubId, kljuc: true)
         return try kljucOdgovor.get()
     }
-    func seznam(token: String, klubId: Int?, dogodekId: Int) async throws -> Data {
+    func seznam(token: String, klubId: Int?, dogodekId: Int, sveze: Bool) async throws -> Data {
         zabelezi(klubId, seznam: true, dogodek: dogodekId)
+        zabeleziSveze(sveze)
         let vrata = vrataSeznama
         if let vrata { await vrata.pocakaj() }
         if zakasnitevSeznama > 0 { await Self.neprekinljivoCakaj(zakasnitevSeznama) }
@@ -2044,10 +2052,21 @@ final class SkenSejaTests: XCTestCase {
         seja.ura = { ura.zdaj }
         await seja.naloziDogodke()
         XCTAssertTrue(seja.uraNapacna)
-        // nespremenjen odgovor (npr. 304: `generated_at` je star) stanja ne spremeni
+        XCTAssertEqual(a.svezeKlici, [false])      // dokler ura ni sumljiva, gre prenos prek predpomnilnika (ETag/304)
+        // ura je se napacna in odgovor nespremenjen: opozorilo ostane, prenos pa gre mimo predpomnilnika
         await seja.osveziSeznam(42)
         XCTAssertTrue(seja.uraNapacna)
-        // uporabnik popravi uro, seznam se spremeni in je svez
+        XCTAssertEqual(a.svezeKlici, [false, true])
+        // uporabnik popravi uro (telefon zdaj kaze streznikov cas), vsebina seznama je ENAKA: svez odgovor ugasne opozorilo
+        ura.zdaj = t0.addingTimeInterval(-3600)
+        await seja.osveziSeznam(42)
+        XCTAssertFalse(seja.uraNapacna)
+        XCTAssertEqual(a.svezeKlici, [false, true, true])
+        // opozorila ni vec: naslednji prenos je spet navaden (ETag/304)
+        await seja.osveziSeznam(42)
+        XCTAssertEqual(a.svezeKlici, [false, true, true, false])
+        ura.zdaj = t0
+        // spremenjen svez seznam z ujemajoco uro opozorila ne prizge
         a.nastaviSeznam(ScanList(eventId: 42, generatedAt: SkenCas.niz(t0), kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial())]))
         await seja.osveziSeznam(42)
         XCTAssertFalse(seja.uraNapacna)

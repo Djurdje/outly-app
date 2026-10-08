@@ -21,7 +21,8 @@ protocol SkenApi: Sendable {
     func dogodki(token: String, klubId: Int?) async throws -> [SkenDogodek]
     func kljuc(token: String, klubId: Int?) async throws -> ScanKey
     /// Surov odgovor scan-list (SkenSeja ga zgosti in dekodira izven glavne niti).
-    func seznam(token: String, klubId: Int?, dogodekId: Int) async throws -> Data
+    /// `sveze`: zahtevek mimo predpomnilnika (ob 304 je `generated_at` star), da se ura telefona lahko presodi.
+    func seznam(token: String, klubId: Int?, dogodekId: Int, sveze: Bool) async throws -> Data
     func paket(token: String, klubId: Int?, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult]
     func spletniSken(token: String, klubId: Int?, qr: String, rok: Double) async throws -> ScanResult
 }
@@ -500,9 +501,9 @@ final class SkenSeja: ObservableObject {
     func osveziKljuc() async -> Bool {
         ucitajKljucIzDiska()
         guard !kljucVTeku, !dostopOdvzet else { return jePripravljen }
-        guard Date().timeIntervalSince(kljucPoskusOb) >= kljucOdmik else { return jePripravljen }
+        guard ura().timeIntervalSince(kljucPoskusOb) >= kljucOdmik else { return jePripravljen }
         kljucVTeku = true
-        kljucPoskusOb = Date()
+        kljucPoskusOb = ura()
         defer { kljucVTeku = false }
         do {
             let nov = try await api.kljuc(token: zeton(), klubId: klubZaApi)
@@ -514,9 +515,9 @@ final class SkenSeja: ObservableObject {
             }
             kljucPoskusOb = .distantPast   // omejitev velja samo za neuspele poskuse: zamenjava kljuca ob prenosu seznama ne sme cakati
             kljuc = nov
-            kljucOb = Date()
+            kljucOb = ura()
             kljucPoskusNeuspel = false
-            disk.zapisi(SkenKljucShramba(kljuc: nov, prenesenoOb: kljucOb ?? Date()), SkenDisk.imeKljuca)
+            disk.zapisi(SkenKljucShramba(kljuc: nov, prenesenoOb: kljucOb ?? ura()), SkenDisk.imeKljuca)
             posodobiPripravo()
             return true
         } catch {
@@ -539,9 +540,12 @@ final class SkenSeja: ObservableObject {
         func jeSvoj() -> Bool { stanja[id]?.generacija == gen }
         stanja[id]?.osvezitevVTeku = true
         defer { if jeSvoj() { stanja[id]?.osvezitevVTeku = false } }
+        // Dokler opozorilo za uro gori, gre prenos mimo predpomnilnika: ob 304 bi prišel star `generated_at` in opozorilo se ne bi
+        // moglo ugasniti, ko uporabnik uro popravi. Sicer (ETag/304) ostane promet majhen.
+        let sveze = st.uraNapacna
         stanja[id]?.naslednjaOsvezitev = ura().addingTimeInterval(Double.random(in: Self.osvezitevSekunde))
         do {
-            let podatki = try await api.seznam(token: zeton(), klubId: klubZaApi, dogodekId: id)
+            let podatki = try await api.seznam(token: zeton(), klubId: klubZaApi, dogodekId: id, sveze: sveze)
             guard jeSvoj() else { return }
             zabeleziUspeh()
             let zdaj = ura()
@@ -549,7 +553,15 @@ final class SkenSeja: ObservableObject {
             guard jeSvoj(), let trenutno = stanja[id] else { return }
             if hash == trenutno.seznamHash, trenutno.indeks != nil {
                 // Nespremenjeno (streznik/URLSession ob 304 vrne shranjen odgovor): samo osvezi cas prenosa (tudi na disku, da po
-                // ponovnem zagonu ni videti starejsi). `generated_at` takega odgovora je star, zato ure tu ne presojamo.
+                // ponovnem zagonu ni videti starejsi). `generated_at` takega odgovora je star, zato ure tu ne presojamo; razen ce je
+                // bil prenos zahtevan mimo predpomnilnika (`sveze`): odgovor je 200 s svezim `generated_at`.
+                if sveze {
+                    let generiran = await Task.detached { () -> String? in
+                        (try? JSONDecoder().decode(SkenGeneriran.self, from: podatki))?.generatedAt
+                    }.value
+                    guard jeSvoj() else { return }
+                    if let generiran { stanja[id]?.uraNapacna = Self.jeUraNapacna(generatedAt: generiran, zdaj: zdaj) }
+                }
                 stanja[id]?.zadnjiPrenos = zdaj
                 osveziPovzetek()
                 disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
@@ -869,4 +881,16 @@ final class SkenSeja: ObservableObject {
 
     /// Napaka zaradi omrezja ali izpada streznika (ne zaradi vsebine zahteve, ne zaradi preklica).
     nonisolated static func jeOmrezna(_ e: Error) -> Bool { e.jeIzpadPovezave }
+}
+
+/// Samo `generated_at` iz scan-list (ura telefona se presoja brez polnega dekodiranja seznama).
+struct SkenGeneriran: Decodable {
+    let generatedAt: String?
+
+    enum CodingKeys: String, CodingKey { case generatedAt = "generated_at" }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        generatedAt = (try? c.decodeIfPresent(String.self, forKey: .generatedAt)) ?? nil
+    }
 }
