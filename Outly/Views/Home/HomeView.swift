@@ -465,10 +465,12 @@ struct HomeView: View {
     /// (Me.pendingReceivedTickets), obvestila klubov (Me.pendingClubEvents) in vabila na guest listo
     /// (Me.pendingGuestListInvites); drugih obvestil (APNs) se ni.
     /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
+    /// Seznam + reduce namesto verige `+ (x ?? 0)`: pri petih clenih Swift 6.1 izraza ne preveri v razumnem casu.
     private var notificationCount: Int {
-        (me?.pendingInvites ?? 0) + (me?.pendingFriendRequests ?? 0)
-            + (me?.pendingReceivedTickets ?? 0) + (me?.pendingClubEvents ?? 0)
-            + (me?.pendingGuestListInvites ?? 0)
+        guard let me else { return 0 }
+        let stevci: [Int] = [me.pendingInvites, me.pendingFriendRequests, me.pendingReceivedTickets,
+                             me.pendingClubEvents, me.pendingGuestListInvites]
+        return stevci.reduce(0, +)
     }
 
     /// Meni obvestil cez domaci zaslon: zatemnjeno ozadje (dotik zapre) + kartica pod zvoncem.
