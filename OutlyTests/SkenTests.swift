@@ -492,6 +492,38 @@ final class SkenOdlocitevVecDogodkovTests: XCTestCase {
         XCTAssertFalse(p.ponudiVstop)
         XCTAssertFalse(p.uspesen)
     }
+
+    // Streznisko okno (backend #170): result "not_today" ima na vseh treh poteh isti prikaz kot lokalni razlog nijeZaDanes.
+
+    /// Sken, ki je bil na telefonu zelen, streznik pa ga zavrne kot not_today (409).
+    func testStreznikNotTodayJeNijeZaDanes() {
+        let sodba = SkenSodba(razlog: .veljavna, serial: Pomoc.serial())
+        let p = SkenPrikaz.iz(streznik: "not_today", usedAt: nil, sodba: sodba)
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertEqual(p.naslov, "NOT TODAY'S EVENT")
+        XCTAssertEqual(p.podnaslov, "This ticket is not for today's event.")
+        XCTAssertFalse(p.ponudiVstop)
+        XCTAssertFalse(p.uspesen)
+        XCTAssertEqual(p, SkenPrikaz.iz(SkenSodba(razlog: .nijeZaDanes, serial: sodba.serial), qr: ""))
+        XCTAssertNotEqual(p.naslov, "INVALID CODE")
+    }
+
+    /// Konflikt iz scan-batch: razlog za vratarja.
+    func testRazlogKonfliktaNotToday() {
+        XCTAssertEqual(SkenPrikaz.razlogKonflikta("not_today"), "This ticket is not for today's event.")
+        XCTAssertNotEqual(SkenPrikaz.razlogKonflikta("not_today"), SkenPrikaz.razlogKonflikta("nekaj_novega"))
+    }
+
+    /// Odgovor spletnega POST /business/tickets/scan (409): naslov po result, podnaslov je sporocilo streznika.
+    func testSpletniSkenNotToday() {
+        let r = ScanResult(result: "not_today", message: "This ticket is not for today's event.", usedAt: nil)
+        let p = SkenPrikaz.iz(r)
+        XCTAssertEqual(p.barva, .rdece)
+        XCTAssertEqual(p.naslov, "NOT TODAY'S EVENT")
+        XCTAssertEqual(p.podnaslov, "This ticket is not for today's event.")
+        XCTAssertFalse(p.uspesen)
+        XCTAssertNotEqual(p.naslov, "REFUSED")
+    }
 }
 
 // MARK: - Modeli
@@ -751,6 +783,21 @@ final class SkenVrstaTests: XCTestCase {
         let v2 = SkenVrsta(disk: disk)
         XCTAssertEqual(v2.vnosi.count, 1)
         XCTAssertEqual(v2.nepotrjeniKonflikti(klub: 1).count, 1)
+    }
+
+    /// scan-batch element z result "not_today" je dokoncen (ne ostane v vrsti) in postane konflikt (gost je bil spusceni).
+    func testNotTodayVBatchuJeDokoncenKonflikt() throws {
+        let el = try JSONDecoder().decode(ScanBatchResult.self, from: Data(#"{"client_scan_id":"n","serial":"s","result":"not_today","used_at":null}"#.utf8))
+        XCTAssertTrue(el.jeDokoncen)
+        let v = SkenVrsta(disk: disk)
+        let n = vnos("n")
+        v.dodaj(n)
+        let odstranjeni = v.uporabi([el], poslani: [n])
+        XCTAssertEqual(odstranjeni, 1)
+        XCTAssertTrue(v.vnosi.isEmpty)
+        XCTAssertEqual(v.konflikti.count, 1)
+        XCTAssertEqual(v.konflikti[0].result, "not_today")
+        XCTAssertEqual(SkenPrikaz.razlogKonflikta(v.konflikti[0].result), "This ticket is not for today's event.")
     }
 
     func testPonovnaObdelavaIstegaOdgovoraJeNeskodljiva() {

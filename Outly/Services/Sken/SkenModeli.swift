@@ -129,7 +129,7 @@ struct ScanList: Codable, Equatable {
 struct ScanBatchResult: Decodable, Equatable {
     var clientScanId: String
     var serial: String?
-    /// ok | already_used | transferred | invalid | wrong_club | unknown | unpaid | refunded | void (dokoncni) ali error (poskusi znova).
+    /// ok | already_used | transferred | invalid | wrong_club | unknown | unpaid | refunded | void | event_cancelled | not_today (dokoncni) ali error (poskusi znova).
     var result: String
     var usedAt: String?
 
