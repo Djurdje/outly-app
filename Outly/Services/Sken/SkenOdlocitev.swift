@@ -79,7 +79,8 @@ enum SkenOdlocitev {
     static func odloci(qr: String, aktivni: Set<Int>, kljuc: ScanKey?, indeksi: [Int: SkenIndeks],
                        lokalni: [Int: [String: Date]]) -> SkenSodba {
         let telo: SkenTelo
-        switch SkenKoda.razcleni(qr) {
+        let razclenjena = SkenKoda.razcleni(qr)
+        switch razclenjena {
         case .neznano: return SkenSodba(razlog: .neveljavna)
         case let .v1(t): telo = t
         case let .v2(t, _, _): telo = t
@@ -90,7 +91,22 @@ enum SkenOdlocitev {
         var sodba = odloci(qr: qr, dogodekId: telo.eventId, kljuc: kljuc, indeks: indeksi[telo.eventId],
                            lokalni: lokalni[telo.eventId] ?? [:])
         sodba.dogodekId = telo.eventId
+        // Koda v1: event_id ni podpisan, zato ga ne smemo vzeti kot dokaz, da vstopnica ni bila ze skenirana pod drugim aktivnim
+        // dogodkom. Lokalni skeni VSEH aktivnih dogodkov so samo negativen dokaz (rdece nikoli ne skodi).
+        if case .v1 = razclenjena, sodba.razlog == .staraKoda,
+           let cas = lokalniSkenKjerkoli(serial: telo.serial, aktivni: aktivni, lokalni: lokalni, najprej: telo.eventId) {
+            return SkenSodba(razlog: .zeUporabljenaLokalno, serial: telo.serial, kdaj: cas, dogodekId: telo.eventId)
+        }
         return sodba
+    }
+
+    /// Cas lokalnega skena serial-a pod katerimkoli aktivnim dogodkom (najprej pod `najprej`); nil = ni bil skeniran na tej napravi.
+    static func lokalniSkenKjerkoli(serial: String, aktivni: Set<Int>, lokalni: [Int: [String: Date]], najprej: Int) -> Date? {
+        if aktivni.contains(najprej), let cas = lokalni[najprej]?[serial] { return cas }
+        for id in aktivni.sorted() where id != najprej {
+            if let cas = lokalni[id]?[serial] { return cas }
+        }
+        return nil
     }
 
     /// Odlocitev za EN dogodek (jedro; zgornja funkcija jo poklice za dogodek iz kode).

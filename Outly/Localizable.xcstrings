@@ -9283,6 +9283,28 @@
         }
       }
     },
+    "The time on this phone is wrong — check date and time settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ura na telefonu je napačna — preveri datum in uro v nastavitvah."
+          }
+        }
+      }
+    },
+    "Events updated %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki posodobljeni %@"
+          }
+        }
+      }
+    },
     "Reload events": {
       "extractionState": "manual",
       "localizations": {

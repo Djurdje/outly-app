@@ -122,6 +122,10 @@ final class SkenSeja: ObservableObject {
         var lokalni: [String: Date]
         var naslednjaOsvezitev = Date.distantPast
         var osvezitevVTeku = false
+        /// Zaporedna stevilka vstopa v okno: zaostal rezultat ali `defer` starega vstopa istega dogodka ne sme posegati v nov vstop.
+        let generacija: Int
+        /// Zadnji PRESEZEN seznam tega dogodka kaze, da ura telefona ni prava.
+        var uraNapacna = false
     }
 
     // MARK: Kar vidi zaslon
@@ -132,6 +136,10 @@ final class SkenSeja: ObservableObject {
     /// Seznam dogodkov je bil vsaj enkrat prebran (z diska ali s streznika, tudi ce neuspesno): do takrat ni »No event right now«.
     @Published private(set) var dogodkiNalozeni = false
     @Published private(set) var dogodkiNapaka: String?
+    /// Kdaj je bil seznam dogodkov nazadnje prenesen s streznika (ali, ob hladnem zagonu, shranjen na disk).
+    @Published private(set) var dogodkiPosodobljeni: Date?
+    /// Ura telefona se za vec kot 5 min razlikuje od ure streznika (po `generated_at` svezega seznama). Okna ne popravljamo sami.
+    @Published private(set) var uraNapacna = false
     /// Dogodki v casovnem oknu, po zacetku. Prazno = skener je zaprt.
     @Published private(set) var aktivni: [SkenDogodek] = []
     /// Naslednji dogodek, ki se mu okno se ni odprlo (za zaslon brez aktivnega dogodka).
@@ -163,6 +171,8 @@ final class SkenSeja: ObservableObject {
     var uporabnikId: Int?
     /// Dostopni zeton ob vsakem klicu (osvezi ga send()).
     var zeton: @MainActor () -> String = { "" }
+    /// Ura telefona. Testi jo podtaknejo (okno, vstop/izstop dogodka, osvezitve brez cakanja na pravi cas).
+    var ura: @MainActor () -> Date = { Date() }
 
     private let api: SkenApi
     private let disk: SkenDisk
@@ -183,8 +193,12 @@ final class SkenSeja: ObservableObject {
     private var kljucIzDiskaPreverjen = false
     /// Aktivni dogodki po id-ju. Ključi so natanko id-ji iz `aktivni`.
     private var stanja: [Int: DogodekStanje] = [:]
+    private var zadnjaGeneracija = 0
     /// Branje seznama dogodka z diska (izven glavne niti); sken pocaka nanj, da ne odloca brez znanega seznama.
-    private var nalaganjaIzDiska: [Int: Task<Void, Never>] = [:]
+    private var nalaganjaIzDiska: [Int: (generacija: Int, naloga: Task<Void, Never>)] = [:]
+    private var zaporedneNapakeDogodkov = 0
+    /// Kdaj je zavrnjena koda nazadnje sprozila ponovno nalaganje dogodkov (najvec 1x na minuto).
+    private var zadnjeNalaganjeZaradiKode = Date.distantPast
 
     private var omrezjeGor = true
     private var zadnjiKlicOK = true
@@ -199,7 +213,21 @@ final class SkenSeja: ObservableObject {
     static let osvezitevSekunde: ClosedRange<Double> = 105...135   // ~2 min z odmikom, da 1000 telefonov ne vleče naenkrat
     /// Seznam dogodkov se osvezuje redkeje (novi, preklicani, prestavljeni dogodki); odmik tudi tu razprsi telefone.
     static let osvezitevDogodkovSekunde: ClosedRange<Double> = 540...660
+    /// Ob napaki GET /business/events (tezka poizvedba): 30 s, 60 s, 120 s ... najvec 300 s, z jitterjem +-25 %.
     static let odmikDogodkovOdNapake: Double = 30
+    static let najdaljsiOdmikDogodkov: Double = 300
+    /// Ob vrnitvi povezave / aplikacije v ospredje se osvezitev razprsi po toliko sekundah (vrnitev Wi-Fi: vsi telefoni hkrati).
+    static let razprsitevSekunde: ClosedRange<Double> = 0...15
+    /// Seznam vstopnic dogodka, ki ga ustvari tik ob vstopu v okno (T - 12 h), se prvic prenese v tem razponu.
+    static let razprsitevVstopaSekunde: ClosedRange<Double> = 0...30
+    /// Najmanj toliko med dvema nalaganjema dogodkov zaradi zavrnjene kode.
+    static let najmanjMedNalaganjiZaradiKode: Double = 60
+    /// Seznam dogodkov, starejsi od tega, se ob zavrnjeni kodi za ZNAN dogodek osvezi (neznan dogodek: vedno, glej spodaj).
+    static let seznamDogodkovStarPoSekundah: Double = 5 * 60
+    /// Najdlje, kolikor sken caka na branje seznama dogodka z diska.
+    static let rokBranjaIzDiska: Double = 1.0
+    /// Razlika ure telefona in `generated_at`, nad katero opozorimo.
+    nonisolated static let dovoljenaRazlikaUre: Double = 5 * 60
     static let najdaljsiOdmik: Double = 120
     static let odmikOsvezitveOdNapake: Double = 15
     /// Seznam je »star«, ce ni bil osvezen toliko sekund (osvezevanje je na ~2 min).
@@ -257,14 +285,19 @@ final class SkenSeja: ObservableObject {
     func takojOsvezi() {
         zaporedneNapake = 0
         naslednjePosiljanje = .distantPast
-        for id in stanja.keys { stanja[id]?.naslednjaOsvezitev = .distantPast }
-        if naslednjaOsvezitevDogodkov != .distantFuture { naslednjaOsvezitevDogodkov = .distantPast }
+        // Posiljanje vrste gre takoj; osvezitve (seznam dogodkov, seznami vstopnic) z jitterjem 0-15 s, da se ob vrnitvi Wi-Fi na lokaciji
+        // 1000 telefonov ne zbudi v isti sekundi.
+        let zdaj = ura()
+        for id in stanja.keys { stanja[id]?.naslednjaOsvezitev = zdaj.addingTimeInterval(Double.random(in: Self.razprsitevSekunde)) }
+        if naslednjaOsvezitevDogodkov != .distantFuture {
+            naslednjaOsvezitevDogodkov = zdaj.addingTimeInterval(Double.random(in: Self.razprsitevSekunde))
+        }
     }
 
     /// Osvezitev in posiljanje tecesta vsako v svojem Tasku: pocasen prenos seznama ne sme zadrzati posiljanja skenov.
-    private func tik() {
-        let zdaj = Date()
-        uskladiAktivne(zdaj: zdaj)   // dogodek, ki je vstopil v okno ali ga zapustil, se doda / odstrani
+    func tik() {
+        let zdaj = ura()
+        uskladiAktivne(zdaj: zdaj, razprsi: true)   // dogodek, ki je vstopil v okno ali ga zapustil, se doda / odstrani
         guard !dostopOdvzet else { return }
         if zdaj >= naslednjaOsvezitevDogodkov, !dogodkiVTeku { Task { await osveziDogodke() } }
         if !aktivni.isEmpty, kljuc?.surovi == nil, !kljucVTeku, zdaj.timeIntervalSince(kljucPoskusOb) >= kljucOdmik {
@@ -291,6 +324,7 @@ final class SkenSeja: ObservableObject {
     func naloziDogodke() async {
         if dogodki.isEmpty, let shranjeni = disk.preberi([SkenDogodek].self, SkenDisk.imeDogodkov(klub: klubId)) {
             postaviDogodke(shranjeni)
+            dogodkiPosodobljeni = disk.spremenjeno(SkenDisk.imeDogodkov(klub: klubId))
             dogodkiNalozeni = true
             uskladiAktivne()
         }
@@ -305,11 +339,13 @@ final class SkenSeja: ObservableObject {
         guard !dogodkiVTeku, !dostopOdvzet else { return }
         dogodkiVTeku = true
         defer { dogodkiVTeku = false }
-        naslednjaOsvezitevDogodkov = Date().addingTimeInterval(Double.random(in: Self.osvezitevDogodkovSekunde))
+        naslednjaOsvezitevDogodkov = ura().addingTimeInterval(Double.random(in: Self.osvezitevDogodkovSekunde))
         do {
             let sveziSeznam = try await api.dogodki(token: zeton(), klubId: klubZaApi)
             zabeleziUspeh()
+            zaporedneNapakeDogodkov = 0
             postaviDogodke(sveziSeznam)
+            dogodkiPosodobljeni = ura()
             dogodkiNapaka = nil
             dogodkiNalozeni = true
             disk.zapisi(sveziSeznam, SkenDisk.imeDogodkov(klub: klubId))
@@ -320,15 +356,25 @@ final class SkenSeja: ObservableObject {
             zabeleziNapako(error)
             dogodkiNapaka = dogodki.isEmpty ? error.userMessage : nil
             dogodkiNalozeni = true
-            naslednjaOsvezitevDogodkov = Date().addingTimeInterval(Self.odmikDogodkovOdNapake)
+            zaporedneNapakeDogodkov += 1
+            naslednjaOsvezitevDogodkov = ura().addingTimeInterval(Self.odmikDogodkovPoNapakah(zaporedneNapakeDogodkov))
             uskladiAktivne()
         }
+    }
+
+    /// Eksponentni odmik ponovnega poskusa GET /business/events: 30 s, 60 s, 120 s, 240 s, nato 300 s; jitter +-25 % (`jitter` je za teste).
+    static func odmikDogodkovPoNapakah(_ napake: Int, jitter: Double = Double.random(in: 0.75...1.25)) -> Double {
+        let osnova = min(odmikDogodkovOdNapake * pow(2.0, Double(max(napake, 1) - 1)), najdaljsiOdmikDogodkov)
+        return min(osnova * jitter, najdaljsiOdmikDogodkov)
     }
 
     /// Preracuna mnozico aktivnih dogodkov iz `dogodki` in ure. Dogodek, ki je vstopil v okno, dobi stanje (lokalni skeni z diska,
     /// seznam vstopnic z diska izven glavne niti; prenos s streznika naredi tik); dogodek, ki je izstopil, se odstrani iz pomnilnika
     /// (datoteke na disku ostanejo). Sinhrono in poceni: kliceta ga tik (vsako sekundo) in sken (da je mnozica sveza).
-    func uskladiAktivne(zdaj: Date = Date()) {
+    /// `razprsi`: samo tik. Stanje, ki ga tik ustvari ob vstopu dogodka v okno (T - 12 h), prvic prenese seznam cez 0-30 s (ne vsi telefoni
+    /// v isti sekundi); ob odprtju skenerja in pri odgovoru strezniga ostane prenos takoj. Seznam z diska se uporabi vedno takoj.
+    func uskladiAktivne(zdaj zdajPodan: Date? = nil, razprsi: Bool = false) {
+        let zdaj = zdajPodan ?? ura()
         let nova = SkenOkno.aktivniIz(okna: okna, zdaj: zdaj)
         if nova != aktivni { aktivni = nova }
         let sledeci = SkenOkno.naslednjiIz(okna: okna, zdaj: zdaj)
@@ -337,17 +383,26 @@ final class SkenSeja: ObservableObject {
         let idji = Set(nova.map { $0.id })
         for id in Array(stanja.keys) where !idji.contains(id) {
             stanja.removeValue(forKey: id)
-            nalaganjaIzDiska.removeValue(forKey: id)?.cancel()
+            nalaganjaIzDiska.removeValue(forKey: id)?.naloga.cancel()
         }
         if !nova.isEmpty { ucitajKljucIzDiska() }
         for d in nova where stanja[d.id] == nil {
             let lokalni = disk.preberi(SkenLokalniSkeni.self, SkenDisk.imeLokalnih(klub: klubId, dogodek: d.id))?.casi ?? [:]
-            stanja[d.id] = DogodekStanje(lokalni: lokalni)
-            zazeniNalaganjeIzDiska(d.id)
+            zadnjaGeneracija += 1
+            var stanje = DogodekStanje(lokalni: lokalni, generacija: zadnjaGeneracija)
+            if razprsi { stanje.naslednjaOsvezitev = zdaj.addingTimeInterval(Double.random(in: Self.razprsitevVstopaSekunde)) }
+            stanja[d.id] = stanje
+            zazeniNalaganjeIzDiska(d.id, generacija: zadnjaGeneracija)
         }
         osveziPovzetek(zdaj: zdaj)
         posodobiPripravo()
     }
+
+    /// Za teste: kdaj tik naslednjic osvezi seznam dogodkov.
+    var osvezitevDogodkovOb: Date { naslednjaOsvezitevDogodkov }
+
+    /// Za teste: kdaj se seznam dogodka naslednjic osvezi po tiku.
+    func naslednjaOsvezitevSeznama(dogodek id: Int) -> Date? { stanja[id]?.naslednjaOsvezitev }
 
     private func postaviDogodke(_ seznam: [SkenDogodek]) {
         dogodki = seznam
@@ -364,10 +419,10 @@ final class SkenSeja: ObservableObject {
     }
 
     /// Seznam vstopnic dogodka z diska: branje in dekodiranje izven glavne niti. Prenos s streznika, ki je prisel prej, ima prednost.
-    private func zazeniNalaganjeIzDiska(_ id: Int) {
+    private func zazeniNalaganjeIzDiska(_ id: Int, generacija: Int) {
         let klub = klubId
         let disku = disk
-        nalaganjaIzDiska[id] = Task { [weak self] in
+        let naloga = Task { [weak self] in
             let shranjen = await Task.detached { () -> (ScanList, SkenSeznamMeta)? in
                 guard let podatki = disku.surovo(SkenDisk.imeSeznama(klub: klub, dogodek: id)),
                       let meta = disku.preberi(SkenSeznamMeta.self, SkenDisk.imeMeta(klub: klub, dogodek: id)),
@@ -375,18 +430,24 @@ final class SkenSeja: ObservableObject {
                 return (l, meta)
             }.value
             guard let self else { return }
-            self.nalaganjaIzDiska.removeValue(forKey: id)
+            // Samo svoj zapis: dogodek je med branjem lahko izstopil in znova vstopil (nov vstop ima svojo nalogo).
+            if self.nalaganjaIzDiska[id]?.generacija == generacija { self.nalaganjaIzDiska.removeValue(forKey: id) }
+            guard self.stanja[id]?.generacija == generacija else { return }
             guard let (l, meta) = shranjen, l.eventId == id || l.eventId == 0, self.stanja[id]?.indeks == nil else { return }
             self.stanja[id]?.indeks = SkenIndeks(l)
             self.stanja[id]?.seznamHash = meta.hash
             self.stanja[id]?.zadnjiPrenos = meta.prenesenoOb
             self.osveziPovzetek()
         }
+        nalaganjaIzDiska[id] = (generacija, naloga)
     }
 
     /// Pocaka, da je seznam dogodka prebran z diska (le branje datoteke, brez omrezja).
+    /// Z gornjo mejo (1 s): pocasen disk ne sme zadrzati odlocitve na vratih; ob roku se odloca z znanim (lahko se praznim) seznamom.
     private func pocakajNalaganjeIzDiska(_ id: Int) async {
-        if let t = nalaganjaIzDiska[id] { await t.value }
+        guard let n = nalaganjaIzDiska[id] else { return }
+        let naloga = n.naloga
+        _ = await SkenRok.zRokom(Self.rokBranjaIzDiska) { await naloga.value }
     }
 
     /// Prebere seznam vsakega aktivnega dogodka z diska, poskrbi za kljuc in prenese sezname.
@@ -401,12 +462,21 @@ final class SkenSeja: ObservableObject {
     }
 
     /// `zadnjiPrenos` (najstarejsi med aktivnimi) in `seznamStar` (kateri koli star). Objavi samo spremembo.
-    private func osveziPovzetek(zdaj: Date = Date()) {
+    private func osveziPovzetek(zdaj zdajPodan: Date? = nil) {
+        let zdaj = zdajPodan ?? ura()
         let casi = aktivni.map { stanja[$0.id]?.zadnjiPrenos }
         let najstarejsi: Date? = casi.contains(where: { $0 == nil }) ? nil : casi.compactMap { $0 }.min()
         if najstarejsi != zadnjiPrenos { zadnjiPrenos = najstarejsi }
         let star = casi.contains { Self.jeStar($0, zdaj: zdaj) }
         if star != seznamStar { seznamStar = star }
+        let uraSlaba = aktivni.contains { stanja[$0.id]?.uraNapacna == true }
+        if uraSlaba != uraNapacna { uraNapacna = uraSlaba }
+    }
+
+    /// Ura telefona se od `generated_at` svezega seznama razlikuje za vec kot 5 min (v obe smeri). Neberljiv `generated_at` ni dokaz.
+    static func jeUraNapacna(generatedAt: String, zdaj: Date) -> Bool {
+        guard let streznik = SkenCas.razcleni(generatedAt) else { return false }
+        return abs(zdaj.timeIntervalSince(streznik)) > dovoljenaRazlikaUre
     }
 
     private var jePripravljen: Bool { kljuc?.surovi != nil }
@@ -463,18 +533,23 @@ final class SkenSeja: ObservableObject {
     /// iz okna, rezultata ne dobi (stanje je odstranjeno).
     func osveziSeznam(_ id: Int) async {
         guard let st = stanja[id], !st.osvezitevVTeku, !dostopOdvzet else { return }
+        let gen = st.generacija
+        // Vse po cakanju velja samo za TA vstop dogodka v okno: dogodek je lahko medtem izstopil in znova vstopil (nov vstop ima svoje
+        // stanje, svoj prenos in svojo oznako osvezitve).
+        func jeSvoj() -> Bool { stanja[id]?.generacija == gen }
         stanja[id]?.osvezitevVTeku = true
-        defer { stanja[id]?.osvezitevVTeku = false }
-        stanja[id]?.naslednjaOsvezitev = Date().addingTimeInterval(Double.random(in: Self.osvezitevSekunde))
+        defer { if jeSvoj() { stanja[id]?.osvezitevVTeku = false } }
+        stanja[id]?.naslednjaOsvezitev = ura().addingTimeInterval(Double.random(in: Self.osvezitevSekunde))
         do {
             let podatki = try await api.seznam(token: zeton(), klubId: klubZaApi, dogodekId: id)
-            guard stanja[id] != nil else { return }
+            guard jeSvoj() else { return }
             zabeleziUspeh()
-            let zdaj = Date()
+            let zdaj = ura()
             let hash = await Task.detached { SkenRok.sha256(podatki) }.value
-            guard let trenutno = stanja[id] else { return }
+            guard jeSvoj(), let trenutno = stanja[id] else { return }
             if hash == trenutno.seznamHash, trenutno.indeks != nil {
-                // Nespremenjeno: samo osvezi cas prenosa (tudi na disku, da po ponovnem zagonu ni videti starejsi).
+                // Nespremenjeno (streznik/URLSession ob 304 vrne shranjen odgovor): samo osvezi cas prenosa (tudi na disku, da po
+                // ponovnem zagonu ni videti starejsi). `generated_at` takega odgovora je star, zato ure tu ne presojamo.
                 stanja[id]?.zadnjiPrenos = zdaj
                 osveziPovzetek()
                 disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
@@ -484,10 +559,12 @@ final class SkenSeja: ObservableObject {
                 let l = try JSONDecoder().decode(ScanList.self, from: podatki)
                 return (l, SkenIndeks(l))
             }.value
-            guard stanja[id] != nil else { return }
+            guard jeSvoj() else { return }
             stanja[id]?.indeks = idx
             stanja[id]?.seznamHash = hash
             stanja[id]?.zadnjiPrenos = zdaj
+            // Spremenjena vsebina je prisla s streznika (200), torej je `generated_at` svez: razlika od ure telefona je napaka ure.
+            stanja[id]?.uraNapacna = Self.jeUraNapacna(generatedAt: seznam.generatedAt, zdaj: zdaj)
             osveziPovzetek()
             disk.zapisiSurovo(podatki, SkenDisk.imeSeznama(klub: klubId, dogodek: id))
             disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
@@ -499,7 +576,7 @@ final class SkenSeja: ObservableObject {
             if await jeOdvzemDostopa(error) { return }
             zabeleziNapako(error)
             // Brez povezave ali s pokvarjenim odgovorom poskusi kmalu znova (vratar naj vidi, da se je povezava vrnila), ne cez 2 min.
-            stanja[id]?.naslednjaOsvezitev = Date().addingTimeInterval(Self.odmikOsvezitveOdNapake)
+            if jeSvoj() { stanja[id]?.naslednjaOsvezitev = ura().addingTimeInterval(Self.odmikOsvezitveOdNapake) }
             posodobiPripravo()
         }
     }
@@ -522,6 +599,7 @@ final class SkenSeja: ObservableObject {
         switch sodba.barva {
         case .rdece:
             zavrnjeni += 1
+            if sodba.razlog == .nijeZaDanes { osveziDogodkeZaradiKode(dogodekId: sodba.dogodekId) }
             return SkenPrikaz.iz(sodba, qr: qr)
         case .zeleno, .rumeno:
             guard let id = sodba.dogodekId, let d = aktivni.first(where: { $0.id == id }) else {
@@ -531,6 +609,24 @@ final class SkenSeja: ObservableObject {
             if sodba.barva == .zeleno { return await sprejmiZeleno(qr: qr, sodba: sodba, dogodek: d) }
             return await preveriRumeno(qr: qr, sodba: sodba, dogodek: d)
         }
+    }
+
+    /// Zavrnjena koda za dogodek, ki ni aktiven, je lahko posledica zastarelega seznama dogodkov (klub je dogodek objavil ali prestavil
+    /// med vecerom). Seznam dogodkov zato znova nalozimo, ampak samo ce ima to smisel: dogodek je med shranjenimi NEZNAN, ali je znan,
+    /// a je seznam starejsi od ~5 min; najvec 1x na minuto; z backoffom, ce je zadnje nalaganje padlo (padel streznik ne dobi klica
+    /// na minuto). Tece v ozadju (Task): rdece se pokaze takoj, naslednji sken je pravilen, ko seznam pride.
+    private func osveziDogodkeZaradiKode(dogodekId: Int?) {
+        let zdaj = ura()
+        guard povezava, !dostopOdvzet, !dogodkiVTeku,
+              zdaj.timeIntervalSince(zadnjeNalaganjeZaradiKode) >= Self.najmanjMedNalaganjiZaradiKode,
+              zaporedneNapakeDogodkov == 0 || zdaj >= naslednjaOsvezitevDogodkov else { return }
+        let znan = dogodekId.map { id in dogodki.contains { $0.id == id } } ?? false
+        if znan {
+            guard let posodobljeni = dogodkiPosodobljeni,
+                  zdaj.timeIntervalSince(posodobljeni) > Self.seznamDogodkovStarPoSekundah else { return }
+        }
+        zadnjeNalaganjeZaradiKode = zdaj
+        Task { await osveziDogodke() }
     }
 
     /// Spremeni lokalne skene dogodka (v pomnilniku, ce je dogodek se aktiven, sicer z diska) in jih zapise na disk. Dogodek je lahko
@@ -620,7 +716,7 @@ final class SkenSeja: ObservableObject {
             if r.result == "ok" {
                 sprejeti += 1
                 let kljucLokalnih = sodba.serial ?? qr
-                let ob = Date()
+                let ob = ura()
                 spremeniLokalne(d.id) { $0[kljucLokalnih] = ob }   // brez povezave ista koda ne sme spet na rumeno -> rdece "ze skenirano"
             } else {
                 zavrnjeni += 1
@@ -649,7 +745,9 @@ final class SkenSeja: ObservableObject {
         guard aktivni.contains(where: { $0.id == telo.eventId }) else {
             return SkenPrikaz.iz(SkenSodba(razlog: .nijeZaDanes, serial: telo.serial, dogodekId: telo.eventId), qr: qr)
         }
-        if let cas = stanja[telo.eventId]?.lokalni[telo.serial] {
+        // event_id v kodi v1 ni podpisan: ista vstopnica je lahko ze skenirana pod DRUGIM aktivnim dogodkom (negativni dokaz).
+        if let cas = SkenOdlocitev.lokalniSkenKjerkoli(serial: telo.serial, aktivni: Set(aktivni.map { $0.id }),
+                                                          lokalni: stanja.mapValues { $0.lokalni }, najprej: telo.eventId) {
             return SkenPrikaz.iz(SkenSodba(razlog: .zeUporabljenaLokalno, serial: telo.serial, kdaj: cas), qr: qr)
         }
         let vnos = SkenVnos(qr: qr, serial: telo.serial, eventId: telo.eventId, klubId: klubId, uporabnikId: uporabnikId)
@@ -703,7 +801,7 @@ final class SkenSeja: ObservableObject {
     private func odlozi() {
         zaporedneNapake += 1
         let odmik = min(5 * pow(2.0, Double(zaporedneNapake - 1)), Self.najdaljsiOdmik)
-        naslednjePosiljanje = Date().addingTimeInterval(odmik)
+        naslednjePosiljanje = ura().addingTimeInterval(odmik)
     }
 
     func potrdiKonflikt(_ k: SkenKonflikt) {

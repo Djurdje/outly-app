@@ -74,6 +74,12 @@ struct QRScannerView: View {
                     }
                     .accessibilityLabel(Text("Flashlight"))
                 }
+                if !seja.aktivni.isEmpty {
+                    // Dosegljivo tudi med skeniranjem: klub je dogodek objavil ali prestavil, telefon pa ima star seznam dogodkov.
+                    Button { Task { await seja.naloziDogodke() } } label: { Image(systemName: "arrow.clockwise") }
+                        .disabled(seja.dogodkiNalaga)
+                        .accessibilityLabel(Text("Reload events"))
+                }
             }
         }
         .sheet(isPresented: $pokaziKonflikte) {
@@ -183,6 +189,10 @@ struct QRScannerView: View {
                                 .font(.subheadline.weight(.semibold)).foregroundColor(.white.opacity(0.85))
                                 .multilineTextAlignment(.center)
                                 .padding(.top, 4)
+                        }
+                        if let t = seja.dogodkiPosodobljeni {
+                            Text("Events updated \(SkenPrikaz.casPrenosa(t))")
+                                .font(.footnote).foregroundColor(.white.opacity(0.5))
                         }
                         gumbPonovnoNalozi.padding(.top, 8)
                     }
@@ -307,6 +317,11 @@ struct QRScannerView: View {
             }
             if seja.dostopOdvzet {
                 Text("You are no longer on this club's team. The downloaded lists were removed from this phone.")
+                    .foregroundColor(.red)
+            }
+            if seja.uraNapacna {
+                // Okno skeniranja se racuna po uri telefona: pri napacni uri je »NOT TODAY'S EVENT« lahko napacen.
+                Text("The time on this phone is wrong — check date and time settings.")
                     .foregroundColor(.red)
             }
             if !seja.zapisOK {
