@@ -440,7 +440,7 @@ struct BusinessSales: Decodable {
 
 /// Odgovor POST /business/tickets/scan (200 in 4xx imata isto obliko).
 struct ScanResult: Decodable {
-    /// ok | already_used | invalid | unknown | wrong_club | unpaid | void | refunded
+    /// ok | already_used | invalid | unknown | wrong_club | unpaid | void | refunded | event_cancelled | not_today
     let result: String
     let message: String
     let usedAt: String?

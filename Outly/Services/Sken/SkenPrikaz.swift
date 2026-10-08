@@ -111,6 +111,7 @@ struct SkenPrikaz: Equatable {
         case "wrong_club": naslov = String(localized: "WRONG CLUB")
         case "unknown": naslov = String(localized: "UNKNOWN TICKET")
         case "unpaid": naslov = String(localized: "NOT PAID")
+        case "not_today": naslov = String(localized: "NOT TODAY'S EVENT")
         default: naslov = String(localized: "REFUSED")
         }
         return SkenPrikaz(barva: .rdece, naslov: naslov, podnaslov: r.message, vip: vip, guestList: gl)
@@ -129,6 +130,8 @@ struct SkenPrikaz: Equatable {
         case "refunded": return iz(SkenSodba(razlog: .vrnjena, serial: sodba.serial), qr: "")
         case "void": return iz(SkenSodba(razlog: .preklicana, serial: sodba.serial), qr: "")
         case "unpaid": return iz(SkenSodba(razlog: .neplacana, serial: sodba.serial), qr: "")
+        // Streznik (okno -12 h ... +6 h, backend #170): dogodek ni danes. Isti prikaz kot lokalni razlog.
+        case "not_today": return iz(SkenSodba(razlog: .nijeZaDanes, serial: sodba.serial), qr: "")
         case "event_cancelled": return odpovedanDogodek(vip: nil)
         case "wrong_club":
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG CLUB"), podnaslov: String(localized: "This ticket is for another club."))
@@ -169,6 +172,7 @@ struct SkenPrikaz: Equatable {
         case "refunded": return String(localized: "The ticket was refunded.")
         case "void": return String(localized: "The ticket was cancelled.")
         case "event_cancelled": return String(localized: "This event was cancelled.")
+        case "not_today": return String(localized: "This ticket is not for today's event.")
         case "invalid": return String(localized: "The server rejected the code.")
         default: return String(localized: "The server did not confirm this entry.")
         }
