@@ -9,8 +9,8 @@ struct VipRazporedOddelek: View {
     let clubId: Int
     /// nil = dogodek se ni shranjen.
     let eventId: Int?
-    /// Izbrano prizorisce v obrazcu se razlikuje od shranjenega: kopija gostitelja velja sele po shranjevanju dogodka.
-    let prizoriscePoSpremembi: Bool
+    /// Obrazec ima neshranjene spremembe: kopija gostitelja in urejevalnik delata na shranjenem dogodku, zato sta onemogocena.
+    let neshranjeno: Bool
 
     @EnvironmentObject private var session: SessionStore
 
@@ -83,7 +83,7 @@ struct VipRazporedOddelek: View {
         let imeGostitelja = layout.venueClubName.isEmpty ? String(localized: "the venue") : layout.venueClubName
 
         if layout.venueHasLayout {
-            vrstica(layout.jeKopijaGostitelja) {
+            vrstica(layout.jeKopijaGostitelja, onemogoceno: neshranjeno) {
                 if layout.jeDogodkov {
                     potrdiKopijo = true
                 } else {
@@ -94,7 +94,7 @@ struct VipRazporedOddelek: View {
             }
         }
 
-        vrstica(layout.jeDogodkov && !layout.jeKopijaGostitelja) {
+        vrstica(layout.jeDogodkov && !layout.jeKopijaGostitelja, onemogoceno: neshranjeno) {
             if layout.jeDogodkov {
                 urejanje = Urejanje(layout: layout)
             } else {
@@ -123,11 +123,11 @@ struct VipRazporedOddelek: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            .disabled(dela)
+            .disabled(dela || neshranjeno)
         }
 
-        if prizoriscePoSpremembi, layout.venueHasLayout || layout.venueClubId != nil {
-            Text("You changed the venue. Save the event to use the new venue's layout.")
+        if neshranjeno {
+            Text("Save your changes first. The layout is set up on the saved event.")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -158,7 +158,7 @@ struct VipRazporedOddelek: View {
                 Button("Remove VIP tables", role: .destructive) { Task { await brezVip(eventId: eventId) } }
                 Button("Keep them", role: .cancel) {}
             } message: {
-                Text("Tables that already have orders are archived. Those orders stay valid and their guests can still enter.")
+                Text("The tables and prices drawn for this event are lost. Tables with orders stay archived and those orders stay valid. Phone reservations on these tables are released.")
             }
     }
 
@@ -173,7 +173,7 @@ struct VipRazporedOddelek: View {
     }
 
     /// Vrstica izbire s kljukico. `izbrana` je trenutno stanje; dotik poklice `dejanje`.
-    private func vrstica<L: View>(_ izbrana: Bool, dejanje: @escaping () -> Void, @ViewBuilder naslov: () -> L) -> some View {
+    private func vrstica<L: View>(_ izbrana: Bool, onemogoceno: Bool = false, dejanje: @escaping () -> Void, @ViewBuilder naslov: () -> L) -> some View {
         Button(action: dejanje) {
             HStack {
                 naslov()
@@ -185,7 +185,8 @@ struct VipRazporedOddelek: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(dela)
+        .disabled(dela || onemogoceno)
+        .opacity(onemogoceno ? 0.4 : 1)
         .accessibilityAddTraits(izbrana ? .isSelected : [])
     }
 

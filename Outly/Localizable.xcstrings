@@ -5809,6 +5809,17 @@
         }
       }
     },
+    "Save your changes first. The layout is set up on the saved event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej shrani spremembe. Razpored se ureja na shranjenem dogodku."
+          }
+        }
+      }
+    },
     "Scanned %@": {
       "extractionState": "manual",
       "localizations": {
@@ -6656,17 +6667,6 @@
         }
       }
     },
-    "Tables that already have orders are archived. Those orders stay valid and their guests can still enter.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mize z naročili se arhivirajo. Ta naročila ostanejo veljavna in gostje še vedno lahko vstopijo."
-          }
-        }
-      }
-    },
     "The event shows on this club's page too, but only your team can scan tickets.": {
       "extractionState": "manual",
       "localizations": {
@@ -6685,6 +6685,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plačilo ni bilo dokončano. Poskusi znova."
+          }
+        }
+      }
+    },
+    "The tables and prices drawn for this event are lost. Tables with orders stay archived and those orders stay valid. Phone reservations on these tables are released.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Narisani tloris, mize in cene tega dogodka se izgubijo. Mize z naročili ostanejo arhivirane in ta naročila veljajo. Telefonske rezervacije na teh mizah se sprostijo."
           }
         }
       }
@@ -8404,17 +8415,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Urejaš lahko samo dogodke lastnega kluba."
-          }
-        }
-      }
-    },
-    "You changed the venue. Save the event to use the new venue's layout.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zamenjal(a) si prizorišče. Shrani dogodek, da uporabiš razpored novega prizorišča."
           }
         }
       }

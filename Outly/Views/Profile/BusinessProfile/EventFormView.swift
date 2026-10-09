@@ -55,11 +55,27 @@ struct EventFormView: View {
 
     private var isEditing: Bool { existing != nil }
 
-    /// Prizorisce v obrazcu ni vec tisto, ki je shranjeno pri dogodku (kopija VIP razporeda gostitelja velja po shranjevanju).
-    private var prizoriscePoSpremembi: Bool {
+    /// Obrazec se razlikuje od shranjenega dogodka. Razdelek VIP (kopija gostitelja, urejevalnik) dela na SHRANJENEM
+    /// dogodku, zato je do shranjevanja onemogocen. Novega dogodka ni (razdelek je takrat samo namig).
+    private var imaNeshranjeneSpremembe: Bool {
         guard let e = existing else { return false }
-        let novoId: Int? = nacinPrizorisca == .outly ? venueClubId : nil
-        return novoId != e.venueClubId
+        func minute(_ a: Date, _ b: Date?) -> Bool { b == nil || abs(a.timeIntervalSince(b!)) >= 60 }
+        if title != e.title || description != e.description || minAge != e.minAge { return true }
+        if minute(startAt, e.startDate) { return true }
+        if hasEnd != (e.endDate != nil) { return true }
+        if hasEnd, let k = e.endDate, minute(endAt, k) { return true }
+        if Set(selectedGenres) != Set(e.genres) { return true }
+        if priceText != (e.ticketPriceCents.map { Self.euros(fromCents: $0) } ?? "") { return true }
+        if capacityText != (e.capacity.map { String($0) } ?? "") { return true }
+        if ticketUrl != (e.ticketUrl ?? "") || posterUrl != e.posterUrl { return true }
+        if e.status != "cancelled", isPublished != (e.status == "published") { return true }
+        if isOrganizer {
+            let novoId: Int? = nacinPrizorisca == .outly ? venueClubId : nil
+            if novoId != e.venueClubId { return true }
+            if nacinPrizorisca == .custom, e.venueClubId == nil,
+               venueName != e.venueName || venueAddress != e.venueAddress || venueCity != e.venueCity { return true }
+        }
+        return false
     }
 
     var body: some View {
@@ -140,7 +156,7 @@ struct EventFormView: View {
 
                 // VIP mize organizatorja (backend 039): vir razporeda miz za ta dogodek. Pri novem dogodku samo namig.
                 if isOrganizer {
-                    VipRazporedOddelek(clubId: clubId, eventId: existing?.id, prizoriscePoSpremembi: prizoriscePoSpremembi)
+                    VipRazporedOddelek(clubId: clubId, eventId: existing?.id, neshranjeno: imaNeshranjeneSpremembe)
                 }
 
                 Section("Poster") {
