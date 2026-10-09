@@ -69,7 +69,7 @@ struct VipUrStanje: Equatable {
                                              oznaka: e.label, oblika: "round", sedezi: 4, cena: ""))
             }
         }
-        for m in layout.tables {
+        for m in layout.aktivneMize {
             predmeti.append(VipUrPredmet(id: UUID(), tip: Self.tipMize, streznikId: m.id, x: m.x, y: m.y, w: m.w, h: m.h,
                                          oznaka: m.label, oblika: m.shape == "rect" ? "rect" : "round",
                                          sedezi: min(20, max(1, m.seats)), cena: Self.evri(centov: m.priceCents)))

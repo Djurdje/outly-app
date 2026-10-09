@@ -42,9 +42,11 @@ struct VipLayoutTable: Decodable {
     let shape: String
     let seats: Int
     let priceCents: Int
+    /// Arhivirana miza (backend jo vrne, ker ima narocilo). Urejevalnik je ne kaze in je ne poslje v PUT.
+    let archived: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, label, x, y, w, h, shape, seats
+        case id, label, x, y, w, h, shape, seats, archived
         case priceCents = "price_cents"
     }
 
@@ -59,6 +61,7 @@ struct VipLayoutTable: Decodable {
         shape = try c.decodeIfPresent(String.self, forKey: .shape) ?? "round"
         seats = try c.decodeIfPresent(Int.self, forKey: .seats) ?? 1
         priceCents = try c.decodeIfPresent(Int.self, forKey: .priceCents) ?? 0
+        archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
     }
 }
 
@@ -115,6 +118,9 @@ struct VipLayout: Decodable {
         self.venueClubName = venueClubName
         self.venueHasLayout = venueHasLayout
     }
+
+    /// Mize, ki jih je mogoce urejati (brez arhiviranih).
+    var aktivneMize: [VipLayoutTable] { tables.filter { !$0.archived } }
 
     /// Razpored tega dogodka (ne klubski tloris).
     var jeDogodkov: Bool { source == "event" }

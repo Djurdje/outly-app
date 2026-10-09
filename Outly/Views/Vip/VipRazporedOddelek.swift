@@ -117,7 +117,7 @@ struct VipRazporedOddelek: View {
                 HStack {
                     Text("Edit tables and layout")
                     Spacer()
-                    Text(verbatim: String(layout.tables.count)).foregroundStyle(.secondary)
+                    Text(verbatim: String(layout.aktivneMize.count)).foregroundStyle(.secondary)
                     Image(systemName: "chevron.right")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.tertiary)
@@ -166,7 +166,7 @@ struct VipRazporedOddelek: View {
         if !layout.jeDogodkov {
             return String(localized: "This event has no VIP tables. Choose a layout to sell tables.")
         }
-        if layout.tables.isEmpty {
+        if layout.aktivneMize.isEmpty {
             return String(localized: "This event has its own layout, but no tables yet.")
         }
         return String(localized: "Guests pick a table on this event's own layout.")
