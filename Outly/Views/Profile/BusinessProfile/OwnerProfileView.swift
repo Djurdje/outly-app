@@ -219,6 +219,8 @@ struct ClubSetupView: View {
     @State private var name = ""
     @State private var address = ""
     @State private var city = ""
+    /// "I organize events without my own venue" (backend 037): brez naslova, mesto neobvezno.
+    @State private var isOrganizer = false
     @State private var minAge = 18
     @State private var genres: [String] = []
     @State private var selectedGenres: Set<String> = []
@@ -235,7 +237,7 @@ struct ClubSetupView: View {
 
     private var lahkoShrani: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
-            && !city.trimmingCharacters(in: .whitespaces).isEmpty
+            && (isOrganizer || !city.trimmingCharacters(in: .whitespaces).isEmpty)
             && !isSaving && !isUploadingLogo
     }
 
@@ -286,9 +288,20 @@ struct ClubSetupView: View {
                 Spacer()
             }
 
-            polje("Club name", text: $name, placeholder: "e.g. Klub K4")
-            polje("Address", text: $address, placeholder: "Street and number")
-            polje("City", text: $city, placeholder: "e.g. Ljubljana")
+            polje(isOrganizer ? "Organizer name" : "Club name", text: $name,
+                  placeholder: isOrganizer ? "e.g. Night Events" : "e.g. Klub K4")
+
+            // Promotor ali podjetje brez lastnega prizorisca: stran kot klub, a brez naslova in pina;
+            // vsak dogodek pove, kje poteka.
+            OutlyToggleDetailRow(icon: "megaphone",
+                                 title: "I organize events without my own venue",
+                                 subtitle: "No address or map pin. You choose the venue for each event.",
+                                 isOn: $isOrganizer)
+
+            if !isOrganizer {
+                polje("Address", text: $address, placeholder: "Street and number")
+            }
+            polje(isOrganizer ? "City (optional)" : "City", text: $city, placeholder: "e.g. Ljubljana")
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Minimum age")
@@ -382,20 +395,21 @@ struct ClubSetupView: View {
         errorText = nil
         var lat: Double?
         var lng: Double?
-        let naslov = [address, city].map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: ", ")
-        if !naslov.isEmpty, let loc = try? await CLGeocoder().geocodeAddressString(naslov).first?.location {
+        let naslov = [isOrganizer ? "" : address, city].map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: ", ")
+        if !isOrganizer, !naslov.isEmpty, let loc = try? await CLGeocoder().geocodeAddressString(naslov).first?.location {
             lat = loc.coordinate.latitude
             lng = loc.coordinate.longitude
         }
         var fields: [String: Any] = [
             "name": name.trimmingCharacters(in: .whitespaces),
             "logoUrl": logoUrl,
-            "address": address.trimmingCharacters(in: .whitespaces),
+            "address": isOrganizer ? "" : address.trimmingCharacters(in: .whitespaces),
             "city": city.trimmingCharacters(in: .whitespaces),
             "minAge": minAge,
             "genres": Array(selectedGenres).sorted(),
         ]
         if let lat, let lng { fields["lat"] = lat; fields["lng"] = lng }
+        if isOrganizer { fields["isOrganizer"] = true }
         do {
             let klub = try await APIClient.shared.createClub(token: session.token, fields: fields)
             _ = await session.refreshMe()

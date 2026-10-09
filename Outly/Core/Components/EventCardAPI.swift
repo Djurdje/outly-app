@@ -67,6 +67,14 @@ struct EventCardAPI: View {
                 Text(event.displayDateShort)
                     .font(.subheadline)
                     .foregroundStyle(Color.white.opacity(0.7))
+
+                // Gostovan dogodek organizatorja (backend 037): ime organizatorja pod datumom.
+                if event.hosted, let clubName, !clubName.isEmpty {
+                    Text(clubName)
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.55))
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 8)
@@ -80,6 +88,15 @@ struct EventCardAPI: View {
                     // Rahel sij, blizu gumbov (Sij.swift), a sibkejsi - to je napis, ne gumb.
                     .shadow(color: Color.outlyBlue.opacity(0.55), radius: 4)
                     .shadow(color: Color.outlyBlue.opacity(0.30), radius: 10)
+
+                if event.hosted {
+                    Text("Hosted")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.white.opacity(0.85))
+                        .padding(.horizontal, 10)
+                        .frame(height: 26)
+                        .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 1))
+                }
 
                 if let planBadge {
                     znacka(planBadge)

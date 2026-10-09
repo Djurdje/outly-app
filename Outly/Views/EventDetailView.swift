@@ -6,6 +6,8 @@ struct EventDetailView: View {
     let event: APIEvent
 
     @State private var club: APIClub?
+    /// Klub gostitelj (`event.venueClubId`): njegov naslov, zemljevid in telefon so naslov dogodka.
+    @State private var venueClub: APIClub?
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var showBuy = false
@@ -63,6 +65,7 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .task { await loadClub() }
+        .task { await loadVenueClub() }
         .task { await loadPlan() }
         .task { await loadOpis() }
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
@@ -81,7 +84,7 @@ struct EventDetailView: View {
             }
         }
         .sheet(isPresented: $showBarPrices) {
-            BarPricesView(clubName: club?.name ?? String(localized: "Club"), items: club?.barPrices ?? [])
+            BarPricesView(clubName: barClub?.name ?? String(localized: "Club"), items: barClub?.barPrices ?? [])
         }
     }
 
@@ -229,6 +232,13 @@ struct EventDetailView: View {
     }
 
     // MARK: - Klub: logo, ime, 18+ -> stran kluba
+    // Organizator (is_organizer): "Organizer: <ime>" -> njegova stran (dogovor 9. 10. 2026).
+    private var clubRowTitle: String {
+        guard let club else { return String(localized: "Club") }
+        if club.isOrganizer { return String(localized: "Organizer: \(club.name)") }
+        return club.name
+    }
+
     private var clubRow: some View {
         NavigationLink {
             ClubDetailView(clubId: event.clubId)
@@ -247,11 +257,11 @@ struct EventDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(club?.name ?? String(localized: "Club"))
+                    Text(clubRowTitle)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    Text("View club")
+                    Text(LocalizedStringKey(club?.isOrganizer == true ? "View organizer" : "View club"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.55))
                 }
@@ -481,44 +491,137 @@ struct EventDetailView: View {
     }
 
     // MARK: - Info block (address/phone/map style)
+    // Kje je dogodek (dogovor 9. 10. 2026): klub gostitelj (vrstica "at <klub>" -> njegova stran, njegov
+    // naslov/telefon/zemljevid), prosto vpisano prizorisce (venue_*) ali naslov kluba, ki dogodek objavlja.
+    // Organizator brez prizorisca nima naslova -> blok se ne pokaze.
+
+    /// Podatki za blok "kje". nil = ni kaj pokazati (organizator brez prizorisca).
+    private struct Prizorisce {
+        var ime: String = ""
+        var gostiteljId: Int? = nil
+        var naslov: String = "-"
+        var telefon: String? = nil
+        var lat: Double? = nil
+        var lng: Double? = nil
+    }
+
+    private var prizorisce: Prizorisce? {
+        if let vid = event.venueClubId {
+            var p = Prizorisce()
+            p.gostiteljId = vid
+            p.ime = event.imePrizorisca.isEmpty ? (venueClub?.name ?? "") : event.imePrizorisca
+            p.naslov = venueClub?.addressFull ?? "-"
+            p.telefon = venueClub?.contactPhone
+            p.lat = venueClub?.lat
+            p.lng = venueClub?.lng
+            return p
+        }
+        if event.imaPrizorisce {
+            var p = Prizorisce()
+            p.ime = event.imePrizorisca
+            let naslov = event.naslovPrizorisca
+            p.naslov = naslov.isEmpty ? "-" : naslov
+            p.lat = event.venueLat
+            p.lng = event.venueLng
+            return p
+        }
+        if club?.isOrganizer == true { return nil }
+        var p = Prizorisce()
+        p.naslov = club?.addressFull ?? "-"
+        p.telefon = club?.contactPhone
+        p.lat = club?.lat
+        p.lng = club?.lng
+        return p
+    }
+
+    /// Klub, katerega cenik bara velja za dogodek: gostitelj, sicer klub, ki dogodek objavlja.
+    private var barClub: APIClub? { venueClub ?? club }
+
+    @ViewBuilder
     private var infoBlock: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 14) {
-                VStack(alignment: .leading, spacing: 10) {
-                    labeled(String(localized: "ADDRESS"), club?.addressFull ?? "-")
-                    labeled(String(localized: "PHONE"), club?.contactPhone.isEmpty == false ? club!.contactPhone : "-")
-                }
+        let p = prizorisce
+        if p != nil || isLoading || errorText != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                if let p {
+                    prizoriscePovezava(p)
 
-                Spacer(minLength: 0)
+                    HStack(alignment: .top, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            labeled(String(localized: "ADDRESS"), p.naslov)
+                            if let tel = p.telefon {
+                                labeled(String(localized: "PHONE"), tel.isEmpty ? "-" : tel)
+                            }
+                        }
 
-                if let club, let lat = club.lat, let lng = club.lng {
-                    // Staticen; klik -> Apple Maps / Google Maps z navodili za pot
-                    StaticnaKarta(lat: lat, lng: lng)
-                        .frame(width: 150, height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
-                        .overlay(
+                        Spacer(minLength: 0)
+
+                        if let lat = p.lat, let lng = p.lng {
+                            // Staticen; klik -> Apple Maps / Google Maps z navodili za pot
+                            StaticnaKarta(lat: lat, lng: lng)
+                                .frame(width: 150, height: 150)
+                                .clipShape(RoundedRectangle(cornerRadius: 18))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                )
+                        } else {
                             RoundedRectangle(cornerRadius: 18)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
-                } else {
-                    RoundedRectangle(cornerRadius: 18)
-                        .opacity(0.10)
-                        .frame(width: 150, height: 150)
-                        .overlay(Image(systemName: "map").font(.title2))
+                                .opacity(0.10)
+                                .frame(width: 150, height: 150)
+                                .overlay(Image(systemName: "map").font(.title2))
+                        }
+                    }
+                }
+
+                if isLoading {
+                    ProgressView().padding(.top, 6)
+                }
+                if let errorText {
+                    Text(errorText).foregroundStyle(.red)
                 }
             }
+            .padding(16)
+            .background(Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .padding(.horizontal, 16)
+        }
+    }
 
-            if isLoading {
-                ProgressView().padding(.top, 6)
-            }
-            if let errorText {
-                Text(errorText).foregroundStyle(.red)
+    /// Vrstica "at <ime prizorisca>"; pri klubu gostitelju vodi na njegovo stran (ClubDetailView).
+    @ViewBuilder
+    private func prizoriscePovezava(_ p: Prizorisce) -> some View {
+        if !p.ime.isEmpty {
+            if let id = p.gostiteljId {
+                NavigationLink {
+                    ClubDetailView(clubId: id)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundStyle(.white.opacity(0.7))
+                        Text("at \(p.ime)")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text("at \(p.ime)")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
             }
         }
-        .padding(16)
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .padding(.horizontal, 16)
     }
 
     // MARK: - Cenik bara (gumb odpre seznam; Martin 14. 9.)
@@ -534,7 +637,7 @@ struct EventDetailView: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.white)
                 Spacer()
-                let n = club?.barPrices.count ?? 0
+                let n = barClub?.barPrices.count ?? 0
                 Group {
                     if n == 0 {
                         Text("Not added yet")
@@ -747,6 +850,15 @@ struct EventDetailView: View {
                 await MainActor.run { withAnimation(.snappy) { myPlan = prejsnje } }
             }
             await MainActor.run { planSubmitting = false }
+        }
+    }
+
+    /// Klub gostitelj (samo za dogodke z `venue_club_id`); tiho ob napaki: vrstica "at <ime>"
+    /// ostane (ime pride z dogodkom), manjka le naslov in zemljevid.
+    private func loadVenueClub() async {
+        guard let vid = event.venueClubId else { return }
+        if let c = try? await APIClient.shared.fetchClub(id: vid) {
+            await MainActor.run { venueClub = c }
         }
     }
 

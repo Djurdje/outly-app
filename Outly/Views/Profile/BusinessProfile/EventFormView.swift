@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import CoreLocation
 
 /// Obrazec za nov dogodek (POST /events) ali urejanje (PATCH /events/:id).
 /// Cena se vnese v evrih, poslje pa se v CENTIH kot celo stevilo (Decimal, ne Double).
@@ -23,6 +24,17 @@ struct EventFormView: View {
     @State private var ticketUrl = ""
     @State private var posterUrl = ""
     @State private var isPublished = true
+
+    // Prizorisce (backend 037): obvezno, ce klub organizira dogodke brez lastnega prizorisca
+    // (`isOrganizer`). Klub z Outlyja (venueClubId) ali prosto vpisana lokacija (ime, naslov, mesto).
+    private enum NacinPrizorisca: Hashable { case outly, custom }
+    @State private var isOrganizer = false
+    @State private var nacinPrizorisca: NacinPrizorisca = .outly
+    @State private var venueClubId: Int?
+    @State private var venueClubName = ""
+    @State private var venueName = ""
+    @State private var venueAddress = ""
+    @State private var venueCity = ""
 
     @State private var allGenres: [String] = []
     @State private var selectedGenres: Set<String> = []
@@ -58,6 +70,10 @@ struct EventFormView: View {
                     if hasEnd {
                         DatePicker("Ends", selection: $endAt, in: startAt..., displayedComponents: [.date, .hourAndMinute])
                     }
+                }
+
+                if isOrganizer {
+                    prizoriscaSection
                 }
 
                 Section("Who") {
@@ -211,9 +227,76 @@ struct EventFormView: View {
                 if let item { Task { await uploadRecap(item) } }
             }
             .task { await loadGenres() }
+            .task { await loadOrganizer() }
             .onAppear(perform: prefill)
         }
         .preferredColorScheme(.dark)
+    }
+
+    // MARK: - prizorisce
+
+    private var prizoriscaSection: some View {
+        Section("Venue") {
+            Picker("Venue", selection: $nacinPrizorisca) {
+                Text("On Outly").tag(NacinPrizorisca.outly)
+                Text("Custom").tag(NacinPrizorisca.custom)
+            }
+            .pickerStyle(.segmented)
+
+            if nacinPrizorisca == .outly {
+                NavigationLink {
+                    VenueClubPickerView(excludeClubId: clubId) { club in
+                        venueClubId = club.id
+                        venueClubName = club.name
+                    }
+                } label: {
+                    HStack {
+                        Text("Club")
+                        Spacer()
+                        if venueClubId != nil {
+                            Text(venueClubName)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        } else {
+                            Text("Choose a club").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Text("The event shows on this club's page too, but only your team can scan tickets.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                TextField("Venue name", text: $venueName)
+                TextField("Address", text: $venueAddress)
+                TextField("City", text: $venueCity)
+                Text("Address and city put the event on the map.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    /// Ali klub organizira brez lastnega prizorisca (javni GET /clubs/:id). Tiho ob napaki:
+    /// obrazec ostane brez razdelka, streznik pri organizatorju brez prizorisca vrne 400.
+    private func loadOrganizer() async {
+        guard let c = try? await APIClient.shared.fetchClub(id: clubId) else { return }
+        isOrganizer = c.isOrganizer
+    }
+
+    /// Naslov prizorisca -> koordinate (kot pri klubu, CLGeocoder). Neuspeh ni usoden: dogodek se shrani
+    /// brez zemljevida. Nespremenjen naslov obdrzi koordinate obstojecega dogodka.
+    private func koordinatePrizorisca() async -> (Double, Double)? {
+        let naslov = venueAddress.trimmingCharacters(in: .whitespaces)
+        let mesto = venueCity.trimmingCharacters(in: .whitespaces)
+        if let e = existing, e.venueClubId == nil,
+           e.venueAddress == naslov, e.venueCity == mesto,
+           let lat = e.venueLat, let lng = e.venueLng {
+            return (lat, lng)
+        }
+        let poizvedba = [naslov, mesto].filter { !$0.isEmpty }.joined(separator: ", ")
+        guard !poizvedba.isEmpty else { return nil }
+        guard let loc = try? await CLGeocoder().geocodeAddressString(poizvedba).first?.location else { return nil }
+        return (loc.coordinate.latitude, loc.coordinate.longitude)
     }
 
     // MARK: - podatki
@@ -232,6 +315,16 @@ struct EventFormView: View {
         posterUrl = e.posterUrl
         recapVideoUrl = e.recapVideoUrl
         isPublished = (e.status == "published")
+        if let vid = e.venueClubId {
+            nacinPrizorisca = .outly
+            venueClubId = vid
+            venueClubName = e.imePrizorisca
+        } else if e.imaPrizorisce {
+            nacinPrizorisca = .custom
+            venueName = e.venueName
+            venueAddress = e.venueAddress
+            venueCity = e.venueCity
+        }
     }
 
     private func loadGenres() async {
@@ -282,6 +375,20 @@ struct EventFormView: View {
             capacity = c
         }
 
+        // Organizator brez lastnega prizorisca: dogodek mora povedati, kje je (streznik sicer 400).
+        let imePrizorisca = venueName.trimmingCharacters(in: .whitespaces)
+        let mestoPrizorisca = venueCity.trimmingCharacters(in: .whitespaces)
+        if isOrganizer {
+            if nacinPrizorisca == .outly, venueClubId == nil {
+                message = String(localized: "Choose the venue for this event.")
+                return
+            }
+            if nacinPrizorisca == .custom, imePrizorisca.isEmpty || mestoPrizorisca.isEmpty {
+                message = String(localized: "Enter the venue name and city.")
+                return
+            }
+        }
+
         var draft = APIClient.EventDraft(
             title: cleanTitle,
             description: description,
@@ -298,6 +405,20 @@ struct EventFormView: View {
 
         isSaving = true
         defer { isSaving = false }
+        if isOrganizer {
+            draft.posljiPrizorisce = true
+            if nacinPrizorisca == .outly {
+                draft.venueClubId = venueClubId
+            } else {
+                draft.venueName = imePrizorisca
+                draft.venueAddress = venueAddress.trimmingCharacters(in: .whitespaces)
+                draft.venueCity = mestoPrizorisca
+                if let (lat, lng) = await koordinatePrizorisca() {
+                    draft.venueLat = lat
+                    draft.venueLng = lng
+                }
+            }
+        }
         do {
             let saved: APIEvent
             if let e = existing {

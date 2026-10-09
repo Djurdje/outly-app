@@ -147,6 +147,20 @@ struct HomeView: View {
             .prefix(8).map { $0 }
     }
 
+    /// Dogodek uradnega profila Outly (`is_official`): kaze se v "Organized by Outly",
+    /// zato ga ostali razdelki (Big events coming up) ne ponovijo.
+    private func jeOutlyjev(_ e: APIEvent) -> Bool {
+        clubsById[e.clubId]?.isOfficial == true
+    }
+
+    /// "Organized by Outly": prihajajoci objavljeni dogodki klubov z `isOfficial`, najblizji prvi.
+    /// Brez filtrov (Filtri urejajo ostale sezname), da razdelek ne utripa.
+    private var outlyDogodki: [APIEvent] {
+        upcomingEvents
+            .filter { $0.status == "published" && !$0.hasEnded && jeOutlyjev($0) }
+            .sorted { ($0.startDate ?? .distantFuture) < ($1.startDate ?? .distantFuture) }
+    }
+
     /// Najvecji prihajajoci dogodek: po zmogljivosti, nato po prodanih, nato najblizji.
     private var bigComingUp: APIEvent? {
         // Kljuc razbit na korake, da tipni preverjevalnik ne obupa (tuple + vec ??).
@@ -155,7 +169,7 @@ struct HomeView: View {
             let cez: Double = e.startDate?.timeIntervalSinceNow ?? 0
             return (zmogljivost, e.soldCount, -cez)
         }
-        return sortedUpcoming.max { kljuc($0) < kljuc($1) }
+        return sortedUpcoming.filter { !jeOutlyjev($0) }.max { kljuc($0) < kljuc($1) }
     }
 
     /// Hit tedna: pretekli dogodek z najvec prodanimi; ce ga ni, najbolje prodajan prihajajoci.
@@ -242,6 +256,10 @@ struct HomeView: View {
                     if isLoading && upcomingEvents.isEmpty && clubs.isEmpty {
                         skeleton
                     } else {
+                        // 0. Organized by Outly (9. 10. 2026): prihajajoci dogodki uradnega profila Outly.
+                        // Naslov samo v anglescini; razdelek ni viden, ce dogodkov ni.
+                        outlySection
+
                         // 1. Suggestions (Figma 37:139) — siroke pasice klubov po zanrih
                         if !suggestedClubs.isEmpty {
                             sekcija("Suggestions", podnaslov: userGenres.isEmpty ? "Popular clubs" : "Based on your genres") {
@@ -388,6 +406,29 @@ struct HomeView: View {
             // Ob vrnitvi na zavihek (npr. z zaslona dogodka po "I'm in") osvezimo profil in nacrte
             // (Martin, 24. 9.: Going events in Friends plans morajo sledit takoj, ne sele po pull-to-refresh).
             if !clubs.isEmpty { Task { await loadMe(); await osveziNacrte() } }
+        }
+    }
+
+    // MARK: - Organized by Outly (loceno zaradi tipnega preverjevalnika, kot genreSection)
+    // Prvi dogodek velika kartica, nadaljnji vodoravna vrsta plakatov. Naslov se NE prevaja
+    // (Martin, 9. 10. 2026): v Localizable.xcstrings zanj ni vnosa.
+    @ViewBuilder
+    private var outlySection: some View {
+        let dogodki = outlyDogodki
+        if let prvi = dogodki.first {
+            let gostitelj: APIClub? = prvi.venueClubId.flatMap { clubsById[$0] }
+            let kje: String = prvi.kjeJe(gostitelj: gostitelj, organizator: clubsById[prvi.clubId])
+            sekcija("Organized by Outly", podnaslov: nil) {
+                VStack(alignment: .leading, spacing: 12) {
+                    NavigationLink { EventDetailView(event: prvi) } label: {
+                        HeroEventCard(event: prvi, club: clubsById[prvi.clubId], oznaka: kje.uppercased())
+                    }
+                    .buttonStyle(.plain)
+                    if dogodki.count > 1 {
+                        HorizontalEventsScroll(events: Array(dogodki.dropFirst()), clubsById: clubsById)
+                    }
+                }
+            }
         }
     }
 

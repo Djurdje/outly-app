@@ -73,6 +73,7 @@ extension APIError {
         if t.contains("could not delete the account")   { return String(localized: "Could not delete the account right now. Please try again.") }
         if t.contains("at least 15 years")              { return String(localized: "You must be at least 15 years old to use Outly.") }
         if t.contains("title is required")              { return String(localized: "Enter a title.") }
+        if t.contains("need a venue")                   { return String(localized: "Choose the venue for this event.") }
         if t.contains("startat must be")                { return String(localized: "Enter a valid start date.") }
         if t.contains("endat must be")                  { return String(localized: "Enter a valid end date.") }
         if t.contains("ticketpricecents")               { return String(localized: "Enter the price as a number, e.g. 12.50.") }
