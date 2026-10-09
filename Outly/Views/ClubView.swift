@@ -226,9 +226,7 @@ struct ClubDetailView: View {
                     .foregroundStyle(.secondary)
 
                 if let genres = club?.genres, !genres.isEmpty {
-                    Text(genres.map { $0.capitalized }.joined(separator: " • "))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    ClubGenresLine(genres: genres)
                 }
 
                 if let minAge = club?.minAge {
@@ -291,18 +289,37 @@ struct ClubDetailView: View {
 
 
     // MARK: - 6) Contact block
+    // Kartica z vrsticami ikona + vrednost; vsaka vrstica odpre mailto:/tel:/https:. Prazne vrednosti
+    // se skrijejo, brez kontaktov razdelka ni.
+    @ViewBuilder
     private var contactBlock: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Contact")
-                .font(.headline)
+        let vrstice = ClubContact.vrstice(
+            email: club?.contactEmail,
+            phone: club?.contactPhone,
+            instagram: club?.instagram,
+            website: club?.website
+        )
+        if !vrstice.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Contact")
+                    .font(.headline)
 
-            ContactRow(label: String(localized: "Email"), value: club?.contactEmail)
-            ContactRow(label: String(localized: "Phone"), value: club?.contactPhone)
-            ContactRow(label: String(localized: "Instagram"), value: club?.instagram)
-            ContactRow(label: String(localized: "Website"), value: club?.website)
+                VStack(spacing: 0) {
+                    ForEach(Array(vrstice.enumerated()), id: \.offset) { i, v in
+                        if i > 0 {
+                            Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 52)
+                        }
+                        ContactLinkRow(vrstica: v)
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color.white.opacity(0.06))
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
     }
 
     // MARK: - Events section
@@ -375,21 +392,157 @@ struct ClubDetailView: View {
     }
 }
 
-private struct ContactRow: View {
-    let label: String
-    let value: String?
+/// Zanri kluba: najvec 4, ostali za "Show more" (Martin, 9. 10. 2026). Besedilo in gumb sta
+/// en Text, zato se "Show more" nadaljuje v isti vrstici; dotik razsiri/skrci seznam.
+private struct ClubGenresLine: View {
+    let genres: [String]
+    @State private var razsirjeno = false
+
+    private static let najvec = 4
+
+    private var imaVec: Bool { genres.count > Self.najvec }
+
+    private func zdruzi(_ g: [String]) -> String {
+        g.map { $0.capitalized }.joined(separator: " • ")
+    }
 
     var body: some View {
-        let v = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return HStack {
-            Text("\(label):")
+        if imaVec {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { razsirjeno.toggle() }
+            } label: {
+                (
+                    Text(zdruzi(razsirjeno ? genres : Array(genres.prefix(Self.najvec))))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    + Text(razsirjeno ? " " : ", ")
+                        .font(.footnote)
+                        .foregroundColor(.white.opacity(0.55))
+                    + Text(LocalizedStringKey(razsirjeno ? "Show less" : "Show more"))
+                        .font(.footnote)
+                        .foregroundColor(.white.opacity(0.55))
+                )
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        } else {
+            Text(zdruzi(genres))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Spacer()
-            Text(v.isEmpty ? "-" : v)
+        }
+    }
+}
+
+/// Ena vrstica kontakta: ikona, vrednost in (ce je veljaven) naslov za odpiranje.
+private struct ContactEntry {
+    let ikona: String
+    let vrednost: String
+    let url: URL?
+}
+
+/// Pretvorba vnesenih kontaktov v varne povezave. Dovoljene so SAMO sheme http, https, mailto in tel;
+/// vse drugo (javascript:, file:, ...) vrstico pusti brez povezave.
+private enum ClubContact {
+    static let dovoljeneSheme: Set<String> = ["http", "https", "mailto", "tel"]
+
+    static func vrstice(email: String?, phone: String?, instagram: String?, website: String?) -> [ContactEntry] {
+        var out: [ContactEntry] = []
+        if let v = cisto(email) { out.append(ContactEntry(ikona: "envelope", vrednost: v, url: mailto(v))) }
+        if let v = cisto(phone) { out.append(ContactEntry(ikona: "phone", vrednost: v, url: tel(v))) }
+        if let v = cisto(instagram) { out.append(ContactEntry(ikona: "camera", vrednost: v, url: instagramURL(v))) }
+        if let v = cisto(website) { out.append(ContactEntry(ikona: "globe", vrednost: v, url: splet(v))) }
+        return out
+    }
+
+    /// Obrezana vrednost; prazno in "-" pomenita, da kontakta ni.
+    static func cisto(_ s: String?) -> String? {
+        let t = (s ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return (t.isEmpty || t == "-") ? nil : t
+    }
+
+    static func varen(_ url: URL?) -> URL? {
+        guard let url, let sheme = url.scheme?.lowercased(), dovoljeneSheme.contains(sheme) else { return nil }
+        return url
+    }
+
+    static func mailto(_ email: String) -> URL? {
+        guard email.contains("@"), email.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return nil }
+        return varen(URL(string: "mailto:" + email))
+    }
+
+    static func tel(_ phone: String) -> URL? {
+        let stevilka = phone.filter { "+0123456789".contains($0) }
+        guard !stevilka.isEmpty else { return nil }
+        return varen(URL(string: "tel:" + stevilka))
+    }
+
+    static func instagramURL(_ vnos: String) -> URL? {
+        let l = vnos.lowercased()
+        if l.hasPrefix("http://") || l.hasPrefix("https://") { return spletURL(vnos) }
+        if l.hasPrefix("instagram.com/") || l.hasPrefix("www.instagram.com/") { return spletURL("https://" + vnos) }
+        var handle = vnos
+        if handle.hasPrefix("@") { handle.removeFirst() }
+        handle = handle.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let dovoljeno = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "._"))
+        guard !handle.isEmpty, handle.unicodeScalars.allSatisfy({ dovoljeno.contains($0) }) else { return nil }
+        return varen(URL(string: "https://instagram.com/" + handle))
+    }
+
+    static func splet(_ vnos: String) -> URL? {
+        let l = vnos.lowercased()
+        if l.hasPrefix("http://") || l.hasPrefix("https://") { return spletURL(vnos) }
+        if vnos.contains("://") { return nil }   // druge sheme (javascript, file, ftp ...) ne
+        return spletURL("https://" + vnos)
+    }
+
+    private static func spletURL(_ s: String) -> URL? {
+        guard let url = URL(string: s), let host = url.host, !host.isEmpty else { return nil }
+        return varen(url)
+    }
+}
+
+private struct ContactLinkRow: View {
+    let vrstica: ContactEntry
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        if let url = vrstica.url {
+            Button {
+                openURL(url)
+            } label: {
+                vsebina(klikljivo: true)
+            }
+            .buttonStyle(.plain)
+        } else {
+            vsebina(klikljivo: false)
+        }
+    }
+
+    private func vsebina(klikljivo: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: vrstica.ikona)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white.opacity(0.85))
+                .frame(width: 24)
+            Text(vrstica.vrednost)
+                .font(.system(size: 16))
+                .foregroundColor(.white)
                 .lineLimit(1)
                 .truncationMode(.middle)
+            Spacer(minLength: 8)
+            if klikljivo {
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.35))
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .frame(minHeight: 52)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
