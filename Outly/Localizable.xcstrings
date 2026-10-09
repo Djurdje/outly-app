@@ -10818,6 +10818,28 @@
           }
         }
       }
+    },
+    "Show more": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaži več"
+          }
+        }
+      }
+    },
+    "Show less": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaži manj"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
