@@ -43,6 +43,13 @@ struct APIClub: Identifiable, Decodable {
     /// drugje ostane false in gumb Follow se popravi, ko se klub nalozi.
     let isFollowing: Bool
 
+    /// Organizator dogodkov brez lastnega prizorisca (backend 037, 9. 10. 2026): ista stran kot klub,
+    /// a brez naslova in pina na zemljevidu; vsak njegov dogodek nosi prizorisce. Star backend -> false.
+    let isOrganizer: Bool
+    /// Uradni profil podjetja Outly (nastavi samo admin): njegovi dogodki so na vrhu Home
+    /// v razdelku "Organized by Outly". Star backend -> false.
+    let isOfficial: Bool
+
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -65,6 +72,8 @@ struct APIClub: Identifiable, Decodable {
         case videoUrl = "video_url"
         case followersCount = "followers_count"
         case isFollowing = "is_following"
+        case isOrganizer = "is_organizer"
+        case isOfficial = "is_official"
     }
 
     /// Obrambno dekodiranje: shema ima NOT NULL DEFAULT '' na besedilih, a ce bi
@@ -94,6 +103,8 @@ struct APIClub: Identifiable, Decodable {
         videoUrl     = (try? c.decodeIfPresent(String.self, forKey: .videoUrl)) ?? ""
         followersCount = (try? c.decodeIfPresent(Int.self, forKey: .followersCount)) ?? 0
         isFollowing    = (try? c.decodeIfPresent(Bool.self, forKey: .isFollowing)) ?? false
+        isOrganizer    = (try? c.decodeIfPresent(Bool.self, forKey: .isOrganizer)) ?? false
+        isOfficial     = (try? c.decodeIfPresent(Bool.self, forKey: .isOfficial)) ?? false
     }
 
     /// Slike za slideshow: galerija, sicer pasica (da stari klubi ostanejo enaki).

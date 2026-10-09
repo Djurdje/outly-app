@@ -100,6 +100,9 @@ struct HitCard: View {
 struct HeroEventCard: View {
     let event: APIEvent
     let club: APIClub?
+    /// Napis pod imenom kluba. nil = "BIG EVENT COMING UP" (razdelek "Big events coming up");
+    /// "Organized by Outly" poda prizorisce dogodka. Besedilo pride ze koncno (se ne prevaja).
+    var oznaka: String? = nil
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -118,10 +121,17 @@ struct HeroEventCard: View {
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
-                        Text("BIG EVENT COMING UP")
-                            .font(.system(size: 10, weight: .heavy))
-                            .tracking(0.8)
-                            .foregroundColor(.white.opacity(0.75))
+                        Group {
+                            if let oznaka, !oznaka.isEmpty {
+                                Text(verbatim: oznaka)
+                            } else {
+                                Text("BIG EVENT COMING UP")
+                            }
+                        }
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(0.8)
+                        .foregroundColor(.white.opacity(0.75))
+                        .lineLimit(1)
                     }
                     Spacer()
                     if let badge = event.badgeText {

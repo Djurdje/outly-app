@@ -17,6 +17,10 @@ struct ClubDetailView: View {
     @State private var sledilci = 0
     @State private var sledenjeTece = false
 
+    /// Organizator brez lastnega prizorisca (backend 037): brez naslova, zemljevida in pina;
+    /// namesto "Club" pisemo "Organizer".
+    private var jeOrganizator: Bool { club?.isOrganizer == true }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -172,7 +176,7 @@ struct ClubDetailView: View {
                         Image(systemName: "play.circle")
                             .font(.system(size: 34))
                             .foregroundStyle(.white.opacity(0.35))
-                        Text("Club video coming soon")
+                        Text(LocalizedStringKey(jeOrganizator ? "Organizer video coming soon" : "Club video coming soon"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.45))
                     }
@@ -188,7 +192,7 @@ struct ClubDetailView: View {
         if let d = club?.description.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 // Loceno besedilo od "About" v profilu (drug kljuc, da prevod ne trci s Settings > About).
-                Text("About the club")
+                Text(LocalizedStringKey(jeOrganizator ? "About the organizer" : "About the club"))
                     .font(.headline)
                 Text(d)
                     .font(.subheadline)
@@ -251,6 +255,12 @@ struct ClubDetailView: View {
         let city = (club?.city ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let country = (club?.country ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
+        // Organizator: oznaka "Organizer", mesto samo ce ga je vnesel (naslova in drzave nima).
+        if jeOrganizator {
+            let oznaka = String(localized: "Organizer")
+            return city.isEmpty ? oznaka : "\(oznaka) \u{00B7} \(city)"
+        }
+
         if !city.isEmpty && !country.isEmpty { return "\(city), \(country)" }
         if !city.isEmpty { return city }
         if !country.isEmpty { return country }
@@ -260,7 +270,7 @@ struct ClubDetailView: View {
     // MARK: - 5) Map block (brez "Location" naslova)
     @ViewBuilder
     private var mapBlock: some View {
-        if let lat = club?.lat, let lng = club?.lng {
+        if !jeOrganizator, let lat = club?.lat, let lng = club?.lng {
             // Staticen; klik -> Apple Maps / Google Maps z navodili za pot
             StaticnaKarta(lat: lat, lng: lng)
                 .frame(height: 200)
@@ -311,7 +321,8 @@ struct ClubDetailView: View {
                 NavigationLink {
                     EventDetailView(event: e)
                 } label: {
-                    EventCardAPI(event: e, clubName: club?.name, variant: .clubRow)
+                    // Gostovan dogodek (hosted): klub je samo prizorisce, kartica kaze organizatorja.
+                    EventCardAPI(event: e, clubName: e.hosted ? e.clubName : club?.name, variant: .clubRow)
                 }
                 .buttonStyle(.plain)
             }

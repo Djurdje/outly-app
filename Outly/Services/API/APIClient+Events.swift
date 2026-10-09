@@ -36,6 +36,17 @@ extension APIClient {
         /// Zaloga (Figma "Create event": Capacity). nil = brez omejitve.
         var capacity: Int? = nil
 
+        /// Prizorisce (backend 037, organizatorji brez lastnega kluba). `posljiPrizorisce` = false
+        /// (privzeto, navaden klub): kljucev prizorisca sploh ne posljemo, da PATCH ne povozi obstojecih.
+        /// Organizator jih posilja vedno, da lahko preklopi med klubom gostiteljem in prosto lokacijo.
+        var posljiPrizorisce: Bool = false
+        var venueClubId: Int? = nil
+        var venueName: String = ""
+        var venueAddress: String = ""
+        var venueCity: String = ""
+        var venueLat: Double? = nil
+        var venueLng: Double? = nil
+
         static let isoOut: ISO8601DateFormatter = {
             let f = ISO8601DateFormatter()
             f.formatOptions = [.withInternetDateTime]
@@ -57,6 +68,30 @@ extension APIClient {
             if let endAt { j["endAt"] = Self.isoOut.string(from: endAt) } else { j["endAt"] = NSNull() }
             if let ticketPriceCents { j["ticketPriceCents"] = ticketPriceCents } else { j["ticketPriceCents"] = NSNull() }
             if let capacity { j["capacity"] = capacity } else { j["capacity"] = NSNull() }
+            if posljiPrizorisce {
+                if let venueClubId {
+                    // Klub gostitelj: streznik venue_name/address/city/lat/lng ignorira.
+                    j["venueClubId"] = venueClubId
+                    j["venueName"] = ""
+                    j["venueAddress"] = ""
+                    j["venueCity"] = ""
+                    j["venueLat"] = NSNull()
+                    j["venueLng"] = NSNull()
+                } else {
+                    j["venueClubId"] = NSNull()
+                    j["venueName"] = venueName
+                    j["venueAddress"] = venueAddress
+                    j["venueCity"] = venueCity
+                    // Koordinati gresta v paru.
+                    if let venueLat, let venueLng {
+                        j["venueLat"] = venueLat
+                        j["venueLng"] = venueLng
+                    } else {
+                        j["venueLat"] = NSNull()
+                        j["venueLng"] = NSNull()
+                    }
+                }
+            }
             return j
         }
     }

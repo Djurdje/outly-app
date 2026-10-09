@@ -48,6 +48,24 @@ struct APIEvent: Identifiable, Decodable {
     /// Najnizja efektivna cena vklopljene mize v centih; nil = ni VIP.
     let vipFromCents: Int?
 
+    /// Ime kluba/organizatorja, ki dogodek objavlja (`club_id`); seznami ga vracajo z join-om.
+    /// Star backend ali pot brez imena -> "".
+    let clubName: String
+
+    /// Prizorisce dogodka (backend 037, 9. 10. 2026). Dogodek organizatorja nosi ali klub gostitelja
+    /// (`venueClubId`, ime in logo prideta z join-om) ali prosto vpisano lokacijo (`venueName` ...).
+    /// Navaden klub prizorisca ne rabi (velja njegov naslov). Star backend polj nima -> privzetki.
+    let venueClubId: Int?
+    let venueClubName: String?
+    let venueClubLogoUrl: String?
+    let venueName: String
+    let venueAddress: String
+    let venueCity: String
+    let venueLat: Double?
+    let venueLng: Double?
+    /// Samo v seznamu dogodkov kluba: dogodek organizatorja, ki ga klub GOSTI (club_id je organizatorjev).
+    let hosted: Bool
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -71,6 +89,16 @@ struct APIEvent: Identifiable, Decodable {
         case recapAllowed = "recap_allowed"
         case vipEnabled = "vip_enabled"
         case vipFromCents = "vip_from_cents"
+        case clubName = "club_name"
+        case venueClubId = "venue_club_id"
+        case venueClubName = "venue_club_name"
+        case venueClubLogoUrl = "venue_club_logo_url"
+        case venueName = "venue_name"
+        case venueAddress = "venue_address"
+        case venueCity = "venue_city"
+        case venueLat = "venue_lat"
+        case venueLng = "venue_lng"
+        case hosted
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -101,6 +129,16 @@ struct APIEvent: Identifiable, Decodable {
         recapAllowed     = (try? c.decodeIfPresent(Bool.self, forKey: .recapAllowed)) ?? false
         vipEnabled       = (try? c.decodeIfPresent(Bool.self, forKey: .vipEnabled)) ?? false
         vipFromCents     = (try? c.decodeIfPresent(Int.self, forKey: .vipFromCents)) ?? nil
+        clubName         = (try? c.decodeIfPresent(String.self, forKey: .clubName)) ?? ""
+        venueClubId      = (try? c.decodeIfPresent(Int.self, forKey: .venueClubId)) ?? nil
+        venueClubName    = (try? c.decodeIfPresent(String.self, forKey: .venueClubName)) ?? nil
+        venueClubLogoUrl = (try? c.decodeIfPresent(String.self, forKey: .venueClubLogoUrl)) ?? nil
+        venueName        = (try? c.decodeIfPresent(String.self, forKey: .venueName)) ?? ""
+        venueAddress     = (try? c.decodeIfPresent(String.self, forKey: .venueAddress)) ?? ""
+        venueCity        = (try? c.decodeIfPresent(String.self, forKey: .venueCity)) ?? ""
+        venueLat         = (try? c.decodeIfPresent(Double.self, forKey: .venueLat)) ?? nil
+        venueLng         = (try? c.decodeIfPresent(Double.self, forKey: .venueLng)) ?? nil
+        hosted           = (try? c.decodeIfPresent(Bool.self, forKey: .hosted)) ?? false
     }
 }
 
@@ -292,5 +330,48 @@ extension APIEvent {
     var displayDayShort: String {
         guard let d = startDate else { return "" }
         return DateParsing.oblikovalnik("EEE d MMM").string(from: d)
+    }
+}
+
+// MARK: - Prizorisce ("kje je dogodek", dogovor 9. 10. 2026)
+extension APIEvent {
+    /// Dogodek ima prizorisce, ki ni klubov lastni naslov: klub gostitelj ali prosto vpisana lokacija.
+    var imaPrizorisce: Bool { venueClubId != nil || !venueName.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    /// Ime prizorisca: klub gostitelj, sicer `venue_name`; "" = velja naslov kluba, ki dogodek objavlja.
+    var imePrizorisca: String {
+        let klub = (venueClubName ?? "").trimmingCharacters(in: .whitespaces)
+        if venueClubId != nil, !klub.isEmpty { return klub }
+        return venueName.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Prosto vpisan naslov prizorisca ("Ulica 1, Ljubljana"); "" ce ga ni ali je prizorisce klub gostitelj.
+    var naslovPrizorisca: String {
+        guard venueClubId == nil else { return "" }
+        return [venueAddress, venueCity]
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+    }
+
+    /// Kratek opis, kje je dogodek: "Ime prizorisca · Mesto". `gostitelj` je klub z `venueClubId`
+    /// (njegovo mesto), `organizator` klub, ki dogodek objavlja (velja, ko prizorisca ni).
+    /// Mesto se prikaze vedno, ce ga poznamo.
+    func kjeJe(gostitelj: APIClub?, organizator: APIClub?) -> String {
+        var ime = imePrizorisca
+        var mesto = ""
+        if venueClubId != nil {
+            if ime.isEmpty { ime = gostitelj?.name ?? "" }
+            mesto = gostitelj?.city ?? ""
+        } else if imaPrizorisce {
+            mesto = venueCity
+        } else {
+            ime = organizator?.name ?? ""
+            mesto = organizator?.city ?? ""
+        }
+        return [ime, mesto]
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " \u{00B7} ")
     }
 }

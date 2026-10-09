@@ -27,6 +27,8 @@ struct ClubInfoView: View {
     @State private var clubCity = ""
     @State private var clubLat: Double?
     @State private var clubLng: Double?
+    /// Organizator brez lastnega prizorisca (backend 037): brez naslova in pina na zemljevidu.
+    @State private var clubIsOrganizer = false
     @State private var clubLogoUrl = ""
     // Instagram, najnizja starost in zanri (outly-backend#20): PATCH /business/clubs/me jih sprejme,
     // posljemo pa jih samo, ko jih uporabnik uredi (`saveClub(changed:)`) — ce ima klub zanr, ki ga
@@ -175,13 +177,21 @@ struct ClubInfoView: View {
                 infoCard(icon: "doc.text", title: "About club", value: clubDescription, field: .description,
                          description: "Short description shown on your club page.")
 
-                infoCard(icon: "mappin.and.ellipse", title: "Address", value: clubAddress, field: .address,
-                         description: "Street and number. Together with the city this places your club on the map.")
+                OutlyToggleDetailRow(icon: "megaphone",
+                                     title: "I organize events without my own venue",
+                                     subtitle: "No address or map pin. You choose the venue for each event.",
+                                     isOn: Binding(get: { clubIsOrganizer },
+                                                   set: { nov in Task { await saveOrganizer(nov) } }))
 
-                infoCard(icon: "building.2", title: "City", value: clubCity, field: .city,
-                         description: clubLat != nil
-                            ? "On the map ✓"
-                            : "Not on the map yet — set the address and city.")
+                if !clubIsOrganizer {
+                    infoCard(icon: "mappin.and.ellipse", title: "Address", value: clubAddress, field: .address,
+                             description: "Street and number. Together with the city this places your club on the map.")
+
+                    infoCard(icon: "building.2", title: "City", value: clubCity, field: .city,
+                             description: clubLat != nil
+                                ? "On the map ✓"
+                                : "Not on the map yet — set the address and city.")
+                }
 
                 OutlyInfoCardButton(
                     icon: "person.badge.shield.checkmark",
@@ -525,6 +535,7 @@ struct ClubInfoView: View {
         clubCity = club.city
         clubLat = club.lat
         clubLng = club.lng
+        clubIsOrganizer = club.isOrganizer
         clubLogoUrl = club.logoUrl
         clubInstagram = club.instagram
         clubMinAge = club.minAge
@@ -532,6 +543,21 @@ struct ClubInfoView: View {
         clubBarPrices = club.barPrices
         clubGalleryUrls = club.galleryUrls
         clubVideoUrl = club.videoUrl
+    }
+
+    /// Stikalo "I organize events without my own venue": optimisticen preklop, ob napaki nazaj.
+    private func saveOrganizer(_ nov: Bool) async {
+        guard !authToken.isEmpty, nov != clubIsOrganizer else { return }
+        errorMessage = nil
+        let prej = clubIsOrganizer
+        clubIsOrganizer = nov
+        do {
+            let club = try await APIClient.shared.setMyClubOrganizer(token: authToken, isOrganizer: nov)
+            apply(club)
+        } catch {
+            clubIsOrganizer = prej
+            errorMessage = error.userMessage
+        }
     }
 
     /// Slideshow in video se shranita posebej (samo ti dve polji), da ne prepiseta drugega.

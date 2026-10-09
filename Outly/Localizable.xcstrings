@@ -614,6 +614,17 @@
         }
       }
     },
+    "About the organizer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O organizatorju"
+          }
+        }
+      }
+    },
     "ADDRESS": {
       "extractionState": "manual",
       "localizations": {
@@ -621,6 +632,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "NASLOV"
+          }
+        }
+      }
+    },
+    "Address and city put the event on the map.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z naslovom in mestom se dogodek pokaže na zemljevidu."
           }
         }
       }
@@ -1065,6 +1087,17 @@
         }
       }
     },
+    "at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prizorišče: %@"
+          }
+        }
+      }
+    },
     "At least 8 characters": {
       "extractionState": "manual",
       "localizations": {
@@ -1494,6 +1527,17 @@
         }
       }
     },
+    "Choose a club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi klub"
+          }
+        }
+      }
+    },
     "Choose a friend": {
       "extractionState": "manual",
       "localizations": {
@@ -1560,6 +1604,17 @@
         }
       }
     },
+    "Choose the venue for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi prizorišče tega dogodka."
+          }
+        }
+      }
+    },
     "Choose your country.": {
       "extractionState": "manual",
       "localizations": {
@@ -1578,6 +1633,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mesto"
+          }
+        }
+      }
+    },
+    "City (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesto (neobvezno)"
           }
         }
       }
@@ -1956,6 +2022,17 @@
         }
       }
     },
+    "Custom": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ročno"
+          }
+        }
+      }
+    },
     "DATE": {
       "extractionState": "manual",
       "localizations": {
@@ -2154,6 +2231,17 @@
         }
       }
     },
+    "e.g. Night Events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "npr. Night Events"
+          }
+        }
+      }
+    },
     "ENDED": {
       "extractionState": "manual",
       "localizations": {
@@ -2161,6 +2249,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "KONČANO"
+          }
+        }
+      }
+    },
+    "Enter the venue name and city.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši ime prizorišča in mesto."
           }
         }
       }
@@ -3001,6 +3100,17 @@
         }
       }
     },
+    "Hosted": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostovanje"
+          }
+        }
+      }
+    },
     "How to buy a ticket": {
       "extractionState": "manual",
       "localizations": {
@@ -3019,6 +3129,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Potrjujem, da je oseba, ki ji pošiljam vstopnico, stara vsaj %lld let. Ob vstopu mora pokazati veljaven osebni dokument s fotografijo; če je mlajša, ji klub vstop zavrne."
+          }
+        }
+      }
+    },
+    "I organize events without my own venue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organiziram dogodke brez lastnega prizorišča"
           }
         }
       }
@@ -3741,6 +3862,28 @@
         }
       }
     },
+    "No address or map pin. You choose the venue for each event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brez naslova in točke na zemljevidu. Prizorišče izbereš pri vsakem dogodku."
+          }
+        }
+      }
+    },
+    "No clubs found.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni najdenih klubov."
+          }
+        }
+      }
+    },
     "NOT PAID": {
       "extractionState": "manual",
       "localizations": {
@@ -4225,6 +4368,17 @@
         }
       }
     },
+    "On Outly": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na Outlyju"
+          }
+        }
+      }
+    },
     "ORDER": {
       "extractionState": "manual",
       "localizations": {
@@ -4408,6 +4562,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Naročilo %@"
+          }
+        }
+      }
+    },
+    "Organizer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organizator"
+          }
+        }
+      }
+    },
+    "Organizer name": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ime organizatorja"
+          }
+        }
+      }
+    },
+    "Organizer video coming soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video organizatorja kmalu na voljo"
+          }
+        }
+      }
+    },
+    "Organizer: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organizator: %@"
           }
         }
       }
@@ -5160,6 +5358,17 @@
         }
       }
     },
+    "Select venue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi prizorišče"
+          }
+        }
+      }
+    },
     "Send ticket to %@?": {
       "extractionState": "manual",
       "localizations": {
@@ -5882,6 +6091,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pomoč"
+          }
+        }
+      }
+    },
+    "The event shows on this club's page too, but only your team can scan tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek se pokaže tudi na strani tega kluba, vstopnice pa lahko skenira samo tvoja ekipa."
           }
         }
       }
@@ -7066,6 +7286,28 @@
         }
       }
     },
+    "Venue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prizorišče"
+          }
+        }
+      }
+    },
+    "Venue name": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ime prizorišča"
+          }
+        }
+      }
+    },
     "Verify": {
       "extractionState": "manual",
       "localizations": {
@@ -7183,6 +7425,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prikaži dogodke"
+          }
+        }
+      }
+    },
+    "View organizer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej organizatorja"
           }
         }
       }
