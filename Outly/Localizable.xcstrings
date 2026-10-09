@@ -117,6 +117,369 @@
     "%@ · %lld × %@": {
       "extractionState": "manual"
     },
+    "A label can have at most 30 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napis ima lahko največ 30 znakov."
+          }
+        }
+      }
+    },
+    "A layout can have at most 60 tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razpored ima lahko največ 60 miz."
+          }
+        }
+      }
+    },
+    "A layout can have at most 80 other items.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razpored ima lahko največ 80 drugih predmetov."
+          }
+        }
+      }
+    },
+    "Columns": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stolpci"
+          }
+        }
+      }
+    },
+    "Copy the venue's layout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiraj razpored prizorišča"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši"
+          }
+        }
+      }
+    },
+    "Discard changes": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrži spremembe"
+          }
+        }
+      }
+    },
+    "Discard your changes?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavržem spremembe?"
+          }
+        }
+      }
+    },
+    "Drag items to move them. Tap an item to edit it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predmete povleci, da jih premakneš. Dotakni se predmeta, da ga urediš."
+          }
+        }
+      }
+    },
+    "Edit tables and layout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi mize in tloris"
+          }
+        }
+      }
+    },
+    "Enter the table price as a number, e.g. 120 or 120.50.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ceno mize vnesi kot število, npr. 120 ali 120,50."
+          }
+        }
+      }
+    },
+    "Every table needs a label of 1 to 20 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsaka miza potrebuje oznako z 1 do 20 znaki."
+          }
+        }
+      }
+    },
+    "Guests pick a table on this event's own layout.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostje izberejo mizo na razporedu tega dogodka."
+          }
+        }
+      }
+    },
+    "Height": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Višina"
+          }
+        }
+      }
+    },
+    "Item": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predmet"
+          }
+        }
+      }
+    },
+    "Items": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predmeti"
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadaljuj z urejanjem"
+          }
+        }
+      }
+    },
+    "Keep my layout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obdrži moj razpored"
+          }
+        }
+      }
+    },
+    "Keep them": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obdrži"
+          }
+        }
+      }
+    },
+    "Label": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napis"
+          }
+        }
+      }
+    },
+    "Label (e.g. T1)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oznaka (npr. T1)"
+          }
+        }
+      }
+    },
+    "Label (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napis (neobvezno)"
+          }
+        }
+      }
+    },
+    "Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levo"
+          }
+        }
+      }
+    },
+    "No VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brez VIP miz"
+          }
+        }
+      }
+    },
+    "Nothing here yet. Add tables and landmarks with the Add button.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu še ni ničesar. Mize in orientacijske predmete dodaš z gumbom Dodaj."
+          }
+        }
+      }
+    },
+    "Own layout for this event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lasten razpored za ta dogodek"
+          }
+        }
+      }
+    },
+    "Plan size": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velikost tlorisa"
+          }
+        }
+      }
+    },
+    "Rectangle": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pravokotna"
+          }
+        }
+      }
+    },
+    "Remove VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani VIP mize"
+          }
+        }
+      }
+    },
+    "Remove VIP tables from this event?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstranim VIP mize s tega dogodka?"
+          }
+        }
+      }
+    },
+    "Replace the tables of this event?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjam mize tega dogodka?"
+          }
+        }
+      }
+    },
+    "Round": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okrogla"
+          }
+        }
+      }
+    },
+    "Rows": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrstice"
+          }
+        }
+      }
+    },
     "%@'s plans": {
       "extractionState": "manual",
       "localizations": {
@@ -5435,6 +5798,17 @@
         }
       }
     },
+    "Save the event first, then set up its VIP tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej shrani dogodek, nato uredi njegove VIP mize."
+          }
+        }
+      }
+    },
     "Scanned %@": {
       "extractionState": "manual",
       "localizations": {
@@ -5442,6 +5816,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skenirano ob %@"
+          }
+        }
+      }
+    },
+    "Seats": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedeži"
           }
         }
       }
@@ -5519,6 +5904,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "strežbo VIP miz"
+          }
+        }
+      }
+    },
+    "Shape": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oblika"
           }
         }
       }
@@ -6238,6 +6634,17 @@
         }
       }
     },
+    "Table labels must be unique.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oznake miz morajo biti unikatne."
+          }
+        }
+      }
+    },
     "Table service": {
       "extractionState": "manual",
       "localizations": {
@@ -6245,6 +6652,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Strežba miz"
+          }
+        }
+      }
+    },
+    "Tables that already have orders are archived. Those orders stay valid and their guests can still enter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mize z naročili se arhivirajo. Ta naročila ostanejo veljavna in gostje še vedno lahko vstopijo."
           }
         }
       }
@@ -6271,6 +6689,39 @@
         }
       }
     },
+    "the venue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prizorišče"
+          }
+        }
+      }
+    },
+    "This event has its own layout, but no tables yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek ima lasten razpored, a še nima miz."
+          }
+        }
+      }
+    },
+    "This event has no VIP tables. Choose a layout to sell tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dogodek nima VIP miz. Izberi razpored, da boš lahko prodajal(a) mize."
+          }
+        }
+      }
+    },
     "Ticket sent to %@.": {
       "extractionState": "manual",
       "localizations": {
@@ -6278,6 +6729,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vstopnica poslana na %@."
+          }
+        }
+      }
+    },
+    "Top": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zgoraj"
           }
         }
       }
@@ -7220,6 +7682,17 @@
         }
       }
     },
+    "Use %@'s layout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabi razpored: %@"
+          }
+        }
+      }
+    },
     "USED": {
       "extractionState": "manual",
       "localizations": {
@@ -7605,6 +8078,17 @@
         }
       }
     },
+    "VIP layout": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP razpored"
+          }
+        }
+      }
+    },
     "Visibility": {
       "extractionState": "manual",
       "localizations": {
@@ -7612,6 +8096,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vidnost"
+          }
+        }
+      }
+    },
+    "Wall": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stena"
           }
         }
       }
@@ -7645,6 +8140,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "DOBRODOŠLI"
+          }
+        }
+      }
+    },
+    "Width": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Širina"
           }
         }
       }
@@ -7902,6 +8408,17 @@
         }
       }
     },
+    "You changed the venue. Save the event to use the new venue's layout.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjal(a) si prizorišče. Shrani dogodek, da uporabiš razpored novega prizorišča."
+          }
+        }
+      }
+    },
     "You do not have permission to do that.": {
       "extractionState": "manual",
       "localizations": {
@@ -7975,6 +8492,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ne bosta več videla načrtov drug drugega. Lahko ga dodaš znova."
+          }
+        }
+      }
+    },
+    "Your current tables and prices for this event are replaced by a fresh copy of the venue's layout.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trenutne mize in cene tega dogodka zamenja nova kopija razporeda prizorišča."
           }
         }
       }

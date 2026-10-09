@@ -3,7 +3,7 @@ import Foundation
 // VIP mize (backend migracija 025, 1. 10. 2026). Poti:
 // GET /events/:id/vip (javno), POST /events/:id/tables/:tableId/orders (zeton),
 // GET /business/events/:id/vip (vse vloge v klubu; glava X-Outly-Club doda send()).
-// Urejevalnika tlorisa na iOS ni (samo splet, outly.si/app), zato PUT poti tu ni.
+// Urejevalnik tlorisa na iOS je od 9. 10. 2026 za organizatorje (VipUrejevalnikView, APIClient+VipLayout.swift); ta datoteka ima samo branje in nakup.
 //
 // Vsa polja so s privzeto vrednostjo ali opcijska: star backend (brez 025) ne sme podreti dekodiranja.
 

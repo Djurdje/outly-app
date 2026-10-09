@@ -55,6 +55,13 @@ struct EventFormView: View {
 
     private var isEditing: Bool { existing != nil }
 
+    /// Prizorisce v obrazcu ni vec tisto, ki je shranjeno pri dogodku (kopija VIP razporeda gostitelja velja po shranjevanju).
+    private var prizoriscePoSpremembi: Bool {
+        guard let e = existing else { return false }
+        let novoId: Int? = nacinPrizorisca == .outly ? venueClubId : nil
+        return novoId != e.venueClubId
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -129,6 +136,11 @@ struct EventFormView: View {
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                }
+
+                // VIP mize organizatorja (backend 039): vir razporeda miz za ta dogodek. Pri novem dogodku samo namig.
+                if isOrganizer {
+                    VipRazporedOddelek(clubId: clubId, eventId: existing?.id, prizoriscePoSpremembi: prizoriscePoSpremembi)
                 }
 
                 Section("Poster") {
