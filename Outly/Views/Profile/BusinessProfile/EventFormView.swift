@@ -55,6 +55,30 @@ struct EventFormView: View {
 
     private var isEditing: Bool { existing != nil }
 
+    /// Obrazec se razlikuje od shranjenega dogodka. Razdelek VIP (kopija gostitelja, urejevalnik) dela na SHRANJENEM
+    /// dogodku, zato je do shranjevanja onemogocen. Novega dogodka ni (razdelek je takrat samo namig).
+    private var imaNeshranjeneSpremembe: Bool {
+        guard let e = existing else { return false }
+        // Neberljiv datum s streznika (nil): prefill() ga ni prepisal, zato ni sprememba (sicer bi bil obrazec za vedno "neshranjen").
+        func minute(_ a: Date, _ b: Date?) -> Bool { guard let b else { return false }; return abs(a.timeIntervalSince(b)) >= 60 }
+        if title != e.title || description != e.description || minAge != e.minAge { return true }
+        if minute(startAt, e.startDate) { return true }
+        if hasEnd != (e.endDate != nil) { return true }
+        if hasEnd, let k = e.endDate, minute(endAt, k) { return true }
+        if Set(selectedGenres) != Set(e.genres) { return true }
+        if priceText != (e.ticketPriceCents.map { Self.euros(fromCents: $0) } ?? "") { return true }
+        if capacityText != (e.capacity.map { String($0) } ?? "") { return true }
+        if ticketUrl != (e.ticketUrl ?? "") || posterUrl != e.posterUrl { return true }
+        if e.status != "cancelled", isPublished != (e.status == "published") { return true }
+        if isOrganizer {
+            let novoId: Int? = nacinPrizorisca == .outly ? venueClubId : nil
+            if novoId != e.venueClubId { return true }
+            if nacinPrizorisca == .custom, e.venueClubId == nil,
+               venueName != e.venueName || venueAddress != e.venueAddress || venueCity != e.venueCity { return true }
+        }
+        return false
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -129,6 +153,11 @@ struct EventFormView: View {
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                }
+
+                // VIP mize organizatorja (backend 039): vir razporeda miz za ta dogodek. Pri novem dogodku samo namig.
+                if isOrganizer {
+                    VipRazporedOddelek(clubId: clubId, eventId: existing?.id, neshranjeno: imaNeshranjeneSpremembe)
                 }
 
                 Section("Poster") {
