@@ -24,7 +24,7 @@ struct Me: Codable, Equatable {
 
     /// Klub, v katerem uporabnik dela (lastnik ali clan ekipe, migracija 009). nil = nobenega.
     let clubId: Int?
-    /// "owner" | "manager" | "doorman" | nil. Poslovni obraz se odloca po tem, ne po role.
+    /// "owner" | "manager" | "doorman" | "bartender" | nil. Poslovni obraz se odloca po tem, ne po role.
     let clubRole: String?
     /// Stevilo cakajocih vabil v ekipo kluba (migracija 013) — znacka na zvoncu v My clubs.
     let pendingInvites: Int
@@ -36,6 +36,9 @@ struct Me: Codable, Equatable {
     let pendingClubEvents: Int
     /// Stevilo neprebranih obvestil »X te je dodal na guest listo« (backend, 8. 10. 2026). Star backend polja ne poslje -> 0.
     let pendingGuestListInvites: Int
+    /// Stevilo nedostavljenih strezb VIP miz v klubih, kjer sem owner / manager / bartender, za dogodke, ki tecejo
+    /// (backend, 9. 10. 2026, issue #176). Star backend polja ne poslje -> 0.
+    let pendingTableService: Int
     /// Ali prijatelji vidijo, na katere dogodke grem ("Your friends' plans"). Privzeto true.
     let sharePlansWithFriends: Bool
     /// Vsa clanstva (lastnistvo + ekipe; backend migracija 018, vec klubov na osebo). Star backend: [].
@@ -59,6 +62,7 @@ struct Me: Codable, Equatable {
         case pendingReceivedTickets = "pending_received_tickets"
         case pendingClubEvents = "pending_club_events"
         case pendingGuestListInvites = "pending_guest_list_invites"
+        case pendingTableService = "pending_table_service"
         case sharePlansWithFriends = "share_plans_with_friends"
         case clubs
         case canTransferToGuest = "can_transfer_to_guest"
@@ -85,6 +89,7 @@ struct Me: Codable, Equatable {
         pendingReceivedTickets = try c.decodeIfPresent(Int.self, forKey: .pendingReceivedTickets) ?? 0
         pendingClubEvents = try c.decodeIfPresent(Int.self, forKey: .pendingClubEvents) ?? 0
         pendingGuestListInvites = (try? c.decodeIfPresent(Int.self, forKey: .pendingGuestListInvites)) ?? 0
+        pendingTableService = (try? c.decodeIfPresent(Int.self, forKey: .pendingTableService)) ?? 0
         sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
         clubs = (try? c.decodeIfPresent([MeClub].self, forKey: .clubs)) ?? []
         canTransferToGuest = (try? c.decodeIfPresent(Bool.self, forKey: .canTransferToGuest)) ?? false
@@ -119,6 +124,7 @@ struct Me: Codable, Equatable {
         try c.encode(pendingReceivedTickets, forKey: .pendingReceivedTickets)
         try c.encode(pendingClubEvents, forKey: .pendingClubEvents)
         try c.encode(pendingGuestListInvites, forKey: .pendingGuestListInvites)
+        try c.encode(pendingTableService, forKey: .pendingTableService)
         try c.encode(sharePlansWithFriends, forKey: .sharePlansWithFriends)
         try c.encode(clubs, forKey: .clubs)
         try c.encode(canTransferToGuest, forKey: .canTransferToGuest)
@@ -133,12 +139,13 @@ struct Me: Codable, Equatable {
     /// Sme urejati ekipo (lastnik vse, manager samo vratarje).
     var canSeeTeam: Bool { clubRole == "owner" || clubRole == "manager" }
 
-    /// Napis vloge za profil: "Owner", "Manager", "Door staff".
+    /// Napis vloge za profil: "Owner", "Manager", "Door staff", "Bartender".
     var clubRoleLabel: String? {
         switch clubRole {
         case "owner": return String(localized: "Owner")
         case "manager": return String(localized: "Manager")
         case "doorman": return String(localized: "Door staff")
+        case "bartender": return String(localized: "Bartender")
         default: return nil
         }
     }
@@ -164,7 +171,7 @@ struct MeClub: Codable, Identifiable, Equatable {
     let clubId: Int
     let clubName: String
     let clubLogoUrl: String
-    /// "owner" | "manager" | "doorman"
+    /// "owner" | "manager" | "doorman" | "bartender"
     let role: String
 
     var id: Int { clubId }

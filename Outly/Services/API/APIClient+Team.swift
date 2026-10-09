@@ -12,7 +12,7 @@ struct TeamMember: Decodable, Identifiable {
     let username: String
     let email: String
     let avatarUrl: String?
-    /// "owner" | "manager" | "doorman"
+    /// "owner" | "manager" | "doorman" | "bartender"
     let role: String
     let createdAt: String
     let invitedByUserId: Int?
@@ -42,6 +42,7 @@ struct TeamMember: Decodable, Identifiable {
         switch role {
         case "owner": return String(localized: "Owner")
         case "manager": return String(localized: "Manager")
+        case "bartender": return String(localized: "Bartender")
         default: return String(localized: "Door staff")
         }
     }
@@ -50,6 +51,7 @@ struct TeamMember: Decodable, Identifiable {
         switch role {
         case "owner": return "key.fill"
         case "manager": return "person.text.rectangle"
+        case "bartender": return "wineglass"
         default: return "qrcode.viewfinder"
         }
     }
@@ -83,7 +85,13 @@ struct TeamInvite: Decodable, Identifiable {
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
     }
 
-    var roleLabel: String { role == "manager" ? String(localized: "Manager") : String(localized: "Door staff") }
+    var roleLabel: String {
+        switch role {
+        case "manager": return String(localized: "Manager")
+        case "bartender": return String(localized: "Bartender")
+        default: return String(localized: "Door staff")
+        }
+    }
 }
 
 /// Odgovor GET/POST/DELETE /business/team.
@@ -114,7 +122,7 @@ extension APIClient {
         return try decode(TeamResponse.self, from: data)
     }
 
-    /// Poslje VABILO (role: "manager" ali "doorman"). Uporabnik mora ze imeti Outly racun
+    /// Poslje VABILO (role: "manager", "doorman" ali "bartender"). Uporabnik mora ze imeti Outly racun
     /// (sicer 404 no_account); 409 already_invited, ce vabilo ze caka.
     func addTeamMember(token: String, email: String, role: String) async throws -> TeamResponse {
         let data = try await send(path: "business/team", method: "POST", token: token,

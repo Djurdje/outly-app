@@ -5,7 +5,7 @@ import SwiftUI
 /// z dotikom zunaj. Vsebina: vabila v ekipo kluba (-> ClubInvitesView, kjer se sprejme),
 /// prosnje za prijateljstvo (-> MyFriendsView) in prejete vstopnice (-> TicketsView; dotik
 /// obvestilo oznaci kot prebrano, backend migracija 017) in vabila na guest listo (-> TicketsView, kjer je moja
-/// vstopnica; dotik oznaci kot prebrano). Sprejem se ne zgodi tu — dejanje s
+/// vstopnica; dotik oznaci kot prebrano) in strezba VIP miz za natakarje/managerje (-> TableServiceView). Sprejem se ne zgodi tu — dejanje s
 /// posledicami ostane na zaslonu, ki ga ze ima. Potisnih obvestil (APNs) se ni.
 /// Spodnjih gumbov My Clubs / My Friends ni vec (Martin, 21. 9. 2026) — oba sta v profilu.
 /// Lezi znotraj NavigationStack domacega zaslona, zato NavigationLink dela.
@@ -17,6 +17,8 @@ struct NotificationsMenuView: View {
     let clubEvents: [ClubEventNotification]
     /// "X te je dodal na guest listo" (backend, 8. 10. 2026) — isti vzorec kot prejeta vstopnica.
     let guestListInvites: [GuestListInviteNotification]
+    /// »Miza je za strezbo« (backend, 9. 10. 2026, issue #176) — za owner / manager / bartender. Dotik odpre Table service.
+    let tableService: [MyTableServiceItem]
     let isLoading: Bool
     /// Zapre meni (pred navigacijo in ob dotiku zunaj).
     var onClose: () -> Void
@@ -30,7 +32,7 @@ struct NotificationsMenuView: View {
     var onGuestListInviteSeen: (Int) -> Void
 
     private var jePrazno: Bool { invites.isEmpty && friendRequests.isEmpty && receivedTickets.isEmpty && clubEvents.isEmpty
-        && guestListInvites.isEmpty }
+        && guestListInvites.isEmpty && tableService.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -91,6 +93,17 @@ struct NotificationsMenuView: View {
                         .buttonStyle(.plain)
                         .simultaneousGesture(TapGesture().onEnded { onClubEventSeen(n.id); onClose() })
                     }
+                    ForEach(tableService) { s in
+                        NavigationLink {
+                            TableServiceView(clubId: s.clubId, clubName: s.clubName, initialEventId: s.eventId)
+                        } label: {
+                            vrstica(slika: .ikona("wineglass"),
+                                    naslov: String(localized: "Table \(s.tableLabel) · \(s.packageName) — ready to serve"),
+                                    podnaslov: s.eventTitle.isEmpty ? s.clubName : s.eventTitle)
+                        }
+                        .buttonStyle(.plain)
+                        .simultaneousGesture(TapGesture().onEnded { onClose() })
+                    }
                     ForEach(receivedTickets) { t in
                         NavigationLink {
                             TicketsView()
@@ -131,7 +144,7 @@ struct NotificationsMenuView: View {
         .shadow(color: .black.opacity(0.45), radius: 20, y: 10)
     }
 
-    private enum Slika { case klub(String), oseba(String?) }
+    private enum Slika { case klub(String), oseba(String?), ikona(String) }
 
     private func vrstica(slika: Slika, naslov: String, podnaslov: String) -> some View {
         HStack(spacing: 10) {
@@ -153,6 +166,11 @@ struct NotificationsMenuView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             case .oseba(let url):
                 OutlyAvatarView(avatarUrlString: url, size: 36)
+            case .ikona(let ime):
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 36, height: 36)
+                    .overlay(Image(systemName: ime).font(.system(size: 15, weight: .semibold)).foregroundColor(.white))
             }
 
             VStack(alignment: .leading, spacing: 2) {

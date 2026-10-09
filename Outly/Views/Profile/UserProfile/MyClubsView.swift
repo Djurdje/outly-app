@@ -268,6 +268,7 @@ struct MyClubsView: View {
         switch role {
         case "owner": return String(localized: "Owner")
         case "manager": return String(localized: "Manager")
+        case "bartender": return String(localized: "Bartender")
         default: return String(localized: "Door staff")
         }
     }
@@ -306,7 +307,7 @@ struct MyClubsView: View {
 
 /// Klub, v katerem delam (Figma 382:897 "My clubs profile club"): glava kluba,
 /// vrstice Create event / View events / Scan ticket in spodaj izstop iz ekipe.
-/// Vratar vidi samo skener (streznik mu ostalo zavrne s 403).
+/// Vratar vidi samo skener, natakar samo Table service (streznik ostalo zavrne s 403).
 @MainActor
 struct MyClubDetailView: View {
     let clubId: Int
@@ -387,12 +388,25 @@ struct MyClubDetailView: View {
                             .buttonStyle(.plain)
                         }
 
-                        NavigationLink {
-                            QRScannerView(clubId: clubId)
-                        } label: {
-                            OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan ticket")
+                        // Skener: owner, manager, doorman (natakar ga ne vidi).
+                        if role != "bartender" {
+                            NavigationLink {
+                                QRScannerView(clubId: clubId)
+                            } label: {
+                                OutlyMenuRowButton(icon: "qrcode.viewfinder", title: "Scan ticket")
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+
+                        // Strezba VIP miz: owner, manager, bartender (vratar je ne vidi).
+                        if TableServiceView.smeVideti(role: role) {
+                            NavigationLink {
+                                TableServiceView(clubId: clubId, clubName: club?.name ?? ime)
+                            } label: {
+                                OutlyMenuRowButton(icon: "wineglass", title: "Table service")
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
 
                     if let errorText {
@@ -441,6 +455,7 @@ struct MyClubDetailView: View {
         switch role {
         case "owner": return String(localized: "Owner")
         case "manager": return String(localized: "Manager")
+        case "bartender": return String(localized: "Bartender")
         default: return String(localized: "Door staff")
         }
     }
