@@ -530,8 +530,10 @@ private struct VipUrPredmetView: View {
     }
 
     private func urediNapis(_ t: Text, krepko: Bool) -> some View {
-        t.font(.system(size: krepko ? max(8, min(13, celica * 0.6)) : max(7, min(11, celica * 0.5)),
-                       weight: krepko ? .bold : .medium))
+        // Razbito na korake, da tipni preverjevalnik ne obupa (gnezdene ternarke + max/min).
+        let velikost: CGFloat = krepko ? max(8, min(13, celica * 0.6)) : max(7, min(11, celica * 0.5))
+        let teza: Font.Weight = krepko ? .bold : .medium
+        return t.font(.system(size: velikost, weight: teza))
             .foregroundColor(.white.opacity(krepko ? 1 : 0.55))
             .multilineTextAlignment(.center)
             .lineLimit(krepko ? 1 : 2)

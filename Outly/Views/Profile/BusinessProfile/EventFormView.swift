@@ -59,7 +59,8 @@ struct EventFormView: View {
     /// dogodku, zato je do shranjevanja onemogocen. Novega dogodka ni (razdelek je takrat samo namig).
     private var imaNeshranjeneSpremembe: Bool {
         guard let e = existing else { return false }
-        func minute(_ a: Date, _ b: Date?) -> Bool { b == nil || abs(a.timeIntervalSince(b!)) >= 60 }
+        // Neberljiv datum s streznika (nil): prefill() ga ni prepisal, zato ni sprememba (sicer bi bil obrazec za vedno "neshranjen").
+        func minute(_ a: Date, _ b: Date?) -> Bool { guard let b else { return false }; return abs(a.timeIntervalSince(b)) >= 60 }
         if title != e.title || description != e.description || minAge != e.minAge { return true }
         if minute(startAt, e.startDate) { return true }
         if hasEnd != (e.endDate != nil) { return true }
