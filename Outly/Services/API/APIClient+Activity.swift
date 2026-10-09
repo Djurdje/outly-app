@@ -16,7 +16,7 @@ struct BusinessActivity: Decodable {
         let id: Int
         let username: String
         let avatarUrl: String?
-        /// "owner" | "manager" | "doorman"
+        /// "owner" | "manager" | "doorman" | "bartender"
         let role: String
         let scans: Int
         let scans7d: Int
@@ -41,6 +41,7 @@ struct BusinessActivity: Decodable {
             switch role {
             case "owner": return String(localized: "Owner")
             case "manager": return String(localized: "Manager")
+            case "bartender": return String(localized: "Bartender")
             default: return String(localized: "Door staff")
             }
         }

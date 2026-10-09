@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Ekipa kluba: lastnik + managerji + vratarji (GET /business/team) + cakajoca vabila.
+/// Ekipa kluba: lastnik + managerji + vratarji + natakarji (GET /business/team) + cakajoca vabila.
 /// Lastnik vabi in odstranjuje vse; manager samo vratarje. Vratar tega zaslona ne vidi.
 /// Od 13. 9. (migracija 013) dodajanje poslje VABILO: clan nastane, ko ga
 /// povabljeni sprejme v aplikaciji (My clubs -> zvonec). Povabljeni mora ze imeti Outly racun.
@@ -124,7 +124,7 @@ struct TeamView: View {
 
     private func canCancel(_ v: TeamInvite) -> Bool {
         if canAddManagers { return true }
-        return v.role == "doorman"
+        return v.role == "doorman" || v.role == "bartender"
     }
 
     private func vabiloVrstica(_ v: TeamInvite) -> some View {
@@ -182,7 +182,7 @@ struct TeamView: View {
     private func canRemove(_ m: TeamMember) -> Bool {
         if m.role == "owner" { return false }
         if canAddManagers { return true }
-        return m.role == "doorman"
+        return m.role == "doorman" || m.role == "bartender"
     }
 
     private func vrstica(_ m: TeamMember) -> some View {
@@ -268,6 +268,8 @@ struct TeamView: View {
                   text: "Events, sales, club page and door staff. Can't add other managers.")
             vloga(icon: "qrcode.viewfinder", title: "Door staff",
                   text: "Scans tickets at the door. Nothing else.")
+            vloga(icon: "wineglass", title: "Bartender",
+                  text: "Sees VIP tables to serve and marks them delivered. No guest details.")
         }
         .padding(.top, 10)
     }
@@ -380,12 +382,14 @@ struct AddTeamMemberView: View {
                         Text("Role")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.white.opacity(0.7))
-                        izbira(value: "doorman", icon: "qrcode.viewfinder", title: "Door staff",
-                               text: "Scans tickets at the door.")
                         if canAddManagers {
                             izbira(value: "manager", icon: "person.text.rectangle", title: "Manager",
                                    text: "Events, sales, club page and door staff.")
                         }
+                        izbira(value: "doorman", icon: "qrcode.viewfinder", title: "Door staff",
+                               text: "Scans tickets at the door.")
+                        izbira(value: "bartender", icon: "wineglass", title: "Bartender",
+                               text: "Serves VIP tables and marks them delivered.")
                     }
 
                     if let errorMessage {

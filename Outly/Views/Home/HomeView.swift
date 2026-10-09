@@ -45,6 +45,8 @@ struct HomeView: View {
     @State private var clubEvents: [ClubEventNotification] = []
     /// Obvestila "X te je dodal na guest listo" (backend, 8. 10. 2026; star backend: 404 -> prazno).
     @State private var guestListInvites: [GuestListInviteNotification] = []
+    /// »Miza je za strezbo« za zvonec (owner / manager / bartender; star backend: 404 -> prazno).
+    @State private var tableService: [MyTableServiceItem] = []
     @State private var notificationsLoading = false
     /// "Your friends' plans" (od 20. 9.): dogodki, na katere gredo prijatelji (GET /me/friends/plans).
     @State private var friendPlans: [FriendPlan] = []
@@ -504,13 +506,13 @@ struct HomeView: View {
     /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites), prosnje
     /// za prijateljstvo (Me.pendingFriendRequests) in neprebrane prejete vstopnice
     /// (Me.pendingReceivedTickets), obvestila klubov (Me.pendingClubEvents) in vabila na guest listo
-    /// (Me.pendingGuestListInvites); drugih obvestil (APNs) se ni.
+    /// (Me.pendingGuestListInvites) in strezba VIP miz (Me.pendingTableService); drugih obvestil (APNs) se ni.
     /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
     /// Seznam + reduce namesto verige `+ (x ?? 0)`: pri petih clenih Swift 6.1 izraza ne preveri v razumnem casu.
     private var notificationCount: Int {
         guard let me else { return 0 }
         let stevci: [Int] = [me.pendingInvites, me.pendingFriendRequests, me.pendingReceivedTickets,
-                             me.pendingClubEvents, me.pendingGuestListInvites]
+                             me.pendingClubEvents, me.pendingGuestListInvites, me.pendingTableService]
         return stevci.reduce(0, +)
     }
 
@@ -523,6 +525,7 @@ struct HomeView: View {
             NotificationsMenuView(invites: $invites, friendRequests: friendRequests, receivedTickets: receivedTickets,
                                   clubEvents: clubEvents,
                                   guestListInvites: guestListInvites,
+                                  tableService: tableService,
                                   isLoading: notificationsLoading,
                                   onClose: { zapriObvestila() },
                                   onJoined: { _ in Task { await loadMe() } },
@@ -548,12 +551,14 @@ struct HomeView: View {
         async let p = APIClient.shared.fetchReceivedTickets(token: authToken)
         async let k = APIClient.shared.fetchClubEventNotifications(token: authToken)
         async let g = APIClient.shared.fetchReceivedGuestListInvites(token: authToken)
+        async let ts = APIClient.shared.fetchMyTableService(token: authToken)
         if let vabila = try? await v { invites = vabila }
         if let prijatelji = try? await f { friendRequests = prijatelji.requestsIn }
         // Star backend brez poti -> napaka -> seznam ostane prazen (brez obvestila, ne pade).
         if let prejete = try? await p { receivedTickets = prejete }
         if let klubski = try? await k { clubEvents = klubski }
         if let guestListe = try? await g { guestListInvites = guestListe }
+        if let strezba = try? await ts { tableService = strezba }
         await loadMe()
     }
 

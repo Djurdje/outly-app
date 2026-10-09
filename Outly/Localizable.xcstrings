@@ -1120,6 +1120,17 @@
         }
       }
     },
+    "Bartender": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natakar"
+          }
+        }
+      }
+    },
     "BIG EVENT COMING UP": {
       "extractionState": "manual",
       "localizations": {
@@ -1545,6 +1556,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Izberi prijatelja"
+          }
+        }
+      }
+    },
+    "Choose an event": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi dogodek"
           }
         }
       }
@@ -2139,6 +2161,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brišem …"
+          }
+        }
+      }
+    },
+    "Delivered": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostavljeno"
+          }
+        }
+      }
+    },
+    "Delivered at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostavljeno ob %@"
+          }
+        }
+      }
+    },
+    "Delivered at %@ by %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostavljeno ob %1$@ (%2$@)"
           }
         }
       }
@@ -3884,6 +3939,17 @@
         }
       }
     },
+    "No tables scanned yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni skeniranih miz."
+          }
+        }
+      }
+    },
     "NOT PAID": {
       "extractionState": "manual",
       "localizations": {
@@ -4309,6 +4375,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nič ni bilo najdeno. Poskusi drugo besedo ali nas kontaktiraj spodaj."
+          }
+        }
+      }
+    },
+    "Nothing left to serve.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse je postreženo."
           }
         }
       }
@@ -5358,6 +5435,39 @@
         }
       }
     },
+    "Scanned %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skenirano ob %@"
+          }
+        }
+      }
+    },
+    "Seats: %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedeži: %lld"
+          }
+        }
+      }
+    },
+    "Sees VIP tables to serve and marks them delivered. No guest details.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vidi VIP mize za postrežbo in jih označi kot dostavljene. Brez podatkov o gostih."
+          }
+        }
+      }
+    },
     "Select venue": {
       "extractionState": "manual",
       "localizations": {
@@ -5387,6 +5497,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pošiljanje vstopnic osebam brez računa Outly še ni na voljo."
+          }
+        }
+      }
+    },
+    "Serves VIP tables and marks them delivered.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streže VIP mize in jih označi kot dostavljene."
+          }
+        }
+      }
+    },
+    "serving VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "strežbo VIP miz"
           }
         }
       }
@@ -6091,6 +6223,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pomoč"
+          }
+        }
+      }
+    },
+    "Table %@ · %@ — ready to serve": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miza %1$@ · %2$@ — za strežbo"
+          }
+        }
+      }
+    },
+    "Table service": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strežba miz"
           }
         }
       }
@@ -7040,6 +7194,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vnesi vsaj 2 znaka."
+          }
+        }
+      }
+    },
+    "Undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Razveljavi"
           }
         }
       }
