@@ -255,7 +255,10 @@ struct TransferTicketView: View {
                 .foregroundColor(.white.opacity(0.5))
 
                 // Vracilo ob odpovedi gre vedno prvotnemu kupcu (pogodba je s kupcem; ZVPot-1 23, outly-backend #103).
-                Text("If the event is cancelled, the refund goes to you as the buyer, not to the person you send the ticket to.")
+                // Prejeta vstopnica, poslana naprej: kupec ni posiljatelj, vracilo dobi prvotni kupec.
+                (ticket.transferred
+                    ? Text("If the event is cancelled, the refund goes to the original buyer, not to the person you send the ticket to.")
+                    : Text("If the event is cancelled, the refund goes to you as the buyer, not to the person you send the ticket to."))
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.5))
             }

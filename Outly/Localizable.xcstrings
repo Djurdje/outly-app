@@ -3804,6 +3804,17 @@
         }
       }
     },
+    "If the event is cancelled, the refund goes to the original buyer, not to the person you send the ticket to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če je dogodek odpovedan, vračilo dobi prvotni kupec, ne oseba, ki ji pošlješ vstopnico."
+          }
+        }
+      }
+    },
     "If the event is cancelled, the refund goes to you as the buyer, not to the person you send the ticket to.": {
       "extractionState": "manual",
       "localizations": {
