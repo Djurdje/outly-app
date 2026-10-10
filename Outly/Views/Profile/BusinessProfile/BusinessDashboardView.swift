@@ -52,7 +52,7 @@ struct BusinessDashboardView: View {
                 }
 
                 if let sales, sales.nacinPlacila.prodajaNedosegljiva {
-                    NapotekKartica(besedilo: String(localized: "Buyers can't purchase yet — connect Stripe in Settings."))
+                    NapotekKartica(besedilo: String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app."))
                 }
 
                 if isLoading && sales == nil {

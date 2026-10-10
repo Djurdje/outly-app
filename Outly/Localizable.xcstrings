@@ -6931,13 +6931,13 @@
         }
       }
     },
-    "Buyers can't purchase yet — connect Stripe in Settings.": {
+    "Buyers can't purchase yet — connect Stripe at outly.si/app.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kupci še ne morejo kupovati — poveži Stripe v nastavitvah."
+            "value": "Kupci še ne morejo kupovati — poveži Stripe na outly.si/app."
           }
         }
       }
