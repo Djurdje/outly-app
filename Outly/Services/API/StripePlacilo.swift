@@ -29,6 +29,9 @@ enum StripePlacilo {
         return url
     }
 
+    /// Sporocilo, ko je Stripova seja potekla (`checkout_expired`) ali je narocilo s kljucem ze preklicano (409 `order_not_active`).
+    static var sporociloPotekla: String { String(localized: "The payment session expired. Please try again.") }
+
     /// Shema klica nazaj; `ASWebAuthenticationSession(callbackURLScheme:)` jo prestreze sam.
     static let shemaVrnitve = "outly"
 
@@ -95,6 +98,10 @@ enum StripePlacilo {
         case placano(APIOrder)
         /// Se `pending` (ali placano, vstopnice pa se niso zapisane): webhook se ni prisel ali uporabnik ni placal.
         case caka
+        /// Stripova seja je potekla (`checkout_expired`), narocilo je se `pending` in `checkout_url` je nil (backend#203): ne cakamo
+        /// in ne odpiramo povezave. Backend je narocilo ob branju ze preveril pri Stripu; ponovni pritisk Pay z ISTIM kljucem vrne
+        /// placano narocilo (201) ali 409 `order_not_active` (nov kljuc).
+        case potekel
         /// Narocila ni vec med mojimi (backend opuscenih ne vraca) ali ima status failed/cancelled/refunded:
         /// placilo ni uspelo, naslednji pritisk je nov nakup (nov kljuc).
         case opuscen
@@ -107,7 +114,7 @@ enum StripePlacilo {
         case "paid":
             return n.tickets.isEmpty ? .caka : .placano(n)
         case "pending":
-            return .caka
+            return n.checkoutExpired ? .potekel : .caka
         default:
             return .opuscen
         }

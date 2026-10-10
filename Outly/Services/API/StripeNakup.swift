@@ -59,6 +59,13 @@ final class StripeNakup: ObservableObject {
         self.dogodekId = dogodekId
         self.vrsta = vrsta
         napaka = nil
+        // Potekla seja (backend#203): povezave ne odpiramo; kljuc ostane, ponovni nakup z istim kljucem backend razresi
+        // (placano -> 201, preklicano -> 409 order_not_active -> nov kljuc).
+        if p.order.checkoutExpired {
+            caka = nil
+            napaka = StripePlacilo.sporociloPotekla
+            return false
+        }
         guard let url = StripePlacilo.varenUrl(p.checkoutUrl ?? p.order.checkoutUrl) else {
             caka = nil
             return false
@@ -94,6 +101,11 @@ final class StripeNakup: ObservableObject {
                 return StripePlacilo.odgovorPoPlacilu(placano)
             case .caka:
                 if tiho { caka = nil }
+                return nil
+            case .potekel:
+                // Narocilo je bilo ravnokar prebrano (osvezeno); kartica »Checking your payment« izgine, kljuc OSTANE.
+                caka = nil
+                if !tiho { napaka = StripePlacilo.sporociloPotekla }
                 return nil
             case .opuscen:
                 shramba.poNapaki(uporabnik: uporabnik, dogodekId: dogodekId, vrsta: vrsta, izid: .narociloNeaktivno)

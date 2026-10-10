@@ -195,7 +195,8 @@ extension Error {
         case .vObdelavi:
             return String(localized: "Your previous attempt is still being processed. Please try again in a moment.")
         case .narociloNeaktivno:
-            return String(localized: "Your previous order is no longer active. Tap again to buy anew.")
+            // Najpogostejsi vzrok: Stripova seja je potekla in je backend narocilo preklical (backend#203).
+            return StripePlacilo.sporociloPotekla
         case .nejasen:
             return String(localized: "Your purchase may have gone through — tap the button again to check (you won't be charged twice).")
         case .navadna:

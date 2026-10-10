@@ -116,11 +116,14 @@ struct EventVip: Decodable {
     let plan: VipPlan?
     let tables: [VipTable]
     let packages: [VipPackage]
+    /// Nacin placila prodajalca (backend#203): "test" | "stripe" | "unavailable"; nil = star backend (glej `NacinPlacila`).
+    let paymentMode: String?
 
     enum CodingKeys: String, CodingKey {
         case enabled, currency, plan, tables, packages
         case eventId = "event_id"
         case onSale = "on_sale"
+        case paymentMode = "payment_mode"
     }
 
     init(from decoder: Decoder) throws {
@@ -132,6 +135,7 @@ struct EventVip: Decodable {
         plan = try c.decodeIfPresent(VipPlan.self, forKey: .plan)
         tables = try c.decodeIfPresent([VipTable].self, forKey: .tables) ?? []
         packages = try c.decodeIfPresent([VipPackage].self, forKey: .packages) ?? []
+        paymentMode = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
     }
 
     /// Tloris je uporaben, ce je vklopljen, ima mrezo in vsaj eno mizo.

@@ -6898,6 +6898,17 @@
         }
       }
     },
+    "The payment session expired. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilna seja je potekla. Poskusi znova."
+          }
+        }
+      }
+    },
     "The tables and prices drawn for this event are lost. Tables with orders stay archived and those orders stay valid. Phone reservations on these tables are released.": {
       "extractionState": "manual",
       "localizations": {
@@ -7700,6 +7711,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vstopnic za dogodek z določenim datumom po nakupu ni mogoče vrniti (ZVPot-1, 135/12). Prodajalec je klub; Outly je posrednik."
+          }
+        }
+      }
+    },
+    "Tickets aren't on sale in the app yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice v aplikaciji še niso v prodaji."
           }
         }
       }

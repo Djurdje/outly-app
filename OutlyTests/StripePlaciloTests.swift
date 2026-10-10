@@ -127,6 +127,76 @@ final class StripePlaciloTests: XCTestCase {
         }
     }
 
+    // MARK: - Potekla seja in brezplacno narocilo (backend#203)
+
+    func testCheckoutExpiredDekodiraInPrivzetoJeFalse() throws {
+        XCTAssertFalse(try decode(APIOrder.self, #"{"id": 1}"#).checkoutExpired)
+        XCTAssertFalse(try decode(APIOrder.self, #"{"id": 1, "checkout_expired": "da"}"#).checkoutExpired)
+        let o = try decode(APIOrder.self, #"{"id": 1, "status": "pending", "checkout_url": null, "checkout_expired": true}"#)
+        XCTAssertTrue(o.checkoutExpired)
+        XCTAssertNil(o.checkoutUrl)
+    }
+
+    func testPendingPotekelJePotekelBrezCakanja() throws {
+        let potekel = try decode(APIOrder.self, #"{"id": 41, "status": "pending", "checkout_url": null, "checkout_expired": true}"#)
+        guard case .potekel = StripePlacilo.izid(narocila: [potekel], narociloId: 41) else { return XCTFail("pending + expired -> potekel") }
+        let seUstvarja = try decode(APIOrder.self, #"{"id": 41, "status": "pending", "checkout_url": null, "checkout_expired": false}"#)
+        guard case .caka = StripePlacilo.izid(narocila: [seUstvarja], narociloId: 41) else { return XCTFail("pending brez expired -> caka") }
+    }
+
+    func testOdpriPotekloNarociloNeOdpreStripaInPokazeSporocilo() throws {
+        let p = try decode(PurchaseResponse.self, """
+        {"mode": "stripe", "tickets": [], "checkout_url": null,
+         "order": {"id": 41, "status": "pending", "checkout_url": null, "checkout_expired": true}}
+        """)
+        XCTAssertTrue(p.cakaPlacilo)
+        let s = StripeNakup(shramba: novaShramba())
+        XCTAssertFalse(s.odpri(p, uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+        XCTAssertNil(s.stran)
+        XCTAssertNil(s.caka)
+        XCTAssertEqual(s.napaka, StripePlacilo.sporociloPotekla)
+    }
+
+    func testOdpriPotekloNarociloSIzvirnoPovezavoVseenoNeOdpre() throws {
+        // Backend ob expired povezave ne vrne; ce bi jo (napaka), expired vseeno prevlada.
+        let p = try decode(PurchaseResponse.self, """
+        {"mode": "stripe", "tickets": [], "checkout_url": "https://checkout.stripe.com/c/pay/cs",
+         "order": {"id": 41, "status": "pending", "checkout_expired": true}}
+        """)
+        let s = StripeNakup(shramba: novaShramba())
+        XCTAssertFalse(s.odpri(p, uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+        XCTAssertNil(s.stran)
+    }
+
+    func testPreveriPotekelaSejaPokazeSporociloKljucOstane() async throws {
+        let shramba = novaShramba()
+        let vsebina = NakupniKljuc.Vsebina(dogodekId: 7, kolicina: 2)
+        let k1 = shramba.zaNakup(uporabnik: 3, vsebina: vsebina)
+        let s = try nakupZBralnikom(.potekel, shramba: shramba)
+        let p = await s.preveri(token: "t", poskusov: 5)
+        XCTAssertNil(p)
+        XCTAssertNil(s.caka)   // brez kartice »Checking your payment«
+        XCTAssertEqual(s.napaka, StripePlacilo.sporociloPotekla)
+        XCTAssertEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)   // ponovni pritisk: isti kljuc, backend razresi
+    }
+
+    func testBrezplacnoNarociloPriKlubuSStripomJeUspesenNakup() throws {
+        let r = try decode(PurchaseResponse.self, """
+        {"mode": "stripe", "checkout_url": null,
+         "order": {"id": 9, "status": "paid", "total_cents": 0, "checkout_url": null, "checkout_expired": false},
+         "tickets": [{"id": 1, "serial": "S", "status": "valid", "qr": "q"}]}
+        """)
+        XCTAssertFalse(r.cakaPlacilo)       // Stripa se ne odpira
+        XCTAssertNotEqual(r.mode, "test")   // uspesni zaslon brez oznake TEST
+        XCTAssertEqual(r.tickets.count, 1)
+    }
+
+    func testOrderNotActiveDaSporociloPotekleSeje() {
+        let e = APIError.requestFailed(409, #"{"error":"order_not_active","message":"x"}"#)
+        XCTAssertEqual(e.nakupniIzid, .narociloNeaktivno)
+        XCTAssertEqual(e.nakupUserMessage, StripePlacilo.sporociloPotekla)
+    }
+
     // MARK: - StripeNakup (stanje + kljuc)
 
     private func stripeOdgovor(url: String?) throws -> PurchaseResponse {
