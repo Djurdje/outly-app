@@ -3,6 +3,7 @@ import Foundation
 @testable import Outly
 
 /// `payment_mode` (backend#203): dekodiranje (star backend polja ne poslje), razvrstitev in kdaj se kaze napis »Test mode«.
+@MainActor
 final class NacinPlacilaTests: XCTestCase {
 
     private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
