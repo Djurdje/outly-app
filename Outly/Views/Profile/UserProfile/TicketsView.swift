@@ -325,6 +325,16 @@ struct TicketDetailView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
+                // Prejeta (prenesena) vstopnica: vracilo ob odpovedi dobi prvotni kupec (ZVPot-1 23, outly-backend #103).
+                // V GET /me/tickets `transferred` pomeni "vstopnico sem PREJEL" (glej APITicket.jePoslanaDalje).
+                if ticket.transferred {
+                    Text("This ticket was transferred to you. If the event is cancelled, the refund goes to the original buyer.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 10)
+                }
+
                 if let host = ticket.povabilGostitelj(jaz: session.me?.username) {
                     Text("Invited by @\(host)")
                         .font(.system(size: 13, weight: .medium))
