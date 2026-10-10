@@ -61,6 +61,12 @@ final class StripeNakup: ObservableObject {
         napaka = nil
         // Potekla seja (backend#203): povezave ne odpiramo; kljuc ostane, ponovni nakup z istim kljucem backend razresi
         // (placano -> 201, preklicano -> 409 order_not_active -> nov kljuc).
+        // Odlozeno placilo (banka obdeluje): tudi tu povezave ne odpiramo.
+        if p.order.paymentProcessing {
+            caka = nil
+            napaka = StripePlacilo.sporociloVObdelavi
+            return false
+        }
         if p.order.checkoutExpired {
             caka = nil
             napaka = StripePlacilo.sporociloPotekla
@@ -101,6 +107,12 @@ final class StripeNakup: ObservableObject {
                 return StripePlacilo.odgovorPoPlacilu(placano)
             case .caka:
                 if tiho { caka = nil }
+                return nil
+            case .vObdelavi:
+                // Placilo je opravljeno, banka ga se potrjuje: sporocilo tudi po izrecnem preklicu (kupec je placal), brez kartice
+                // in brez ponovnega placila (Pay z istim kljucem vrne 409 request_in_progress); kljuc OSTANE.
+                caka = nil
+                napaka = StripePlacilo.sporociloVObdelavi
                 return nil
             case .potekel:
                 // Narocilo je bilo ravnokar prebrano (osvezeno); kartica »Checking your payment« izgine, kljuc OSTANE.

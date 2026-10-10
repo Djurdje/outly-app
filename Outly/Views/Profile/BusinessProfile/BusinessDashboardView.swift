@@ -51,6 +51,10 @@ struct BusinessDashboardView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                if let sales, sales.nacinPlacila.prodajaNedosegljiva {
+                    NapotekKartica(besedilo: String(localized: "Buyers can't purchase yet — connect Stripe in Settings."))
+                }
+
                 if isLoading && sales == nil {
                     HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.vertical, 40)
                 } else if let errorText {

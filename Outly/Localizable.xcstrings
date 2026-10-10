@@ -6909,6 +6909,39 @@
         }
       }
     },
+    "Your payment is being processed by your bank. We'll update your tickets when it's confirmed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banka še obdeluje plačilo. Vstopnice posodobimo, ko bo potrjeno."
+          }
+        }
+      }
+    },
+    "You've reached the limit of free tickets for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosegel si omejitev brezplačnih vstopnic za ta dogodek."
+          }
+        }
+      }
+    },
+    "Buyers can't purchase yet — connect Stripe in Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupci še ne morejo kupovati — poveži Stripe v nastavitvah."
+          }
+        }
+      }
+    },
     "The tables and prices drawn for this event are lost. Tables with orders stay archived and those orders stay valid. Phone reservations on these tables are released.": {
       "extractionState": "manual",
       "localizations": {

@@ -119,6 +119,7 @@ extension Error {
     /// in 409 `order_not_active` (prejsnje narocilo ni vec aktivno, kljuc je ponastavljen; izbira ostane za nov pritisk).
     var osveziTlorisPoNapaki: Bool {
         guard let api = self as? APIError, case .requestFailed(let status, _) = api, status == 409 else { return false }
+        if jeBrezplacnaMeja { return false }   // meja brezplacnih vstopnic ni povezana s tlorisom
         let izid = nakupniIzid
         return izid != .vObdelavi && izid != .narociloNeaktivno
     }

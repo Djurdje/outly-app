@@ -64,4 +64,11 @@ final class NacinPlacilaTests: XCTestCase {
         XCTAssertTrue(try decode(BusinessSales.self, #"{"mode": "test", \#(osnova)}"#).jeTestni)
         XCTAssertFalse(try decode(BusinessSales.self, #"{"mode": "stripe", \#(osnova)}"#).jeTestni)
     }
+
+    func testDashboardOpozoriloSamoPriUnavailable() throws {
+        let osnova = #""summary": {"gross_cents": 0, "fee_cents": 0, "net_cents": 0, "tickets_sold": 0, "orders": 0, "buyers": 0, "gross_7d_cents": 0, "tickets_7d": 0}"#
+        XCTAssertTrue(try decode(BusinessSales.self, #"{"mode": "stripe", "payment_mode": "unavailable", \#(osnova)}"#).nacinPlacila.prodajaNedosegljiva)
+        XCTAssertFalse(try decode(BusinessSales.self, #"{"mode": "stripe", "payment_mode": "stripe", \#(osnova)}"#).nacinPlacila.prodajaNedosegljiva)
+        XCTAssertFalse(try decode(BusinessSales.self, #"{"mode": "stripe", \#(osnova)}"#).nacinPlacila.prodajaNedosegljiva)
+    }
 }

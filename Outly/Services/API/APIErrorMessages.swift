@@ -179,6 +179,12 @@ extension Error {
         return t.contains("too many purchases") || t.contains("server busy") || t.contains("service temporarily unavailable")
     }
 
+    /// 409 `free_limit` (backend#203): oseba bi presegla mejo brezplacnih vstopnic za dogodek (cena 0 EUR).
+    var jeBrezplacnaMeja: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
+        return raw.lowercased().contains("free_limit")
+    }
+
     /// Vsak 503 pri nakupu: gumb je kratek cas onemogocen (nakupa se ne ponavlja samodejno).
     var jeNakup503: Bool {
         guard let api = self as? APIError, case .requestFailed(let code, _) = api else { return false }
@@ -201,6 +207,9 @@ extension Error {
             return String(localized: "Your purchase may have gone through — tap the button again to check (you won't be charged twice).")
         case .navadna:
             break
+        }
+        if jeBrezplacnaMeja {
+            return String(localized: "You've reached the limit of free tickets for this event.")
         }
         if jeNavalNakupa {
             return String(localized: "Lots of people are buying right now. Please try again in a few seconds.")

@@ -197,6 +197,62 @@ final class StripePlaciloTests: XCTestCase {
         XCTAssertEqual(e.nakupUserMessage, StripePlacilo.sporociloPotekla)
     }
 
+    // MARK: - Odlozeno placilo in meja brezplacnih vstopnic (backend#203, krog 2)
+
+    func testPaymentProcessingDekodiraInPrivzetoJeFalse() throws {
+        XCTAssertFalse(try decode(APIOrder.self, #"{"id": 1}"#).paymentProcessing)
+        XCTAssertFalse(try decode(APIOrder.self, #"{"id": 1, "payment_processing": "da"}"#).paymentProcessing)
+        let o = try decode(APIOrder.self, #"{"id": 1, "status": "pending", "checkout_url": null, "checkout_expired": false, "payment_processing": true}"#)
+        XCTAssertTrue(o.paymentProcessing)
+        XCTAssertFalse(o.checkoutExpired)
+    }
+
+    func testPendingVObdelaviJeVObdelaviNiPotekelNiCaka() throws {
+        let n = try decode(APIOrder.self, #"{"id": 41, "status": "pending", "checkout_url": null, "payment_processing": true}"#)
+        guard case .vObdelavi = StripePlacilo.izid(narocila: [n], narociloId: 41) else { return XCTFail("pending + processing -> vObdelavi") }
+        // processing prevlada, tudi ce bi bil istocasno expired (backend tega ne poslje)
+        let obe = try decode(APIOrder.self, #"{"id": 41, "status": "pending", "checkout_expired": true, "payment_processing": true}"#)
+        guard case .vObdelavi = StripePlacilo.izid(narocila: [obe], narociloId: 41) else { return XCTFail("processing prevlada") }
+        // placano naročilo ostane placano
+        let placano = try narocilo(status: "paid", vstopnic: 1)
+        guard case .placano = StripePlacilo.izid(narocila: [placano], narociloId: 41) else { return XCTFail("paid -> placano") }
+    }
+
+    func testOdpriNarociloVObdelaviNeOdpreStripa() throws {
+        let p = try decode(PurchaseResponse.self, """
+        {"mode": "stripe", "tickets": [], "checkout_url": null,
+         "order": {"id": 41, "status": "pending", "checkout_url": null, "payment_processing": true}}
+        """)
+        let s = StripeNakup(shramba: novaShramba())
+        XCTAssertFalse(s.odpri(p, uporabnik: 3, dogodekId: 7, vrsta: .vstopnice))
+        XCTAssertNil(s.stran)
+        XCTAssertNil(s.caka)
+        XCTAssertEqual(s.napaka, StripePlacilo.sporociloVObdelavi)
+    }
+
+    func testPreveriVObdelaviPokazeSporociloBrezKarticeKljucOstane() async throws {
+        let shramba = novaShramba()
+        let vsebina = NakupniKljuc.Vsebina(dogodekId: 7, kolicina: 2)
+        let k1 = shramba.zaNakup(uporabnik: 3, vsebina: vsebina)
+        for tiho in [false, true] {
+            let s = try nakupZBralnikom(.vObdelavi, shramba: shramba)
+            let p = await s.preveri(token: "t", poskusov: 5, tiho: tiho)
+            XCTAssertNil(p)
+            XCTAssertNil(s.caka)
+            XCTAssertEqual(s.napaka, StripePlacilo.sporociloVObdelavi)
+            XCTAssertEqual(shramba.zaNakup(uporabnik: 3, vsebina: vsebina), k1)
+        }
+    }
+
+    func testFreeLimitDaSporociloInNiNavadnaNapakaTloris() {
+        let e = APIError.requestFailed(409, #"{"error":"free_limit","message":"You can get at most 10 free tickets for this event (3 left for you)."}"#)
+        XCTAssertTrue(e.jeBrezplacnaMeja)
+        XCTAssertEqual(e.nakupUserMessage, String(localized: "You've reached the limit of free tickets for this event."))
+        XCTAssertFalse(e.osveziTlorisPoNapaki)
+        XCTAssertFalse(APIError.requestFailed(409, "Already booked").jeBrezplacnaMeja)
+        XCTAssertFalse(APIError.requestFailed(400, "free_limit").jeBrezplacnaMeja)
+    }
+
     // MARK: - StripeNakup (stanje + kljuc)
 
     private func stripeOdgovor(url: String?) throws -> PurchaseResponse {
