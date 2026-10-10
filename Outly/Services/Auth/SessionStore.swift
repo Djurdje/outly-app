@@ -67,6 +67,8 @@ final class SessionStore: ObservableObject {
             return await self.refreshAccessToken() ? self.token : nil
         }
         SessionRefresh.isLoggedIn = { [weak self] in self?.isLoggedIn ?? false }
+        // Potisna obvestila (APNs) berejo prijavo in uporabnika prek sibke reference.
+        PushObvestila.deljen.seja = self
     }
 
     // MARK: - Prijava / odjava
@@ -90,9 +92,35 @@ final class SessionStore: ObservableObject {
     /// Stari klic (samo dostopni zeton). Ostane za zdruzljivost; nova koda naj klice setSession.
     func setToken(_ newToken: String) { setSession(token: newToken, refreshToken: nil) }
 
+    /// Cakajoca odjava: najprej DELETE /me/devices/:zeton (PushObvestila), nato lokalno brisanje seje.
+    private var odjavaTece = false
+
     /// Odjava: Supabase preklice sejo (osvezevalni zeton), nato lokalno pobrisemo
-    /// vse. Lokalni del se zgodi VEDNO, tudi brez omrezja.
-    func logout() {
+    /// vse. Lokalni del odjave se zgodi VEDNO, tudi brez omrezja.
+    ///
+    /// Potisna obvestila (outly-backend#183, pregled PR #186): ce je zeton naprave registriran, se NAJPREJ poklice
+    /// DELETE /me/devices/:zeton z SE veljavnim zetonom seje (rok ~3 s, napaka odjave ne prepreci), SELE NATO se seja pobrise;
+    /// sicer bi pushi prejsnjega uporabnika sli na napravo, dokler novi uporabnik ne registrira zetona.
+    /// `brezNaprave`: preskoci ta klic. Obvezno po brisanju racuna (DELETE /me): z zetonom izbrisanega racuna bi requireAuth
+    /// na strezniku racun ustvaril znova.
+    func logout(brezNaprave: Bool = false) {
+        let t = token
+        if brezNaprave || t.isEmpty || !PushObvestila.deljen.imaRegistracijo {
+            zakljuciOdjavo()
+            return
+        }
+        guard !odjavaTece else { return }
+        odjavaTece = true
+        Task {
+            await PushObvestila.deljen.odjaviNapravo(token: t)
+            self.odjavaTece = false
+            // Drug uporabnik se je medtem ze prijavil (ali je sejo zavrnil streznik): nove seje ne brisemo.
+            if self.token == t { self.zakljuciOdjavo() }
+        }
+    }
+
+    /// Lokalni del odjave (neposlani skeni, Supabase odjava, brisanje seje).
+    private func zakljuciOdjavo() {
         let t = token
         // M13: neposlane skene skenerja TEGA uporabnika poskusi poslati se z veljavnim zetonom (kratek rok), nato Supabase odjava.
         // ID zajamemo PRED clearLocalSession (ta pobrise `me`). Lokalni del odjave se zgodi takoj; brez povezave skeni ostanejo na
@@ -106,6 +134,14 @@ final class SessionStore: ObservableObject {
             }
         }
         clearLocalSession()
+    }
+
+    /// DELETE /me/devices/:zeton pred odjavo, ki jo klic koncuje sam (npr. »Sign out everywhere«: Supabase odjava na vseh
+    /// napravah steka PRED logout()). Ce zetona ni registriranega, ne stori nicesar.
+    func odjaviPushNapravo() async {
+        let t = token
+        guard !t.isEmpty, PushObvestila.deljen.imaRegistracijo else { return }
+        await PushObvestila.deljen.odjaviNapravo(token: t)
     }
 
     /// Streznik je sejo zavrnil (npr. po ponastavitvi gesla na drugi napravi).
@@ -130,6 +166,9 @@ final class SessionStore: ObservableObject {
         refreshTask = nil
         // Idempotentni kljuci nakupov (samo v pomnilniku) so vezani na uporabnika: ob odjavi/zavrnjeni seji vsi stran.
         NakupniKljucShramba.deljena.pocistiVse()
+        // Potisna obvestila: stanje registracije zetona in cakajoc cilj dotika pripadata odjavljenemu uporabniku.
+        PushObvestila.deljen.pocistiStanje()
+        PushUsmerjevalnik.deljen.pocisti()
     }
 
     // MARK: - Osvezevanje

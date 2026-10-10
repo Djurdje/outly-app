@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Potisna obvestila (APNs). Vrednost "development" je Xcodova konvencija: arhiv se v CI podpise z razvojnim
+	     certifikatom/profilom, ob izvozu "app-store-connect" Xcode vrednost sam zamenja s "production".
+	     "production" tu bi se z razvojnim profilom spopadlo ze ob arhiviranju. Datoteka je NAMENOMA izven mape Outly/
+	     (sinhronizirana mapa bi jo dodala med vire paketa). Glej outly-app CLAUDE.md in backend DECISIONS 10. 10. 2026. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

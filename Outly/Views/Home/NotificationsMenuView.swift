@@ -6,7 +6,7 @@ import SwiftUI
 /// prosnje za prijateljstvo (-> MyFriendsView) in prejete vstopnice (-> TicketsView; dotik
 /// obvestilo oznaci kot prebrano, backend migracija 017) in vabila na guest listo (-> TicketsView, kjer je moja
 /// vstopnica; dotik oznaci kot prebrano) in strezba VIP miz za natakarje/managerje (-> TableServiceView). Sprejem se ne zgodi tu — dejanje s
-/// posledicami ostane na zaslonu, ki ga ze ima. Potisnih obvestil (APNs) se ni.
+/// posledicami ostane na zaslonu, ki ga ze ima. Potisna obvestila (APNs, od 10. 10. 2026) so POLEG zvonca, ne namesto njega (PushObvestila.swift).
 /// Spodnjih gumbov My Clubs / My Friends ni vec (Martin, 21. 9. 2026) — oba sta v profilu.
 /// Lezi znotraj NavigationStack domacega zaslona, zato NavigationLink dela.
 struct NotificationsMenuView: View {

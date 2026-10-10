@@ -384,6 +384,8 @@ struct ClubDetailView: View {
             let stanje = try await APIClient.shared.setFollowClub(token: session.token, clubId: clubId, follow: novo)
             sledim = stanje.following
             sledilci = stanje.followersCount
+            // Prvi Follow = smiseln trenutek za dovoljenje za potisna obvestila (klub objavi dogodek). Samo ce se ni odlocil.
+            if stanje.following { PushObvestila.deljen.predlagajDovoljenje() }
         } catch {
             sledim = !novo
             sledilci = max(0, sledilci + (novo ? -1 : 1))

@@ -190,6 +190,9 @@ struct ClubInvitesView: View {
             invites = []
             await session.refreshMe()
             onJoined(r.club.name)
+            // Sprejem vabila v ekipo (natakar / vratar / manager) = smiseln trenutek za dovoljenje za potisna obvestila:
+            // strezba VIP miz pride kot push. Samo ce se uporabnik ni odlocil.
+            PushObvestila.deljen.predlagajDovoljenje()
             dismiss()
         } catch {
             errorText = error.userMessage

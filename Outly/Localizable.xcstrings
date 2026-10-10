@@ -11533,6 +11533,50 @@
           }
         }
       }
+    },
+    "New ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova vstopnica"
+          }
+        }
+      }
+    },
+    "VIP table": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP miza"
+          }
+        }
+      }
+    },
+    "%@ sent you a ticket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ti je poslal vstopnico"
+          }
+        }
+      }
+    },
+    "VIP table %@ is ready to be served": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP miza %@ je pripravljena za strežbo"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

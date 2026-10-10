@@ -9,6 +9,9 @@ import SwiftUI
 
 @main
 struct OutlyApp: App {
+    // Potisna obvestila (APNs): zeton naprave in dotik na obvestilo (OutlyAppDelegate).
+    @UIApplicationDelegateAdaptor(OutlyAppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var prefs = UserPreferences()
     @StateObject private var locationManager = LocationManager()
     @StateObject private var session = SessionStore()
@@ -36,10 +39,18 @@ struct OutlyApp: App {
                 .environmentObject(locationManager)
                 .environmentObject(session)
                 .environmentObject(favorites)
+                .environmentObject(PushUsmerjevalnik.deljen)
                 // Ob odjavi pobrisi priljubljene prejsnjega racuna (tudi lokalni cache).
                 .onChange(of: session.token) { _, novi in
-                    if novi.isEmpty { favorites.clear() }
+                    if novi.isEmpty { favorites.clear() } else { PushObvestila.deljen.osvezi() }
                 }
+                // Potisna obvestila: zeton se poslje, ko je znan uporabnik (GET /me), ne ze ob zetonu seje.
+                .onChange(of: session.me?.id) { _, _ in PushObvestila.deljen.uskladi() }
+                // Zagon in vrnitev v ospredje: ce je dovoljenje ze odobreno, naj iOS (znova) vrne zeton (brez vprasanja).
+                .onChange(of: scenePhase) { _, faza in
+                    if faza == .active { PushObvestila.deljen.osvezi() }
+                }
+                .task { PushObvestila.deljen.osvezi() }
         }
     }
 }

@@ -409,6 +409,10 @@ struct HomeView: View {
             // (Martin, 24. 9.: Going events in Friends plans morajo sledit takoj, ne sele po pull-to-refresh).
             if !clubs.isEmpty { Task { await loadMe(); await osveziNacrte() } }
         }
+        // Potisno obvestilo je prispelo, medtem ko je aplikacija odprta (OutlyAppDelegate): osvezi stevec na zvoncu (en GET /me).
+        .onReceive(NotificationCenter.default.publisher(for: .outlyPushPrispel)) { _ in
+            Task { await loadMe() }
+        }
     }
 
     // MARK: - Organized by Outly (loceno zaradi tipnega preverjevalnika, kot genreSection)
@@ -506,7 +510,7 @@ struct HomeView: View {
     /// Stevilo obvestil za zvonec: cakajoca vabila v ekipo kluba (Me.pendingInvites), prosnje
     /// za prijateljstvo (Me.pendingFriendRequests) in neprebrane prejete vstopnice
     /// (Me.pendingReceivedTickets), obvestila klubov (Me.pendingClubEvents) in vabila na guest listo
-    /// (Me.pendingGuestListInvites) in strezba VIP miz (Me.pendingTableService); drugih obvestil (APNs) se ni.
+    /// (Me.pendingGuestListInvites) in strezba VIP miz (Me.pendingTableService); potisna obvestila (APNs) so poleg zvonca, ne namesto njega.
     /// 0 = samo zvonec, 1 = "1", 2+ = "1+".
     /// Seznam + reduce namesto verige `+ (x ?? 0)`: pri petih clenih Swift 6.1 izraza ne preveri v razumnem casu.
     private var notificationCount: Int {
