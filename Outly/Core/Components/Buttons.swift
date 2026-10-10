@@ -193,7 +193,7 @@ struct AvatarUploadButton: View {
                 user = updated
             }
         } catch {
-            print("Avatar upload error:", error.localizedDescription)
+            // Neuspel nalog avatarja: slika ostane stara (tiho, kot doslej; napake uporabniku ne kazemo).
         }
     }
 }

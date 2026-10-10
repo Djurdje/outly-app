@@ -204,11 +204,14 @@ struct VipTablesView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 if vip.onSale, let m = izbranaMiza {
-                    gumbRezerviraj(m)
-                        .padding(.horizontal, 18)
-                        .padding(.top, 10)
-                        .padding(.bottom, 12)
-                        .background(ozadje)
+                    VStack(spacing: 8) {
+                        gumbRezerviraj(m)
+                        OutlyPogojiNakupa()
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
+                    .background(ozadje)
                 }
             }
         }

@@ -149,6 +149,8 @@ struct BuyTicketsView: View {
                 gumbPlacaj
                     .padding(.top, 4)
 
+                OutlyPogojiNakupa()
+
                 Text("Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.40))
