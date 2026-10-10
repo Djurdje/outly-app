@@ -66,6 +66,10 @@ struct APIEvent: Identifiable, Decodable {
     /// Samo v seznamu dogodkov kluba: dogodek organizatorja, ki ga klub GOSTI (club_id je organizatorjev).
     let hosted: Bool
 
+    /// Nacin placila prodajalca (backend#203): "test" | "stripe" | "unavailable"; nil = star backend (glej `NacinPlacila`).
+    /// Ni v favoritih/nacrtih (tam ni nakupa) -> nil.
+    let paymentMode: String?
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -99,6 +103,7 @@ struct APIEvent: Identifiable, Decodable {
         case venueLat = "venue_lat"
         case venueLng = "venue_lng"
         case hosted
+        case paymentMode = "payment_mode"
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -139,7 +144,13 @@ struct APIEvent: Identifiable, Decodable {
         venueLat         = (try? c.decodeIfPresent(Double.self, forKey: .venueLat)) ?? nil
         venueLng         = (try? c.decodeIfPresent(Double.self, forKey: .venueLng)) ?? nil
         hosted           = (try? c.decodeIfPresent(Bool.self, forKey: .hosted)) ?? false
+        paymentMode      = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
     }
+}
+
+extension APIEvent {
+    /// Nacin placila za nakupni list (vstopnice); nil iz starega backenda -> `.neznan`.
+    var nacinPlacila: NacinPlacila { NacinPlacila(paymentMode) }
 }
 
 // MARK: - Date helpers (UI)

@@ -27,7 +27,7 @@ struct BusinessDashboardView: View {
                         .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.white)
                     Spacer()
-                    if let sales, sales.mode == "test" {
+                    if let sales, sales.jeTestni {
                         Text("TEST")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.orange)
@@ -44,11 +44,15 @@ struct BusinessDashboardView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
-                if let sales, sales.mode == "test" {
+                if let sales, sales.jeTestni {
                     Text("Test mode: purchases are simulated, no money moves. Numbers show how the real dashboard will look.")
                         .font(.system(size: 11))
                         .foregroundColor(.orange.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let sales, sales.nacinPlacila.prodajaNedosegljiva {
+                    NapotekKartica(besedilo: String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app."))
                 }
 
                 if isLoading && sales == nil {

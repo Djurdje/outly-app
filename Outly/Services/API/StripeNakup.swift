@@ -59,6 +59,19 @@ final class StripeNakup: ObservableObject {
         self.dogodekId = dogodekId
         self.vrsta = vrsta
         napaka = nil
+        // Potekla seja (backend#203): povezave ne odpiramo; kljuc ostane, ponovni nakup z istim kljucem backend razresi
+        // (placano -> 201, preklicano -> 409 order_not_active -> nov kljuc).
+        // Odlozeno placilo (banka obdeluje): tudi tu povezave ne odpiramo.
+        if p.order.paymentProcessing {
+            caka = nil
+            napaka = StripePlacilo.sporociloVObdelavi
+            return false
+        }
+        if p.order.checkoutExpired {
+            caka = nil
+            napaka = StripePlacilo.sporociloPotekla
+            return false
+        }
         guard let url = StripePlacilo.varenUrl(p.checkoutUrl ?? p.order.checkoutUrl) else {
             caka = nil
             return false
@@ -94,6 +107,17 @@ final class StripeNakup: ObservableObject {
                 return StripePlacilo.odgovorPoPlacilu(placano)
             case .caka:
                 if tiho { caka = nil }
+                return nil
+            case .vObdelavi:
+                // Placilo je opravljeno, banka ga se potrjuje: sporocilo tudi po izrecnem preklicu (kupec je placal), brez kartice
+                // in brez ponovnega placila (Pay z istim kljucem vrne 409 request_in_progress); kljuc OSTANE.
+                caka = nil
+                napaka = StripePlacilo.sporociloVObdelavi
+                return nil
+            case .potekel:
+                // Narocilo je bilo ravnokar prebrano (osvezeno); kartica »Checking your payment« izgine, kljuc OSTANE.
+                caka = nil
+                if !tiho { napaka = StripePlacilo.sporociloPotekla }
                 return nil
             case .opuscen:
                 shramba.poNapaki(uporabnik: uporabnik, dogodekId: dogodekId, vrsta: vrsta, izid: .narociloNeaktivno)

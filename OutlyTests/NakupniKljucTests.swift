@@ -175,7 +175,7 @@ final class NakupniKljucTests: XCTestCase {
 
         let neaktivno = APIError.requestFailed(409, #"{"error":"order_not_active","message":"The order for this Idempotency-Key is no longer active."}"#)
         XCTAssertNotEqual(neaktivno.nakupUserMessage, neaktivno.userMessage)
-        XCTAssertEqual(neaktivno.nakupUserMessage, String(localized: "Your previous order is no longer active. Tap again to buy anew."))
+        XCTAssertEqual(neaktivno.nakupUserMessage, StripePlacilo.sporociloPotekla)
         XCTAssertNotEqual(neaktivno.nakupUserMessage, vObdelavi.nakupUserMessage)
 
         let nejasen = URLError(.timedOut)

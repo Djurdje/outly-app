@@ -6898,6 +6898,50 @@
         }
       }
     },
+    "The payment session expired. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilna seja je potekla. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Your payment is being processed by your bank. We'll update your tickets when it's confirmed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banka še obdeluje plačilo. Vstopnice posodobimo, ko bo potrjeno."
+          }
+        }
+      }
+    },
+    "You've reached the limit of free tickets for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosegel si omejitev brezplačnih vstopnic za ta dogodek."
+          }
+        }
+      }
+    },
+    "Buyers can't purchase yet — connect Stripe at outly.si/app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupci še ne morejo kupovati — poveži Stripe na outly.si/app."
+          }
+        }
+      }
+    },
     "The tables and prices drawn for this event are lost. Tables with orders stay archived and those orders stay valid. Phone reservations on these tables are released.": {
       "extractionState": "manual",
       "localizations": {
@@ -7704,6 +7748,17 @@
         }
       }
     },
+    "Tickets aren't on sale in the app yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice v aplikaciji še niso v prodaji."
+          }
+        }
+      }
+    },
     "Tickets for this event are not sold on Outly.": {
       "extractionState": "manual",
       "localizations": {
@@ -7810,6 +7865,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preveč neuspešnih prijav. Poskusi znova čez 15 minut."
+          }
+        }
+      }
+    },
+    "Too many payments are still processing. Wait for your bank to confirm them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveč plačil banka še obdeluje. Počakaj, da jih potrdi."
           }
         }
       }
@@ -8635,6 +8701,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Že imaš prošnjo, ki čaka na pregled."
+          }
+        }
+      }
+    },
+    "You have an unfinished payment. Finish it, or wait up to 30 minutes for it to expire.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imaš nedokončano plačilo. Dokončaj ga ali počakaj do 30 minut, da poteče."
           }
         }
       }

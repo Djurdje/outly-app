@@ -137,6 +137,9 @@ extension APIError {
         if t.contains("add your date of birth")         { return String(localized: "Add your date of birth in Personal info to buy tickets.") }
         if t.contains("you must be at least")           { return raw }
         if t.contains("payments are not available")     { return String(localized: "Payments are not available yet.") }
+        // 409 meja I20 (nedokoncana placila) in meja placil v obdelavi (backend#203); sicer bi 409 pokazal »already in use«
+        if t.contains("unfinished payment")             { return String(localized: "You have an unfinished payment. Finish it, or wait up to 30 minutes for it to expire.") }
+        if t.contains("payments still processing")      { return String(localized: "Too many payments are still processing. Wait for your bank to confirm them.") }
         if t.contains("club_has_orders")                { return String(localized: "Your club has sold tickets. Transfer club ownership before deleting your account.") }
         if t.contains("already exists") || t.contains("already registered") {
             return String(localized: "An account with this email or username already exists.")
@@ -179,6 +182,12 @@ extension Error {
         return t.contains("too many purchases") || t.contains("server busy") || t.contains("service temporarily unavailable")
     }
 
+    /// 409 `free_limit` (backend#203): oseba bi presegla mejo brezplacnih vstopnic za dogodek (cena 0 EUR).
+    var jeBrezplacnaMeja: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
+        return raw.lowercased().contains("free_limit")
+    }
+
     /// Vsak 503 pri nakupu: gumb je kratek cas onemogocen (nakupa se ne ponavlja samodejno).
     var jeNakup503: Bool {
         guard let api = self as? APIError, case .requestFailed(let code, _) = api else { return false }
@@ -195,11 +204,15 @@ extension Error {
         case .vObdelavi:
             return String(localized: "Your previous attempt is still being processed. Please try again in a moment.")
         case .narociloNeaktivno:
-            return String(localized: "Your previous order is no longer active. Tap again to buy anew.")
+            // Najpogostejsi vzrok: Stripova seja je potekla in je backend narocilo preklical (backend#203).
+            return StripePlacilo.sporociloPotekla
         case .nejasen:
             return String(localized: "Your purchase may have gone through — tap the button again to check (you won't be charged twice).")
         case .navadna:
             break
+        }
+        if jeBrezplacnaMeja {
+            return String(localized: "You've reached the limit of free tickets for this event.")
         }
         if jeNavalNakupa {
             return String(localized: "Lots of people are buying right now. Please try again in a few seconds.")

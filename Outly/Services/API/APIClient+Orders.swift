@@ -180,6 +180,12 @@ struct APIOrder: Decodable, Identifiable {
     /// Stripe Checkout (backend 4. 10. 2026): samo pri `pending` narocilu klubov s povezanim Stripom (GET /me/orders).
     /// Star backend ga ne posilja -> nil. Pred odpiranjem OBVEZNO prek `StripePlacilo.varenUrl`.
     let checkoutUrl: String?
+    /// Stripova seja (30 min) je potekla, narocilo je se `pending` (backend#203): `checkoutUrl` je takrat nil in povezave NE odpiramo.
+    /// Backend narocilo takoj preveri pri Stripu, zato je po osvezitvi `paid` ali `cancelled`. Star backend polja nima -> false.
+    let checkoutExpired: Bool
+    /// Kupec je placal, banka (SEPA ipd.) pa denarja se ni potrdila (backend#203, krog 2): narocilo je `pending`, `checkoutUrl` nil,
+    /// `checkoutExpired` false, `tickets` prazni. Povezave NE odpiramo, kupca ne pustimo placati znova. Star backend -> false.
+    let paymentProcessing: Bool
 
     // VIP miza (backend 025): narocilo mize (quantity = 1, vstopnic = table_seats). Star backend -> false / nil.
     let isVip: Bool
@@ -213,6 +219,8 @@ struct APIOrder: Decodable, Identifiable {
         case clubName = "club_name"
         case buyerUsername = "buyer_username"
         case checkoutUrl = "checkout_url"
+        case checkoutExpired = "checkout_expired"
+        case paymentProcessing = "payment_processing"
     }
 
     init(from decoder: Decoder) throws {
@@ -238,6 +246,8 @@ struct APIOrder: Decodable, Identifiable {
         buyerUsername = try c.decodeIfPresent(String.self, forKey: .buyerUsername) ?? ""
         tickets = try c.decodeIfPresent([APITicket].self, forKey: .tickets) ?? []
         checkoutUrl = (try? c.decodeIfPresent(String.self, forKey: .checkoutUrl)) ?? nil   // null / manjka / napacen tip -> nil
+        checkoutExpired = (try? c.decodeIfPresent(Bool.self, forKey: .checkoutExpired)) ?? false
+        paymentProcessing = (try? c.decodeIfPresent(Bool.self, forKey: .paymentProcessing)) ?? false
         isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
         tableId = (try? c.decodeIfPresent(Int.self, forKey: .tableId)) ?? nil
         tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
@@ -418,9 +428,13 @@ struct BusinessSales: Decodable {
     /// Graf glede na izbrano obdobje (week/month/year); starejsi streznik ga se ne vraca -> prazno,
     /// zaslon takrat pade nazaj na salesByDay.
     let series: [SeriesPoint]
+    /// Nacin placila TEGA kluba (backend#203): "test" | "stripe" | "unavailable"; nil = star backend -> napis temelji na `mode`.
+    /// `mode` je globalen in se ne spremeni.
+    let paymentMode: String?
 
     enum CodingKeys: String, CodingKey {
         case mode, summary, events, series
+        case paymentMode = "payment_mode"
         case feePercent = "fee_percent"
         case recentOrders = "recent_orders"
         case salesByDay = "sales_by_day"
@@ -435,7 +449,14 @@ struct BusinessSales: Decodable {
         recentOrders = try c.decodeIfPresent([APIOrder].self, forKey: .recentOrders) ?? []
         salesByDay = try c.decodeIfPresent([DaySales].self, forKey: .salesByDay) ?? []
         series = try c.decodeIfPresent([SeriesPoint].self, forKey: .series) ?? []
+        paymentMode = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
     }
+
+    /// Dashboard kaze TEST samo, ko je placilo TEGA kluba testno (`payment_mode`); star backend: globalni `mode`.
+    var jeTestni: Bool { NacinPlacila.dashboardTestni(paymentMode: paymentMode, mode: mode) }
+
+    /// Nacin placila tega kluba; nil iz starega backenda -> `.neznan` (opozorila ni).
+    var nacinPlacila: NacinPlacila { NacinPlacila(paymentMode) }
 }
 
 /// Odgovor POST /business/tickets/scan (200 in 4xx imata isto obliko).

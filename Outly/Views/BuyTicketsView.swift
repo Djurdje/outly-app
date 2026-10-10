@@ -35,6 +35,8 @@ struct BuyTicketsView: View {
     private var unitCents: Int { event.ticketPriceCents ?? 0 }
     private var totalCents: Int { unitCents * quantity }
     private var isFree: Bool { unitCents == 0 }
+    /// Nacin placila kluba (backend `payment_mode`); nil iz starega backenda = `.neznan` (danasnje vedenje).
+    private var nacin: NacinPlacila { event.nacinPlacila }
 
     /// Koliko jih je se na voljo (nil = neomejeno / neznano).
     private var remaining: Int? {
@@ -127,9 +129,14 @@ struct BuyTicketsView: View {
 
                 karticaNakupa
 
-                // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res).
+                // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
+                // `payment_mode == "test"` (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
                 if stripe.caka == nil {
-                    vrsticaPlacila
+                    if nacin.prodajaNedosegljiva {
+                        NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
+                    } else if nacin.kazeTestniNapis(brezplacno: isFree) {
+                        vrsticaPlacila
+                    }
                 }
 
                 if let errorMessage {
@@ -363,9 +370,9 @@ struct BuyTicketsView: View {
         return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
             Task { await kupi() }
         }
-        .disabled(soldOut || naval || stripe.preverjanje)
-        .opacity(naval || stripe.preverjanje ? 0.45 : 1)
-        .outlySij(moc: 1.0, aktiven: !soldOut && !naval && !stripe.preverjanje)
+        .disabled(soldOut || naval || stripe.preverjanje || nacin.prodajaNedosegljiva)
+        .opacity(naval || stripe.preverjanje || nacin.prodajaNedosegljiva ? 0.45 : 1)
+        .outlySij(moc: 1.0, aktiven: !soldOut && !naval && !stripe.preverjanje && !nacin.prodajaNedosegljiva)
     }
 
     /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.
@@ -614,7 +621,8 @@ struct BuyTicketsView: View {
                 if stripe.odpri(p, uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice) {
                     stanje = .miruje
                 } else {
-                    errorMessage = String(localized: "We couldn't open the payment page. Please try again.")
+                    // Potekla seja (checkout_expired): sporocilo iz StripeNakup, sicer povezave ni bilo mogoce odpreti.
+                    errorMessage = stripe.napaka ?? String(localized: "We couldn't open the payment page. Please try again.")
                     stanje = .napaka
                 }
                 return

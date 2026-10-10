@@ -41,6 +41,9 @@ struct VipTablesView: View {
 
     private var koda: String { vip?.currency ?? event.currency ?? "EUR" }
 
+    /// Nacin placila kluba (backend `payment_mode`): iz odgovora tlorisa, sicer iz dogodka; nil iz starega backenda = `.neznan`.
+    private var nacin: NacinPlacila { NacinPlacila(vip?.paymentMode ?? event.paymentMode) }
+
     /// Napotek ob ponovnem odprtju po nejasnem izidu, izpeljan iz trenutne izbire: »tap the button again« samo pri isti mizi
     /// in istem paketu (isti kljuc) in ce je prodaja odprta (gumb Reserve); sicer »Check Profile -> Tickets« (miza »Booked«,
     /// druga izbira = nov kljuc, prodaja zaprta). Zacasna onemogocenost zaradi navale (`naval`) napotka ne spremeni.
@@ -300,9 +303,14 @@ struct VipTablesView: View {
                 }
             }
 
-            // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res).
+            // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
+            // `payment_mode == "test"` in ceni > 0 (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
             if stripe.caka == nil {
-                vrsticaPlacila
+                if nacin.prodajaNedosegljiva {
+                    NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
+                } else if nacin.kazeTestniNapis(brezplacno: m.priceCents <= 0) {
+                    vrsticaPlacila
+                }
             }
 
             if event.minAge > 0 {
@@ -417,9 +425,9 @@ struct VipTablesView: View {
         OutlyAkcijskiGumb(naslov: naslovGumba(m), stanje: $stanje) {
             Task { await rezerviraj(m) }
         }
-        .disabled(!paketIzbran || naval || stripe.preverjanje)
-        .opacity(paketIzbran && !naval && !stripe.preverjanje ? 1 : 0.45)
-        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval && !stripe.preverjanje)
+        .disabled(!paketIzbran || naval || stripe.preverjanje || nacin.prodajaNedosegljiva)
+        .opacity(paketIzbran && !naval && !stripe.preverjanje && !nacin.prodajaNedosegljiva ? 1 : 0.45)
+        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval && !stripe.preverjanje && !nacin.prodajaNedosegljiva)
     }
 
     // MARK: - Uspeh
@@ -569,7 +577,8 @@ struct VipTablesView: View {
                 if stripe.odpri(p, uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza) {
                     stanje = .miruje
                 } else {
-                    errorMessage = String(localized: "We couldn't open the payment page. Please try again.")
+                    // Potekla seja (checkout_expired): sporocilo iz StripeNakup, sicer povezave ni bilo mogoce odpreti.
+                    errorMessage = stripe.napaka ?? String(localized: "We couldn't open the payment page. Please try again.")
                     stanje = .napaka
                 }
                 return
