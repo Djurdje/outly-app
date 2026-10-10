@@ -22,114 +22,112 @@ struct MyAccountView: View {
         // gnezden NavigationStack bi skril gumb nazaj in zlomil navigacijo.
         Group {
             ScrollView(showsIndicators: false) {
-            VStack(spacing: 30) {
-                // ===== HEADER =====
-                VStack(spacing: 10) {
+                VStack(spacing: 30) {
+                    // ===== HEADER =====
+                    VStack(spacing: 10) {
 
-                    if let url = userAvatarURL {
-                        OutlyAsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            default:
-                                Image(systemName: "person.crop.circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .foregroundColor(.blackColor)
+                        if let url = userAvatarURL {
+                            OutlyAsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                default:
+                                    Image(systemName: "person.crop.circle.fill")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .foregroundColor(.blackColor)
+                                }
                             }
-                        }
-                        .frame(width: 90, height: 90)
-                        .clipShape(Circle())
-                    } else {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
                             .frame(width: 90, height: 90)
-                            .foregroundColor(.blackColor)
-                    }
-
-                    if let user = user {
-                        Text(user.username)
-                            .font(.title2)
-                    } else if isLoading {
-                        Text("Loading...")
-                            .font(.title2)
-                            .foregroundColor(.gray)
-                    } else {
-                        Text("Unknown user")
-                            .font(.title2)
-                            .foregroundColor(.gray)
-                    }
-
-                    if let errorMessage = errorMessage {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                }
-
-                Divider()
-                    .background(Color.gray)
-                    .padding(.horizontal, 15)
-
-                // ===== MENU =====
-                VStack(spacing: 12) {
-
-                    NavigationLink(destination: PersonalInfoView()) {
-                        OutlyMenuRowButton(icon: "person", title: "Personal info")
-                    }
-
-                    NavigationLink(destination: PasswordSecurityView()) {
-                        OutlyMenuRowButton(icon: "lock", title: "Password and security")
-                    }
-
-                    NavigationLink(destination: ReguestForCreatorView()) {
-                        OutlyMenuRowButton(icon: "chart.line.uptrend.xyaxis", title: "Request for creator")
-                    }
-
-                    // Language in Notifications sta od 20. 9. pod Preferences (skupaj z My preferences).
-                    NavigationLink(destination: PreferencesView()) {
-                        OutlyMenuRowButton(icon: "slider.horizontal.3", title: "Preferences")
-                    }
-
-                    // Blokirani uporabniki (outly-backend #189, Apple 1.2): seznam z Unblock.
-                    NavigationLink(destination: BlockedUsersView()) {
-                        OutlyMenuRowButton(icon: "nosign", title: "Blocked users")
-                    }
-
-                    if (user?.role ?? session.me?.role) == "business" {
-                        Button {
-                            obraz = "club"
-                            dismiss()
-                        } label: {
-                            OutlyMenuRowButton(icon: "arrow.left.arrow.right", title: "Switch to club account")
+                            .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.crop.circle.fill")
+                                .resizable()
+                                .frame(width: 90, height: 90)
+                                .foregroundColor(.blackColor)
                         }
-                        .buttonStyle(.plain)
+
+                        if let user = user {
+                            Text(user.username)
+                                .font(.title2)
+                        } else if isLoading {
+                            Text("Loading...")
+                                .font(.title2)
+                                .foregroundColor(.gray)
+                        } else {
+                            Text("Unknown user")
+                                .font(.title2)
+                                .foregroundColor(.gray)
+                        }
+
+                        if let errorMessage = errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
                     }
 
                     Divider()
                         .background(Color.gray)
                         .padding(.horizontal, 15)
-                        .padding(.top, 8)
 
-                    Button {
-                        session.logout()
-                        authStage = "login"
-                    } label: {
-                        OutlyMenuRowButton(icon: "arrow.left", title: "Log out")
-                    }
-                    .buttonStyle(.plain)
+                    // ===== MENU =====
+                    VStack(spacing: 12) {
 
-                    NavigationLink(destination: DeleteAccountView()) {
-                        OutlyMenuRowButton(icon: "trash", title: "Delete account")
+                        NavigationLink(destination: PersonalInfoView()) {
+                            OutlyMenuRowButton(icon: "person", title: "Personal info")
+                        }
+
+                        NavigationLink(destination: PasswordSecurityView()) {
+                            OutlyMenuRowButton(icon: "lock", title: "Password and security")
+                        }
+
+                        NavigationLink(destination: ReguestForCreatorView()) {
+                            OutlyMenuRowButton(icon: "chart.line.uptrend.xyaxis", title: "Request for creator")
+                        }
+
+                        // Language in Notifications sta od 20. 9. pod Preferences (skupaj z My preferences).
+                        NavigationLink(destination: PreferencesView()) {
+                            OutlyMenuRowButton(icon: "slider.horizontal.3", title: "Preferences")
+                        }
+
+                        // Blokirani uporabniki (outly-backend #189, Apple 1.2): seznam z Unblock.
+                        NavigationLink(destination: BlockedUsersView()) {
+                            OutlyMenuRowButton(icon: "nosign", title: "Blocked users")
+                        }
+
+                        if (user?.role ?? session.me?.role) == "business" {
+                            Button {
+                                obraz = "club"
+                                dismiss()
+                            } label: {
+                                OutlyMenuRowButton(icon: "arrow.left.arrow.right", title: "Switch to club account")
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Divider()
+                            .background(Color.gray)
+                            .padding(.horizontal, 15)
+                            .padding(.top, 8)
+
+                        Button {
+                            session.logout()
+                            authStage = "login"
+                        } label: {
+                            OutlyMenuRowButton(icon: "arrow.left", title: "Log out")
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink(destination: DeleteAccountView()) {
+                            OutlyMenuRowButton(icon: "trash", title: "Delete account")
+                        }
                     }
                 }
-
-                Spacer(minLength: 0)
-            }
-            .padding()
-            .padding(.bottom, 40)
+                .padding()
+                .padding(.bottom, 40)
             }
             .navigationTitle("")
         }

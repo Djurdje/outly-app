@@ -369,7 +369,7 @@ struct AddFriendsSheet: View {
         FriendRow(user: r.user) {
             HStack(spacing: 0) {
                 akcijaZadetka(r)
-                UserSafetyMenu(user: r.user, onBlocked: { onChanged(); isci(query) })
+                UserSafetyMenu(user: r.user, onBlocked: { results.removeAll { $0.id == r.id }; onChanged(); isci(query) })
             }
         }
     }

@@ -85,17 +85,17 @@ struct ReportSheet: View {
                     ForEach(ReportReason.allCases) { r in vrsticaRazloga(r) }
 
                     podrobnosti
-
-                    if let errorText {
-                        Text(verbatim: errorText)
-                            .font(.system(size: 13))
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
                 }
                 .padding(.bottom, 20)
             }
             .scrollDismissesKeyboard(.interactively)
+
+            if let errorText {
+                Text(verbatim: errorText)
+                    .font(.system(size: 13))
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             OutlyPrimaryButton(title: "Send", isLoading: sending) {
                 Task { await poslji() }
@@ -297,8 +297,8 @@ private struct PrijavaMeniModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    if session.isLoggedIn && !skrij {
+                if session.isLoggedIn && !skrij {
+                    ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button { showReport = true } label: {
                                 Label("Report", systemImage: "flag")
