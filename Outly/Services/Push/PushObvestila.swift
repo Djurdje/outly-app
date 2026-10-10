@@ -87,7 +87,23 @@ final class PushObvestila {
         }
     }
 
-    private static func jeOdobreno(_ status: UNAuthorizationStatus) -> Bool {
+    /// Izrecen pritisk uporabnika (Profil -> Notifications -> »Turn on notifications«): isti sistemski poziv kot
+    /// `predlagajDovoljenje()`, a takoj, brez zamika in z `await`, da zaslon po izidu osvezi stanje. Ze odobreno -> samo
+    /// registracija; zavrnjeno -> nic (iOS poziva ne pokaze drugic, zaslon odpre nastavitve iOS).
+    func zahtevajDovoljenje() async {
+        guard seja?.isLoggedIn == true else { return }
+        let center = UNUserNotificationCenter.current()
+        let status = await center.notificationSettings().authorizationStatus
+        if PushObvestila.jeOdobreno(status) {
+            UIApplication.shared.registerForRemoteNotifications()
+            return
+        }
+        guard status == .notDetermined else { return }
+        let odobreno = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
+        if odobreno { UIApplication.shared.registerForRemoteNotifications() }
+    }
+
+    nonisolated static func jeOdobreno(_ status: UNAuthorizationStatus) -> Bool {
         status == .authorized || status == .provisional || status == .ephemeral
     }
 

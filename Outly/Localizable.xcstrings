@@ -150,6 +150,39 @@
         }
       }
     },
+    "A ticket someone sent you": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica, ki ti jo je nekdo poslal"
+          }
+        }
+      }
+    },
+    "Allow Outly to send you notifications to get the updates below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dovoli Outlyju, da ti pošilja obvestila, da prejmeš spodnje novosti."
+          }
+        }
+      }
+    },
+    "By continuing you agree to the [Terms of Service](%@) and acknowledge the [Privacy Policy](%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z nadaljevanjem se strinjaš s [Pogoji uporabe](%@) in potrjuješ, da si prebral [Politiko zasebnosti](%@)."
+          }
+        }
+      }
+    },
     "Columns": {
       "extractionState": "manual",
       "localizations": {
@@ -271,6 +304,17 @@
         }
       }
     },
+    "Invitations to a guest list": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vabila na seznam gostov"
+          }
+        }
+      }
+    },
     "Item": {
       "extractionState": "manual",
       "localizations": {
@@ -370,6 +414,17 @@
         }
       }
     },
+    "New events from clubs you follow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novi dogodki klubov, ki jim slediš"
+          }
+        }
+      }
+    },
     "No VIP tables": {
       "extractionState": "manual",
       "localizations": {
@@ -392,6 +447,39 @@
         }
       }
     },
+    "Notifications are blocked in iOS Settings. Turn them on there to get updates.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestila so blokirana v nastavitvah iOS. Tam jih vklopi, da boš prejemal novosti."
+          }
+        }
+      }
+    },
+    "Notifications are off": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestila so izklopljena"
+          }
+        }
+      }
+    },
+    "Notifications are on": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestila so vklopljena"
+          }
+        }
+      }
+    },
     "Own layout for this event": {
       "extractionState": "manual",
       "localizations": {
@@ -410,6 +498,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Velikost tlorisa"
+          }
+        }
+      }
+    },
+    "Push notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potisna obvestila"
           }
         }
       }
@@ -1347,28 +1446,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Še kaj?"
-          }
-        }
-      }
-    },
-    "App & account": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aplikacija in račun"
-          }
-        }
-      }
-    },
-    "App updates & announcements": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Posodobitve in novice o aplikaciji"
           }
         }
       }
@@ -3045,28 +3122,6 @@
         }
       }
     },
-    "Event reminders": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opomniki za dogodke"
-          }
-        }
-      }
-    },
-    "Event updates": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Posodobitve dogodkov"
-          }
-        }
-      }
-    },
     "Event video": {
       "extractionState": "manual",
       "localizations": {
@@ -4335,17 +4390,6 @@
         }
       }
     },
-    "New events in my city": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Novi dogodki v mojem mestu"
-          }
-        }
-      }
-    },
     "New password": {
       "extractionState": "manual",
       "localizations": {
@@ -4826,17 +4870,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "NAROČILO"
-          }
-        }
-      }
-    },
-    "Offers from clubs": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ponudbe klubov"
           }
         }
       }
@@ -5479,17 +5512,6 @@
         }
       }
     },
-    "Push notifications are coming soon — your choices are saved. Sign-up and password codes always arrive by email.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Potisna obvestila prihajajo kmalu — tvoje izbire so shranjene. Kode za registracijo in geslo vedno prejmeš po e-pošti."
-          }
-        }
-      }
-    },
     "REFUSED": {
       "extractionState": "manual",
       "localizations": {
@@ -5930,6 +5952,17 @@
         }
       }
     },
+    "Sign-up and password codes always arrive by email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kode za registracijo in geslo vedno prejmeš po e-pošti."
+          }
+        }
+      }
+    },
     "SOLD OUT": {
       "extractionState": "manual",
       "localizations": {
@@ -6124,17 +6157,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Varno plačilo"
-          }
-        }
-      }
-    },
-    "Security alerts": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Varnostna opozorila"
           }
         }
       }
@@ -6535,17 +6557,6 @@
         }
       }
     },
-    "Special offers": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Posebne ponudbe"
-          }
-        }
-      }
-    },
     "Start with the country code, e.g. +386.": {
       "extractionState": "manual",
       "localizations": {
@@ -6663,6 +6674,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Strežba miz"
+          }
+        }
+      }
+    },
+    "Table service requests, for club staff": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahteve za strežbo miz, za ekipo kluba"
           }
         }
       }
@@ -7363,28 +7385,6 @@
         }
       }
     },
-    "Ticket purchase confirmation": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Potrditev nakupa vstopnice"
-          }
-        }
-      }
-    },
-    "Ticket reminders": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opomniki za vstopnice"
-          }
-        }
-      }
-    },
     "Ticket sales are closed.": {
       "extractionState": "manual",
       "localizations": {
@@ -7656,6 +7656,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Poskusi znova"
+          }
+        }
+      }
+    },
+    "Turn on notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vklopi obvestila"
           }
         }
       }
@@ -8155,6 +8166,17 @@
         }
       }
     },
+    "What you'll get": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaj boš prejel"
+          }
+        }
+      }
+    },
     "Width": {
       "extractionState": "manual",
       "localizations": {
@@ -8393,6 +8415,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nisi v ekipi nobenega kluba."
+          }
+        }
+      }
+    },
+    "You can change this any time in iOS Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To lahko kadar koli spremeniš v nastavitvah iOS."
           }
         }
       }
