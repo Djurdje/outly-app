@@ -7869,6 +7869,17 @@
         }
       }
     },
+    "Too many payments are still processing. Wait for your bank to confirm them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveč plačil banka še obdeluje. Počakaj, da jih potrdi."
+          }
+        }
+      }
+    },
     "Too many wrong attempts. Request a new code.": {
       "extractionState": "manual",
       "localizations": {
@@ -8690,6 +8701,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Že imaš prošnjo, ki čaka na pregled."
+          }
+        }
+      }
+    },
+    "You have an unfinished payment. Finish it, or wait up to 30 minutes for it to expire.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imaš nedokončano plačilo. Dokončaj ga ali počakaj do 30 minut, da poteče."
           }
         }
       }

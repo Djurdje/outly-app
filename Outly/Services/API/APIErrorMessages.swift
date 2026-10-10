@@ -137,6 +137,9 @@ extension APIError {
         if t.contains("add your date of birth")         { return String(localized: "Add your date of birth in Personal info to buy tickets.") }
         if t.contains("you must be at least")           { return raw }
         if t.contains("payments are not available")     { return String(localized: "Payments are not available yet.") }
+        // 409 meja I20 (nedokoncana placila) in meja placil v obdelavi (backend#203); sicer bi 409 pokazal »already in use«
+        if t.contains("unfinished payment")             { return String(localized: "You have an unfinished payment. Finish it, or wait up to 30 minutes for it to expire.") }
+        if t.contains("payments still processing")      { return String(localized: "Too many payments are still processing. Wait for your bank to confirm them.") }
         if t.contains("club_has_orders")                { return String(localized: "Your club has sold tickets. Transfer club ownership before deleting your account.") }
         if t.contains("already exists") || t.contains("already registered") {
             return String(localized: "An account with this email or username already exists.")
