@@ -172,13 +172,13 @@
         }
       }
     },
-    "By continuing you agree to the [Terms of Service](%@) and acknowledge the [Privacy Policy](%@).": {
+    "By continuing you agree to the [Terms of Service](https://outly.si/terms) and acknowledge the [Privacy Policy](https://outly.si/privacy-app).": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Z nadaljevanjem se strinjaš s [Pogoji uporabe](%@) in potrjuješ, da si prebral [Politiko zasebnosti](%@)."
+            "value": "Z nadaljevanjem se strinjaš s [Pogoji uporabe](https://outly.si/terms) in potrjuješ, da si prebral [Politiko zasebnosti](https://outly.si/privacy-app)."
           }
         }
       }
