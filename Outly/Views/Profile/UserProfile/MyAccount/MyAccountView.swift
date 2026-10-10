@@ -21,6 +21,7 @@ struct MyAccountView: View {
         // Ta pogled se POTISNE na obstojeci NavigationStack (ProfileView/MyAccountView);
         // gnezden NavigationStack bi skril gumb nazaj in zlomil navigacijo.
         Group {
+            ScrollView(showsIndicators: false) {
             VStack(spacing: 30) {
                 // ===== HEADER =====
                 VStack(spacing: 10) {
@@ -92,6 +93,11 @@ struct MyAccountView: View {
                         OutlyMenuRowButton(icon: "slider.horizontal.3", title: "Preferences")
                     }
 
+                    // Blokirani uporabniki (outly-backend #189, Apple 1.2): seznam z Unblock.
+                    NavigationLink(destination: BlockedUsersView()) {
+                        OutlyMenuRowButton(icon: "nosign", title: "Blocked users")
+                    }
+
                     if (user?.role ?? session.me?.role) == "business" {
                         Button {
                             obraz = "club"
@@ -120,9 +126,11 @@ struct MyAccountView: View {
                     }
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
             }
             .padding()
+            .padding(.bottom, 40)
+            }
             .navigationTitle("")
         }
         .outlyOzadje()

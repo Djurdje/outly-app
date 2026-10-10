@@ -161,6 +161,17 @@
         }
       }
     },
+    "Add details (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj podrobnosti (neobvezno)"
+          }
+        }
+      }
+    },
     "Allow Outly to send you notifications to get the updates below.": {
       "extractionState": "manual",
       "localizations": {
@@ -168,6 +179,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dovoli Outlyju, da ti pošilja obvestila, da prejmeš spodnje novosti."
+          }
+        }
+      }
+    },
+    "Block": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blokiraj"
+          }
+        }
+      }
+    },
+    "Block %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blokiram %@?"
+          }
+        }
+      }
+    },
+    "Blocked users": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blokirani uporabniki"
           }
         }
       }
@@ -201,6 +245,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kopiraj razpored prizorišča"
+          }
+        }
+      }
+    },
+    "Couldn't block this user": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabnika ni bilo mogoče blokirati"
           }
         }
       }
@@ -293,6 +348,17 @@
         }
       }
     },
+    "Harassment or hate": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadlegovanje ali sovražni govor"
+          }
+        }
+      }
+    },
     "Height": {
       "extractionState": "manual",
       "localizations": {
@@ -300,6 +366,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Višina"
+          }
+        }
+      }
+    },
+    "Illegal activity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nezakonita dejavnost"
+          }
+        }
+      }
+    },
+    "Impersonation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lažno predstavljanje"
+          }
+        }
+      }
+    },
+    "Inappropriate or offensive content": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neprimerna ali žaljiva vsebina"
           }
         }
       }
@@ -414,6 +513,17 @@
         }
       }
     },
+    "More options": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Več možnosti"
+          }
+        }
+      }
+    },
     "New events from clubs you follow": {
       "extractionState": "manual",
       "localizations": {
@@ -432,6 +542,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brez VIP miz"
+          }
+        }
+      }
+    },
+    "Not available yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Še ni na voljo."
           }
         }
       }
@@ -487,6 +608,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lasten razpored za ta dogodek"
+          }
+        }
+      }
+    },
+    "People you block can't find you or send you requests.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blokirani ljudje te ne morejo najti in ti pošiljati prošenj."
           }
         }
       }
@@ -553,6 +685,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zamenjam mize tega dogodka?"
+          }
+        }
+      }
+    },
+    "Report": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavi"
           }
         }
       }
@@ -6546,6 +6689,17 @@
         }
       }
     },
+    "Something else": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekaj drugega"
+          }
+        }
+      }
+    },
     "Something went wrong. Please try again.": {
       "extractionState": "manual",
       "localizations": {
@@ -6553,6 +6707,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nekaj je šlo narobe. Poskusi znova."
+          }
+        }
+      }
+    },
+    "Spam or scam": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spam ali prevara"
           }
         }
       }
@@ -6689,6 +6854,17 @@
         }
       }
     },
+    "Thanks — we review reports within 24 hours.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvala — prijave pregledamo v 24 urah."
+          }
+        }
+      }
+    },
     "The event shows on this club's page too, but only your team can scan tickets.": {
       "extractionState": "manual",
       "localizations": {
@@ -6733,6 +6909,17 @@
         }
       }
     },
+    "They won't be able to find you or send you requests. They won't be notified.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne bodo te mogli najti in ti pošiljati prošenj. O tem ne bodo obveščeni."
+          }
+        }
+      }
+    },
     "This event has its own layout, but no tables yet.": {
       "extractionState": "manual",
       "localizations": {
@@ -6751,6 +6938,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta dogodek nima VIP miz. Izberi razpored, da boš lahko prodajal(a) mize."
+          }
+        }
+      }
+    },
+    "This is no longer available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To ni več na voljo."
           }
         }
       }
@@ -7660,6 +7858,17 @@
         }
       }
     },
+    "Try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poskusi znova pozneje."
+          }
+        }
+      }
+    },
     "Turn on notifications": {
       "extractionState": "manual",
       "localizations": {
@@ -7678,6 +7887,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vnesi vsaj 2 znaka."
+          }
+        }
+      }
+    },
+    "Unblock": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odblokiraj"
           }
         }
       }
@@ -8177,6 +8397,17 @@
         }
       }
     },
+    "Why are you reporting this?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zakaj to prijavljaš?"
+          }
+        }
+      }
+    },
     "Width": {
       "extractionState": "manual",
       "localizations": {
@@ -8459,6 +8690,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Za to nimaš dovoljenja."
+          }
+        }
+      }
+    },
+    "You have reached the limit of blocked users.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosežena je omejitev števila blokiranih uporabnikov."
+          }
+        }
+      }
+    },
+    "You haven't blocked anyone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nikogar nimaš blokiranega."
           }
         }
       }
