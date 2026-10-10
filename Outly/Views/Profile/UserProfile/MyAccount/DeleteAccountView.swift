@@ -85,8 +85,9 @@ struct DeleteAccountView: View {
         defer { isLoading = false }
         do {
             try await APIClient.shared.deleteAccount(token: session.token, password: password)
-            // Racun ne obstaja vec: zeton izbrisi in vrni na prijavo.
-            session.logout()
+            // Racun ne obstaja vec: zeton izbrisi in vrni na prijavo. Brez DELETE /me/devices: streznik je naprave pobrisal sam
+            // (kaskada), z zetonom izbrisanega racuna pa bi requireAuth racun ustvaril znova.
+            session.logout(brezNaprave: true)
             authStage = "login"
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 {

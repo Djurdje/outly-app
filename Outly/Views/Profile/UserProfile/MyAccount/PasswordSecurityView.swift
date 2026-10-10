@@ -69,6 +69,9 @@ struct PasswordSecurityView: View {
     private func logoutEverywhere() async {
         isLoggingOutAll = true
         defer { isLoggingOutAll = false }
+        // Potisna obvestila: zeton naprave se odjavi PRED globalno odjavo (zeton seje se tu ze velja), sicer bi pushi
+        // prejsnjega uporabnika sli na napravo, dokler novi uporabnik ne registrira zetona.
+        await session.odjaviPushNapravo()
         do {
             try await SupabaseAuth.shared.signOut(token: session.token, scope: "global")
         } catch {

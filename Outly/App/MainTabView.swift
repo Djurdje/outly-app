@@ -291,6 +291,8 @@ struct MainTabView: View {
         // objave SessionStore/FavoritesStore (npr. /me ob vsakem prikazu Home) ne izrisejo
         // znova celega TabViewa.
         .background(NalaganjePriljubljenih())
+        // Dotik na potisno obvestilo (APNs): prevzame cakajoci cilj in odpre ustrezen zaslon (glej PushPrehodView.swift).
+        .background(PushPrehod())
         // Po preklopu jezika (koren dobi nov .id) se vrni na zavihek, kjer je bil preklop.
         .onAppear {
             if let z = jezik.zavihekPoPreklopu { zavihek = z; jezik.zavihekPoPreklopu = nil }

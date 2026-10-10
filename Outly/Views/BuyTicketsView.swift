@@ -89,6 +89,11 @@ struct BuyTicketsView: View {
         .preferredColorScheme(.dark)
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(stanje == .nalaga)
+        // Uspesen nakup = prvi smiseln trenutek za dovoljenje za potisna obvestila (vstopnica, prenos, guest lista). Samo ce se
+        // uporabnik se ni odlocil (notDetermined); sistemski poziv se pokaze z zamikom, da je uspeh se viden.
+        .onChange(of: purchase != nil) { _, uspel in
+            if uspel { PushObvestila.deljen.predlagajDovoljenje() }
+        }
         // Stripova gostovana stran v ASWebAuthenticationSession: po placilu jo outly://placilo zapre sama in takoj preberemo narocilo
         // (uspeh: vec samodejnih branj, webhook zakasni); izrecni preklic: ostanemo na listu, narocilo preverimo tiho enkrat;
         // zaprtje seje ali napaka: narocilo preberemo enkrat, pending ostane na kartici »Checking your payment«.

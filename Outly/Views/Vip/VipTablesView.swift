@@ -92,6 +92,11 @@ struct VipTablesView: View {
         .preferredColorScheme(.dark)
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(stanje == .nalaga || razdeljuje)
+        // Uspesen nakup = prvi smiseln trenutek za dovoljenje za potisna obvestila (vstopnica, prenos, guest lista). Samo ce se
+        // uporabnik se ni odlocil (notDetermined); sistemski poziv se pokaze z zamikom, da je uspeh se viden.
+        .onChange(of: purchase != nil) { _, uspel in
+            if uspel { PushObvestila.deljen.predlagajDovoljenje() }
+        }
         .task { await naloziVip() }
         // Stripova gostovana stran v ASWebAuthenticationSession: po placilu jo outly://placilo zapre sama in takoj preberemo narocilo
         // (uspeh: vec samodejnih branj, webhook zakasni); izrecni preklic: ostanemo na listu, narocilo preverimo tiho enkrat;
