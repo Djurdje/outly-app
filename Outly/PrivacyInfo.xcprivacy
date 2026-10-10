@@ -33,6 +33,17 @@
 				<string>CA92.1</string>
 			</array>
 		</dict>
+		<dict>
+			<!-- Cas zadnje spremembe datoteke v mapi aplikacije (Application Support/Sken, SkenVrsta.swift
+			     spremenjeno(_:) -> attributesOfItem .modificationDate): kdaj je bil prenesen seznam vstopnic
+			     za sken brez povezave. Samo datoteke, ki jih je ustvarila sama aplikacija. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
 	</array>
 
 	<!-- Podatki, ki jih aplikacija poslje na streznik (Outly backend). -->
@@ -113,11 +124,79 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<dict>
+			<!-- Zgodovina nakupov: narocila vstopnic in miz (POST /events/:id/orders, GET /me/orders). Placilne podatke obdela Stripe na svoji strani; aplikacija kartice nikoli ne vidi. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Nakljucni UUID namestitve za sken brez povezave (SkenSeja.swift SkenNaprava.id, device_id v scan-batch); samo osebje kluba. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Social graph: prijatelji, prosnje, sledenje klubom (APIClient+Friends, +Follows). Imenika telefona aplikacija NE bere. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeContacts</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Prijave zlorabe z neobveznim besedilom (POST /reports, APIClient+Reports.swift sendReport, najvec 1000 znakov). -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Interakcija: POST /views steje oglede kluba/dogodka (brez uporabnika, agregiran dnevni stevec; Analytics), poleg tega uporabnikovi priljubljeni, nacrti in sledenja (AppFunctionality, vezano na racun). Ker je del vezan na racun, je Linked=true. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
 		<!--
-		Purchase History: dodaj, ko bo prodaja vstopnic (Stripe) v produkciji:
-		  NSPrivacyCollectedDataTypePurchaseHistory, Linked=true, Tracking=false,
-		  Purposes=AppFunctionality.
-		Precise Location: NI navedena, ker lokacija ostane na napravi.
+		NI navedeno (namerno):
+		  - Precise/Coarse Location: lokacija ostane NA NAPRAVI (LocationManager, razdalja se racuna lokalno).
+		    Koordinate v PATCH /clubs so koordinate KLUBA iz CLGeocoderja, ne uporabnika.
+		  - Device ID: Apple potisni zeton (POST /me/devices) po Applovi razlagi NI Device ID. Ko je odlocitev o
+		    nakljucnem UUID-ju namestitve za sken (SkenNaprava, device_id v scan-batch) sprejeta, popravi TO datoteko.
+		  - Crash/Performance data, Advertising data: aplikacija nima tretjih SDK-jev za to.
 		-->
 	</array>
 </dict>
