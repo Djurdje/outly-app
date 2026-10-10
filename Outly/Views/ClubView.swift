@@ -69,9 +69,17 @@ struct ClubDetailView: View {
         .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
+        // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za klub, v katerem sam delam.
+        .prijavaMeni(targetType: .club, targetId: clubId, targetName: club?.name ?? "", skrij: jeMojKlub)
         .task { await load() }
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(clubId: clubId) }
+    }
+
+    /// Ali sem lastnik ali clan ekipe tega kluba (Me.clubs / Me.clubId).
+    private var jeMojKlub: Bool {
+        guard let me = session.me else { return false }
+        return me.clubId == clubId || me.clubs.contains { $0.clubId == clubId }
     }
 
     // MARK: - 1) Header: slideshow do treh slik in ime kluba

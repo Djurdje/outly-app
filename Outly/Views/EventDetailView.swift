@@ -28,6 +28,12 @@ struct EventDetailView: View {
     @State private var nalozenOpis = ""
     private var opis: String { event.description.isEmpty ? nalozenOpis : event.description }
 
+    /// Dogodek kluba, v katerem sem lastnik ali clan ekipe (Me.clubs / Me.clubId).
+    private var jeMojDogodek: Bool {
+        guard let me = session.me else { return false }
+        return me.clubId == event.clubId || me.clubs.contains { $0.clubId == event.clubId }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
@@ -64,6 +70,8 @@ struct EventDetailView: View {
         .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
+        // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za dogodek kluba, v katerem sam delam.
+        .prijavaMeni(targetType: .event, targetId: event.id, targetName: event.title, skrij: jeMojDogodek)
         .task { await loadClub() }
         .task { await loadVenueClub() }
         .task { await loadPlan() }

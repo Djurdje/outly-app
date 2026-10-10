@@ -119,13 +119,32 @@ struct MyFriendsView: View {
 
     // MARK: - Prosnje in prijatelji
 
+    /// Prejeta prosnja: zgoraj uporabnik z menijem »…« (Report, Block — outly-backend #189), spodaj Decline / Accept.
     private func prejetaProsnja(_ r: FriendRequest) -> some View {
-        FriendRow(user: r.user, podnaslov: String(localized: "wants to be your friend")) {
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                OutlyAvatarView(avatarUrlString: r.user.avatarUrl, size: 44)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(r.user.username)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    Text("wants to be your friend")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                UserSafetyMenu(user: r.user, onBlocked: { Task { await load() } })
+            }
             HStack(spacing: 8) {
-                FriendPill(naslov: "Decline", slog: .obroba, busy: busy.contains(r.id)) { Task { await decline(r) } }
-                FriendPill(naslov: "Accept", slog: .modra, busy: busy.contains(r.id)) { Task { await accept(r) } }
+                FriendPill(naslov: "Decline", slog: .obroba, busy: busy.contains(r.id), raztegni: true) { Task { await decline(r) } }
+                FriendPill(naslov: "Accept", slog: .modra, busy: busy.contains(r.id), raztegni: true) { Task { await accept(r) } }
             }
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.08)))
     }
 
     private func poslanaProsnja(_ r: FriendRequest) -> some View {
@@ -136,15 +155,12 @@ struct MyFriendsView: View {
 
     private func prijatelj(_ f: FriendUser) -> some View {
         FriendRow(user: f) {
-            Button { removeCandidate = f } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white.opacity(0.6))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
+            // Odstrani prijatelja + Report + Block (outly-backend #189).
+            UserSafetyMenu(user: f, onBlocked: { Task { await load() } }) {
+                Button(role: .destructive) { removeCandidate = f } label: {
+                    Label("Remove friend", systemImage: "person.badge.minus")
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Remove friend"))
         }
     }
 
@@ -351,19 +367,27 @@ struct AddFriendsSheet: View {
 
     private func zadetek(_ r: UserSearchResult) -> some View {
         FriendRow(user: r.user) {
-            switch r.relation {
-            case .nobody:
-                FriendPill(naslov: "Add", slog: .modra, busy: busy.contains(r.id)) { Task { await add(r.user) } }
-            case .friends:
-                FriendPill(naslov: "Friends", slog: .oznaka, ikona: "checkmark") {}
-            case .requestSent:
-                FriendPill(naslov: "Requested", slog: .obroba, ikona: "checkmark", busy: busy.contains(r.id)) { Task { await cancel(userId: r.id) } }
-            case .requestReceived:
-                if let req = requestsIn.first(where: { $0.user.id == r.id }) {
-                    FriendPill(naslov: "Accept", slog: .modra, busy: busy.contains(r.id)) { Task { await accept(req, userId: r.id) } }
-                } else {
-                    FriendPill(naslov: "Requested", slog: .oznaka) {}
-                }
+            HStack(spacing: 0) {
+                akcijaZadetka(r)
+                UserSafetyMenu(user: r.user, onBlocked: { results.removeAll { $0.id == r.id }; onChanged(); isci(query) })
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func akcijaZadetka(_ r: UserSearchResult) -> some View {
+        switch r.relation {
+        case .nobody:
+            FriendPill(naslov: "Add", slog: .modra, busy: busy.contains(r.id)) { Task { await add(r.user) } }
+        case .friends:
+            FriendPill(naslov: "Friends", slog: .oznaka, ikona: "checkmark") {}
+        case .requestSent:
+            FriendPill(naslov: "Requested", slog: .obroba, ikona: "checkmark", busy: busy.contains(r.id)) { Task { await cancel(userId: r.id) } }
+        case .requestReceived:
+            if let req = requestsIn.first(where: { $0.user.id == r.id }) {
+                FriendPill(naslov: "Accept", slog: .modra, busy: busy.contains(r.id)) { Task { await accept(req, userId: r.id) } }
+            } else {
+                FriendPill(naslov: "Requested", slog: .oznaka) {}
             }
         }
     }
@@ -465,6 +489,8 @@ struct FriendPill: View {
     var slog: Slog = .modra
     var ikona: String? = nil
     var busy: Bool = false
+    /// Pil zapolni vso razpolozljivo sirino (dve dejanji v vrsti pod uporabnikom).
+    var raztegni: Bool = false
     var action: () -> Void
 
     private var barvaBesedila: Color {
@@ -490,7 +516,7 @@ struct FriendPill: View {
                 }
             }
             .foregroundColor(barvaBesedila)
-            .frame(minWidth: 64)
+            .frame(minWidth: 64, maxWidth: raztegni ? CGFloat.infinity : nil)
             .frame(height: 34)
             .padding(.horizontal, 12)
             .background(Capsule().fill(slog == .modra ? Color.outlyBlue : Color.white.opacity(slog == .obroba ? 0.06 : 0.0)))
