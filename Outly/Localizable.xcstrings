@@ -12347,6 +12347,28 @@
           }
         }
       }
+    },
+    "Finish paying for your held table first, or wait for it to expire.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej dokončaj plačilo za zadržano mizo ali počakaj, da poteče."
+          }
+        }
+      }
+    },
+    "Add your date of birth in Personal info to buy a table with a bottle package.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nakup mize s paketom pijače v Osebnih podatkih dodaj datum rojstva."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

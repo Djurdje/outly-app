@@ -61,4 +61,50 @@ enum VipNadaljevanje: Equatable {
         guard let o = odprta else { return false }
         return o.dogodekId == dogodekId && o.mizaId == mizaId
     }
+
+    // MARK: - Odlocitve zaslona (cisto, testabilno)
+
+    /// Ali sme kupec izbrati mizo. Brez zadrzane mize (`zadrzana == nil`): samo prosta. Medtem ko drzi MOJE `pending` narocilo mizo A
+    /// (`zadrzana`), je izbirna samo miza A: izbira druge mize bi zavrtela kljuc (en zapis na dogodek in vrsto), strezniku pa ostane
+    /// narocilo za A (I20: najvec eno `pending`), torej bi bil nov nakup 409 in pot nazaj na A izgubljena.
+    static func smeIzbrati(mizaId: Int, prosta: Bool, zadrzana: NakupniKljuc.Vsebina?) -> Bool {
+        guard let z = zadrzana else { return prosta }
+        return z.mizaId == mizaId
+    }
+
+    /// Ali sme kupec zamenjati paket: ne, dokler drzi moje `pending` narocilo mizo (paket je v narocilu ze dolocen, drug paket = nov kljuc).
+    static func smeZamenjatiPaket(zadrzana: NakupniKljuc.Vsebina?) -> Bool { zadrzana == nil }
+
+    /// Vsebina nakupa za pritisk na gumb. Za zadrzano mizo VEDNO vsebina zadrzanega poskusa (isti kljuc, isti paket; paket je lahko medtem
+    /// arhiviran in ga zaslon ne izbere, strezniska ponovitev ga ne preverja); sicer navadna izbira.
+    static func vsebinaNakupa(dogodekId: Int, mizaId: Int, izbraniPaketId: Int?,
+                              zadrzana: NakupniKljuc.Vsebina?) -> NakupniKljuc.Vsebina {
+        if let z = zadrzana, z.dogodekId == dogodekId, z.mizaId == mizaId { return z }
+        return NakupniKljuc.Vsebina(dogodekId: dogodekId, mizaId: mizaId, paketId: izbraniPaketId)
+    }
+
+    /// Paket je pogoj za gumb: obvezen samo, ce ga klub ponuja, in ne za zadrzano mizo (paket je ze v narocilu).
+    static func paketIzbran(paketObvezen: Bool, izbraniPaketId: Int?, mizaId: Int?, zadrzana: NakupniKljuc.Vsebina?) -> Bool {
+        if let z = zadrzana, let m = mizaId, z.mizaId == m { return true }
+        return !paketObvezen || izbraniPaketId != nil
+    }
+
+    /// Gumb »Continue to payment« (nadaljevanje obstojecega narocila) samo za zadrzano mizo in samo pri pravem placilu.
+    static func nadaljujePlacilo(mizaId: Int, zadrzana: NakupniKljuc.Vsebina?, stripe: Bool) -> Bool {
+        stripe && zadrzana?.mizaId == mizaId
+    }
+
+    /// Kartica »Your table is on hold«: pravo placilo, zadrzana miza je izbrana in se ne caka na potrditev placila (tam je druga kartica).
+    static func kazeKarticoZadrzano(zadrzana: NakupniKljuc.Vsebina?, izbranaMizaId: Int?, stripe: Bool, cakaNaPotrditev: Bool) -> Bool {
+        guard stripe, !cakaNaPotrditev, let z = zadrzana, let m = izbranaMizaId else { return false }
+        return z.mizaId == m
+    }
+
+    /// Ali se sme izid branja narocil (po `await`) uveljaviti: kupec medtem ni nic izbral ali pritisnil (`izbranaMizaId == nil`,
+    /// stanje miruje) in zapis kljuca je se vedno isti poskus kot ob zacetku branja (`odprtaZdaj == zacetna`). Sicer ne naredimo nicesar
+    /// (zlasti ne zavrzemo kljuca, ki ze pripada drugi mizi).
+    static func smeUveljaviti(zacetna: NakupniKljuc.Vsebina, odprtaZdaj: NakupniKljuc.Vsebina?,
+                              izbranaMizaId: Int?, miruje: Bool) -> Bool {
+        miruje && izbranaMizaId == nil && odprtaZdaj == zacetna
+    }
 }

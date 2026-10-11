@@ -137,4 +137,79 @@ final class VipNadaljevanjeTests: XCTestCase {
         let drugDogodek = s.zaNakup(uporabnik: 1, vsebina: NakupniKljuc.Vsebina(dogodekId: 8, mizaId: 4))
         XCTAssertNotEqual(b, drugDogodek)
     }
+
+    // MARK: - Odlocitve zaslona (zadrzana miza)
+
+    private func zadrzana(miza: Int = 3, paket: Int? = 5, dogodek: Int = 7) -> NakupniKljuc.Vsebina {
+        NakupniKljuc.Vsebina(dogodekId: dogodek, mizaId: miza, paketId: paket)
+    }
+
+    func testBrezZadrzaneMizeJeIzbirnaSamoProstaMiza() {
+        XCTAssertTrue(VipNadaljevanje.smeIzbrati(mizaId: 4, prosta: true, zadrzana: nil))
+        XCTAssertFalse(VipNadaljevanje.smeIzbrati(mizaId: 4, prosta: false, zadrzana: nil))
+    }
+
+    func testZDrzanoMizoDrugaProstaMizaNiIzbirna() {
+        // Izbira B bi zavrtela kljuc za A (en zapis na dogodek in vrsto) in izgubila pot nazaj na placilo.
+        XCTAssertFalse(VipNadaljevanje.smeIzbrati(mizaId: 4, prosta: true, zadrzana: zadrzana(miza: 3)))
+        XCTAssertTrue(VipNadaljevanje.smeIzbrati(mizaId: 3, prosta: false, zadrzana: zadrzana(miza: 3)), "zadrzana miza ostane izbirna, ceprav je Booked")
+    }
+
+    func testPaketaNiMogoceZamenjatiMedZadrzanoMizo() {
+        XCTAssertFalse(VipNadaljevanje.smeZamenjatiPaket(zadrzana: zadrzana()))
+        XCTAssertTrue(VipNadaljevanje.smeZamenjatiPaket(zadrzana: nil))
+    }
+
+    func testZadrzanaMizaPosljeVedno_VsebinoZadrzanegaNarocilaTudiBrezIzbranegaPaketa() {
+        // Paket je medtem arhiviran: zaslon ga ne izbere (izbraniPaketId nil), kljuc in paket morata ostati taka kot v narocilu.
+        let v = VipNadaljevanje.vsebinaNakupa(dogodekId: 7, mizaId: 3, izbraniPaketId: nil, zadrzana: zadrzana(miza: 3, paket: 5))
+        XCTAssertEqual(v, zadrzana(miza: 3, paket: 5))
+        // Druga miza (ali brez zadrzane) = navadna izbira.
+        XCTAssertEqual(VipNadaljevanje.vsebinaNakupa(dogodekId: 7, mizaId: 4, izbraniPaketId: 9, zadrzana: zadrzana(miza: 3)),
+                       NakupniKljuc.Vsebina(dogodekId: 7, mizaId: 4, paketId: 9))
+        XCTAssertEqual(VipNadaljevanje.vsebinaNakupa(dogodekId: 7, mizaId: 3, izbraniPaketId: 9, zadrzana: nil),
+                       NakupniKljuc.Vsebina(dogodekId: 7, mizaId: 3, paketId: 9))
+        // Zadrzana miza drugega dogodka se ne prenese.
+        XCTAssertEqual(VipNadaljevanje.vsebinaNakupa(dogodekId: 8, mizaId: 3, izbraniPaketId: 9, zadrzana: zadrzana(miza: 3, dogodek: 7)),
+                       NakupniKljuc.Vsebina(dogodekId: 8, mizaId: 3, paketId: 9))
+    }
+
+    func testPaketIzbranZaZadrzanoMizoNeZahtevaIzbirePaketa() {
+        XCTAssertTrue(VipNadaljevanje.paketIzbran(paketObvezen: true, izbraniPaketId: nil, mizaId: 3, zadrzana: zadrzana(miza: 3)))
+        XCTAssertFalse(VipNadaljevanje.paketIzbran(paketObvezen: true, izbraniPaketId: nil, mizaId: 4, zadrzana: zadrzana(miza: 3)))
+        XCTAssertFalse(VipNadaljevanje.paketIzbran(paketObvezen: true, izbraniPaketId: nil, mizaId: 4, zadrzana: nil))
+        XCTAssertTrue(VipNadaljevanje.paketIzbran(paketObvezen: true, izbraniPaketId: 2, mizaId: 4, zadrzana: nil))
+        XCTAssertTrue(VipNadaljevanje.paketIzbran(paketObvezen: false, izbraniPaketId: nil, mizaId: 4, zadrzana: nil))
+    }
+
+    func testContinueToPaymentSamoZaZadrzanoMizoInPraviStripe() {
+        XCTAssertTrue(VipNadaljevanje.nadaljujePlacilo(mizaId: 3, zadrzana: zadrzana(miza: 3), stripe: true))
+        XCTAssertFalse(VipNadaljevanje.nadaljujePlacilo(mizaId: 4, zadrzana: zadrzana(miza: 3), stripe: true))
+        XCTAssertFalse(VipNadaljevanje.nadaljujePlacilo(mizaId: 3, zadrzana: nil, stripe: true), "nejasen izid brez narocila: Reserve table")
+        XCTAssertFalse(VipNadaljevanje.nadaljujePlacilo(mizaId: 3, zadrzana: zadrzana(miza: 3), stripe: false))
+    }
+
+    func testKarticaOnHoldSamoPriStripuZaIzbranoZadrzanoMizoBrezCakanja() {
+        let z = zadrzana(miza: 3)
+        XCTAssertTrue(VipNadaljevanje.kazeKarticoZadrzano(zadrzana: z, izbranaMizaId: 3, stripe: true, cakaNaPotrditev: false))
+        XCTAssertFalse(VipNadaljevanje.kazeKarticoZadrzano(zadrzana: z, izbranaMizaId: 3, stripe: false, cakaNaPotrditev: false))
+        XCTAssertFalse(VipNadaljevanje.kazeKarticoZadrzano(zadrzana: z, izbranaMizaId: 3, stripe: true, cakaNaPotrditev: true))
+        XCTAssertFalse(VipNadaljevanje.kazeKarticoZadrzano(zadrzana: z, izbranaMizaId: 4, stripe: true, cakaNaPotrditev: false))
+        XCTAssertFalse(VipNadaljevanje.kazeKarticoZadrzano(zadrzana: nil, izbranaMizaId: 3, stripe: true, cakaNaPotrditev: false))
+    }
+
+    // MARK: - smeUveljaviti (izid po await ne sme povoziti nove izbire)
+
+    func testIzidSeUveljaviSamoCeSeJeNicNiSpremenilo() {
+        let v = zadrzana(miza: 3)
+        XCTAssertTrue(VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: v, izbranaMizaId: nil, miruje: true))
+        // Kupec je medtem izbral mizo B.
+        XCTAssertFalse(VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: v, izbranaMizaId: 4, miruje: true))
+        // Pritisnil je Reserve (stanje ni miruje).
+        XCTAssertFalse(VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: v, izbranaMizaId: nil, miruje: false))
+        // Zapis kljuca pripada ze drugi vsebini (rotacija zaradi nakupa B) ali ga ni vec.
+        XCTAssertFalse(VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: zadrzana(miza: 4), izbranaMizaId: nil, miruje: true))
+        XCTAssertFalse(VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: zadrzana(miza: 3, paket: 6), izbranaMizaId: nil, miruje: true))
+        XCTAssertFalse(VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: nil, izbranaMizaId: nil, miruje: true))
+    }
 }

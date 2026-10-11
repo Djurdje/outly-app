@@ -101,7 +101,11 @@ extension APIError {
         if t.contains("sold tickets and was cancelled") { return String(localized: "Tickets were already sold, so the event was cancelled instead of deleted.") }
         // Nakup 18+ brez datuma rojstva (preveriStarostKupca: »Add your date of birth to buy …«): PRED splosnim blokom spodaj,
         // sicer ga ta pocisti v »Enter a valid date of birth« in kupec ne izve, kje naj ga vnese.
-        if t.contains("add your date of birth")         { return String(localized: "Add your date of birth in Personal info to buy tickets.") }
+        if t.contains("add your date of birth") {
+            return t.contains("bottle package")
+                ? String(localized: "Add your date of birth in Personal info to buy a table with a bottle package.")
+                : String(localized: "Add your date of birth in Personal info to buy tickets.")
+        }
         if t.contains("dateofbirth") || t.contains("date of birth") {
             if t.contains("future")     { return String(localized: "Date of birth cannot be in the future.") }
             if t.contains("plausible")  { return String(localized: "That date of birth does not look right.") }

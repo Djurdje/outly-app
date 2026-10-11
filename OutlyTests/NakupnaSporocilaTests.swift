@@ -11,16 +11,21 @@ final class NakupnaSporocilaTests: XCTestCase {
         APIError.requestFailed(koda, besedilo).userMessage
     }
 
-    func testMejaStarostiIzSporocilaBrezSurovegaStreznikovegaNiza() {
-        XCTAssertEqual(sporocilo(403, "You must be at least 18 to buy tickets for this event."),
-                       "You must be at least 18 to buy tickets for this event.")
-        XCTAssertEqual(sporocilo(403, "You must be at least 21 to buy tickets for this event."),
-                       "You must be at least 21 to buy tickets for this event.")
+    /// Strezniski niz se mora RAZLIKOVATI od izhoda (velike crke, brez pike), sicer bi test presel tudi pri `return raw`.
+    func testMejaStarostiGreSkozLokaliziranKljucNeSurovNiz() {
+        let surov = "YOU MUST BE AT LEAST 21 TO BUY TICKETS FOR THIS EVENT"
+        let izhod = sporocilo(403, surov)
+        XCTAssertNotEqual(izhod, surov)
+        XCTAssertEqual(izhod, String(localized: "You must be at least \(21) to buy tickets for this event."))
+        XCTAssertEqual(sporocilo(403, "Hey! You must be at least 18 to buy tickets for this event"),
+                       String(localized: "You must be at least \(18) to buy tickets for this event."))
     }
 
-    func testMejaStarostiPriVipMiziSPaketom() {
-        XCTAssertEqual(sporocilo(403, "You must be at least 18 to buy a table with a bottle package."),
-                       "You must be at least 18 to buy a table with a bottle package.")
+    func testMejaStarostiPriVipMiziSPaketomGreSkozLokaliziranKljuc() {
+        let surov = "YOU MUST BE AT LEAST 18 TO BUY A TABLE WITH A BOTTLE PACKAGE"
+        let izhod = sporocilo(403, surov)
+        XCTAssertNotEqual(izhod, surov)
+        XCTAssertEqual(izhod, String(localized: "You must be at least \(18) to buy a table with a bottle package."))
     }
 
     func testStarostBrezStevilkeDobiSplosnoSporocilo() {
@@ -32,7 +37,7 @@ final class NakupnaSporocilaTests: XCTestCase {
         XCTAssertEqual(sporocilo(403, "Add your date of birth to buy tickets for this event."),
                        "Add your date of birth in Personal info to buy tickets.")
         XCTAssertEqual(sporocilo(403, "Add your date of birth to buy a table with a bottle package."),
-                       "Add your date of birth in Personal info to buy tickets.")
+                       "Add your date of birth in Personal info to buy a table with a bottle package.")
     }
 
     func testPopravljanjeDatumaRojstvaOstaneSplosno() {
