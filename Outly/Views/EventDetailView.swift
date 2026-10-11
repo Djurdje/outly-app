@@ -61,6 +61,9 @@ struct EventDetailView: View {
 
                 aboutBlock
 
+                // Kdo prodaja (backend#94): ena vrstica, samo za dogodke, prodajane v aplikaciji
+                soldByVrstica
+
                 // VIP mize: rezervacija po telefonu kluba (Martin, 28. 9. 2026)
                 vipBlock
 
@@ -79,13 +82,13 @@ struct EventDetailView: View {
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(eventId: event.id) }
         .sheet(isPresented: $showBuy) {
-            BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"))
+            BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"), seller: prodajalec)
                 .environmentObject(session)
         }
         .sheet(isPresented: $showVip) {
             // VIP mize v aplikaciji (backend 025): tloris + nakup. Brez njih ostane prejsnji list (telefon kluba).
             if event.vipEnabled {
-                VipTablesView(event: event, clubName: club?.name ?? String(localized: "Club"))
+                VipTablesView(event: event, clubName: club?.name ?? String(localized: "Club"), seller: prodajalec)
                     .environmentObject(session)
             } else {
                 VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
@@ -686,6 +689,26 @@ struct EventDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.top, 4)
+        }
+    }
+
+    // MARK: - Prodajalec (backend#94)
+
+    /// Prodajalec je VEDNO klub `event.clubId` (pri gostovanem dogodku organizator, ne prizorisce): najprej `seller` iz
+    /// GET /events/:id, sicer iz GET /clubs/:id (`club` je klub dogodka). Star backend ga nima -> nil.
+    private var prodajalec: Seller? { event.seller ?? club?.seller }
+
+    /// Dogodek se prodaja v aplikaciji: ima ceno na Outlyju in ni tuja prodaja (`availability == "external"`).
+    private var prodanVAplikaciji: Bool { event.ticketPriceCents != nil && event.availability != "external" }
+
+    @ViewBuilder
+    private var soldByVrstica: some View {
+        if prodanVAplikaciji, let ime = prodajalec?.imeProdajalca, !ime.isEmpty {
+            Text("Sold by \(ime)")
+                .font(.system(size: 12))
+                .foregroundStyle(.white.opacity(0.5))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
         }
     }
 

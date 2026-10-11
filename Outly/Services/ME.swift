@@ -139,6 +139,10 @@ struct Me: Codable, Equatable {
     /// Sme urejati ekipo (lastnik vse, manager samo vratarje).
     var canSeeTeam: Bool { clubRole == "owner" || clubRole == "manager" }
 
+    /// Sme urejati podatke prodajalca (firma, sedez, maticna, davcna, DDV status): samo lastnik kluba (backend#94).
+    /// Aplikacija samo skrije razdelek; zadnjo besedo ima strezniku (403 `owner_only`). Star backend brez `club_role`: kot `canManageClub`.
+    var isClubOwner: Bool { clubRole == "owner" || (clubRole == nil && role == "business") }
+
     /// Napis vloge za profil: "Owner", "Manager", "Door staff", "Bartender".
     var clubRoleLabel: String? {
         switch clubRole {

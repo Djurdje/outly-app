@@ -70,6 +70,10 @@ struct APIEvent: Identifiable, Decodable {
     /// Ni v favoritih/nacrtih (tam ni nakupa) -> nil.
     let paymentMode: String?
 
+    /// Prodajalec (klub `club_id`) za vrstico »Sold by« in blok pred placilom (backend#94). Pride samo pri GET /events/:id;
+    /// seznami in star backend ga nimajo -> nil (zaslon vzame prodajalca iz kluba, glej `Seller`).
+    let seller: Seller?
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -104,6 +108,7 @@ struct APIEvent: Identifiable, Decodable {
         case venueLng = "venue_lng"
         case hosted
         case paymentMode = "payment_mode"
+        case seller
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -145,6 +150,7 @@ struct APIEvent: Identifiable, Decodable {
         venueLng         = (try? c.decodeIfPresent(Double.self, forKey: .venueLng)) ?? nil
         hosted           = (try? c.decodeIfPresent(Bool.self, forKey: .hosted)) ?? false
         paymentMode      = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
+        seller           = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
     }
 }
 

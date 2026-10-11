@@ -34,6 +34,9 @@ extension APIError {
     private static func translate(code: Int, raw: String) -> String {
         let t = raw.lowercased()
 
+        // Podatki prodajalca (PATCH /business/clubs/me, backend#94): manager jih ne sme spremeniti (403 `{ "error": "owner_only" }`).
+        if t.contains("owner_only")                     { return String(localized: "Only the club owner can change seller details.") }
+
         // Prenos vstopnice prijatelju brez racuna (JSON `{ error, message }`): kode PRED vsem ostalim, ker je telo celoten JSON.
         if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }
         if t.contains("guest_transfer_disabled")        { return String(localized: "Sending tickets to people without an Outly account is not available yet.") }

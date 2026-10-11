@@ -40,6 +40,14 @@ struct ClubInfoView: View {
     @State private var genresFailed = false
     @State private var clubBarPrices: [BarPriceItem] = []
     @State private var showBarPricesEditor = false
+    // Podatki prodajalca (backend#94): vidni in urejljivi samo lastniku; shranijo se posebej (`saveSeller`), ker jih manager
+    // ne sme spremeniti (403 owner_only) in ker jih splosno shranjevanje (`saveClub`) nikoli ne posilja.
+    @State private var clubLegalName = ""
+    @State private var clubLegalAddress = ""
+    @State private var clubRegistrationNumber = ""
+    @State private var clubTaxNumber = ""
+    @State private var clubVatPayer: Bool?
+    @State private var clubSellerComplete = true
 
     // Slideshow (do 3 slike) in video (migracija 015)
     @State private var clubGalleryUrls: [String] = []
@@ -67,6 +75,7 @@ struct ClubInfoView: View {
 
     enum EditField: Identifiable {
         case name, phone, website, instagram, email, description, address, city, minAge, genres
+        case legalName, legalAddress, registrationNumber, taxNumber
         var id: String { "\(self)" }
 
         var title: String {
@@ -81,10 +90,35 @@ struct ClubInfoView: View {
             case .city: return String(localized: "City")
             case .minAge: return String(localized: "Minimum age")
             case .genres: return String(localized: "Music genres")
+            case .legalName: return String(localized: "Company name")
+            case .legalAddress: return String(localized: "Registered office")
+            case .registrationNumber: return String(localized: "Registration number")
+            case .taxNumber: return String(localized: "Tax number (VAT ID)")
             }
         }
 
         var multiline: Bool { self == .description }
+
+        /// Kljuc v PATCH /business/clubs/me za podatke prodajalca; nil = navadno polje kluba.
+        var kljucProdajalca: String? {
+            switch self {
+            case .legalName: return "legal_name"
+            case .legalAddress: return "legal_address"
+            case .registrationNumber: return "registration_number"
+            case .taxNumber: return "tax_number"
+            default: return nil
+            }
+        }
+
+        /// Meje dolzin kot v bazi (CHECK): firma 200, sedez 300, maticna 20, davcna 20.
+        var najvecZnakov: Int? {
+            switch self {
+            case .legalName: return 200
+            case .legalAddress: return 300
+            case .registrationNumber, .taxNumber: return 20
+            default: return nil
+            }
+        }
     }
 
     /// Prvo nalaganje: podatkov se ni. Brez tega je zaslon ob odprtju poln "Not set"
@@ -301,6 +335,11 @@ struct ClubInfoView: View {
                     onAction: { showBarPricesEditor = true }
                 )
 
+                // ===== PODATKI PRODAJALCA (backend#94) — samo lastnik =====
+                if session.me?.isClubOwner == true {
+                    prodajalecRazdelek
+                }
+
                 if isLoading {
                     ProgressView().padding(.top, 8)
                 }
@@ -403,6 +442,96 @@ struct ClubInfoView: View {
         )
     }
 
+    // MARK: - Podatki prodajalca (samo lastnik)
+
+    private var prodajalecRazdelek: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Seller details")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                Text("Shown to buyers before payment and on receipts (required by consumer law).")
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundColor(.white.opacity(0.55))
+                    .fixedSize(horizontal: false, vertical: true)
+                if !clubSellerComplete {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.circle")
+                        Text("Some details are missing.")
+                    }
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.75))
+                }
+            }
+            .padding(.top, 6)
+
+            infoCard(icon: "building.columns", title: "Company name", value: clubLegalName, field: .legalName,
+                     description: "Legal name of the company or sole proprietor that sells the tickets.")
+
+            infoCard(icon: "mappin.and.ellipse", title: "Registered office", value: clubLegalAddress, field: .legalAddress,
+                     description: "Street, postcode and city of the registered office.")
+
+            infoCard(icon: "number", title: "Registration number", value: clubRegistrationNumber, field: .registrationNumber,
+                     description: "Company registration number.")
+
+            infoCard(icon: "doc.text", title: "Tax number (VAT ID)", value: clubTaxNumber, field: .taxNumber,
+                     description: "Tax number or VAT ID, e.g. SI12345678.")
+
+            vatStatusKartica
+        }
+    }
+
+    /// Izbira DDV statusa: zavezanec / ni zavezanec / ni izbrano (nil). Shrani se takoj, vrednost pa se prevzame sele iz odgovora.
+    private var vatStatusKartica: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("VAT status")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.white)
+
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: "percent")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Text(vatStatusNapis(clubVatPayer))
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                Spacer()
+
+                Menu {
+                    Button(vatStatusNapis(true)) { Task { await saveSeller(["vat_payer": true]) } }
+                    Button(vatStatusNapis(false)) { Task { await saveSeller(["vat_payer": false]) } }
+                    Button(vatStatusNapis(nil)) { Task { await saveSeller(["vat_payer": NSNull()]) } }
+                } label: {
+                    Text("Edit")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.outlyBlue)
+                }
+            }
+
+            Text("Decides which VAT line buyers see under the total.")
+                .font(.system(size: 12, weight: .light))
+                .foregroundColor(.white.opacity(0.55))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+        )
+    }
+
+    private func vatStatusNapis(_ vatPayer: Bool?) -> String {
+        switch vatPayer {
+        case true?: return String(localized: "VAT payer")
+        case false?: return String(localized: "Not a VAT payer")
+        default: return String(localized: "Not selected")
+        }
+    }
+
     // MARK: - Edit sheet
 
     private func editSheet(_ field: EditField) -> some View {
@@ -470,6 +599,18 @@ struct ClubInfoView: View {
                             editError = String(localized: "Enter an Instagram handle like @velvet.lj or a link starting with https://.")
                             return
                         }
+                        // Podatki prodajalca: dolzina kot v bazi; shrani se samo to polje, brez optimisticnega zapisa
+                        // (manager dobi 403 owner_only, vrednost se prevzame sele iz odgovora).
+                        if let kljuc = field.kljucProdajalca {
+                            let v = editText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if let najvec = field.najvecZnakov, v.count > najvec {
+                                editError = String(localized: "That is too long (max \(najvec) characters).")
+                                return
+                            }
+                            activeEdit = nil
+                            Task { await saveSeller([kljuc: v]) }
+                            return
+                        }
                         applyEdit(field)
                         activeEdit = nil
                         Task { await saveClub(changed: field) }
@@ -494,6 +635,7 @@ struct ClubInfoView: View {
         case .instagram: clubInstagram = InstagramVnos.normaliziraj(v) ?? clubInstagram
         case .minAge: clubMinAge = editMinAge
         case .genres: clubGenres = allGenres.filter { editGenres.contains($0) }
+        case .legalName, .legalAddress, .registrationNumber, .taxNumber: break   // gre prek saveSeller
         }
     }
 
@@ -507,6 +649,7 @@ struct ClubInfoView: View {
         do {
             let club = try await APIClient.shared.fetchMyBusinessClub(token: authToken)
             apply(club)
+            applySeller(club)
         } catch let api as APIError {
             if case let .requestFailed(code, raw) = api, code == 404, raw.lowercased().contains("club") {
                 errorMessage = String(localized: "Your club is not set up yet. Contact luka@outly.si to get it created.")
@@ -545,6 +688,17 @@ struct ClubInfoView: View {
         clubVideoUrl = club.videoUrl
     }
 
+    /// Podatki prodajalca iz GET /business/clubs/me. Namenoma loceno od `apply`: odgovor drugih PATCH-ov teh polj morda ne vsebuje
+    /// in bi jih pobrisal s zaslona.
+    private func applySeller(_ club: APIClub) {
+        clubLegalName = club.legalName
+        clubLegalAddress = club.legalAddress
+        clubRegistrationNumber = club.registrationNumber
+        clubTaxNumber = club.taxNumber
+        clubVatPayer = club.vatPayer
+        clubSellerComplete = club.sellerComplete
+    }
+
     /// Stikalo "I organize events without my own venue": optimisticen preklop, ob napaki nazaj.
     private func saveOrganizer(_ nov: Bool) async {
         guard !authToken.isEmpty, nov != clubIsOrganizer else { return }
@@ -570,6 +724,21 @@ struct ClubInfoView: View {
                 fields: ["gallery_urls": clubGalleryUrls, "video_url": clubVideoUrl]
             )
             apply(club)
+        } catch {
+            errorMessage = error.userMessage
+        }
+    }
+
+    /// Podatki prodajalca (PATCH /business/clubs/me samo s podanimi polji; backend#94). Sme samo lastnik: manager dobi
+    /// 403 `owner_only` -> sporocilo prek `userMessage`. Stanje se ne zapise optimisticno: po uspehu ga ponovno preberemo
+    /// (GET /business/clubs/me ima surova polja in `seller_complete`).
+    private func saveSeller(_ fields: [String: Any]) async {
+        guard !authToken.isEmpty else { return }
+        errorMessage = nil
+        do {
+            _ = try await APIClient.shared.updateMyBusinessClub(token: authToken, fields: fields)
+            let club = try await APIClient.shared.fetchMyBusinessClub(token: authToken)
+            applySeller(club)
         } catch {
             errorMessage = error.userMessage
         }
