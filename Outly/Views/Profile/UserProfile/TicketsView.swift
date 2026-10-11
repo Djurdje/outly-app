@@ -174,7 +174,7 @@ struct TicketsView: View {
                 .foregroundColor(.white)
             Text(t.statusLabel)
                 .font(.caption.weight(.bold))
-                .foregroundColor(t.statusLabel == "VALID" ? .outlyBlue : .gray)
+                .foregroundColor(t.jeVeljavna ? .outlyBlue : .gray)
             if !t.serialKratek.isEmpty {
                 Text(verbatim: t.serialKratek)
                     .font(.caption.monospaced())
@@ -220,7 +220,7 @@ struct TicketsView: View {
                     } else {
                         Text(t.statusLabel)
                             .font(.caption.weight(.bold))
-                            .foregroundColor(t.statusLabel == "VALID" ? .outlyBlue : .gray)
+                            .foregroundColor(t.jeVeljavna ? .outlyBlue : .gray)
                     }
                     Text(t.publicRef).font(.caption).foregroundColor(.gray)
                     if stevilo == nil && t.transferred && !t.buyerUsername.isEmpty {

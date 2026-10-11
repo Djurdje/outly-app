@@ -12237,6 +12237,138 @@
           }
         }
       }
+    },
+    "Continue to payment": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadaljuj na plačilo"
+          }
+        }
+      }
+    },
+    "Your table is on hold until you pay. Continue to payment to finish booking it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miza je zate začasno zadržana, dokler ne plačaš. Nadaljuj na plačilo, da dokončaš rezervacijo."
+          }
+        }
+      }
+    },
+    "You must be at least %lld to buy tickets for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nakup vstopnic za ta dogodek moraš biti star vsaj %lld let."
+          }
+        }
+      }
+    },
+    "You must be at least %lld to buy a table with a bottle package.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nakup mize s paketom pijače moraš biti star vsaj %lld let."
+          }
+        }
+      }
+    },
+    "You are too young to buy this.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za ta nakup si premlad."
+          }
+        }
+      }
+    },
+    "This club doesn't accept online payments yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta klub še ne sprejema spletnih plačil."
+          }
+        }
+      }
+    },
+    "VOID": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RAZVELJAVLJENA"
+          }
+        }
+      }
+    },
+    "%@ sent you a ticket for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ti je poslal vstopnico za %@"
+          }
+        }
+      }
+    },
+    "You received a ticket for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prejel si vstopnico za %@"
+          }
+        }
+      }
+    },
+    "It's in your Tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najdeš jo med vstopnicami"
+          }
+        }
+      }
+    },
+    "Add your date of birth in Personal info to buy a table with a bottle package.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nakup mize s paketom pijače v Osebnih podatkih dodaj datum rojstva."
+          }
+        }
+      }
+    },
+    "Finish paying for your held table first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej dokončaj plačilo za zadržano mizo."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

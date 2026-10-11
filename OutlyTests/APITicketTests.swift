@@ -83,6 +83,15 @@ final class APITicketTests: XCTestCase {
         XCTAssertEqual(refunded.statusLabel, "REFUNDED")
     }
 
+    /// Barva napisa na kartici ne sme temeljiti na prevedenem `statusLabel` (v slovenscini ni "VALID"): `jeVeljavna` je neodvisna od jezika.
+    func testJeVeljavnaJeNeodvisnaOdPrevoda() throws {
+        XCTAssertTrue(try makeTicket(status: "valid", startAt: farFutureISO).jeVeljavna)
+        XCTAssertFalse(try makeTicket(status: "valid", startAt: farPastISO).jeVeljavna)
+        XCTAssertFalse(try makeTicket(status: "used", startAt: farFutureISO).jeVeljavna)
+        XCTAssertFalse(try makeTicket(status: "refunded", startAt: farFutureISO).jeVeljavna)
+        XCTAssertFalse(try makeTicket(status: "void", startAt: farFutureISO).jeVeljavna)
+    }
+
     // MARK: - transferable / transferred (prenos vstopnice, 008)
 
     func testTransferFieldsDecodeFromBackend() throws {

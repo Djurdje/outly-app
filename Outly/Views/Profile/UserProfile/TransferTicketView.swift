@@ -372,13 +372,14 @@ struct TransferTicketView: View {
                 _ = try await APIClient.shared.transferTicket(token: session.token, ticketId: ticket.id, userId: userId,
                                                               ageConfirmed: p.starostPotrjena)
             } else {
-                let odgovor = try await APIClient.shared.transferTicket(
+                _ = try await APIClient.shared.transferTicket(
                     token: session.token, ticketId: ticket.id, email: p.email,
                     allowGuest: p.gost, ageConfirmed: p.starostPotrjena)
                 // Nacin gost: streznik odgovori enotno ("Ticket sent to <email>."), ne glede na to, ali ima naslov racun.
-                // (ob praznem message-u nevtralno besedilo, ne "pojavila se bo pod Tickets": gost nima aplikacije).
+                // Besedilo je vedno lokalno (v jeziku aplikacije): strezniski `message` je angleski in se ne kaze (ZVPot-1 7/1);
+                // nevtralno, ne "pojavila se bo pod Tickets": gost nima aplikacije.
                 if p.gost {
-                    uspehSporocilo = odgovor.message.isEmpty ? String(localized: "Ticket sent to \(p.email).") : odgovor.message
+                    uspehSporocilo = String(localized: "Ticket sent to \(p.email).")
                 }
             }
             stanje = .uspeh

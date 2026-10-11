@@ -26,6 +26,8 @@ struct VipTablesView: View {
     @State private var izbraniPaketId: Int?
     /// Izbira se predizpolni samo ob prvem uspesnem nalaganju tlorisa (glej `naloziVip`).
     @State private var predizpolnjeno = false
+    /// Predizpolnitev po nerazresenem poskusu tece (branje GET /me/orders): izbira mize in paketa je do konca onemogocena.
+    @State private var predizpolnjujem = false
     @State private var stanje: StanjeAkcije = .miruje
     @State private var errorMessage: String?
     /// Nerazresena vsebina ob odprtju lista (glej `predizpolniIzbiro`); izgine ob naslednjem pritisku na Reserve. Napotek
@@ -38,6 +40,11 @@ struct VipTablesView: View {
     @State private var razdeljuje = false
     /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Stripova stran (ASWebAuthenticationSession), narocilo v cakanju, ponovno branje.
     @StateObject private var stripe = StripeNakup()
+    /// Vsebina MOJEGA `pending` narocila, ki drzi mizo (outly-app#59): nastavi se ob ponovnem odprtju lista (miza je »Booked«, a drzana zame)
+    /// in ko Stripova stran uspesno odprta. Dokler je nastavljena, kupec ne sme izbrati druge mize ali zamenjati paketa (nov kljuc bi
+    /// prepisal edini zapis in izgubil pot nazaj na to narocilo); gumb nadaljuje placilo z ISTIM kljucem in paketom iz narocila.
+    /// Pocisti jo uspeh, 409 `order_not_active` / zavrnjen kljuc in opuscen nakup (v `rezerviraj` in `preveriPlacilo`).
+    @State private var zadrzana: NakupniKljuc.Vsebina?
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -68,7 +75,11 @@ struct VipTablesView: View {
 
     /// Paket je obvezen, ce ga klub ponuja (backend: sicer 400).
     private var paketObvezen: Bool { !(vip?.packages.isEmpty ?? true) }
-    private var paketIzbran: Bool { !paketObvezen || izbraniPaketId != nil }
+    private var paketIzbran: Bool {
+        VipNadaljevanje.paketIzbran(paketObvezen: paketObvezen, izbraniPaketId: izbraniPaketId, mizaId: izbranaMizaId, zadrzana: zadrzana)
+    }
+
+    private var jeStripe: Bool { nacin == .stripe }
 
     var body: some View {
         NavigationStack {
@@ -161,6 +172,11 @@ struct VipTablesView: View {
 
                     if let napotek {
                         NapotekKartica(besedilo: napotek.besedilo)
+                    }
+
+                    if VipNadaljevanje.kazeKarticoZadrzano(zadrzana: zadrzana, izbranaMizaId: izbranaMizaId, stripe: jeStripe,
+                                                           cakaNaPotrditev: stripe.caka != nil) {
+                        NapotekKartica(besedilo: String(localized: "Your table is on hold until you pay. Continue to payment to finish booking it."))
                     }
 
                     if stripe.caka != nil {
@@ -366,7 +382,11 @@ struct VipTablesView: View {
     private func vrsticaPaketa(_ p: VipPackage) -> some View {
         let izbran = izbraniPaketId == p.id
         return Button {
-            guard stanje == .miruje else { return }
+            guard stanje == .miruje, !predizpolnjujem else { return }
+            guard VipNadaljevanje.smeZamenjatiPaket(zadrzana: zadrzana) else {
+                errorMessage = String(localized: "Finish paying for your held table first.")
+                return
+            }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             izbraniPaketId = p.id
             errorMessage = nil
@@ -433,7 +453,14 @@ struct VipTablesView: View {
 
     // MARK: - Gumb
 
+    /// Gumb nadaljuje obstojece placilo (zadrzana miza), ne zacne novega nakupa. Pri nejasnem izidu brez znanega narocila
+    /// (timeout) ostane »Reserve table« z obstojecim kljucem.
+    private func nadaljujePlacilo(_ m: VipTable) -> Bool {
+        VipNadaljevanje.nadaljujePlacilo(mizaId: m.id, zadrzana: zadrzana, stripe: jeStripe)
+    }
+
     private func naslovGumba(_ m: VipTable) -> String {
+        if nadaljujePlacilo(m) { return String(localized: "Continue to payment") }
         if m.priceCents <= 0 { return String(localized: "Reserve table") }
         return String(localized: "Reserve table · \(Denar.evri(m.priceCents, koda: koda))")
     }
@@ -518,14 +545,29 @@ struct VipTablesView: View {
     // MARK: - Dejanja
 
     private func izberi(_ m: VipTable) {
-        guard stanje == .miruje, m.available else { return }
+        guard stanje == .miruje, !predizpolnjujem else { return }
+        guard VipNadaljevanje.smeIzbrati(mizaId: m.id, prosta: m.available, zadrzana: zadrzana) else {
+            // Moje placilo za drugo mizo se ni zakljuceno: druga izbira bi izgubila pot nazaj nanj.
+            if m.available, zadrzana != nil {
+                errorMessage = String(localized: "Finish paying for your held table first.")
+            }
+            return
+        }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         errorMessage = nil
         izbranaMizaId = m.id
     }
 
-    /// Nalozi tloris. Ob osvezitvi po 409 se izbira obdrzi samo, ce je miza se prosta.
-    private func naloziVip() async {
+    /// Nerazresena vsebina VIP mize tega uporabnika in dogodka (zivi kljuc v `NakupniKljucShramba`), sicer nil.
+    private func odprtaVsebinaMize() -> NakupniKljuc.Vsebina? {
+        NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? NakupniKljucShramba.neznanUporabnik,
+                                                 dogodekId: event.id, vrsta: .vipMiza)
+    }
+
+    /// Nalozi tloris. Ob osvezitvi po 409 se izbira obdrzi samo, ce je miza se prosta; izjema je miza, ki jo drzi MOJE
+    /// placilo (`zadrzana`, `obdrziMojo`, outly-app#59: `pending` narocilo zasede mizo, a je moja). Po 409 »already booked« / »price changed«
+    /// (`obdrziMojo: false`) mize ne drzimo: ponovitev z istim kljucem bi bila 409 le, ce narocila s tem kljucem ni.
+    private func naloziVip(obdrziMojo: Bool = true) async {
         nalaganje = true
         defer { nalaganje = false }
         do {
@@ -533,30 +575,80 @@ struct VipTablesView: View {
             vip = novo
             napakaNalaganja = nil
             if let id = izbranaMizaId, !(novo.tables.first { $0.id == id }?.available ?? false) {
-                izbranaMizaId = nil
+                let moja = obdrziMojo && VipNadaljevanje.jeMojaMiza(odprta: zadrzana, dogodekId: event.id, mizaId: id)
+                if !moja { izbranaMizaId = nil }
             }
             if let pid = izbraniPaketId, !novo.packages.contains(where: { $0.id == pid }) {
                 izbraniPaketId = nil
             }
-            predizpolniIzbiro(novo)
+            await predizpolniIzbiro(novo)
         } catch {
             if vip == nil { napakaNalaganja = error.userMessage }
         }
     }
 
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): miza in paket zadnjega nerazresenega poskusa, da
-    /// Reserve table poslje isto vsebino z istim kljucem (NakupniKljucShramba). Samo ob prvem nalaganju in samo ce je miza
-    /// v tlorisu se na voljo (sicer brez izbire); paket samo, ce ga klub se ponuja. Vsebina vstopnic (mizaId == nil) tu ne velja.
-    /// Zapomni nerazresen poskus za napotek (miza se ni vec prosta -> »Booked« -> napotek Profile -> Tickets). Mize ne zaklene.
-    private func predizpolniIzbiro(_ novo: EventVip) {
+    /// Reserve table poslje isto vsebino z istim kljucem (NakupniKljucShramba). Samo ob prvem nalaganju; paket samo, ce ga klub se ponuja.
+    /// Vsebina vstopnic (mizaId == nil) tu ne velja. Zapomni nerazresen poskus za napotek. Mize ne zaklene.
+    ///
+    /// Miza, ki ni vec prosta (outly-app#59: moje `pending` narocilo jo drzi, ker jo backend steje za zasedeno), se NE izbere na slepo:
+    /// preberemo moja narocila in `VipNadaljevanje.razvrsti` pove, kaj je z narocilom. Brez odgovora strezniku ostane stari napotek
+    /// (»Check Profile -> Tickets«), izbire ni.
+    private func predizpolniIzbiro(_ novo: EventVip) async {
         guard !predizpolnjeno else { return }
         predizpolnjeno = true
+        predizpolnjujem = true
+        defer { predizpolnjujem = false }   // tudi ob zgodnjem izhodu, napaki branja ali preklicu
         // Samo zapis VIP mize: nerazresene vstopnice istega dogodka imajo svoj zapis (#137).
-        let prej = NakupniKljucShramba.deljena.odprtaVsebina(uporabnik: session.me?.id ?? NakupniKljucShramba.neznanUporabnik,
-                                                            dogodekId: event.id, vrsta: .vipMiza)
+        let prej = odprtaVsebinaMize()
         nerazresena = prej
         guard let v = prej, let mizaId = v.mizaId,
-              novo.tables.first(where: { $0.id == mizaId })?.available == true else { return }
+              let miza = novo.tables.first(where: { $0.id == mizaId }) else { return }
+        if miza.available {
+            izberiPredizpolnjeno(v, novo)
+            return
+        }
+        guard let narocila = try? await APIClient.shared.fetchMyOrders(token: session.token) else { return }
+        // Branje lahko traja (strezniku za potekla narocila kliče Stripe): kupec je medtem lahko izbral drugo mizo ali pritisnil Reserve,
+        // zapis kljuca pa pripada ze drugi vsebini. Takrat NE naredimo nicesar (zlasti ne zavrzemo kljuca nove izbire).
+        // `!Task.isCancelled`: odgovor, ki je prisel po zaprtju lista, ne sme klicati poNapaki/poUspehu.
+        guard !Task.isCancelled,
+              VipNadaljevanje.smeUveljaviti(zacetna: v, odprtaZdaj: odprtaVsebinaMize(),
+                                            izbranaMizaId: izbranaMizaId, miruje: stanje == .miruje) else { return }
+        let izid = VipNadaljevanje.razvrsti(narocila: narocila, dogodekId: event.id, mizaId: mizaId)
+        let uporabnik = session.me?.id ?? NakupniKljucShramba.neznanUporabnik
+        switch izid.stanje {
+        case .nadaljuj:
+            izberiPredizpolnjeno(v, novo)
+            nerazresena = nil          // znamo vec kot »morda«: namesto napotka o nejasnem izidu pove kartica »on hold«
+            zadrzana = v               // paket ostane tisti iz kljuca, tudi ce ga klub medtem ne ponuja vec (glej vsebinaNakupa)
+        case .placano:
+            guard let n = izid.narocilo else { return }
+            // Kupec je placal, uspeha pa ni videl: kljuc stran, uspesni zaslon (VIP vstopnice + razdelitev prijateljem).
+            NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza)
+            nerazresena = nil
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = VipNadaljevanje.odgovor(n) }
+        case .vObdelavi:
+            nerazresena = nil
+            errorMessage = StripePlacilo.sporociloVObdelavi
+        case .poteklo:
+            nerazresena = nil
+            errorMessage = StripePlacilo.sporociloPotekla
+        case .ni:
+            // Mojega aktivnega narocila ni (preklicano) in miza je zasedena: tuja ali telefonska rezervacija. Kljuc se zavrze.
+            NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza, izid: .narociloNeaktivno)
+            nerazresena = nil
+            errorMessage = String(localized: "This table is already booked.")
+            // Osvezi tloris (miza je lahko spet prosta). Brez rekurzije: `predizpolnjeno` je ze true, zato predizpolniIzbiro takoj vrne.
+            await naloziVip(obdrziMojo: false)
+        case .nejasno:
+            break
+        }
+    }
+
+    /// Predizbere mizo in paket nerazresenega poskusa (paket samo, ce ga klub se ponuja).
+    private func izberiPredizpolnjeno(_ v: NakupniKljuc.Vsebina, _ novo: EventVip) {
+        guard let mizaId = v.mizaId else { return }
         izbranaMizaId = mizaId
         if let paketId = v.paketId, novo.packages.contains(where: { $0.id == paketId }) {
             izbraniPaketId = paketId
@@ -568,10 +660,13 @@ struct VipTablesView: View {
     private func preveriPlacilo(poskusov: Int, tiho: Bool = false) async {
         errorMessage = nil
         if let p = await stripe.preveri(token: session.token, poskusov: poskusov, tiho: tiho) {
+            zadrzana = nil
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { purchase = p }
         } else {
             errorMessage = stripe.napaka
+            // Opuscen nakup (`StripeNakup.preveri` `.opuscen`) zavrti kljuc: zapisa ni vec, narocila na mizi ni, miza ni vec zadrzana.
+            if odprtaVsebinaMize() == nil { zadrzana = nil }
         }
     }
 
@@ -581,13 +676,16 @@ struct VipTablesView: View {
         stripe.ponastavi()
         stanje = .nalaga
         let uporabnik = session.me?.id ?? NakupniKljucShramba.neznanUporabnik
-        let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
-            uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, mizaId: m.id, paketId: izbraniPaketId))
+        // Zadrzana miza: vsebina (miza + paket) zadrzanega narocila, da kljuc ostane isti; sicer navadna izbira.
+        let vsebina = VipNadaljevanje.vsebinaNakupa(dogodekId: event.id, mizaId: m.id, izbraniPaketId: izbraniPaketId, zadrzana: zadrzana)
+        let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(uporabnik: uporabnik, vsebina: vsebina)
         do {
             let p = try await APIClient.shared.buyTable(eventId: event.id, tableId: m.id,
-                                                        packageId: izbraniPaketId, expectedPriceCents: m.priceCents,
+                                                        packageId: vsebina.paketId, expectedPriceCents: m.priceCents,
                                                         idempotencyKey: kljucNakupa, token: session.token)
             if p.cakaPlacilo {
+                // Narocilo je `pending` in drzi mizo: izbira druge mize ali paketa je od zdaj blokirana (kljuc ostane isti).
+                zadrzana = vsebina
                 // Stripe: vstopnic se ni (nastanejo po webhooku), zato NE »Your VIP table is booked«. Kljuc se NE pozabi: ponovni
                 // pritisk Reserve, dokler je narocilo pending, vrne isto narocilo in isti checkout_url (miza ostane drzana).
                 // Pozabi ga StripeNakup, ko je placano.
@@ -601,6 +699,7 @@ struct VipTablesView: View {
                 return
             }
             NakupniKljucShramba.deljena.poUspehu(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza)
+            zadrzana = nil
             // Haptika .success in kljukica prideta iz OutlyAkcijskiGumb (onChange stanja).
             stanje = .uspeh
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
@@ -610,10 +709,12 @@ struct VipTablesView: View {
             NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vipMiza, izid: izid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
+            // Kljuc zavrnjen ali narocilo ni vec aktivno (potekla seja): narocila, ki bi drzalo mizo, ni vec.
+            if izid == .narociloNeaktivno || izid == .kljucZavrzen || error.osveziTlorisPoNapaki { zadrzana = nil }
             // 409: miza je medtem ze prodana, cena spremenjena ali prodaja zaprta -> osvezi tloris, izbira izgine
             // (izjemi request_in_progress in order_not_active: glej `osveziTlorisPoNapaki`).
             if error.osveziTlorisPoNapaki {
-                await naloziVip()
+                await naloziVip(obdrziMojo: false)
             }
             if let premor = error.nakupPremorNanosekund {
                 naval = true
