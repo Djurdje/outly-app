@@ -8,8 +8,11 @@
 //   - Samo Release na pravi napravi: v Debug gradnji in na simulatorju se SDK NE zazene.
 //   - Brez osebnih podatkov: brez sendDefaultPii, brez posnetkov zaslona, brez hierarhije pogledov,
 //     brez Session Replay, brez profiliranja, brez tracinga (tracesSampleRate = 0).
-//   - beforeSend / beforeBreadcrumb odstranita uporabnika, zahtevek (glave, piskotke, query) in
-//     omrezne sledi z URL-ji s query nizom (lahko vsebujejo zetone).
+//   - beforeSend / beforeBreadcrumb odstranita uporabnika (SDK mu sicer sam doda `user.id` = oznaka namestitve),
+//     zahtevek (glave, piskotke, query), stalno oznako naprave `contexts.app.device_app_hash` in VSE omrezne
+//     sledi (http/xhr; pot v URL-ju lahko nosi identifikator, npr. zeton APNs v DELETE /me/devices/:zeton).
+//     Sentry Cocoa 9.30.1: SDK doda `device_app_hash` (SHA-1 iz identifierForVendor, modela naprave in bundle ID)
+//     v kontekst `app` ob vsakem dogodku, tudi ob zrusitvi (kontekst se prenese prek scope observerja).
 //   - Kodo prevajamo v vseh konfiguracijah (Debug CI jo prevede tudi), ZAGON pa odloca `vklopljeno`.
 //
 
@@ -48,6 +51,8 @@ enum Napake {
             options.enableAutoPerformanceTracing = false
             options.enableUserInteractionTracing = false
             options.enableNetworkTracking = false
+            // Omrezne sledi imajo LOCEN vklop (privzeto true) in delujejo tudi ob izklopljenem sledenju omrezja.
+            options.enableNetworkBreadcrumbs = false
             options.enableFileIOTracing = false
             options.enableCoreDataTracing = false
 
@@ -56,9 +61,12 @@ enum Napake {
             options.enableCaptureFailedRequests = false
             options.enableAppHangTracking = false
 
-            // Release health (seje) IZKLOPLJEN: seja nosi nakljucno oznako namestitve (`did`), kar je po ZEKom-2
-            // lahko shranjevanje na terminalni opremi brez privolitve (pravnik 11. 10. 2026, srednje, nepreverjeno).
-            // Zrusitve in napake se posiljajo naprej. Vklop sele po pravnem pregledu in dopolnitvi politike zasebnosti.
+            // Release health (seje) IZKLOPLJEN: seja nosi nakljucno oznako namestitve (`did`), ki bi s tem sla v
+            // Sentry (pravnik 11. 10. 2026, srednje, nepreverjeno). Zrusitve in napake se posiljajo naprej.
+            // POZOR: izklop sej NE odpravi lokalne datoteke z oznako namestitve (UUID `INSTALLATION` v predpomnilniku):
+            // SDK jo zapise ob zagonu (SentryClient.m, cacheIDAsync) ne glede na seje. Na streznik ne gre: seje so
+            // izklopljene, `user.id` pa v beforeSend odstranimo. Vklop sej sele po pravnem pregledu in dopolnitvi
+            // politike zasebnosti.
             options.enableAutoSessionTracking = false
             options.maxBreadcrumbs = 50
 
@@ -71,26 +79,33 @@ enum Napake {
     private nonisolated static func ocistiDogodek(_ dogodek: Sentry.Event) -> Sentry.Event? {
         dogodek.user = nil
         dogodek.request = nil
+        dogodek.context = ocistiKontekst(dogodek.context)
         if let sledi = dogodek.breadcrumbs {
-            dogodek.breadcrumbs = sledi.filter { !jeObcutljivaSled($0) }
+            dogodek.breadcrumbs = sledi.filter { !jeOmreznaSled(vrsta: $0.type, kategorija: $0.category) }
         }
         return dogodek
     }
 
     private nonisolated static func ocistiSled(_ sled: Sentry.Breadcrumb) -> Sentry.Breadcrumb? {
-        jeObcutljivaSled(sled) ? nil : sled
+        jeOmreznaSled(vrsta: sled.type, kategorija: sled.category) ? nil : sled
     }
 
-    /// Omrezna sled (http/xhr), katere URL ima query ali fragment: lahko nosi zetone, zato jo zavrzemo.
-    private nonisolated static func jeObcutljivaSled(_ sled: Sentry.Breadcrumb) -> Bool {
-        let vrsta = (sled.type ?? "").lowercased()
-        let kategorija = sled.category.lowercased()
-        guard vrsta == "http" || kategorija == "http" || kategorija == "xhr" else { return false }
-        let podatki = sled.data ?? [:]
-        if podatki["http.query"] != nil || podatki["http.fragment"] != nil { return true }
-        for kljuc in ["url", "http.url"] {
-            if let url = podatki[kljuc] as? String, url.contains("?") || url.contains("#") { return true }
+    /// Iz konteksta dogodka odstrani stalno oznako naprave: `app.device_app_hash` (SDK 9.30.1 ga doda ob vsakem
+    /// dogodku, tudi zrusitvi). Ostalo (model, OS, razlicica aplikacije) ostane. Brez Sentry tipov, zato preizkusljivo.
+    nonisolated static func ocistiKontekst(_ kontekst: [String: [String: Any]]?) -> [String: [String: Any]]? {
+        guard var kontekst else { return nil }
+        if var app = kontekst["app"] {
+            app.removeValue(forKey: "device_app_hash")
+            kontekst["app"] = app
         }
-        return false
+        return kontekst
+    }
+
+    /// Omrezna sled (http/xhr): zavrzemo jo v celoti. Pot v URL-ju lahko nosi identifikator (npr. zeton APNs pri
+    /// DELETE /me/devices/:zeton), metoda in status pa za analizo zrusitve ne odtehtata tveganja.
+    nonisolated static func jeOmreznaSled(vrsta: String?, kategorija: String) -> Bool {
+        let tip = (vrsta ?? "").lowercased()
+        let kat = kategorija.lowercased()
+        return tip == "http" || kat == "http" || kat == "xhr"
     }
 }
