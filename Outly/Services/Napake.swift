@@ -56,8 +56,10 @@ enum Napake {
             options.enableCaptureFailedRequests = false
             options.enableAppHangTracking = false
 
-            // Release health (seje) ostane: steje samo seje in zrusitve, brez osebnih podatkov.
-            options.enableAutoSessionTracking = true
+            // Release health (seje) IZKLOPLJEN: seja nosi nakljucno oznako namestitve (`did`), kar je po ZEKom-2
+            // lahko shranjevanje na terminalni opremi brez privolitve (pravnik 11. 10. 2026, srednje, nepreverjeno).
+            // Zrusitve in napake se posiljajo naprej. Vklop sele po pravnem pregledu in dopolnitvi politike zasebnosti.
+            options.enableAutoSessionTracking = false
             options.maxBreadcrumbs = 50
 
             options.beforeSend = Napake.ocistiDogodek
