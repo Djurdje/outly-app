@@ -98,4 +98,18 @@ final class SupabaseAuthParsingTests: XCTestCase {
         XCTAssertFalse(SupabaseAuth.jeSupabaseZeton(""))
         XCTAssertFalse(SupabaseAuth.jeSupabaseZeton("only.two"))
     }
+
+    // MARK: - Telo registracije (privolitev v pogoje, backend#215)
+
+    func testTeloRegistracijeNosiTermsVersionInCasSprejema() throws {
+        let telo = SupabaseAuth.telesoRegistracije(email: "a@b.si", password: "geslo123", username: "janez",
+                                                   ob: Date(timeIntervalSince1970: 0))
+        XCTAssertEqual(telo["email"] as? String, "a@b.si")
+        let podatki = try XCTUnwrap(telo["data"] as? [String: Any])
+        XCTAssertEqual(podatki["username"] as? String, "janez")
+        XCTAssertEqual(podatki["terms_version"] as? String, LegalLinks.termsVersion)
+        XCTAssertEqual(podatki["terms_accepted_at"] as? String, "1970-01-01T00:00:00.000Z")
+        // Mora preziveti serializacijo v JSON (SupabaseAuth.send uporablja JSONSerialization).
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(telo))
+    }
 }
