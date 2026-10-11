@@ -11,6 +11,9 @@ import UIKit
 struct VipTablesView: View {
     let event: APIEvent
     let clubName: String
+    /// Prodajalec (klub dogodka), ce ga klicatelj ze ima; sicer `vip.seller` (GET /events/:id/vip), sicer `event.seller`.
+    /// Star backend ga nima -> nil in zaslon je kot doslej (backend#94).
+    var seller: Seller? = nil
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionStore
@@ -40,6 +43,9 @@ struct VipTablesView: View {
     private let kartica = Color(white: 0.11)
 
     private var koda: String { vip?.currency ?? event.currency ?? "EUR" }
+
+    /// Prodajalec mize: odgovor tloris (sveze), sicer klicatelj, sicer dogodek.
+    private var prodajalec: Seller? { vip?.seller ?? seller ?? event.seller }
 
     /// Nacin placila kluba (backend `payment_mode`): iz odgovora tlorisa, sicer iz dogodka; nil iz starega backenda = `.neznan`.
     private var nacin: NacinPlacila { NacinPlacila(vip?.paymentMode ?? event.paymentMode) }
@@ -182,8 +188,19 @@ struct VipTablesView: View {
                             .background(Color.white.opacity(0.06))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     } else if let m = izbranaMiza {
-                        karticaMize(m, vip: vip)
-                            .id("izbira")
+                        VStack(alignment: .leading, spacing: 12) {
+                            karticaMize(m, vip: vip)
+                            // Prodajalec + DDV PRED placilom (backend#94, #101); tu ni drugega stavka o posredniku.
+                            if let prodajalec {
+                                OutlyProdajalecBlok(seller: prodajalec, kazeDdv: true, kazePosrednika: true)
+                            } else {
+                                // Star backend brez `seller`: samo DDV vrstica `null` (pogodba backend#94/#101).
+                                Text(Seller.ddvBesedilo(nil))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.45))
+                            }
+                        }
+                        .id("izbira")
                     } else {
                         Text("Tap a free table to reserve it.")
                             .font(.system(size: 13))

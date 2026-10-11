@@ -238,6 +238,28 @@
         }
       }
     },
+    "Company name": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naziv podjetja"
+          }
+        }
+      }
+    },
+    "Company registration number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matična številka podjetja."
+          }
+        }
+      }
+    },
     "Copy the venue's layout": {
       "extractionState": "manual",
       "localizations": {
@@ -256,6 +278,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uporabnika ni bilo mogoče blokirati"
+          }
+        }
+      }
+    },
+    "Decides which VAT line buyers see under the total.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Določa, katero vrstico o DDV kupci vidijo pod skupnim zneskom."
           }
         }
       }
@@ -513,6 +546,17 @@
         }
       }
     },
+    "Legal name of the company or sole proprietor that sells the tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pravno ime podjetja ali samostojnega podjetnika, ki prodaja vstopnice."
+          }
+        }
+      }
+    },
     "More options": {
       "extractionState": "manual",
       "localizations": {
@@ -546,6 +590,17 @@
         }
       }
     },
+    "Not a VAT payer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni zavezanec"
+          }
+        }
+      }
+    },
     "Not available yet.": {
       "extractionState": "manual",
       "localizations": {
@@ -553,6 +608,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Še ni na voljo."
+          }
+        }
+      }
+    },
+    "Not selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni izbrano"
           }
         }
       }
@@ -597,6 +663,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Obvestila so vklopljena"
+          }
+        }
+      }
+    },
+    "Only the club owner can change seller details.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podatke prodajalca lahko spreminja samo lastnik kluba."
+          }
+        }
+      }
+    },
+    "Outly is the intermediary.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outly je posrednik."
           }
         }
       }
@@ -652,6 +740,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pravokotna"
+          }
+        }
+      }
+    },
+    "Reg. no. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matična št. %@"
+          }
+        }
+      }
+    },
+    "Registered office": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sedež"
+          }
+        }
+      }
+    },
+    "Registration number": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matična številka"
           }
         }
       }
@@ -6051,6 +6172,28 @@
         }
       }
     },
+    "Seller": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodajalec"
+          }
+        }
+      }
+    },
+    "Seller details": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podatki prodajalca"
+          }
+        }
+      }
+    },
     "Send ticket to %@?": {
       "extractionState": "manual",
       "localizations": {
@@ -6106,6 +6249,17 @@
         }
       }
     },
+    "Shown to buyers before payment and on receipts (required by consumer law).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikazano kupcem pred plačilom in na potrdilih (zahteva potrošniška zakonodaja)."
+          }
+        }
+      }
+    },
     "Sign-up and password codes always arrive by email.": {
       "extractionState": "manual",
       "localizations": {
@@ -6113,6 +6267,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kode za registracijo in geslo vedno prejmeš po e-pošti."
+          }
+        }
+      }
+    },
+    "Sold by %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja: %@"
           }
         }
       }
@@ -6700,6 +6865,17 @@
         }
       }
     },
+    "Some details are missing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekateri podatki manjkajo."
+          }
+        }
+      }
+    },
     "Something else": {
       "extractionState": "manual",
       "localizations": {
@@ -6788,6 +6964,17 @@
         }
       }
     },
+    "Street, postcode and city of the registered office.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ulica, poštna številka in kraj sedeža."
+          }
+        }
+      }
+    },
     "Submit Application": {
       "extractionState": "manual",
       "localizations": {
@@ -6865,6 +7052,39 @@
         }
       }
     },
+    "Tax no. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davčna št. %@"
+          }
+        }
+      }
+    },
+    "Tax number (VAT ID)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davčna številka (ID za DDV)"
+          }
+        }
+      }
+    },
+    "Tax number or VAT ID, e.g. SI12345678.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davčna številka ali ID za DDV, npr. SI12345678."
+          }
+        }
+      }
+    },
     "Thanks — we review reports within 24 hours.": {
       "extractionState": "manual",
       "localizations": {
@@ -6872,6 +7092,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hvala — prijave pregledamo v 24 urah."
+          }
+        }
+      }
+    },
+    "That is too long (max %lld characters).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predolgo (največ %lld znakov)."
           }
         }
       }
@@ -6905,6 +7136,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plačilna seja je potekla. Poskusi znova."
+          }
+        }
+      }
+    },
+    "The seller is not a VAT payer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodajalec ni zavezanec za DDV"
+          }
+        }
+      }
+    },
+    "VAT according to the seller's VAT status": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDV po davčnem statusu prodajalca"
+          }
+        }
+      }
+    },
+    "VAT payer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavezanec"
+          }
+        }
+      }
+    },
+    "VAT status": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status DDV"
           }
         }
       }

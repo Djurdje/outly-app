@@ -11,6 +11,9 @@ import UIKit
 struct BuyTicketsView: View {
     let event: APIEvent
     let clubName: String
+    /// Prodajalec (klub dogodka), ce ga klicatelj ze ima (EventDetailView: GET /clubs/:id). Sicer `event.seller` (GET /events/:id),
+    /// sicer ga list sam prebere ob odprtju (`naloziProdajalca`); star backend ga nima -> nil in zaslon je kot doslej.
+    var seller: Seller? = nil
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionStore
@@ -30,6 +33,10 @@ struct BuyTicketsView: View {
     /// Placilo prek Stripe Checkouta (klub s povezanim Stripom): odprta Stripova stran (ASWebAuthenticationSession), narocilo v cakanju, ponovno branje.
     @StateObject private var stripe = StripeNakup()
     @Environment(\.accessibilityReduceMotion) private var manjGibanja
+    /// Prodajalec, prebran ob odprtju lista, ko ga ni ne od klicatelja ne v dogodku (dogodek iz seznama).
+    @State private var nalozenProdajalec: Seller?
+
+    private var prodajalec: Seller? { seller ?? event.seller ?? nalozenProdajalec }
 
     private var koda: String { event.currency ?? "EUR" }
     private var unitCents: Int { event.ticketPriceCents ?? 0 }
@@ -91,6 +98,7 @@ struct BuyTicketsView: View {
         .preferredColorScheme(.dark)
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(stanje == .nalaga)
+        .task { await naloziProdajalca() }
         // Uspesen nakup = prvi smiseln trenutek za dovoljenje za potisna obvestila (vstopnica, prenos, guest lista). Samo ce se
         // uporabnik se ni odlocil (notDetermined); sistemski poziv se pokaze z zamikom, da je uspeh se viden.
         .onChange(of: purchase != nil) { _, uspel in
@@ -137,6 +145,11 @@ struct BuyTicketsView: View {
                     } else if nacin.kazeTestniNapis(brezplacno: isFree) {
                         vrsticaPlacila
                     }
+                }
+
+                // Prodajalec PRED placilom (backend#94). DDV vrstica je v kartici pod zneskom, stavek o posredniku spodaj.
+                if let prodajalec {
+                    OutlyProdajalecBlok(seller: prodajalec)
                 }
 
                 if let errorMessage {
@@ -265,7 +278,8 @@ struct BuyTicketsView: View {
                         Text("Total")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                        Text("Prices include VAT")
+                        // DDV po statusu prodajalca (#101): ne brezpogojno »Prices include VAT«.
+                        Text(Seller.ddvBesedilo(prodajalec))
                             .font(.system(size: 11))
                             .foregroundColor(.white.opacity(0.45))
                     }
@@ -574,6 +588,15 @@ struct BuyTicketsView: View {
         .frame(width: width, height: height)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+
+    /// Dogodek iz seznama (npr. Home -> prijatelji) nima `seller`: GET /events/:id ga vrne. Tiho ob napaki: blok se ne pokaze,
+    /// nakup ostane kot doslej (DDV vrstica `null`).
+    private func naloziProdajalca() async {
+        guard seller == nil, event.seller == nil, nalozenProdajalec == nil else { return }
+        if let poln = try? await APIClient.shared.fetchEvent(id: event.id) {
+            nalozenProdajalec = poln.seller
+        }
     }
 
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay

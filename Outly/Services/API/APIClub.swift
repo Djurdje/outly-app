@@ -50,6 +50,19 @@ struct APIClub: Identifiable, Decodable {
     /// v razdelku "Organized by Outly". Star backend -> false.
     let isOfficial: Bool
 
+    /// Prodajalec za javni prikaz (GET /clubs/:id, backend#94). Seznami in star backend ga nimajo -> nil.
+    let seller: Seller?
+    /// Surova polja podatkov prodajalca: samo GET/PATCH /business/clubs/me (urejanje; urejati sme samo lastnik).
+    /// Star backend ali javna pot jih nima -> "" / nil / false.
+    let legalName: String
+    let legalAddress: String
+    let registrationNumber: String
+    let taxNumber: String
+    /// true = zavezanec za DDV, false = ni zavezanec, nil = ni vpisano.
+    let vatPayer: Bool?
+    /// Backend: vsi podatki prodajalca so izpolnjeni (isto pravilo kot `Seller.complete`).
+    let sellerComplete: Bool
+
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -74,6 +87,13 @@ struct APIClub: Identifiable, Decodable {
         case isFollowing = "is_following"
         case isOrganizer = "is_organizer"
         case isOfficial = "is_official"
+        case seller
+        case legalName = "legal_name"
+        case legalAddress = "legal_address"
+        case registrationNumber = "registration_number"
+        case taxNumber = "tax_number"
+        case vatPayer = "vat_payer"
+        case sellerComplete = "seller_complete"
     }
 
     /// Obrambno dekodiranje: shema ima NOT NULL DEFAULT '' na besedilih, a ce bi
@@ -105,6 +125,13 @@ struct APIClub: Identifiable, Decodable {
         isFollowing    = (try? c.decodeIfPresent(Bool.self, forKey: .isFollowing)) ?? false
         isOrganizer    = (try? c.decodeIfPresent(Bool.self, forKey: .isOrganizer)) ?? false
         isOfficial     = (try? c.decodeIfPresent(Bool.self, forKey: .isOfficial)) ?? false
+        seller             = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
+        legalName          = (try? c.decodeIfPresent(String.self, forKey: .legalName)) ?? ""
+        legalAddress       = (try? c.decodeIfPresent(String.self, forKey: .legalAddress)) ?? ""
+        registrationNumber = (try? c.decodeIfPresent(String.self, forKey: .registrationNumber)) ?? ""
+        taxNumber          = (try? c.decodeIfPresent(String.self, forKey: .taxNumber)) ?? ""
+        vatPayer           = (try? c.decodeIfPresent(Bool.self, forKey: .vatPayer)) ?? nil
+        sellerComplete     = (try? c.decodeIfPresent(Bool.self, forKey: .sellerComplete)) ?? false
     }
 
     /// Slike za slideshow: galerija, sicer pasica (da stari klubi ostanejo enaki).
