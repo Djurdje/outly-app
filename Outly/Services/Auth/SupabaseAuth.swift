@@ -87,7 +87,7 @@ final class SupabaseAuth: Sendable {
     /// Telo POST /signup. `data` (user_metadata) nosi uporabnisko ime in dokaz privolitve (`terms_version`, `terms_accepted_at` =
     /// ISO 8601 UTC z milisekundami, enako kot `toISOString()` na spletu), outly-backend#215. Registracijski zaslon pogoje pokaze
     /// pred gumbom (RegisterView: povezava na `LegalLinks.terms`).
-    static func telesoRegistracije(email: String, password: String, username: String,
+    nonisolated static func telesoRegistracije(email: String, password: String, username: String,
                                    termsVersion: String = LegalLinks.termsVersion, ob: Date = Date()) -> [String: Any] {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
