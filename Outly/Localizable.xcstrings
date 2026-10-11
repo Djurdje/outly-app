@@ -7561,6 +7561,17 @@
         }
       }
     },
+    "That username isn't allowed. Choose another.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To uporabniško ime ni dovoljeno. Izberi drugo."
+          }
+        }
+      }
+    },
     "The QR on each ticket is signed by the server; scanning it twice is refused. Use Scan tickets in your profile for the camera scanner.": {
       "extractionState": "manual",
       "localizations": {
