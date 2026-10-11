@@ -555,11 +555,19 @@ extension APIClient {
 
     /// POST /events/:id/orders — nakup vstopnic. V testnem nacinu takoj "placano".
     /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo (201 z istim telesom).
-    func buyTickets(token: String, eventId: Int, quantity: Int, idempotencyKey: String? = nil) async throws -> PurchaseResponse {
+    /// `locale`: jezik Stripe Checkouta (`"sl"` | `"en"`), privzeto jezik APLIKACIJE; star backend polje spregleda.
+    func buyTickets(token: String, eventId: Int, quantity: Int, idempotencyKey: String? = nil,
+                    locale: String = Jezik.shared.stripeLocale) async throws -> PurchaseResponse {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
-                                  json: ["quantity": quantity], idempotencyKey: idempotencyKey,
+                                  json: APIClient.telesoNakupaVstopnic(quantity: quantity, locale: locale),
+                                  idempotencyKey: idempotencyKey,
                                   dodatneGlave: APIClient.nakupneGlave)
         return try decode(PurchaseResponse.self, from: data)
+    }
+
+    /// Telo POST /events/:id/orders: `quantity` + `locale` (jezik Stripe Checkouta, glej `Jezik.stripeLocale`).
+    static func telesoNakupaVstopnic(quantity: Int, locale: String) -> [String: Any] {
+        ["quantity": quantity, "locale": locale]
     }
 
     /// POST /tickets/:id/transfer — posljem vstopnico prijatelju po e-naslovu.

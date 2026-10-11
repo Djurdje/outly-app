@@ -318,14 +318,23 @@ extension APIClient {
     /// Odgovor je isti kot pri nakupu vstopnic (narocilo + N VIP vstopnic). 409 = miza je ze prodana.
     /// `expectedPriceCents` = cena, ki jo je kupec videl; ob drugacni ceni backend vrne 409 "The table price has changed.".
     /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo namesto 409 "miza ze zasedena".
-    func buyTable(eventId: Int, tableId: Int, packageId: Int?, expectedPriceCents: Int? = nil, idempotencyKey: String? = nil, token: String) async throws -> PurchaseResponse {
-        var body: [String: Any] = [:]
-        if let packageId { body["package_id"] = packageId }
-        if let expectedPriceCents { body["expected_price_cents"] = expectedPriceCents }
+    /// `locale`: jezik Stripe Checkouta (`"sl"` | `"en"`), privzeto jezik APLIKACIJE; star backend polje spregleda.
+    /// Ponovitev (»Continue to payment«, isti kljuc) poslje isto telo kot prvi poskus, plus `locale`.
+    func buyTable(eventId: Int, tableId: Int, packageId: Int?, expectedPriceCents: Int? = nil, idempotencyKey: String? = nil, token: String,
+                  locale: String = Jezik.shared.stripeLocale) async throws -> PurchaseResponse {
+        let body = APIClient.telesoNakupaMize(packageId: packageId, expectedPriceCents: expectedPriceCents, locale: locale)
         let data = try await send(path: "events/\(eventId)/tables/\(tableId)/orders", method: "POST",
                                   token: token, json: body, idempotencyKey: idempotencyKey,
                                   dodatneGlave: APIClient.nakupneGlave)
         return try decode(PurchaseResponse.self, from: data)
+    }
+
+    /// Telo POST /events/:id/tables/:tableId/orders: neobvezna `package_id` in `expected_price_cents` + `locale`.
+    static func telesoNakupaMize(packageId: Int?, expectedPriceCents: Int?, locale: String) -> [String: Any] {
+        var body: [String: Any] = ["locale": locale]
+        if let packageId { body["package_id"] = packageId }
+        if let expectedPriceCents { body["expected_price_cents"] = expectedPriceCents }
+        return body
     }
 
     /// GET /business/events/:id/vip — mize in rezervacije dogodka (owner, manager, doorman).

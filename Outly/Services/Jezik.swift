@@ -47,6 +47,13 @@ final class Jezik: ObservableObject {
 
     var jeSlovenscina: Bool { koda == "sl" }
 
+    /// Jezik Stripe Checkouta za nakupne klice (polje `locale` v telesu): `"sl"` za slovenscino, sicer `"en"`.
+    /// Cista funkcija nad kodo jezika APLIKACIJE (`Jezik.koda`, Profil -> Language), ne nad jezikom naprave.
+    static func stripeLocale(_ koda: String) -> String { koda == "sl" ? "sl" : "en" }
+
+    /// `stripeLocale` za trenutni jezik aplikacije.
+    var stripeLocale: String { Jezik.stripeLocale(koda) }
+
     /// Ime trenutnega jezika v njegovem jeziku (za prikaz v Nastavitve -> Language).
     var ime: String { Jezik.seznam.first { $0.koda == koda }?.ime ?? koda }
 
