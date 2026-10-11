@@ -243,6 +243,13 @@ struct VipTablesView: View {
                     VStack(spacing: 8) {
                         gumbRezerviraj(m)
                         OutlyPogojiNakupa()
+                        // Slog kot v BuyTicketsView; besedilo navaja tudi mizo in paket (ZVPot-1 130/1-10, 135/12): miza je vedno za dogodek z datumom.
+                        Text("VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.40))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 10)
