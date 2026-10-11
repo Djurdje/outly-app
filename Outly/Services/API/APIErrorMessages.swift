@@ -30,6 +30,19 @@ extension APIError {
         }
     }
 
+    /// 403 »You must be at least N to buy tickets for this event.« / »… to buy a table with a bottle package.« (backend preveriStarostKupca):
+    /// meja iz sporocila, besedilo v jeziku aplikacije (prej se je pokazal surov angleski niz). `t` je ze male crke.
+    private static func starostNakupa(_ t: String) -> String {
+        guard let r = t.range(of: #"at least (\d+)"#, options: .regularExpression),
+              let n = Int(t[r].filter { $0.isNumber }) else {
+            return String(localized: "You are too young to buy this.")
+        }
+        if t.contains("bottle package") {
+            return String(localized: "You must be at least \(n) to buy a table with a bottle package.")
+        }
+        return String(localized: "You must be at least \(n) to buy tickets for this event.")
+    }
+
     /// Znana sporocila backenda (index.js) -> razumljiva sporocila.
     private static func translate(code: Int, raw: String) -> String {
         let t = raw.lowercased()
@@ -86,6 +99,9 @@ extension APIError {
         if t.contains("club not found")                 { return String(localized: "Your club is not set up yet.") }
         if t.contains("event not found")                { return String(localized: "This event no longer exists.") }
         if t.contains("sold tickets and was cancelled") { return String(localized: "Tickets were already sold, so the event was cancelled instead of deleted.") }
+        // Nakup 18+ brez datuma rojstva (preveriStarostKupca: »Add your date of birth to buy …«): PRED splosnim blokom spodaj,
+        // sicer ga ta pocisti v »Enter a valid date of birth« in kupec ne izve, kje naj ga vnese.
+        if t.contains("add your date of birth")         { return String(localized: "Add your date of birth in Personal info to buy tickets.") }
         if t.contains("dateofbirth") || t.contains("date of birth") {
             if t.contains("future")     { return String(localized: "Date of birth cannot be in the future.") }
             if t.contains("plausible")  { return String(localized: "That date of birth does not look right.") }
@@ -137,9 +153,9 @@ extension APIError {
         if t.contains("have not opened")                { return String(localized: "Ticket sales have not opened yet.") }
         if t.contains("sales are closed")               { return String(localized: "Ticket sales are closed.") }
         if t.contains("tickets left") || t.contains("not enough tickets") { return String(localized: "Not enough tickets left.") }
-        if t.contains("add your date of birth")         { return String(localized: "Add your date of birth in Personal info to buy tickets.") }
-        if t.contains("you must be at least")           { return raw }
+        if t.contains("you must be at least")           { return starostNakupa(t) }
         if t.contains("payments are not available")     { return String(localized: "Payments are not available yet.") }
+        if t.contains("does not accept online payments") { return String(localized: "This club doesn't accept online payments yet.") }
         // 409 meja I20 (nedokoncana placila) in meja placil v obdelavi (backend#203); sicer bi 409 pokazal »already in use«
         if t.contains("unfinished payment")             { return String(localized: "You have an unfinished payment. Finish it, or wait up to 30 minutes for it to expire.") }
         if t.contains("payments still processing")      { return String(localized: "Too many payments are still processing. Wait for your bank to confirm them.") }

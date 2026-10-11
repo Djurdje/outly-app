@@ -149,9 +149,15 @@ struct APITicket: Codable, Identifiable {
     /// sicer USED / REFUNDED / VOID / EXPIRED (prej je bilo vse razen used "VALID").
     var statusLabel: String {
         if isUsed { return String(localized: "USED") }
-        if status != "valid" { return status.uppercased() }
-        return isPast ? String(localized: "EXPIRED") : String(localized: "VALID")
+        switch status {
+        case "valid": return isPast ? String(localized: "EXPIRED") : String(localized: "VALID")
+        case "refunded": return String(localized: "REFUNDED")
+        case "void": return String(localized: "VOID")
+        default: return status.uppercased()   // neznano stanje iz prihodnjega backenda: surovo, a ne podre zaslona
+        }
     }
+    /// Veljavna vstopnica prihodnjega dogodka. Za barvo napisa: `statusLabel` je preveden, zato ga ne smemo primerjati z angleskim nizom.
+    var jeVeljavna: Bool { !isUsed && status == "valid" && !isPast }
     var isPast: Bool { (startDate ?? .distantFuture) < Date().addingTimeInterval(-8 * 3600) }
 }
 
