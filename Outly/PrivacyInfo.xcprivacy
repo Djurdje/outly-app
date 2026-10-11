@@ -10,6 +10,8 @@
 	  - razdelku 11 v pravno/politika-zasebnosti.html (tabela za App Store Connect),
 	  - dejanski kodi: aplikacija NE sledi uporabnikom, NE uporablja tretjih SDK-jev
 	    za analitiko/oglase, lokacija ostane NA NAPRAVI (ne posilja se na streznik).
+	    Edini tretji SDK je Sentry Cocoa (porocanje zrusitev, samo Release na napravi; Services/Napake.swift,
+	    backend#87): njegovi podatkovni tipi so spodaj (CrashData, PerformanceData, OtherDiagnosticData).
 	Ce se karkoli od tega spremeni (npr. lokacija na streznik), popravi TO datoteko,
 	razdelek 11 politike in izjavo v App Store Connect hkrati.
 	-->
@@ -42,6 +44,16 @@
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>C617.1</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Sentry Cocoa (staticno vezan): cas zagona sistema za merjenje casa od zagona aplikacije
+			     (Sentryjev lastni manifest deklarira isti razlog). Aplikacija sama tega API-ja ne klice. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
 			</array>
 		</dict>
 	</array>
@@ -190,13 +202,52 @@
 				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
 			</array>
 		</dict>
+		<dict>
+			<!-- Sentry Cocoa: Zrusitve aplikacije (sklad, razlicica aplikacije in iOS, model naprave). Ni vezano na uporabnika (user in zahtevek se pred posiljanjem odstranita, Napake.swift). -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCrashData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Sentry Cocoa: Sentry SDK jo deklarira v svojem manifestu (zagon aplikacije, release health: stevilo sej). Tracing je ugasnjen (tracesSampleRate = 0). Ni vezano na uporabnika (user in zahtevek se pred posiljanjem odstranita, Napake.swift). -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePerformanceData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Sentry Cocoa: Diagnostika SDK in sistema ob napaki (npr. stanje pomnilnika, jezik, razlicica). Ni vezano na uporabnika (user in zahtevek se pred posiljanjem odstranita, Napake.swift). -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<!--
 		NI navedeno (namerno):
 		  - Precise/Coarse Location: lokacija ostane NA NAPRAVI (LocationManager, razdalja se racuna lokalno).
 		    Koordinate v PATCH /clubs so koordinate KLUBA iz CLGeocoderja, ne uporabnika.
 		  - Device ID: Apple potisni zeton (POST /me/devices) po Applovi razlagi NI Device ID. Ko je odlocitev o
 		    nakljucnem UUID-ju namestitve za sken (SkenNaprava, device_id v scan-batch) sprejeta, popravi TO datoteko.
-		  - Crash/Performance data, Advertising data: aplikacija nima tretjih SDK-jev za to.
+		  - Advertising data: aplikacija nima oglasnih SDK-jev. (Crash/Performance data: od backend#87 je naveden zgoraj, Sentry.)
 		-->
 	</array>
 </dict>

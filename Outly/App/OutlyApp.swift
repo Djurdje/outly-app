@@ -20,6 +20,8 @@ struct OutlyApp: App {
     @ObservedObject private var jezik = Jezik.shared
 
     init() {
+        // Porocanje zrusitev (Sentry): prvo, da ujame tudi napake ob zagonu. Samo Release na napravi.
+        Napake.zazeni()
         // Predpomnilnik slik (AsyncImage gre skozi URLSession.shared -> URLCache.shared). Privzeti
         // je premajhen (~0,5 MB v pomnilniku) za plakate, zato se je vsaka slika ob vsakem preklopu
         // zavihka znova prenesla in dekodirala (29. 9. 2026, "aplikacija steka").
