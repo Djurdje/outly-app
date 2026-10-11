@@ -174,24 +174,8 @@ struct ClubDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
                 .padding(.horizontal, 16)
-        } else if club != nil {
-            // Okvir je na mestu tudi brez videa, da klub vidi, kam sodi (Luka: "okvir za video").
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
-                .overlay(
-                    VStack(spacing: 8) {
-                        Image(systemName: "play.circle")
-                            .font(.system(size: 34))
-                            .foregroundStyle(.white.opacity(0.35))
-                        Text(LocalizedStringKey(jeOrganizator ? "Organizer video coming soon" : "Club video coming soon"))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.45))
-                    }
-                )
-                .frame(height: 230)
-                .padding(.horizontal, 16)
         }
+        // Brez videa se ne kaze nic (prej okvir z besedilom o videu "kmalu": Apple 2.1(a), N11).
     }
 
     // MARK: - 8) Opis kluba (pod mapo in kontakti)

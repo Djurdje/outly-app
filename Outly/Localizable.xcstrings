@@ -2429,17 +2429,6 @@
         }
       }
     },
-    "Club video coming soon": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Video kluba kmalu na voljo"
-          }
-        }
-      }
-    },
     "Clubs": {
       "extractionState": "manual",
       "localizations": {
@@ -5332,17 +5321,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ime organizatorja"
-          }
-        }
-      }
-    },
-    "Organizer video coming soon": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Video organizatorja kmalu na voljo"
           }
         }
       }
@@ -10330,24 +10308,24 @@
         }
       }
     },
-    "Table reservations in the app are coming soon. %@ will publish the table layout for this event here.": {
+    "%@ has not published a table layout for this event yet.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rezervacije miz v aplikaciji prihajajo kmalu. %@ bo tukaj objavil razpored miz za ta dogodek."
+            "value": "%@ za ta dogodek še ni objavil razporeda miz."
           }
         }
       }
     },
-    "Until then, call the club to reserve a table.": {
+    "Call the club to reserve a table.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Do takrat za rezervacijo mize pokliči klub."
+            "value": "Za rezervacijo mize pokliči klub."
           }
         }
       }

@@ -86,9 +86,27 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- Uporabnisko ime. -->
+			<!-- Ime in priimek osebe, ki ga uporabnik vpise: kontaktna oseba v prosnji za poslovni racun
+			     (ReguestForCreatorView, "Full name"), naziv firme/lastnika kluba (ClubInfoView, "Company name"),
+			     ime gosta pri VIP rezervaciji (VipHoldSheet, "Guest name"). Uporabnisko ime NI Name: po Appleu je User ID (spodaj). -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Naslov, ki ga vpise lastnik kluba ali prosilec za poslovni racun: sedez podjetja (legal_address, ClubInfoView
+			     "Registered office"), naslov kluba/prizorisca (address, ClubInfoView, OwnerProfileView, EventFormView) in
+			     "Business address" v prosnji za poslovni racun (businessAddress, ReguestForCreatorView). Pri s.p. je to osebni podatek.
+			     Domaci naslov navadnega uporabnika aplikacija NE zbira. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
@@ -112,6 +130,7 @@
 			</array>
 		</dict>
 		<dict>
+			<!-- Uporabnisko ime (username) in ID racuna. -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeUserID</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
@@ -124,7 +143,8 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- Datum rojstva, drzava, glasbene zvrsti (dokoncanje racuna). -->
+			<!-- Datum rojstva, drzava, glasbene zvrsti (dokoncanje racuna). Zvrsti urejajo predloge klubov
+			     (HomeView userGenres/filteredClubs/suggestedClubs, "Based on your genres") = Product Personalization. -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherDataTypes</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
@@ -134,6 +154,7 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+				<string>NSPrivacyCollectedDataTypePurposeProductPersonalization</string>
 			</array>
 		</dict>
 		<dict>
@@ -150,7 +171,9 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- Nakljucni UUID namestitve za sken brez povezave (SkenSeja.swift SkenNaprava.id, device_id v scan-batch); samo osebje kluba. -->
+			<!-- Napravna identifikatorja: (1) nakljucni UUID namestitve za sken brez povezave (SkenSeja.swift SkenNaprava.id,
+			     device_id v scan-batch; samo osebje kluba); (2) Applov potisni zeton APNs (POST /me/devices, APIClient+Devices.swift),
+			     ki je vezan na napravo in racun. Oba pokriva ta vnos. -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeDeviceID</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
@@ -189,7 +212,9 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- Interakcija: POST /views steje oglede kluba/dogodka (brez uporabnika, agregiran dnevni stevec; Analytics), poleg tega uporabnikovi priljubljeni, nacrti in sledenja (AppFunctionality, vezano na racun). Ker je del vezan na racun, je Linked=true. -->
+			<!-- Interakcija: POST /views steje oglede kluba/dogodka (brez uporabnika, agregiran dnevni stevec; Analytics), poleg tega uporabnikovi priljubljeni, nacrti in sledenja (AppFunctionality, vezano na racun). Ker je del vezan na racun, je Linked=true.
+			     Product Personalization: politika zasebnosti (privacy-app) pravi, da priljubljeni sluzijo priporocilom; v iOS kodi je dokazano samo
+			     personaliziranje po zvrsteh (Other Data), pri priljubljenih je namen naveden zaradi skladnosti s politiko. -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
@@ -200,6 +225,7 @@
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+				<string>NSPrivacyCollectedDataTypePurposeProductPersonalization</string>
 			</array>
 		</dict>
 		<dict>
@@ -245,8 +271,9 @@
 		NI navedeno (namerno):
 		  - Precise/Coarse Location: lokacija ostane NA NAPRAVI (LocationManager, razdalja se racuna lokalno).
 		    Koordinate v PATCH /clubs so koordinate KLUBA iz CLGeocoderja, ne uporabnika.
-		  - Device ID: Apple potisni zeton (POST /me/devices) po Applovi razlagi NI Device ID. Ko je odlocitev o
-		    nakljucnem UUID-ju namestitve za sken (SkenNaprava, device_id v scan-batch) sprejeta, popravi TO datoteko.
+		  - Oglasni identifikator (IDFA): ni ga, brez ATT. Napravna identifikatorja (UUID za sken, potisni zeton) sta
+		    deklarirana zgoraj kot Device ID.
+		  - Domaci naslov navadnega uporabnika: ne zbiramo. Physical Address je samo naslov firme/kluba (zgoraj).
 		  - Advertising data: aplikacija nima oglasnih SDK-jev. (Crash/Performance data: od backend#87 je naveden zgoraj, Sentry.)
 		-->
 	</array>
