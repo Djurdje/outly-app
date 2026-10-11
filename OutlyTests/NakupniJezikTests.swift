@@ -27,7 +27,8 @@ final class NakupniJezikTests: XCTestCase {
         let telo = APIClient.telesoNakupaVstopnic(quantity: 3, locale: "sl")
         XCTAssertEqual(telo["quantity"] as? Int, 3)
         XCTAssertEqual(telo["locale"] as? String, "sl")
-        XCTAssertEqual(telo.count, 2)
+        XCTAssertEqual(telo["terms_version"] as? String, LegalLinks.termsVersion)
+        XCTAssertEqual(telo.count, 3)
     }
 
     func testTeloMizeBrezPaketaInCeneImaSamoLocale() {
@@ -35,7 +36,8 @@ final class NakupniJezikTests: XCTestCase {
         XCTAssertEqual(telo["locale"] as? String, "en")
         XCTAssertNil(telo["package_id"])
         XCTAssertNil(telo["expected_price_cents"])
-        XCTAssertEqual(telo.count, 1)
+        XCTAssertEqual(telo["terms_version"] as? String, LegalLinks.termsVersion)
+        XCTAssertEqual(telo.count, 2)
     }
 
     func testTeloMizeNosiPaketCenoInLocale() {
@@ -61,5 +63,16 @@ final class NakupniJezikTests: XCTestCase {
         let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: telo) as? [String: Any])
         XCTAssertEqual(json["locale"] as? String, "sl")
         XCTAssertEqual(json["quantity"] as? Int, 2)
+    }
+
+    func testTeloVJsonuNosiTermsVersionZaVstopniceInMizo() throws {
+        let vstopnice = try XCTUnwrap(try JSONSerialization.jsonObject(
+            with: JSONSerialization.data(withJSONObject: APIClient.telesoNakupaVstopnic(quantity: 1, locale: "en"))) as? [String: Any])
+        let miza = try XCTUnwrap(try JSONSerialization.jsonObject(
+            with: JSONSerialization.data(withJSONObject: APIClient.telesoNakupaMize(packageId: 3, expectedPriceCents: 100, locale: "en"))) as? [String: Any])
+        XCTAssertEqual(vstopnice["terms_version"] as? String, "1.1")
+        XCTAssertEqual(miza["terms_version"] as? String, "1.1")
+        // Format, ki ga backend sprejme (^[A-Za-z0-9._:-]{1,40}$).
+        XCTAssertNotNil(LegalLinks.termsVersion.range(of: "^[A-Za-z0-9._:-]{1,40}$", options: .regularExpression))
     }
 }

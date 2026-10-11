@@ -72,11 +72,7 @@ final class SupabaseAuth: Sendable {
     /// false, ce e-naslov ze obstaja (Supabase takrat vrne "uporabnika" brez identitet,
     /// da se registriranih naslovov ne da ugotavljati).
     func signUp(email: String, password: String, username: String) async throws -> Bool {
-        let data = try await post("signup", json: [
-            "email": email,
-            "password": password,
-            "data": ["username": username],
-        ])
+        let data = try await post("signup", json: SupabaseAuth.telesoRegistracije(email: email, password: password, username: username))
         struct Odgovor: Decodable {
             struct Uporabnik: Decodable { let identities: [Ident]? }
             struct Ident: Decodable { let id: String? }
@@ -86,6 +82,25 @@ final class SupabaseAuth: Sendable {
         let o = try decode(Odgovor.self, from: data)
         let idents = o.user?.identities ?? o.identities ?? []
         return !idents.isEmpty
+    }
+
+    /// Telo POST /signup. `data` (user_metadata) nosi uporabnisko ime in dokaz privolitve (`terms_version`, `terms_accepted_at` =
+    /// ISO 8601 UTC z milisekundami, enako kot `toISOString()` na spletu), outly-backend#215. Registracijski zaslon pogoje pokaze
+    /// pred gumbom (RegisterView: povezava na `LegalLinks.terms`).
+    static func telesoRegistracije(email: String, password: String, username: String,
+                                   termsVersion: String = LegalLinks.termsVersion, ob: Date = Date()) -> [String: Any] {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        f.timeZone = TimeZone(identifier: "UTC") ?? TimeZone(secondsFromGMT: 0)!
+        return [
+            "email": email,
+            "password": password,
+            "data": [
+                "username": username,
+                "terms_version": termsVersion,
+                "terms_accepted_at": f.string(from: ob),
+            ] as [String: Any],
+        ]
     }
 
     /// Potrditev e-naslova (type "signup") ali ponastavitve gesla (type "recovery")

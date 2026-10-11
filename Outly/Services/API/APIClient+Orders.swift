@@ -565,9 +565,11 @@ extension APIClient {
         return try decode(PurchaseResponse.self, from: data)
     }
 
-    /// Telo POST /events/:id/orders: `quantity` + `locale` (jezik Stripe Checkouta, glej `Jezik.stripeLocale`).
-    static func telesoNakupaVstopnic(quantity: Int, locale: String) -> [String: Any] {
-        ["quantity": quantity, "locale": locale]
+    /// Telo POST /events/:id/orders: `quantity` + `locale` (jezik Stripe Checkouta, glej `Jezik.stripeLocale`) + `terms_version`
+    /// (razlicica pogojev, ki jo je kupec videl ob gumbu za placilo; backend jo shrani na narocilo, #215; star backend polje spregleda
+    /// in ga ne steje v vsebino za idempotenco).
+    static func telesoNakupaVstopnic(quantity: Int, locale: String, termsVersion: String = LegalLinks.termsVersion) -> [String: Any] {
+        ["quantity": quantity, "locale": locale, "terms_version": termsVersion]
     }
 
     /// POST /tickets/:id/transfer — posljem vstopnico prijatelju po e-naslovu.

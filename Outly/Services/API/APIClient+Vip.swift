@@ -329,9 +329,11 @@ extension APIClient {
         return try decode(PurchaseResponse.self, from: data)
     }
 
-    /// Telo POST /events/:id/tables/:tableId/orders: neobvezna `package_id` in `expected_price_cents` + `locale`.
-    static func telesoNakupaMize(packageId: Int?, expectedPriceCents: Int?, locale: String) -> [String: Any] {
-        var body: [String: Any] = ["locale": locale]
+    /// Telo POST /events/:id/tables/:tableId/orders: neobvezna `package_id` in `expected_price_cents` + `locale` + `terms_version`
+    /// (glej `telesoNakupaVstopnic`).
+    static func telesoNakupaMize(packageId: Int?, expectedPriceCents: Int?, locale: String,
+                                 termsVersion: String = LegalLinks.termsVersion) -> [String: Any] {
+        var body: [String: Any] = ["locale": locale, "terms_version": termsVersion]
         if let packageId { body["package_id"] = packageId }
         if let expectedPriceCents { body["expected_price_cents"] = expectedPriceCents }
         return body
