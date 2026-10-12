@@ -7572,6 +7572,17 @@
         }
       }
     },
+    "Tickets can't be bought yet: the organizer hasn't completed their seller details.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnic še ni mogoče kupiti: organizator še ni izpolnil podatkov prodajalca."
+          }
+        }
+      }
+    },
     "The QR on each ticket is signed by the server; scanning it twice is refused. Use Scan tickets in your profile for the camera scanner.": {
       "extractionState": "manual",
       "localizations": {

@@ -120,6 +120,7 @@ extension Error {
     var osveziTlorisPoNapaki: Bool {
         guard let api = self as? APIError, case .requestFailed(let status, _) = api, status == 409 else { return false }
         if jeBrezplacnaMeja { return false }   // meja brezplacnih vstopnic ni povezana s tlorisom
+        if jeProdajalecNepopoln { return false }   // narocilo ni nastalo, miza je prosta: izbira ostane
         let izid = nakupniIzid
         return izid != .vObdelavi && izid != .narociloNeaktivno
     }
