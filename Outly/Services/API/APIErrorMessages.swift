@@ -54,6 +54,10 @@ extension APIError {
         // PRED splosnim 400 in pred pravili »username …« spodaj.
         if t.contains("username_not_allowed")           { return String(localized: "That username isn't allowed. Choose another.") }
 
+        // Nakup pri klubu brez popolnih podatkov prodajalca (backend#219, zivi Stripe): 409 `{ "error": "seller_incomplete", "message": … }`
+        // na POST /events/:id/orders in /events/:id/tables/:tableId/orders. PRED splosnim 409 in pred pravili po vsebini spodaj.
+        if t.contains("seller_incomplete")              { return String(localized: "Purchases aren't available yet: the organizer hasn't completed their seller details.") }
+
         // Prenos vstopnice prijatelju brez racuna (JSON `{ error, message }`): kode PRED vsem ostalim, ker je telo celoten JSON.
         if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }
         if t.contains("guest_transfer_disabled")        { return String(localized: "Sending tickets to people without an Outly account is not available yet.") }
@@ -213,6 +217,13 @@ extension Error {
     var jeBrezplacnaMeja: Bool {
         guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
         return raw.lowercased().contains("free_limit")
+    }
+
+    /// 409 `seller_incomplete` (backend#219): klub se ni izpolnil podatkov prodajalca, narocilo NI nastalo. Ni povezano s tlorisom
+    /// (miza je se prosta) in ni nerazresen izid kljuca (`nakupniIzid` = `.navadna`, kljuc ostane kot pri `free_limit`).
+    var jeProdajalecNepopoln: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
+        return raw.lowercased().contains("seller_incomplete")
     }
 
     /// Vsak 503 pri nakupu: gumb je kratek cas onemogocen (nakupa se ne ponavlja samodejno).
