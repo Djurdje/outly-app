@@ -69,8 +69,8 @@ enum RazlogNedosegljivosti: Equatable {
         switch self {
         case .prodajalecNepopoln:
             return jeLastnik
-                ? String(localized: "Buyers can't purchase yet: complete your seller details in Settings.")
-                : String(localized: "Buyers can't purchase yet: the club owner needs to complete the seller details in Settings.")
+                ? String(localized: "Buyers can't purchase yet: complete your seller details in Club info.")
+                : String(localized: "Buyers can't purchase yet: the club owner needs to complete the seller details in Club info.")
         case .placilaNenastavljena: return String(localized: "Payments aren't set up yet. Contact Outly.")
         case .stripeNiPripravljen: return String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app.")
         }

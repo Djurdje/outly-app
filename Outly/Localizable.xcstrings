@@ -7195,24 +7195,24 @@
         }
       }
     },
-    "Buyers can't purchase yet: complete your seller details in Settings.": {
+    "Buyers can't purchase yet: complete your seller details in Club info.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kupci še ne morejo kupovati: v Nastavitvah izpolni podatke prodajalca."
+            "value": "Kupci še ne morejo kupovati: v Podatkih o klubu izpolni podatke prodajalca."
           }
         }
       }
     },
-    "Buyers can't purchase yet: the club owner needs to complete the seller details in Settings.": {
+    "Buyers can't purchase yet: the club owner needs to complete the seller details in Club info.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kupci še ne morejo kupovati: lastnik kluba mora v Nastavitvah izpolniti podatke prodajalca."
+            "value": "Kupci še ne morejo kupovati: lastnik kluba mora v Podatkih o klubu izpolniti podatke prodajalca."
           }
         }
       }
