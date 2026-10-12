@@ -19,6 +19,20 @@ struct BusinessDashboardView: View {
     @State private var errorText: String?
     @State private var range: SalesRange = .month
 
+    /// Opozorilo, ko kupci ne morejo kupovati. Pri nepopolnih podatkih prodajalca (samo lastnik jih lahko izpolni, backend#94)
+    /// kartica vodi v Club info, kjer je razdelek »Seller details«; sicer samo besedilo.
+    @ViewBuilder
+    private func prodajaNedosegljivaNapotek(_ razlog: RazlogNedosegljivosti) -> some View {
+        if razlog == .prodajalecNepopoln, session.me?.isClubOwner == true {
+            NavigationLink { ClubInfoView(clubId: clubId) } label: {
+                NapotekKartica(besedilo: razlog.besedilo)
+            }
+            .buttonStyle(.plain)
+        } else {
+            NapotekKartica(besedilo: razlog.besedilo)
+        }
+    }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 26) {
@@ -52,7 +66,7 @@ struct BusinessDashboardView: View {
                 }
 
                 if let sales, sales.nacinPlacila.prodajaNedosegljiva {
-                    NapotekKartica(besedilo: String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app."))
+                    prodajaNedosegljivaNapotek(sales.razlogNedosegljivosti)
                 }
 
                 if isLoading && sales == nil {

@@ -437,10 +437,14 @@ struct BusinessSales: Decodable {
     /// Nacin placila TEGA kluba (backend#203): "test" | "stripe" | "unavailable"; nil = star backend -> napis temelji na `mode`.
     /// `mode` je globalen in se ne spremeni.
     let paymentMode: String?
+    /// Zakaj je `paymentMode == "unavailable"` (backend#221): "seller_incomplete" | "stripe_not_ready" | "payments_not_configured";
+    /// nil = star backend, null ali polje manjka -> obstojece besedilo (glej `RazlogNedosegljivosti`).
+    let paymentUnavailableReason: String?
 
     enum CodingKeys: String, CodingKey {
         case mode, summary, events, series
         case paymentMode = "payment_mode"
+        case paymentUnavailableReason = "payment_unavailable_reason"
         case feePercent = "fee_percent"
         case recentOrders = "recent_orders"
         case salesByDay = "sales_by_day"
@@ -456,6 +460,7 @@ struct BusinessSales: Decodable {
         salesByDay = try c.decodeIfPresent([DaySales].self, forKey: .salesByDay) ?? []
         series = try c.decodeIfPresent([SeriesPoint].self, forKey: .series) ?? []
         paymentMode = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
+        paymentUnavailableReason = (try? c.decodeIfPresent(String.self, forKey: .paymentUnavailableReason)) ?? nil
     }
 
     /// Dashboard kaze TEST samo, ko je placilo TEGA kluba testno (`payment_mode`); star backend: globalni `mode`.
@@ -463,6 +468,9 @@ struct BusinessSales: Decodable {
 
     /// Nacin placila tega kluba; nil iz starega backenda -> `.neznan` (opozorila ni).
     var nacinPlacila: NacinPlacila { NacinPlacila(paymentMode) }
+
+    /// Razlog, zakaj kupci ne morejo kupovati (samo ko je `nacinPlacila == .nedosegljivo`; sicer ni pomemben).
+    var razlogNedosegljivosti: RazlogNedosegljivosti { RazlogNedosegljivosti(paymentUnavailableReason) }
 }
 
 /// Odgovor POST /business/tickets/scan (200 in 4xx imata isto obliko).

@@ -71,4 +71,37 @@ final class NacinPlacilaTests: XCTestCase {
         XCTAssertFalse(try decode(BusinessSales.self, #"{"mode": "stripe", "payment_mode": "stripe", \#(osnova)}"#).nacinPlacila.prodajaNedosegljiva)
         XCTAssertFalse(try decode(BusinessSales.self, #"{"mode": "stripe", \#(osnova)}"#).nacinPlacila.prodajaNedosegljiva)
     }
+
+    // MARK: - payment_unavailable_reason (backend#221)
+
+    private let osnovaProdaje = #""summary": {"gross_cents": 0, "fee_cents": 0, "net_cents": 0, "tickets_sold": 0, "orders": 0, "buyers": 0, "gross_7d_cents": 0, "tickets_7d": 0}"#
+
+    func testRazlogDekodiranjePrisotnoManjkaNull() throws {
+        let prisoten = try decode(BusinessSales.self, #"{"mode": "live", "payment_mode": "unavailable", "payment_unavailable_reason": "seller_incomplete", \#(osnovaProdaje)}"#)
+        XCTAssertEqual(prisoten.paymentUnavailableReason, "seller_incomplete")
+        XCTAssertEqual(prisoten.razlogNedosegljivosti, .prodajalecNepopoln)
+
+        let star = try decode(BusinessSales.self, #"{"mode": "live", "payment_mode": "unavailable", \#(osnovaProdaje)}"#)   // star backend: polja ni
+        XCTAssertNil(star.paymentUnavailableReason)
+        XCTAssertEqual(star.razlogNedosegljivosti, .stripeNiPripravljen)
+
+        let nic = try decode(BusinessSales.self, #"{"mode": "live", "payment_mode": "stripe", "payment_unavailable_reason": null, \#(osnovaProdaje)}"#)
+        XCTAssertNil(nic.paymentUnavailableReason)
+
+        let napacenTip = try decode(BusinessSales.self, #"{"mode": "live", "payment_unavailable_reason": 3, \#(osnovaProdaje)}"#)   // napacen tip ne podre dashboarda
+        XCTAssertNil(napacenTip.paymentUnavailableReason)
+    }
+
+    func testRazlogIzbiraBesedila() {
+        XCTAssertEqual(RazlogNedosegljivosti("seller_incomplete"), .prodajalecNepopoln)
+        XCTAssertEqual(RazlogNedosegljivosti("payments_not_configured"), .placilaNenastavljena)
+        XCTAssertEqual(RazlogNedosegljivosti("stripe_not_ready"), .stripeNiPripravljen)
+        // nil in neznana vrednost: obstojece besedilo (vedenje se ne spremeni)
+        XCTAssertEqual(RazlogNedosegljivosti(nil), .stripeNiPripravljen)
+        XCTAssertEqual(RazlogNedosegljivosti("kaj-novega"), .stripeNiPripravljen)
+        XCTAssertEqual(RazlogNedosegljivosti(""), .stripeNiPripravljen)
+        // vsak razlog ima svoje besedilo (neodvisno od jezika naprave)
+        let besedila = Set([RazlogNedosegljivosti.prodajalecNepopoln, .placilaNenastavljena, .stripeNiPripravljen].map(\.besedilo))
+        XCTAssertEqual(besedila.count, 3)
+    }
 }

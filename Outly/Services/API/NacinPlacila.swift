@@ -43,3 +43,32 @@ enum NacinPlacila: Equatable {
         return paymentMode == "test"
     }
 }
+
+/// Razlog, zakaj je `payment_mode == "unavailable"` (backend#221, `payment_unavailable_reason` v `GET /business/sales`).
+/// Samo za besedilo opozorila v dashboardu lastnika; nil, `stripe_not_ready` in neznana vrednost (prihodnji razlog) dajo
+/// obstojece besedilo (»connect Stripe«), da se vedenje ne spremeni.
+enum RazlogNedosegljivosti: Equatable {
+    /// "seller_incomplete": zivi Stripe, klub ima Stripe, podatki prodajalca nepopolni.
+    case prodajalecNepopoln
+    /// "payments_not_configured": na streznik manjka nastavitev placil (lastnik ne more nicesar storiti).
+    case placilaNenastavljena
+    /// "stripe_not_ready", nil ali neznano: klub nima dokoncanega Stripa (obstojece besedilo).
+    case stripeNiPripravljen
+
+    init(_ niz: String?) {
+        switch niz {
+        case "seller_incomplete"?: self = .prodajalecNepopoln
+        case "payments_not_configured"?: self = .placilaNenastavljena
+        default: self = .stripeNiPripravljen
+        }
+    }
+
+    /// Besedilo opozorila v dashboardu (angleski kljuci so isti kot na spletu).
+    var besedilo: String {
+        switch self {
+        case .prodajalecNepopoln: return String(localized: "Buyers can't purchase yet: complete your seller details in Settings.")
+        case .placilaNenastavljena: return String(localized: "Payments aren't set up yet. Contact Outly.")
+        case .stripeNiPripravljen: return String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app.")
+        }
+    }
+}
