@@ -7206,6 +7206,17 @@
         }
       }
     },
+    "Buyers can't purchase yet: the club owner needs to complete the seller details in Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupci še ne morejo kupovati: lastnik kluba mora v Nastavitvah izpolniti podatke prodajalca."
+          }
+        }
+      }
+    },
     "Payments aren't set up yet. Contact Outly.": {
       "extractionState": "manual",
       "localizations": {

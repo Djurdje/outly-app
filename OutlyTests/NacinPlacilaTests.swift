@@ -101,7 +101,17 @@ final class NacinPlacilaTests: XCTestCase {
         XCTAssertEqual(RazlogNedosegljivosti("kaj-novega"), .stripeNiPripravljen)
         XCTAssertEqual(RazlogNedosegljivosti(""), .stripeNiPripravljen)
         // vsak razlog ima svoje besedilo (neodvisno od jezika naprave)
-        let besedila = Set([RazlogNedosegljivosti.prodajalecNepopoln, .placilaNenastavljena, .stripeNiPripravljen].map(\.besedilo))
+        let besedila = Set([RazlogNedosegljivosti.prodajalecNepopoln, .placilaNenastavljena, .stripeNiPripravljen].map { $0.besedilo(jeLastnik: true) })
         XCTAssertEqual(besedila.count, 3)
+    }
+
+    func testBesediloZaLastnikaInManagerja() {
+        // seller_incomplete: lastnik in manager dobita razlicni besedili (manager ne more izpolniti podatkov)
+        let r = RazlogNedosegljivosti.prodajalecNepopoln
+        XCTAssertNotEqual(r.besedilo(jeLastnik: true), r.besedilo(jeLastnik: false))
+        // ostali razlogi: besedilo ni odvisno od vloge
+        for r in [RazlogNedosegljivosti.placilaNenastavljena, .stripeNiPripravljen] {
+            XCTAssertEqual(r.besedilo(jeLastnik: true), r.besedilo(jeLastnik: false))
+        }
     }
 }

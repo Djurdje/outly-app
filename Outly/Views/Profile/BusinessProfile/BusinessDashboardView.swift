@@ -23,13 +23,14 @@ struct BusinessDashboardView: View {
     /// kartica vodi v Club info, kjer je razdelek »Seller details«; sicer samo besedilo.
     @ViewBuilder
     private func prodajaNedosegljivaNapotek(_ razlog: RazlogNedosegljivosti) -> some View {
-        if razlog == .prodajalecNepopoln, session.me?.isClubOwner == true {
+        let jeLastnik = session.me?.isClubOwner == true
+        if razlog == .prodajalecNepopoln, jeLastnik {
             NavigationLink { ClubInfoView(clubId: clubId) } label: {
-                NapotekKartica(besedilo: razlog.besedilo)
+                NapotekKartica(besedilo: razlog.besedilo(jeLastnik: true))
             }
             .buttonStyle(.plain)
         } else {
-            NapotekKartica(besedilo: razlog.besedilo)
+            NapotekKartica(besedilo: razlog.besedilo(jeLastnik: jeLastnik))
         }
     }
 

@@ -63,10 +63,14 @@ enum RazlogNedosegljivosti: Equatable {
         }
     }
 
-    /// Besedilo opozorila v dashboardu (angleski kljuci so isti kot na spletu).
-    var besedilo: String {
+    /// Besedilo opozorila v dashboardu (angleski kljuci so isti kot na spletu). Podatke prodajalca sme izpolniti samo lastnik
+    /// kluba (backend#94), zato manager pri `.prodajalecNepopoln` dobi besedilo, ki lastnika omeni (kot splet).
+    func besedilo(jeLastnik: Bool) -> String {
         switch self {
-        case .prodajalecNepopoln: return String(localized: "Buyers can't purchase yet: complete your seller details in Settings.")
+        case .prodajalecNepopoln:
+            return jeLastnik
+                ? String(localized: "Buyers can't purchase yet: complete your seller details in Settings.")
+                : String(localized: "Buyers can't purchase yet: the club owner needs to complete the seller details in Settings.")
         case .placilaNenastavljena: return String(localized: "Payments aren't set up yet. Contact Outly.")
         case .stripeNiPripravljen: return String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app.")
         }
