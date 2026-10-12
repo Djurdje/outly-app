@@ -7195,6 +7195,39 @@
         }
       }
     },
+    "Buyers can't purchase yet: complete your seller details in Club info.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupci še ne morejo kupovati: v Podatkih o klubu izpolni podatke prodajalca."
+          }
+        }
+      }
+    },
+    "Buyers can't purchase yet: the club owner needs to complete the seller details in Club info.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupci še ne morejo kupovati: lastnik kluba mora v Podatkih o klubu izpolniti podatke prodajalca."
+          }
+        }
+      }
+    },
+    "Payments aren't set up yet. Contact Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačila še niso nastavljena. Piši Outlyju."
+          }
+        }
+      }
+    },
     "The tables and prices drawn for this event are lost. Tables with orders stay archived and those orders stay valid. Phone reservations on these tables are released.": {
       "extractionState": "manual",
       "localizations": {
