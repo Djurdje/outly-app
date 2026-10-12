@@ -56,7 +56,7 @@ extension APIError {
 
         // Nakup pri klubu brez popolnih podatkov prodajalca (backend#219, zivi Stripe): 409 `{ "error": "seller_incomplete", "message": … }`
         // na POST /events/:id/orders in /events/:id/tables/:tableId/orders. PRED splosnim 409 in pred pravili po vsebini spodaj.
-        if t.contains("seller_incomplete")              { return String(localized: "Tickets can't be bought yet: the organizer hasn't completed their seller details.") }
+        if t.contains("seller_incomplete")              { return String(localized: "Purchases aren't available yet: the organizer hasn't completed their seller details.") }
 
         // Prenos vstopnice prijatelju brez racuna (JSON `{ error, message }`): kode PRED vsem ostalim, ker je telo celoten JSON.
         if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }

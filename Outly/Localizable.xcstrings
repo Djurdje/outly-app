@@ -7572,13 +7572,13 @@
         }
       }
     },
-    "Tickets can't be bought yet: the organizer hasn't completed their seller details.": {
+    "Purchases aren't available yet: the organizer hasn't completed their seller details.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vstopnic še ni mogoče kupiti: organizator še ni izpolnil podatkov prodajalca."
+            "value": "Nakup še ni mogoč: organizator še ni izpolnil podatkov prodajalca."
           }
         }
       }

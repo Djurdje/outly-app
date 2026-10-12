@@ -5,11 +5,12 @@ import Foundation
 /// Klub brez popolnih podatkov prodajalca (outly-backend#219): 409 `{"error":"seller_incomplete","message":"…"}` na
 /// POST /events/:id/orders in /events/:id/tables/:tableId/orders. Lastno sporocilo v OBEH poteh (`userMessage`, `nakupUserMessage`),
 /// ne splosni 409 »already in use«; narocilo ni nastalo, zato kljuc ostane (kot pri `free_limit`) in tloris se ne osvezi.
+@MainActor
 final class ProdajalecNepopolenTests: XCTestCase {
 
     private let telo = #"{"error":"seller_incomplete","message":"This organizer has not completed seller details yet. Purchase is not available."}"#
     private var napaka: APIError { .requestFailed(409, telo) }
-    private let sporocilo = String(localized: "Tickets can't be bought yet: the organizer hasn't completed their seller details.")
+    private let sporocilo = String(localized: "Purchases aren't available yet: the organizer hasn't completed their seller details.")
 
     func testDaLastnoSporociloVUserMessageInNakupUserMessage() {
         XCTAssertEqual(napaka.userMessage, sporocilo)
