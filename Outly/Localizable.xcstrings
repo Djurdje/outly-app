@@ -304,6 +304,17 @@
         }
       }
     },
+    "Demo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo"
+          }
+        }
+      }
+    },
     "Discard changes": {
       "extractionState": "manual",
       "localizations": {
@@ -7972,6 +7983,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prodajalec ni zavezanec za DDV"
+          }
+        }
+      }
+    },
+    "This is a demo club. Tickets can't be bought.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je demo klub. Vstopnic ni mogoče kupiti."
           }
         }
       }

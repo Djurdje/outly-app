@@ -447,7 +447,7 @@ struct BusinessSales: Decodable {
     /// Nacin placila TEGA kluba (backend#203): "test" | "stripe" | "unavailable"; nil = star backend -> napis temelji na `mode`.
     /// `mode` je globalen in se ne spremeni.
     let paymentMode: String?
-    /// Zakaj je `paymentMode == "unavailable"` (backend#221): "seller_incomplete" | "stripe_not_ready" | "payments_not_configured";
+    /// Zakaj je `paymentMode == "unavailable"` (backend#221): "seller_incomplete" | "stripe_not_ready" | "payments_not_configured" | "demo_club" (backend#243);
     /// nil = star backend, null ali polje manjka -> obstojece besedilo (glej `RazlogNedosegljivosti`).
     let paymentUnavailableReason: String?
 

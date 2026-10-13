@@ -60,6 +60,9 @@ struct ClubCard: View {
                 .padding(.horizontal, 12)
         }
         .frame(width: 188, height: 123)
+        .overlay(alignment: .topLeading) {
+            if club.isDemo { DemoZnacka(kompakten: true).padding(8) }
+        }
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.10), lineWidth: 1))
     }
 
@@ -92,6 +95,9 @@ struct ClubCard: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(showDistance ? 0.35 : 0.10), lineWidth: 1))
+                .overlay(alignment: .topLeading) {
+                    if club.isDemo && !showDistance { DemoZnacka(kompakten: true).padding(6) }
+                }
                 .animation(.easeOut(duration: 0.15), value: showDistance)
 
             Text(club.name)

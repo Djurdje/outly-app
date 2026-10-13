@@ -120,12 +120,16 @@ struct EventVip: Decodable {
     let paymentMode: String?
     /// Prodajalec mize = klub dogodka (backend#94); star backend ga nima -> nil.
     let seller: Seller?
+    /// Prodajalec je demo klub (backend#243; `GET /events/:id/vip` ima tudi `is_demo`): brez rezervacije mize (409 `demo_club`),
+    /// admin sme. Star backend -> false.
+    let isDemo: Bool
 
     enum CodingKeys: String, CodingKey {
         case enabled, currency, plan, tables, packages, seller
         case eventId = "event_id"
         case onSale = "on_sale"
         case paymentMode = "payment_mode"
+        case isDemo = "is_demo"
     }
 
     init(from decoder: Decoder) throws {
@@ -139,6 +143,7 @@ struct EventVip: Decodable {
         packages = try c.decodeIfPresent([VipPackage].self, forKey: .packages) ?? []
         paymentMode = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
         seller = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
+        isDemo = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
     }
 
     /// Tloris je uporaben, ce je vklopljen, ima mrezo in vsaj eno mizo.

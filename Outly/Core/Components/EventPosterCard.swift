@@ -41,6 +41,12 @@ struct EventPosterCard: View {
                     .padding(10)
             }
 
+            if event.isDemo {
+                DemoZnacka(kompakten: true)
+                    .padding(10)
+                    .frame(width: width, height: height, alignment: .topTrailing)
+            }
+
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 infoBar

@@ -44,6 +44,13 @@ struct BuyTicketsView: View {
     private var isFree: Bool { unitCents == 0 }
     /// Nacin placila kluba (backend `payment_mode`); nil iz starega backenda = `.neznan` (danasnje vedenje).
     private var nacin: NacinPlacila { event.nacinPlacila }
+    /// Demo klub (backend#243): namesto gumba Pay besedilo; admin vidi gumb kot doslej (streznik ga spusti). Demo ugotovimo iz
+    /// `isDemo`, ne iz `payment_mode`.
+    private var demoBrezNakupa: Bool { DemoKlub.brezNakupa(isDemo: event.isDemo, jeAdmin: session.me?.isAdmin == true) }
+    /// Gumb Pay onemogocen, ker prodaje ni (`payment_mode == "unavailable"`); adminu pri demo klubu ni (streznik odloca).
+    private var prodajaNedosegljiva: Bool {
+        DemoKlub.prodajaNedosegljiva(isDemo: event.isDemo, jeAdmin: session.me?.isAdmin == true, nacin: nacin)
+    }
 
     /// Koliko jih je se na voljo (nil = neomejeno / neznano).
     private var remaining: Int? {
@@ -139,8 +146,8 @@ struct BuyTicketsView: View {
 
                 // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
                 // `payment_mode == "test"` (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
-                if stripe.caka == nil {
-                    if nacin.prodajaNedosegljiva {
+                if stripe.caka == nil, !demoBrezNakupa {
+                    if prodajaNedosegljiva {
                         NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
                     } else if nacin.kazeTestniNapis(brezplacno: isFree) {
                         vrsticaPlacila
@@ -166,8 +173,17 @@ struct BuyTicketsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
 
-                gumbPlacaj
+                if demoBrezNakupa {
+                    // Namesto gumba Pay (backend#243): demo klub vstopnic ne prodaja.
+                    VStack(alignment: .leading, spacing: 8) {
+                        DemoZnacka()
+                        NapotekKartica(besedilo: DemoKlub.sporocilo)
+                    }
                     .padding(.top, 4)
+                } else {
+                    gumbPlacaj
+                        .padding(.top, 4)
+                }
 
                 OutlyPogojiNakupa()
 
@@ -384,9 +400,9 @@ struct BuyTicketsView: View {
         return OutlyAkcijskiGumb(naslov: naslovGumbaPlacaj(soldOut: soldOut), stanje: $stanje) {
             Task { await kupi() }
         }
-        .disabled(soldOut || naval || stripe.preverjanje || nacin.prodajaNedosegljiva)
-        .opacity(naval || stripe.preverjanje || nacin.prodajaNedosegljiva ? 0.45 : 1)
-        .outlySij(moc: 1.0, aktiven: !soldOut && !naval && !stripe.preverjanje && !nacin.prodajaNedosegljiva)
+        .disabled(soldOut || naval || stripe.preverjanje || prodajaNedosegljiva)
+        .opacity(naval || stripe.preverjanje || prodajaNedosegljiva ? 0.45 : 1)
+        .outlySij(moc: 1.0, aktiven: !soldOut && !naval && !stripe.preverjanje && !prodajaNedosegljiva)
     }
 
     /// Naslov gumba Pay glede na stanje; loceno od View-ja, da je vsak izid en `String(localized:)` kljuc.

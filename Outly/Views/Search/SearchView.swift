@@ -63,7 +63,7 @@ struct SearchView: View {
                                         ClubDetailView(clubId: club.id)
                                     } label: {
                                         row(icon: "building.2", title: club.name,
-                                            subtitle: club.city, imageUrl: club.logoUrl)
+                                            subtitle: club.city, imageUrl: club.logoUrl, demo: club.isDemo)
                                     }
                                     .buttonStyle(.plain)
                                     Divider().background(Color.gray.opacity(0.3))
@@ -78,7 +78,7 @@ struct SearchView: View {
                                     } label: {
                                         row(icon: "calendar", title: e.title,
                                             subtitle: eventSubtitle(e), imageUrl: e.posterUrl,
-                                            busy: openingEventId == e.id)
+                                            busy: openingEventId == e.id, demo: e.isDemo)
                                     }
                                     .buttonStyle(.plain)
                                     Divider().background(Color.gray.opacity(0.3))
@@ -164,7 +164,7 @@ struct SearchView: View {
                         ClubDetailView(clubId: club.id)
                     } label: {
                         row(icon: "building.2", title: club.name,
-                            subtitle: clubSubtitle(club), imageUrl: club.logoUrl)
+                            subtitle: clubSubtitle(club), imageUrl: club.logoUrl, demo: club.isDemo)
                     }
                     .buttonStyle(.plain)
                     Divider().background(Color.gray.opacity(0.3))
@@ -209,7 +209,7 @@ struct SearchView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func row(icon: String, title: String, subtitle: String, imageUrl: String, busy: Bool = false) -> some View {
+    private func row(icon: String, title: String, subtitle: String, imageUrl: String, busy: Bool = false, demo: Bool = false) -> some View {
         HStack(spacing: 12) {
             if let url = URL(string: imageUrl), !imageUrl.isEmpty {
                 OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }
@@ -227,6 +227,9 @@ struct SearchView: View {
                 }
             }
             Spacer()
+            if demo {
+                DemoZnacka(kompakten: true)
+            }
             if busy {
                 ProgressView()
             } else {

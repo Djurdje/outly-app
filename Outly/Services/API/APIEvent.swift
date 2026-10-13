@@ -70,6 +70,11 @@ struct APIEvent: Identifiable, Decodable {
     /// Ni v favoritih/nacrtih (tam ni nakupa) -> nil.
     let paymentMode: String?
 
+    /// Prodajalec dogodka (klub `club_id`) je demo klub (backend#243, 13. 10. 2026): znacka »Demo«, brez nakupa
+    /// (409 `demo_club`; admin sme). Star backend polja ne poslje -> false. Ne zanasaj se samo na `payment_mode`:
+    /// `unavailable` je lahko tudi `seller_incomplete` / `stripe_not_ready`.
+    let isDemo: Bool
+
     /// Prodajalec (klub `club_id`) za vrstico »Sold by« in blok pred placilom (backend#94). Pride samo pri GET /events/:id;
     /// seznami in star backend ga nimajo -> nil (zaslon vzame prodajalca iz kluba, glej `Seller`).
     let seller: Seller?
@@ -108,6 +113,7 @@ struct APIEvent: Identifiable, Decodable {
         case venueLng = "venue_lng"
         case hosted
         case paymentMode = "payment_mode"
+        case isDemo = "is_demo"
         case seller
     }
 
@@ -150,6 +156,7 @@ struct APIEvent: Identifiable, Decodable {
         venueLng         = (try? c.decodeIfPresent(Double.self, forKey: .venueLng)) ?? nil
         hosted           = (try? c.decodeIfPresent(Bool.self, forKey: .hosted)) ?? false
         paymentMode      = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
+        isDemo           = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
         seller           = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
     }
 }

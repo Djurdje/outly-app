@@ -57,6 +57,15 @@ struct VipTablesView: View {
     /// Nacin placila kluba (backend `payment_mode`): iz odgovora tlorisa, sicer iz dogodka; nil iz starega backenda = `.neznan`.
     private var nacin: NacinPlacila { NacinPlacila(vip?.paymentMode ?? event.paymentMode) }
 
+    /// Demo klub (backend#243): odgovor tloris (`is_demo`), sicer dogodek. Namesto gumba Reserve besedilo; admin vidi gumb kot doslej
+    /// (streznik ga spusti). Demo ugotovimo iz `isDemo`, ne iz `payment_mode`.
+    private var jeDemo: Bool { (vip?.isDemo ?? false) || event.isDemo }
+    private var demoBrezNakupa: Bool { DemoKlub.brezNakupa(isDemo: jeDemo, jeAdmin: session.me?.isAdmin == true) }
+    /// Gumb Reserve onemogocen, ker prodaje ni (`payment_mode == "unavailable"`); adminu pri demo klubu ni (streznik odloca).
+    private var prodajaNedosegljiva: Bool {
+        DemoKlub.prodajaNedosegljiva(isDemo: jeDemo, jeAdmin: session.me?.isAdmin == true, nacin: nacin)
+    }
+
     /// Napotek ob ponovnem odprtju po nejasnem izidu, izpeljan iz trenutne izbire: »tap the button again« samo pri isti mizi
     /// in istem paketu (isti kljuc) in ce je prodaja odprta (gumb Reserve); sicer »Check Profile -> Tickets« (miza »Booked«,
     /// druga izbira = nov kljuc, prodaja zaprta). Zacasna onemogocenost zaradi navale (`naval`) napotka ne spremeni.
@@ -241,7 +250,16 @@ struct VipTablesView: View {
             .safeAreaInset(edge: .bottom) {
                 if vip.onSale, let m = izbranaMiza {
                     VStack(spacing: 8) {
-                        gumbRezerviraj(m)
+                        if demoBrezNakupa {
+                            // Namesto gumba Reserve (backend#243): demo klub miz ne prodaja.
+                            HStack(spacing: 8) {
+                                DemoZnacka()
+                                Spacer(minLength: 0)
+                            }
+                            NapotekKartica(besedilo: DemoKlub.sporocilo)
+                        } else {
+                            gumbRezerviraj(m)
+                        }
                         OutlyPogojiNakupa()
                         // Slog kot v BuyTicketsView; besedilo navaja tudi mizo in paket (ZVPot-1 130/1-10, 135/12): miza je vedno za dogodek z datumom.
                         Text("VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.")
@@ -345,8 +363,8 @@ struct VipTablesView: View {
 
             // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
             // `payment_mode == "test"` in ceni > 0 (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
-            if stripe.caka == nil {
-                if nacin.prodajaNedosegljiva {
+            if stripe.caka == nil, !demoBrezNakupa {
+                if prodajaNedosegljiva {
                     NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
                 } else if nacin.kazeTestniNapis(brezplacno: m.priceCents <= 0) {
                     vrsticaPlacila
@@ -476,9 +494,9 @@ struct VipTablesView: View {
         OutlyAkcijskiGumb(naslov: naslovGumba(m), stanje: $stanje) {
             Task { await rezerviraj(m) }
         }
-        .disabled(!paketIzbran || naval || stripe.preverjanje || nacin.prodajaNedosegljiva)
-        .opacity(paketIzbran && !naval && !stripe.preverjanje && !nacin.prodajaNedosegljiva ? 1 : 0.45)
-        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval && !stripe.preverjanje && !nacin.prodajaNedosegljiva)
+        .disabled(!paketIzbran || naval || stripe.preverjanje || prodajaNedosegljiva)
+        .opacity(paketIzbran && !naval && !stripe.preverjanje && !prodajaNedosegljiva ? 1 : 0.45)
+        .outlySij(moc: 1.0, aktiven: paketIzbran && !naval && !stripe.preverjanje && !prodajaNedosegljiva)
     }
 
     // MARK: - Uspeh

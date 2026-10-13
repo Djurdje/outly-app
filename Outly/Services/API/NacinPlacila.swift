@@ -52,6 +52,8 @@ enum RazlogNedosegljivosti: Equatable {
     case prodajalecNepopoln
     /// "payments_not_configured": na streznik manjka nastavitev placil (lastnik ne more nicesar storiti).
     case placilaNenastavljena
+    /// "demo_club" (backend#243): klub je demo, vstopnic ne prodaja (nastavi samo admin).
+    case demoKlub
     /// "stripe_not_ready", nil ali neznano: klub nima dokoncanega Stripa (obstojece besedilo).
     case stripeNiPripravljen
 
@@ -59,6 +61,7 @@ enum RazlogNedosegljivosti: Equatable {
         switch niz {
         case "seller_incomplete"?: self = .prodajalecNepopoln
         case "payments_not_configured"?: self = .placilaNenastavljena
+        case "demo_club"?: self = .demoKlub
         default: self = .stripeNiPripravljen
         }
     }
@@ -72,6 +75,7 @@ enum RazlogNedosegljivosti: Equatable {
                 ? String(localized: "Buyers can't purchase yet: complete your seller details in Club info.")
                 : String(localized: "Buyers can't purchase yet: the club owner needs to complete the seller details in Club info.")
         case .placilaNenastavljena: return String(localized: "Payments aren't set up yet. Contact Outly.")
+        case .demoKlub: return DemoKlub.sporocilo
         case .stripeNiPripravljen: return String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app.")
         }
     }

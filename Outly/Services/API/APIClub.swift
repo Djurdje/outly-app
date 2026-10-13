@@ -49,6 +49,9 @@ struct APIClub: Identifiable, Decodable {
     /// Uradni profil podjetja Outly (nastavi samo admin): njegovi dogodki so na vrhu Home
     /// v razdelku "Organized by Outly". Star backend -> false.
     let isOfficial: Bool
+    /// Demo klub (backend#243, 13. 10. 2026): izmisljen klub za predstavitev; vstopnic ne prodaja (nakup = 409 `demo_club`).
+    /// Prikaz: znacka »Demo« (`DemoZnacka`). Star backend polja ne poslje -> false.
+    let isDemo: Bool
 
     /// Prodajalec za javni prikaz (GET /clubs/:id, backend#94). Seznami in star backend ga nimajo -> nil.
     let seller: Seller?
@@ -87,6 +90,7 @@ struct APIClub: Identifiable, Decodable {
         case isFollowing = "is_following"
         case isOrganizer = "is_organizer"
         case isOfficial = "is_official"
+        case isDemo = "is_demo"
         case seller
         case legalName = "legal_name"
         case legalAddress = "legal_address"
@@ -125,6 +129,7 @@ struct APIClub: Identifiable, Decodable {
         isFollowing    = (try? c.decodeIfPresent(Bool.self, forKey: .isFollowing)) ?? false
         isOrganizer    = (try? c.decodeIfPresent(Bool.self, forKey: .isOrganizer)) ?? false
         isOfficial     = (try? c.decodeIfPresent(Bool.self, forKey: .isOfficial)) ?? false
+        isDemo         = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
         seller             = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
         legalName          = (try? c.decodeIfPresent(String.self, forKey: .legalName)) ?? ""
         legalAddress       = (try? c.decodeIfPresent(String.self, forKey: .legalAddress)) ?? ""
