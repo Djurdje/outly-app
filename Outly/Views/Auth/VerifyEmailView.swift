@@ -14,7 +14,7 @@ import SwiftUI
 ///
 /// Povezava iz maila porabi isto enkratno potrditev kot koda (koda potem vrne otp_expired, nov mail se za
 /// potrjen racun ne poslje). Zato aplikacija, dokler ima geslo v pomnilniku (CakajocaPotrditev), TIHO poskusi
-/// prijavo: ob vrnitvi v aplikacijo (scenePhase .active, .task ob prikazu), ob neveljavni kodi in ob »Resend code«.
+/// prijavo: ob vrnitvi v aplikacijo (scenePhase .active; ne ob prvem prikazu, ker je racun takrat zagotovo se nepotrjen), ob neveljavni kodi in ob »Resend code«.
 /// Prijava uspe samo, ce je racun potrjen; vse napake so tihe.
 @MainActor
 struct VerifyEmailView: View {
@@ -26,6 +26,8 @@ struct VerifyEmailView: View {
 
     @State private var code: String = ""
     @State private var message: String?
+    /// Zeleno (uspeh, npr. »Code sent again«) ali rdece (napaka).
+    @State private var messageIsSuccess = false
     /// Siv pojasnilo pod sporocilom (npr. »ce je e-naslov ze potrjen, nove kode ne dobis«).
     @State private var hint: String?
     @State private var isLoading = false
@@ -75,7 +77,7 @@ struct VerifyEmailView: View {
                 if let message = message {
                     Text(message)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(message.lowercased().contains("verified") ? .green : .red)
+                        .foregroundColor(messageIsSuccess ? .green : .red)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 18)
                 }
@@ -142,8 +144,7 @@ struct VerifyEmailView: View {
             .padding(.horizontal, 24)
         }
         .preferredColorScheme(.dark)
-        // Ob prikazu zaslona in ob vrnitvi v aplikacijo (npr. po kliku na povezavo v mailu).
-        .task { _ = await poskusiTihoPrijavo() }
+        // Ob vrnitvi v aplikacijo (npr. po kliku na povezavo v mailu).
         .onChange(of: scenePhase) { _, nova in
             if nova == .active { Task { _ = await poskusiTihoPrijavo() } }
         }
@@ -175,6 +176,7 @@ struct VerifyEmailView: View {
 
     private func verify() async {
         message = nil
+        messageIsSuccess = false
         hint = nil
         guard !pendingEmail.isEmpty, (6...10).contains(code.count) else { return }
 
@@ -213,6 +215,7 @@ struct VerifyEmailView: View {
 
     private func resend() async {
         message = nil
+        messageIsSuccess = false
         hint = nil
         guard !pendingEmail.isEmpty else { return }
 
@@ -227,6 +230,7 @@ struct VerifyEmailView: View {
         do {
             try await SupabaseAuth.shared.resend(email: pendingEmail, type: "signup")
             await MainActor.run {
+                messageIsSuccess = true
                 message = String(localized: "Code sent again. Check your email.")
                 if geslaNi {
                     hint = String(localized: "If your email is already confirmed, no new code is sent. Tap “Already confirmed? Sign in” below.")
