@@ -33,6 +33,8 @@ struct VerifyEmailView: View {
     @State private var isLoading = false
     /// Zastavica proti vzporednima tihima prijavama (vrnitev v aplikacijo + gumb hkrati).
     @State private var tihaPrijavaTece = false
+    /// Zadnja tiha prijava ob vrnitvi v aplikacijo: ne pogosteje kot na 10 s (Supabase omejuje prijave na IP).
+    @State private var zadnjaTihaPrijava: Date = .distantPast
 
     var body: some View {
         ZStack {
@@ -146,7 +148,9 @@ struct VerifyEmailView: View {
         .preferredColorScheme(.dark)
         // Ob vrnitvi v aplikacijo (npr. po kliku na povezavo v mailu).
         .onChange(of: scenePhase) { _, nova in
-            if nova == .active { Task { _ = await poskusiTihoPrijavo() } }
+            guard nova == .active, Date().timeIntervalSince(zadnjaTihaPrijava) > 10 else { return }
+            zadnjaTihaPrijava = Date()
+            Task { _ = await poskusiTihoPrijavo() }
         }
     }
 
@@ -202,8 +206,10 @@ struct VerifyEmailView: View {
             let neveljavnaKoda = ["otp_expired", "otp_disabled"].contains((error as? SupabaseAuthError)?.code ?? "")
             // Povezava v mailu je kodo ze porabila -> ce je racun potrjen, nas tiha prijava spusti naprej.
             if neveljavnaKoda, await poskusiTihoPrijavo() { return }
+            // Z geslom v pomnilniku je tiha prijava pravkar povedala, da racun NI potrjen -> koda je res napacna.
+            let geslaNi = CakajocaPotrditev.shared.geslo(za: pendingEmail) == nil
             await MainActor.run {
-                if neveljavnaKoda {
+                if neveljavnaKoda && geslaNi {
                     // Brez gesla (aplikacija je bila vmes zaprta) ne moremo vedeti, ali je racun ze potrjen.
                     message = String(localized: "This code is wrong or no longer works. If you already confirmed your email with the link, tap “Already confirmed? Sign in” below.")
                 } else {
