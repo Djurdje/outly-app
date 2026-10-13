@@ -12413,6 +12413,50 @@
           }
         }
       }
+    },
+    "PAYMENT DISPUTED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLAČILO V SPORU"
+          }
+        }
+      }
+    },
+    "Ticket not valid. Send the guest to the club manager.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica ni veljavna. Gosta napoti k vodji kluba."
+          }
+        }
+      }
+    },
+    "The payment is disputed: this guest was let in, but the ticket is not valid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo je v sporu: gost je vstopil, vstopnica pa ni veljavna."
+          }
+        }
+      }
+    },
+    "This ticket can't be used while the payment is disputed. Contact the club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te vstopnice ni mogoče uporabiti, dokler je plačilo v sporu. Obrni se na klub."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

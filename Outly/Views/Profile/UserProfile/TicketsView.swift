@@ -174,7 +174,7 @@ struct TicketsView: View {
                 .foregroundColor(.white)
             Text(t.statusLabel)
                 .font(.caption.weight(.bold))
-                .foregroundColor(t.jeVeljavna ? .outlyBlue : .gray)
+                .foregroundColor(t.jeVeljavna ? .outlyBlue : (t.jeVSporu ? Color.red : Color.gray))
             if !t.serialKratek.isEmpty {
                 Text(verbatim: t.serialKratek)
                     .font(.caption.monospaced())
@@ -220,7 +220,7 @@ struct TicketsView: View {
                     } else {
                         Text(t.statusLabel)
                             .font(.caption.weight(.bold))
-                            .foregroundColor(t.jeVeljavna ? .outlyBlue : .gray)
+                            .foregroundColor(t.jeVeljavna ? .outlyBlue : (t.jeVSporu ? Color.red : Color.gray))
                     }
                     Text(t.publicRef).font(.caption).foregroundColor(.gray)
                     if stevilo == nil && t.transferred && !t.buyerUsername.isEmpty {
@@ -341,15 +341,23 @@ struct TicketDetailView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
-                Text("Show this code at the entrance. A screenshot works too — the code is signed and valid only once.")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.5))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 10)
+                if ticket.jeVSporu {
+                    Text("This ticket can't be used while the payment is disputed. Contact the club.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 10)
+                } else {
+                    Text("Show this code at the entrance. A screenshot works too — the code is signed and valid only once.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 10)
+                }
 
                 // Prenos prijatelju: samo veljavna vstopnica pred zacetkom dogodka (streznik preveri znova).
                 // Vstopnica guest liste se ne prenasa (backend: 409 »Guest list tickets can't be transferred.«).
-                if ticket.transferable && !ticket.isGuestList {
+                if ticket.transferable && !ticket.isGuestList && !ticket.paymentDisputed {
                     Button { showTransfer = true } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "paperplane.fill")
@@ -391,7 +399,7 @@ struct TicketDetailView: View {
 struct WalletTicketCard: View {
     let ticket: APITicket
 
-    private var barva: Color { ticket.isVip ? Color.vipZlata : Color.outlyBlue }
+    private var barva: Color { ticket.jeVSporu ? Color.red : (ticket.isVip ? Color.vipZlata : Color.outlyBlue) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -402,7 +410,7 @@ struct WalletTicketCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(ticket.isVip ? Color.vipZlata.opacity(0.55) : Color.white.opacity(0.10), lineWidth: 1)
+                .stroke(ticket.jeVSporu ? Color.red.opacity(0.7) : (ticket.isVip ? Color.vipZlata.opacity(0.55) : Color.white.opacity(0.10)), lineWidth: 1)
         )
         .shadow(color: barva.opacity(0.25), radius: 24, y: 10)
         .opacity(ticket.isUsed ? 0.6 : 1)
@@ -444,9 +452,11 @@ struct WalletTicketCard: View {
                     Text(ticket.statusLabel)
                         .font(.system(size: 10, weight: .heavy))
                         .tracking(0.8)
-                        .foregroundColor(ticket.isUsed ? .white : .black)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .foregroundColor(ticket.isUsed || ticket.jeVSporu ? .white : .black)
                         .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(ticket.isUsed ? Color.white.opacity(0.25) : Color.white)
+                        .background(ticket.jeVSporu ? Color.red : (ticket.isUsed ? Color.white.opacity(0.25) : Color.white))
                         .clipShape(Capsule())
                 }
                 Text(ticket.eventTitle)
@@ -494,11 +504,23 @@ struct WalletTicketCard: View {
             if ticket.isVip { vipVrstica }
 
             ZStack {
+                // Placilo v sporu: QR ne sme izgledati veljaven (skener ga tako ali tako zavrne), zato je skoraj izbrisan.
                 QRCodeView(content: ticket.qr, size: 200)
+                    .opacity(ticket.jeVSporu ? 0.12 : 1)
                 if ticket.isUsed {
                     Text("ALREADY USED")
                         .font(.system(size: 20, weight: .black))
                         .foregroundColor(.red)
+                        .rotationEffect(.degrees(-14))
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Color.white.opacity(0.9))
+                } else if ticket.jeVSporu {
+                    Text("PAYMENT DISPUTED")
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
                         .rotationEffect(.degrees(-14))
                         .padding(.horizontal, 10).padding(.vertical, 4)
                         .background(Color.white.opacity(0.9))

@@ -676,6 +676,14 @@ struct EventTicketsView: View {
                                         .padding(.horizontal, 10).padding(.vertical, 6)
                                         .background(Color.green.opacity(0.15))
                                         .clipShape(Capsule())
+                                } else if t.paymentDisputed {
+                                    // Spor pri banki: rocni vpis bi streznik zavrnil (409), zato gumba ni.
+                                    Text("PAYMENT DISPUTED")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundColor(.red)
+                                        .padding(.horizontal, 10).padding(.vertical, 6)
+                                        .background(Color.red.opacity(0.15))
+                                        .clipShape(Capsule())
                                 } else {
                                     Button {
                                         Task { await checkIn(t) }
