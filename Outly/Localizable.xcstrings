@@ -326,6 +326,72 @@
         }
       }
     },
+    "Discover": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrivanje"
+          }
+        }
+      }
+    },
+    "Discover  >  Filters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrivanje  >  Filtri"
+          }
+        }
+      }
+    },
+    "Discover  >  Home": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrivanje  >  Domov"
+          }
+        }
+      }
+    },
+    "Discover  >  Interested events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrivanje  >  Dogodki, ki me zanimajo"
+          }
+        }
+      }
+    },
+    "Discover  >  Map": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrivanje  >  Zemljevid"
+          }
+        }
+      }
+    },
+    "Discover  >  Search": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkrivanje  >  Iskanje"
+          }
+        }
+      }
+    },
     "Drag items to move them. Tap an item to edit it.": {
       "extractionState": "manual",
       "localizations": {
@@ -366,6 +432,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vsaka miza potrebuje oznako z 1 do 20 znaki."
+          }
+        }
+      }
+    },
+    "Everything on an event page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse, kar je na strani dogodka"
           }
         }
       }
@@ -821,6 +898,17 @@
         }
       }
     },
+    "Report or block": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavi ali blokiraj"
+          }
+        }
+      }
+    },
     "Round": {
       "extractionState": "manual",
       "localizations": {
@@ -839,6 +927,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vrstice"
+          }
+        }
+      }
+    },
+    "Safety  >  Report and block": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varnost  >  Prijava in blokiranje"
           }
         }
       }
@@ -1329,6 +1428,28 @@
         }
       }
     },
+    "A club page has photos, the city, music genres and minimum age, then Popular and Coming Soon events, a map with the address, Contact (email, phone, Instagram, website) and a description. Tap an event to open it.\n\nTap Follow to follow a club — you get a notification when it posts a new event (allow notifications when Outly asks, or turn them on under Preferences). Tap Following to stop. To report a club, tap the … menu at the top right and choose Report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stran kluba ima fotografije, mesto, glasbene žanre in najnižjo starost, nato dogodke Priljubljeno in Kmalu na sporedu, zemljevid z naslovom, Kontakt (e-pošta, telefon, Instagram, spletna stran) in opis. Tapni dogodek, da ga odpreš.\n\nTapni Sledi, da klubu slediš — ko objavi nov dogodek, dobiš obvestilo (dovoli obvestila, ko te Outly vpraša, ali jih vklopi pod Nastavitve). Tapni Sledim, da nehaš slediti. Klub prijaviš tako, da zgoraj desno tapneš meni … in izbereš Prijavi."
+          }
+        }
+      }
+    },
+    "A guest list is set up by Outly for an event, with you as the host and a set number of spots. It appears under Profile > Tickets > Guest lists, and you get your own ticket with a QR code under Tickets.\n\nOpen the guest list and tap Invite friends, choose friends from your list and confirm. Each friend gets their own ticket with their own QR code and can arrive separately. To free a spot, tap the x next to a friend before they have entered — their ticket stops working.\n\nIf a friend adds you to their guest list, you get a notification and the ticket appears under Tickets as Invited by @name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam gostov za dogodek nastavi Outly; ti si gostitelj z določenim številom mest. Prikaže se pod Profil > Vstopnice > Seznami gostov, svojo vstopnico s QR kodo pa dobiš pod Vstopnice.\n\nOdpri seznam gostov in tapni Povabi prijatelje, izberi prijatelje s seznama in potrdi. Vsak prijatelj dobi svojo vstopnico s svojo QR kodo in lahko pride ločeno. Mesto sprostiš tako, da tapneš x ob prijatelju, preden je vstopil — njegova vstopnica preneha veljati.\n\nČe te prijatelj doda na svoj seznam gostov, dobiš obvestilo, vstopnica pa se pod Vstopnice pokaže kot Povabil te je @ime."
+          }
+        }
+      }
+    },
     "ABOUT": {
       "extractionState": "manual",
       "localizations": {
@@ -1461,6 +1582,28 @@
         }
       }
     },
+    "Accept an invitation to a club team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprejmi vabilo v klubsko ekipo"
+          }
+        }
+      }
+    },
+    "Account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun"
+          }
+        }
+      }
+    },
     "Account  >  Delete": {
       "extractionState": "manual",
       "localizations": {
@@ -1468,6 +1611,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Račun  >  Izbris"
+          }
+        }
+      }
+    },
+    "Account  >  Payment": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun  >  Plačilo"
+          }
+        }
+      }
+    },
+    "Account  >  Preferences": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun  >  Nastavitve"
+          }
+        }
+      }
+    },
+    "Account  >  Profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun  >  Profil"
+          }
+        }
+      }
+    },
+    "Account  >  Security": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun  >  Varnost"
           }
         }
       }
@@ -1923,6 +2110,17 @@
         }
       }
     },
+    "Bought tickets for the whole group? Open a ticket and tap Send to a friend. Choose a friend from your list, or tap Send by email instead and enter their email, then tap Send ticket and confirm.\n\nThe ticket moves to their account with a new QR code — your old code stops working. Your friend needs an Outly account with a confirmed email and must meet the event's age limit. (Where the screen says we'll email them the ticket, a friend without an account can get it by email too.) For events with an age limit you confirm that your friend is old enough.\n\nTickets can be sent until the event starts. Guest list tickets can't be sent.\n\nIf the event is cancelled, the refund goes to the original buyer, not to the person you send the ticket to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si kupil vstopnice za celo družbo? Odpri vstopnico in tapni Pošlji prijatelju. Izberi prijatelja s seznama ali tapni Raje pošlji po e-pošti in vpiši njegov e-poštni naslov, nato tapni Pošlji vstopnico in potrdi.\n\nVstopnica preide na njegov račun z novo QR kodo — tvoja stara koda preneha veljati. Prijatelj potrebuje Outly račun s potrjeno e-pošto in mora izpolnjevati starostno mejo dogodka. (Kjer zaslon pove, da mu vstopnico pošljemo po e-pošti, jo lahko prejme po e-pošti tudi prijatelj brez računa.) Pri dogodkih s starostno mejo potrdiš, da je prijatelj dovolj star.\n\nVstopnice lahko pošlješ do začetka dogodka. Vstopnic s seznama gostov ni mogoče pošiljati naprej.\n\nČe je dogodek odpovedan, vračilo dobi prvotni kupec, ne oseba, ki ji vstopnico pošlješ."
+          }
+        }
+      }
+    },
     "Browse by genre": {
       "extractionState": "manual",
       "localizations": {
@@ -2150,6 +2348,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zamenjaj plakat"
+          }
+        }
+      }
+    },
+    "Change your password or sign out everywhere": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremeni geslo ali se odjavi povsod"
           }
         }
       }
@@ -2418,6 +2627,17 @@
         }
       }
     },
+    "Club pages and Follow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strani klubov in Sledi"
+          }
+        }
+      }
+    },
     "Club video": {
       "extractionState": "manual",
       "localizations": {
@@ -2436,6 +2656,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Klubi"
+          }
+        }
+      }
+    },
+    "Clubs  >  Club page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klubi  >  Stran kluba"
           }
         }
       }
@@ -2700,6 +2931,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ustvari račun"
+          }
+        }
+      }
+    },
+    "Create and edit events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari in uredi dogodke"
           }
         }
       }
@@ -3056,6 +3298,17 @@
         }
       }
     },
+    "Edit your profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi svoj profil"
+          }
+        }
+      }
+    },
     "Email": {
       "extractionState": "manual",
       "localizations": {
@@ -3408,6 +3661,50 @@
         }
       }
     },
+    "Events  >  Bar prices": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki  >  Cenik bara"
+          }
+        }
+      }
+    },
+    "Events  >  Event page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki  >  Stran dogodka"
+          }
+        }
+      }
+    },
+    "Events  >  VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki  >  VIP mize"
+          }
+        }
+      }
+    },
+    "Events & clubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki in klubi"
+          }
+        }
+      }
+    },
     "Events, sales, club page and door staff.": {
       "extractionState": "manual",
       "localizations": {
@@ -3507,6 +3804,17 @@
         }
       }
     },
+    "Filter by city, genre, distance, age and price": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtriraj po mestu, žanru, razdalji, starosti in ceni"
+          }
+        }
+      }
+    },
     "Filters": {
       "extractionState": "manual",
       "localizations": {
@@ -3514,6 +3822,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Filtri"
+          }
+        }
+      }
+    },
+    "Find clubs on the map": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči klube na zemljevidu"
+          }
+        }
+      }
+    },
+    "Finding your way around": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kako se znajdeš v aplikaciji"
           }
         }
       }
@@ -3536,6 +3866,105 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sledim"
+          }
+        }
+      }
+    },
+    "For clubs": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube"
+          }
+        }
+      }
+    },
+    "For clubs  >  Club page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Stran kluba"
+          }
+        }
+      }
+    },
+    "For clubs  >  Dashboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Pregled"
+          }
+        }
+      }
+    },
+    "For clubs  >  Events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Dogodki"
+          }
+        }
+      }
+    },
+    "For clubs  >  Invitations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Vabila"
+          }
+        }
+      }
+    },
+    "For clubs  >  Scanner": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Skener"
+          }
+        }
+      }
+    },
+    "For clubs  >  Table service": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Strežba miz"
+          }
+        }
+      }
+    },
+    "For clubs  >  Team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  Ekipa"
+          }
+        }
+      }
+    },
+    "For clubs  >  VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za klube  >  VIP mize"
           }
         }
       }
@@ -3591,6 +4020,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prijatelji"
+          }
+        }
+      }
+    },
+    "Friends  >  Add friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji  >  Dodaj prijatelje"
+          }
+        }
+      }
+    },
+    "Friends  >  Friends plans": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji  >  Načrti prijateljev"
+          }
+        }
+      }
+    },
+    "Friends & notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji in obvestila"
           }
         }
       }
@@ -3672,6 +4134,17 @@
         }
       }
     },
+    "Getting started": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prvi koraki"
+          }
+        }
+      }
+    },
     "Getting started  >  Account": {
       "extractionState": "manual",
       "localizations": {
@@ -3679,6 +4152,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prvi koraki  >  Račun"
+          }
+        }
+      }
+    },
+    "Getting started  >  Navigation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prvi koraki  >  Krmarjenje"
           }
         }
       }
@@ -3701,6 +4185,61 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pojdi na Moj račun > Prošnja za ustvarjalca in izpolni kratek obrazec. Prošnje pregledamo ročno — stanje lahko spremljaš na istem zaslonu.\n\nKo je odobrena, se tvoj profil preklopi na poslovni pogled: Pregled, Dogodki, Skeniraj vstopnice in Nastavitve."
+          }
+        }
+      }
+    },
+    "Go to My Account > Request for creator and fill in the short form. We review requests by hand — you can follow the status on the same screen.\n\nOnce approved, your profile switches to the business view: Edit your page, Dashboard, Events, My team and Settings (if it does not, log out and log in again). Scanning tickets is under Profile > My Clubs — see Scan tickets at the door.\n\nOwners can switch between the club and the personal profile: Settings > Switch to personal account, and back with My Account > Switch to club account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pojdi na Moj račun > Prošnja za ustvarjalca in izpolni kratek obrazec. Prošnje pregledamo ročno — stanje spremljaš na istem zaslonu.\n\nKo je prošnja odobrena, se tvoj profil preklopi na poslovni pogled: Uredi svojo stran, Pregled, Dogodki, My team (ekipa), Settings (nastavitve) (če se ne, se odjavi in znova prijavi). Skeniranje vstopnic je pod Profil > Moji klubi — glej Skeniranje vstopnic pri vhodu.\n\nLastnik lahko preklaplja med klubskim in osebnim profilom: Settings (nastavitve) > Switch to personal account (preklop na osebni račun), nazaj pa z Moj račun > Switch to club account (preklop na klubski račun)."
+          }
+        }
+      }
+    },
+    "Go to Profile > My Account > Password and security. Under Login tap Edit, enter your current password and the new one twice, then tap Done. Other devices are signed out; this one stays signed in.\n\nUnder Sessions tap Sign out and confirm to sign out of all devices, including this one. To log out of this device only, tap Log out at the bottom of Profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Moj račun > Geslo in varnost. Pod Prijava tapni Uredi, vpiši trenutno geslo in dvakrat novo, nato tapni Končano. Druge naprave se odjavijo, ta ostane prijavljena.\n\nPod Seje tapni Odjava in potrdi, da se odjaviš z vseh naprav, tudi s te. Če se želiš odjaviti samo s te naprave, tapni Odjava na dnu zavihka Profil."
+          }
+        }
+      }
+    },
+    "Go to Profile > My Account > Personal info. Tap the picture with the + to add or change your profile photo. Each card — Username, Phone number, Date of birth and Country — has an Edit button. Your username needs 3–20 characters: letters, numbers and underscore.\n\nYour email can't be changed in the app; to change it, write to luka@outly.si.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Moj račun > Osebni podatki. Tapni sliko s plusom, da dodaš ali zamenjaš profilno fotografijo. Vsaka kartica — Uporabniško ime, Telefonska številka, Datum rojstva in Država — ima gumb Uredi. Uporabniško ime mora imeti 3–20 znakov: črke, števke in podčrtaj.\n\nE-pošte v aplikaciji ni mogoče spremeniti; če jo želiš spremeniti, piši na luka@outly.si."
+          }
+        }
+      }
+    },
+    "Go to Profile > My Account > Preferences > Notifications and tap Turn on notifications. You get a notification for a ticket someone sent you, new events from clubs you follow, an invitation to a guest list and, for club staff, table service requests.\n\nIf you said no earlier, turn them on in iOS Settings. Sign-up and password codes always arrive by email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Moj račun > Nastavitve > Obvestila in tapni Vklopi obvestila. Obvestilo dobiš za vstopnico, ki ti jo je kdo poslal, nove dogodke klubov, katerim slediš, vabilo na seznam gostov in — za osebje kluba — zahteve za strežbo miz.\n\nČe si prej rekel(-a) ne, jih vklopi v nastavitvah iOS. Kode za registracijo in geslo vedno prispejo po e-pošti."
+          }
+        }
+      }
+    },
+    "Go to Profile > My Account > Preferences. My preferences saves your favourite music genres, maximum distance, age range and ticket price range on this phone; switch on Use my preferences in Filters to apply them.\n\nLanguage switches the app between English and Slovenščina straight away. Notifications is where you turn on push notifications. Friends can see my plans decides whether your friends see which events you are going to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Moj račun > Nastavitve. Moje nastavitve shranijo tvoje najljubše glasbene žanre, največjo razdaljo, starostni razpon in razpon cene vstopnice na tem telefonu; vklopi Uporabi moje nastavitve v Filtrih, da se uporabijo.\n\nJezik takoj preklopi aplikacijo med English in Slovenščina. Pri Obvestila vklopiš potisna obvestila. Prijatelji vidijo moje načrte določa, ali prijatelji vidijo, na katere dogodke greš."
           }
         }
       }
@@ -3826,6 +4365,17 @@
         }
       }
     },
+    "Home is a feed of what is on. Depending on what is available you will see Suggestions (clubs that match your genres), Tonight or This week, Interested events, Last week's biggest hits, In your area, Friends plans, Big events coming up, This weekend and Discover your genre. Tap any card to open it.\n\nIn your area: tap a club to open it. If you allowed your location, the first tap shows how far away the club is and the second tap opens it.\n\nDiscover your genre lists music genres; tap one to see its upcoming events. Tap See all events at the bottom of Home for a list of every upcoming event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domov je pregled dogajanja. Glede na ponudbo vidiš Predlogi (klubi, ki ustrezajo tvojim žanrom), Nocoj ali Ta teden, Zanima me, Največji hiti prejšnjega tedna, V tvoji bližini, Načrti prijateljev, Veliki dogodki, ki prihajajo, Ta vikend in Odkrij svoj žanr. Tapni katerokoli kartico, da jo odpreš.\n\nV tvoji bližini: tapni klub, da ga odpreš. Če si dovolil lokacijo, prvi dotik pokaže, kako daleč je klub, drugi ga odpre.\n\nOdkrij svoj žanr našteje glasbene žanre; tapni enega, da vidiš njegove prihajajoče dogodke. Na dnu zavihka Domov tapni Prikaži vse dogodke za seznam vseh prihajajočih dogodkov."
+          }
+        }
+      }
+    },
     "Hosted": {
       "extractionState": "manual",
       "localizations": {
@@ -3837,6 +4387,17 @@
         }
       }
     },
+    "How payments work": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kako delujejo plačila"
+          }
+        }
+      }
+    },
     "How to buy a ticket": {
       "extractionState": "manual",
       "localizations": {
@@ -3844,6 +4405,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kako kupiti vstopnico"
+          }
+        }
+      }
+    },
+    "How to use Outly": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kako uporabljati Outly"
           }
         }
       }
@@ -3877,6 +4449,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Grem zraven"
+          }
+        }
+      }
+    },
+    "If the app says Set up VIP tables at outly.si/app, the floor plan and prices are set up there. Organizers without their own venue can also do it in the app: open the event, go to VIP tables and choose Use the venue's layout, Own layout for this event or No VIP tables; Edit tables and layout lets you add tables, drag them into place and set seats and price. Save the event first.\n\nTo take a reservation by phone: Dashboard > event > VIP reservations, tap Mark as reserved on a free table, enter the Guest name and a Note, and tap Reserve. Tap Release to free the table again. Only owners and managers can do this.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če aplikacija pove, da VIP mize nastaviš na outly.si/app, tloris in cene nastaviš tam. Organizatorji brez lastnega prizorišča to lahko naredijo tudi v aplikaciji: odpri dogodek, pojdi na VIP mize in izberi Uporabi razpored prizorišča, Lasten razpored za ta dogodek ali Brez VIP miz; z Uredi mize in tloris dodaš mize, jih povlečeš na mesto in nastaviš sedeže in ceno. Najprej shrani dogodek.\n\nRezervacijo po telefonu vneseš takole: Pregled > dogodek > VIP rezervacije, pri prosti mizi tapni Označi kot rezervirano, vpiši Ime gosta in Opombo ter tapni Rezerviraj. Tapni Sprosti, da mizo spet sprostiš. To lahko naredita samo lastnik in upravitelj."
           }
         }
       }
@@ -4045,6 +4628,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Povabi v ekipo"
+          }
+        }
+      }
+    },
+    "Invite your team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi svojo ekipo"
           }
         }
       }
@@ -4441,6 +5035,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zemljevid"
+          }
+        }
+      }
+    },
+    "Mark an event with I'm in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označi dogodek z Grem zraven"
           }
         }
       }
@@ -5094,6 +5699,28 @@
         }
       }
     },
+    "Notifications  >  Bell": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestila  >  Zvonec"
+          }
+        }
+      }
+    },
+    "Notifications  >  Push": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestila  >  Potisna obvestila"
+          }
+        }
+      }
+    },
     "Number of tickets available. Shows “N left” and “Sold out” to guests.": {
       "extractionState": "manual",
       "localizations": {
@@ -5204,6 +5831,17 @@
         }
       }
     },
+    "Open an event and tap I'm in next to its title. The button changes to Interested; tap it again to take it back. Once you have a ticket it shows Going.\n\nEvents you are interested in appear on Home under Interested events. Tap See all to open the full list, split into Coming up and Already happened.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri dogodek in tapni Grem zraven ob naslovu. Gumb se spremeni v Zanima me; tapni ga znova, da ga razveljaviš. Ko imaš vstopnico, piše Grem.\n\nDogodki, ki te zanimajo, so na zavihku Domov pod Zanima me. Tapni Prikaži vse za celoten seznam, razdeljen na Prihaja in Že minilo."
+          }
+        }
+      }
+    },
     "Open My friends to accept": {
       "extractionState": "manual",
       "localizations": {
@@ -5215,6 +5853,28 @@
         }
       }
     },
+    "Open My team (managers: Profile > My Clubs > your club > Team). Tap Invite member, enter their Outly email, choose a role and tap Send invite. They need an Outly account with that email; the invitation reaches them in the app and they join when they accept.\n\nRoles: Manager — events, sales, club page and door staff; only the owner can add managers. Door staff — scans tickets at the door, nothing else. Bartender — sees VIP tables to serve and marks them delivered, with no guest details.\n\nTo remove someone, or to cancel a pending invitation, tap the x next to the name. A removed person loses access to the club tools right away.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri My team (ekipa) (upravitelji: Profil > Moji klubi > tvoj klub > Ekipa). Tapni Povabi člana, vpiši njihov Outly e-poštni naslov, izberi vlogo in tapni Pošlji vabilo. Potrebujejo Outly račun s tem e-poštnim naslovom; vabilo prispe v aplikacijo, ekipi pa se pridružijo, ko ga sprejmejo.\n\nVloge: Upravitelj — dogodki, prodaja, stran kluba in vratarji; upravitelje lahko dodaja samo lastnik. Vratar — skenira vstopnice pri vhodu, nič drugega. Natakar — vidi VIP mize za strežbo in jih označi kot dostavljene, brez podatkov o gostih.\n\nNekoga odstraniš ali čakajoče vabilo prekličeš tako, da tapneš x ob imenu. Odstranjena oseba takoj izgubi dostop do klubskih orodij."
+          }
+        }
+      }
+    },
+    "Open Profile > My Friends and tap Add friends. Search by username (at least 2 letters) and tap Add next to a person. Requested means the request is waiting; tap it to cancel.\n\nRequests you receive appear at the top of My Friends under Friend requests (and in the bell on Home). Tap Accept or Decline. To remove a friend, open the … menu next to them and choose Remove friend.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Moji prijatelji in tapni Dodaj prijatelje. Išči po uporabniškem imenu (vsaj 2 črki) in tapni Dodaj ob osebi. Poslano pomeni, da prošnja čaka; tapni ga, da jo prekličeš.\n\nPrejete prošnje so na vrhu zaslona Moji prijatelji pod Prošnje za prijateljstvo (in pod zvoncem na zavihku Domov). Tapni Sprejmi ali Zavrni. Prijatelja odstraniš tako, da ob njem odpreš meni … in izbereš Odstrani prijatelja."
+          }
+        }
+      }
+    },
     "Open Profile > Tickets and tap the ticket. Show the QR code to the staff at the entrance — they scan it with Outly.\n\nA ticket can be scanned only once. Screenshots work, but keep your brightness up so the code is readable.": {
       "extractionState": "manual",
       "localizations": {
@@ -5222,6 +5882,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpri Profil > Vstopnice in tapni vstopnico. Kodo QR pokaži osebju pri vhodu — skenirajo jo z Outlyjem.\n\nVstopnico je mogoče skenirati samo enkrat. Posnetek zaslona deluje, a naj bo osvetlitev dovolj visoka, da je koda berljiva."
+          }
+        }
+      }
+    },
+    "Open Profile > Tickets. Upcoming tickets are on top and Past below; tickets that were already scanned move to Used tickets. Tap a ticket to open it with its QR code. A VIP table is one group — tap it to open its tickets.\n\nTickets someone sent you and guest list tickets are here too.\n\nNo signal? Tickets keeps the last list it downloaded, so you can still open your QR code at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Vstopnice. Prihajajoče vstopnice so na vrhu, Pretekle pod njimi; že skenirane vstopnice se premaknejo med Uporabljene vstopnice. Tapni vstopnico, da jo odpreš z njeno QR kodo. VIP miza je ena skupina — tapni jo, da odpreš njene vstopnice.\n\nTu so tudi vstopnice, ki ti jih je kdo poslal, in vstopnice s seznama gostov.\n\nBrez signala? Vstopnice ohranijo zadnji prenesen seznam, zato lahko QR kodo pri vhodu še vedno odpreš."
           }
         }
       }
@@ -5248,6 +5919,50 @@
         }
       }
     },
+    "Open an event and tap the price on the poster. Choose how many tickets you want with the minus and plus buttons, then tap Pay (it shows the total), or Get ticket if the event is free. If the club takes payments through Stripe, a secure Stripe page opens for the payment and brings you back to Outly.\n\nYour tickets appear under Profile > Tickets as soon as the payment goes through. Each ticket has its own QR code.\n\nIf the poster says at the door, you pay at the club; if it says sold by the club, the button opens the club's own ticket page.\n\nEvents marked 18+ require a date of birth in your profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri dogodek in tapni ceno na plakatu. Z gumboma minus in plus izberi število vstopnic, nato tapni Plačaj (pokaže skupni znesek) ali Kupi vstopnico, če je dogodek brezplačen. Če klub sprejema plačila prek Stripa, se za plačilo odpre varna Stripova stran, po plačilu pa se vrneš v Outly.\n\nVstopnice se pojavijo pod Profil > Vstopnice, takoj ko plačilo steče. Vsaka vstopnica ima svojo QR kodo.\n\nČe na plakatu piše pri vhodu (at the door), plačaš v klubu; če piše prodaja klub (sold by the club), gumb odpre klubovo stran z vstopnicami.\n\nDogodki z oznako 18+ zahtevajo datum rojstva v tvojem profilu."
+          }
+        }
+      }
+    },
+    "Open an event from Home, Search, a club page or the Map. At the top is the poster with the ticket price. Below it are the club (tap it to open the club page), the date and time, the address with a small map (tap it for directions), Bar prices, the description (ABOUT) and who is selling the tickets.\n\nIf friends are going or interested, you see them under the title. To report an event, tap the … menu at the top right and choose Report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek odpri z zavihka Domov, iz Iskanja, s strani kluba ali z Zemljevida. Zgoraj je plakat s ceno vstopnice. Pod njim so klub (tapni ga, da odpreš stran kluba), datum in ura, naslov z majhnim zemljevidom (tapni ga za navodila za pot), Cenik bara, opis (O DOGODKU) in podatek, kdo prodaja vstopnice.\n\nČe prijatelji gredo ali jih zanima, jih vidiš pod naslovom. Dogodek prijaviš tako, da zgoraj desno tapneš meni … in izbereš Prijavi."
+          }
+        }
+      }
+    },
+    "Open Dashboard. Sales shows revenue for a period — choose By year, By month or By week. Below are Total revenue, Tickets sold, Outly fee and Your payout (after fee and refunds).\n\nCheck activity shows clicks on your profile and events and your Followers; Staff activity shows what your team scanned; Event performance lists your events — tap one for Door check-in and VIP reservations, or View all for the full list. While payments are in test mode, a TEST label shows and no money moves.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Pregled. Prodaja prikaže prihodek za obdobje — izberi Po letu, Po mesecu ali Po tednu. Spodaj so Skupni prihodek, Prodane vstopnice, Provizija Outly in Tvoje izplačilo (po proviziji in vračilih).\n\nPreveri aktivnost prikaže klike na tvoj profil in dogodke ter Sledilce; Aktivnost ekipe prikaže, kaj je skenirala tvoja ekipa; Uspešnost dogodkov našteje tvoje dogodke — tapni enega za Vstop pri vratih in VIP rezervacije ali Prikaži vse za celoten seznam. Dokler so plačila v testnem načinu, je prikazana oznaka TEST in denar se ne premika."
+          }
+        }
+      }
+    },
+    "Open Events and tap Add event (managers: Profile > My Clubs > your club > Create event). Fill in Title and Description, When (Starts, and Has end time if the event has an end), Who (Minimum age and music genres) and Tickets: Price in EUR (leave it empty if tickets are not sold on Outly, 0 means free entry), Capacity and an optional external ticket link. Choose a poster, switch on Published (visible to everyone) and tap Save.\n\nTap an event in the list to edit it. To remove one, tap Cancel or delete event. If tickets were already sold, the event is cancelled instead of deleted, so buyers keep proof of purchase.\n\nPast events can get an Event video that guests see on your club page — only your three most popular past events qualify.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Dogodki in tapni Dodaj dogodek (upravitelji: Profil > Moji klubi > tvoj klub > Ustvari dogodek). Izpolni Naslov in Opis, Kdaj (Začetek in Ima čas zaključka, če ima dogodek konec), Kdo (Najnižja starost in glasbeni žanri) ter Vstopnice: Cena (EUR) (pusti prazno, če vstopnic ne prodajaš na Outlyju, 0 pomeni brezplačen vstop), Kapaciteta in neobvezna zunanja povezava do vstopnic. Izberi plakat, vklopi Objavljeno (vidno vsem) in tapni Shrani.\n\nTapni dogodek na seznamu, da ga urediš. Dogodek odstraniš z Prekliči ali izbriši dogodek. Če so bile vstopnice že prodane, se dogodek prekliče namesto izbriše, da kupci obdržijo dokazilo o nakupu.\n\nPretekli dogodki lahko dobijo Video dogodka, ki ga gostje vidijo na strani tvojega kluba — to velja samo za tvoje tri najbolj priljubljene pretekle dogodke."
+          }
+        }
+      }
+    },
     "Open it": {
       "extractionState": "manual",
       "localizations": {
@@ -5266,6 +5981,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpri stran kluba"
+          }
+        }
+      }
+    },
+    "Open the Map tab. Every club on Outly is a pin, and you see yourself too if you allowed your location. Tap a pin to see the club's name and city, then tap the info button (i) next to it to open the club page.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri zavihek Zemljevid. Vsak klub na Outlyju je žebljiček, vidiš pa tudi sebe, če si dovolil lokacijo. Tapni žebljiček, da vidiš ime in mesto kluba, nato tapni gumb z informacijami (i) ob njem, da odpreš stran kluba."
+          }
+        }
+      }
+    },
+    "Open the Search tab, or tap Where to? on Home. Type at least 2 characters; results are split into Clubs and Events. Tap a result to open it.\n\nBefore you type, Search shows Browse by genre — tap a genre to see its events — and a list of clubs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri zavihek Iskanje ali tapni Kam gremo? na zavihku Domov. Vpiši vsaj 2 znaka; rezultati so razdeljeni na Klubi in Dogodki. Tapni rezultat, da ga odpreš.\n\nPreden začneš tipkati, Iskanje prikaže Prebrskaj po žanru — tapni žanr, da vidiš njegove dogodke — in seznam klubov."
           }
         }
       }
@@ -5376,6 +6113,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lastnik"
+          }
+        }
+      }
+    },
+    "Owners, managers and bartenders open Profile > My Clubs > your club > Table service (owners switch to their personal profile first). When door staff scan a VIP ticket, the table appears in the list with its package and the time it was scanned. The list refreshes by itself; pull down to refresh it yourself. Choose the event at the top if there is more than one.\n\nTap Delivered once the table has been served. Tapped by mistake? Tap Undo. Staff also get a notification when a table is ready to serve.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastniki, upravitelji in natakarji odprejo Profil > Moji klubi > tvoj klub > Strežba miz (lastniki se najprej preklopijo na osebni profil). Ko vratar skenira VIP vstopnico, se miza pojavi na seznamu s paketom in časom skena. Seznam se osvežuje sam; povleci navzdol, če ga želiš osvežiti sam. Zgoraj izberi dogodek, če jih je več.\n\nKo je miza postrežena, tapni Dostavljeno. Po pomoti? Tapni Razveljavi. Osebje dobi tudi obvestilo, ko je miza pripravljena za strežbo."
+          }
+        }
+      }
+    },
+    "Owners, managers and door staff scan with the camera: open Profile > My Clubs, tap your club, then Scan ticket (owners first switch to their personal profile: Settings > Switch to personal account). The scanner opens straight away — you don't pick an event. It covers the club's events from 12 hours before the start until 6 hours after the end. Point the camera at the guest's QR code.\n\nGreen WELCOME IN lets the guest in. Red means no (for example ALREADY SCANNED, REFUNDED, CANCELLED, NOT PAID or INVALID CODE). A gold bar marks a VIP table, a white bar a guest list guest. Tap Next for the following guest.\n\nYellow means the phone can't check the ticket by itself. If you decide to let the guest in, tap Let in; the server checks later and anything wrong appears under Conflicts (triangle, top right). Use the flashlight button in dark rooms.\n\nThe scanner also works without signal: it downloads the ticket list and sends scans when you are back online. Until the list is downloaded, tickets can only be checked with a connection. You can also check guests in by hand: Dashboard > event > Check in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastniki, upravitelji in vratarji skenirajo s kamero: odpri Profil > Moji klubi, tapni svoj klub, nato Skeniraj vstopnico (lastniki se najprej preklopijo na osebni profil: Settings (nastavitve) > Switch to personal account (preklop na osebni račun)). Skener se odpre takoj — dogodka ne izbiraš. Zajame klubove dogodke od 12 ur pred začetkom do 6 ur po koncu. Usmeri kamero v QR kodo gosta.\n\nZeleno DOBRODOŠLI pomeni, da gosta spustiš noter. Rdeče pomeni ne (na primer ŽE SKENIRANO, VRNJENO, PREKLICANO, NEPLAČANO ali NEVELJAVNA KODA). Zlata vrstica označuje VIP mizo, bela gosta s seznama gostov. Tapni Naprej za naslednjega gosta.\n\nRumeno pomeni, da telefon vstopnice ne more preveriti sam. Če se odločiš gosta spustiti, tapni Spusti; strežnik preveri pozneje, vse, kar ni v redu, pa se pokaže pod Konflikti (trikotnik, zgoraj desno). V temnih prostorih uporabi gumb svetilke.\n\nSkener deluje tudi brez signala: prenese seznam vstopnic, skene pa pošlje, ko je spet povezan. Dokler seznam ni prenesen, je vstopnice mogoče preveriti samo s povezavo. Goste lahko prijaviš tudi ročno: Pregled > dogodek > Prijavi vstop."
           }
         }
       }
@@ -5688,6 +6447,17 @@
         }
       }
     },
+    "Preferences, language and notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavitve, jezik in obvestila"
+          }
+        }
+      }
+    },
     "Price (EUR)": {
       "extractionState": "manual",
       "localizations": {
@@ -5783,6 +6553,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oceni aplikacijo"
+          }
+        }
+      }
+    },
+    "Read your dashboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preberi svoj pregled"
           }
         }
       }
@@ -6359,6 +7140,17 @@
         }
       }
     },
+    "Scan tickets at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeniranje vstopnic pri vhodu"
+          }
+        }
+      }
+    },
     "Scans tickets at the door.": {
       "extractionState": "manual",
       "localizations": {
@@ -6436,6 +7228,17 @@
         }
       }
     },
+    "Search for clubs and events": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iskanje klubov in dogodkov"
+          }
+        }
+      }
+    },
     "Search help": {
       "extractionState": "manual",
       "localizations": {
@@ -6476,6 +7279,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prikaži vse dogodke"
+          }
+        }
+      }
+    },
+    "See bar prices": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej cenik bara"
           }
         }
       }
@@ -6634,6 +7448,17 @@
         }
       }
     },
+    "Serve VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strezi VIP mize"
+          }
+        }
+      }
+    },
     "Sessions": {
       "extractionState": "manual",
       "localizations": {
@@ -6641,6 +7466,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seje"
+          }
+        }
+      }
+    },
+    "Set up VIP tables and phone reservations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavi VIP mize in telefonske rezervacije"
           }
         }
       }
@@ -7092,6 +7928,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dogodek se pokaže tudi na strani tega kluba, vstopnice pa lahko skenira samo tvoja ekipa."
+          }
+        }
+      }
+    },
+    "The first time you open the club profile you see Set up your club: add a logo, the name, address and city, minimum age and music genres, then tap Create club. If you organize events without your own venue, switch on I organize events without my own venue — there is then no address or map pin and you choose the venue for each event.\n\nLater tap Edit your page, then Club info (also under Settings) to change details: Club name, Phone number, Website, Instagram, Email, About club, Address, City, Minimum age, Music genres, Slideshow (up to 3 photos), Club video and Bar prices. Under Bar prices tap Add item, enter a name and price (category is optional) and tap Save.\n\nSeller details (company name, registered office, registration number, tax number) and VAT status are shown to buyers before payment. Only the club owner can change them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko prvič odpreš klubski profil, vidiš Set up your club (nastavi svoj klub): dodaj logotip, ime, naslov in mesto, najnižjo starost in glasbene žanre, nato tapni Create club (ustvari klub). Če dogodke organiziraš brez lastnega prizorišča, vklopi Organiziram dogodke brez lastnega prizorišča — takrat ni naslova in oznake na zemljevidu, prizorišče pa izbereš za vsak dogodek posebej.\n\nKasneje tapni Uredi svojo stran, nato Podatki o klubu (tudi pod Settings), da spremeniš podrobnosti: Ime kluba, Telefonska številka, Spletna stran, Instagram, E-pošta, O klubu, Naslov, Mesto, Najnižja starost, Glasbeni žanri, Galerija (do 3 fotografije), Video kluba in Cenik bara. Pod Cenik bara tapni Dodaj postavko, vpiši ime in ceno (kategorija ni obvezna) in tapni Shrani.\n\nPodatki prodajalca (ime podjetja, sedež, matična številka, davčna številka) in Status DDV so kupcem prikazani pred plačilom. Spremeniti jih sme samo lastnik kluba."
           }
         }
       }
@@ -7605,6 +8452,28 @@
         }
       }
     },
+    "The bar at the bottom has four tabs: Home, Search, Map and Profile.\n\nOn Home, tap your picture (top left) to open your Profile and the bell (top right) for notifications. Tap Where to? to search, or the sliders icon next to it to open Filters. Pull down to refresh.\n\nEverything you can do in Outly is explained in the articles below — use the search field on this screen to jump to one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spodnja vrstica ima štiri zavihke: Domov, Iskanje, Zemljevid in Profil.\n\nNa zavihku Domov tapni svojo sliko (zgoraj levo), da odpreš Profil, in zvonec (zgoraj desno) za obvestila. Tapni Kam gremo?, da iščeš, ali ikono drsnikov ob njem, da odpreš Filtre. Povleci navzdol za osvežitev.\n\nVse, kar lahko narediš v Outlyju, je razloženo v spodnjih člankih — z iskalnim poljem na tem zaslonu hitro najdeš pravega."
+          }
+        }
+      }
+    },
+    "The bell on Home": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zvonec na zavihku Domov"
+          }
+        }
+      }
+    },
     "Purchases aren't available yet: the organizer hasn't completed their seller details.": {
       "extractionState": "manual",
       "localizations": {
@@ -8023,6 +8892,28 @@
         }
       }
     },
+    "Tickets  >  Guest lists": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice  >  Seznami gostov"
+          }
+        }
+      }
+    },
+    "Tickets  >  Your tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice  >  Tvoje vstopnice"
+          }
+        }
+      }
+    },
     "Tickets are paid at checkout. Payments are processed by Stripe; Outly never sees or stores your card details, and the app does not hold a balance.": {
       "extractionState": "manual",
       "localizations": {
@@ -8030,6 +8921,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vstopnice plačaš ob nakupu. Plačila obdeluje Stripe; Outly nikoli ne vidi ali shranjuje podatkov tvoje kartice, aplikacija pa ne vodi stanja denarnice."
+          }
+        }
+      }
+    },
+    "Tickets are paid at checkout. Payments are processed by Stripe; Outly never sees or stores your card details, and the app does not hold a balance.\n\nYou can read this any time under Profile > Payment. For refunds see Refunds and cancelled events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice plačaš ob nakupu. Plačila obdeluje Stripe; Outly nikoli ne vidi in ne shranjuje podatkov tvoje kartice, aplikacija pa ne vodi stanja.\n\nTo lahko kadar koli prebereš pod Profil > Plačilo. O vračilih glej Vračila in odpovedani dogodki."
           }
         }
       }
@@ -8129,6 +9031,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Do"
+          }
+        }
+      }
+    },
+    "To report an event or a club, tap the … menu at the top right of its page and choose Report. Pick a reason and tap Send. We review reports within 24 hours.\n\nTo report or block a person, open the … menu next to their name (in My Friends or when you search for friends) and choose Report or Block. People you block can't find you or send you requests, and they are not notified. You can undo it under Profile > My Account > Blocked users with Unblock; the friendship does not come back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek ali klub prijaviš tako, da zgoraj desno na njegovi strani tapneš meni … in izbereš Prijavi. Izberi razlog in tapni Pošlji. Prijave pregledamo v 24 urah.\n\nOsebo prijaviš ali blokiraš tako, da ob njenem imenu (pri Moji prijatelji ali ko iščeš prijatelje) odpreš meni … in izbereš Prijavi ali Blokiraj. Blokirani te ne najdejo in ti ne morejo pošiljati prošenj, o blokadi pa niso obveščeni. Razveljaviš jo pod Profil > Moj račun > Blokirani uporabniki z Odblokiraj; prijateljstvo se ne obnovi."
           }
         }
       }
@@ -8272,6 +9185,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vklopi obvestila"
+          }
+        }
+      }
+    },
+    "Turn on push notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vklopi potisna obvestila"
           }
         }
       }
@@ -8782,6 +9706,17 @@
         }
       }
     },
+    "What you see on Home": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaj vidiš na zavihku Domov"
+          }
+        }
+      }
+    },
     "What you'll get": {
       "extractionState": "manual",
       "localizations": {
@@ -8914,6 +9849,17 @@
         }
       }
     },
+    "When a club invites you to its team, you see it in the bell on Home and in Profile > My Clubs (bell, top right). Open the invitation and tap Accept to join or Reject to decline. The club then shows under My Clubs, with the tools for your role.\n\nTo leave a team, open the club under My Clubs and tap Leave the team. The club can invite you again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko te klub povabi v svojo ekipo, vabilo vidiš pod zvoncem na zavihku Domov in v Profil > Moji klubi (zvonec, zgoraj desno). Odpri vabilo in tapni Sprejmi, da se pridružiš, ali Zavrni. Klub se nato pokaže pod Moji klubi, z orodji za tvojo vlogo.\n\nEkipo zapustiš tako, da pod Moji klubi odpreš klub in tapneš Zapusti ekipo. Klub te lahko znova povabi."
+          }
+        }
+      }
+    },
     "When a friend gets a ticket, the event shows up here.": {
       "extractionState": "manual",
       "localizations": {
@@ -8932,6 +9878,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ko je vklopljeno, prijatelji pod »Načrti prijateljev« vidijo, za katere dogodke imaš vstopnico. Samo prijatelji, nikoli kdo drug."
+          }
+        }
+      }
+    },
+    "Where to find your tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kje najdeš svoje vstopnice"
           }
         }
       }
@@ -9855,6 +10812,17 @@
         }
       }
     },
+    "Tap the bell at the top right of Home to see what is new: invitations to join a club team, friend requests, a ticket a friend sent you, guest list invitations, new events from clubs you follow and, for club staff, VIP tables ready to serve. Tap an item to open it. A number on the bell means something is waiting.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni zvonec zgoraj desno na zavihku Domov, da vidiš, kaj je novega: vabila v klubsko ekipo, prošnje za prijateljstvo, vstopnico, ki ti jo je poslal prijatelj, vabila na seznam gostov, nove dogodke klubov, katerim slediš, in — za osebje kluba — VIP mize, ki so pripravljene za strežbo. Tapni vnos, da ga odpreš. Številka na zvoncu pomeni, da nekaj čaka."
+          }
+        }
+      }
+    },
     "ticket scanning at the door": {
       "extractionState": "manual",
       "localizations": {
@@ -10319,6 +11287,17 @@
         }
       }
     },
+    "See where your friends are going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej, kam gredo prijatelji"
+          }
+        }
+      }
+    },
     "FOR MORE QUESTIONS CALL:": {
       "extractionState": "manual",
       "localizations": {
@@ -10678,6 +11657,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "VIP mize nastaviš na outly.si/app"
+          }
+        }
+      }
+    },
+    "Set up your club page": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uredi stran svojega kluba"
           }
         }
       }
@@ -11296,6 +12286,50 @@
         }
       }
     },
+    "On an event page scroll to VIP & TABLES and tap Reserve a VIP table. If the club has published a table layout you see the floor plan; if not, call the club on the number shown under the card.\n\nTap a free table, choose your bottle if the club offers packages (it is included in the table price) and tap Reserve table. If you pay through Stripe, the table is held for you until you finish paying.\n\nAfterwards you can send tickets to your friends: choose them from the list and tap Send to friends, or tap Skip — tickets you don't send stay under Tickets.\n\nLike tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club; Outly is the intermediary.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na strani dogodka se pomakni do VIP IN MIZE in tapni Rezerviraj VIP mizo. Če je klub objavil razpored miz, vidiš tloris; če ne, pokliči klub na številko, ki je prikazana pod kartico.\n\nTapni prosto mizo, izberi svojo steklenico, če klub ponuja pakete (vključena je v ceno mize), in tapni Rezerviraj mizo. Če plačaš prek Stripa, je miza zate zadržana, dokler ne končaš plačila.\n\nNato lahko vstopnice pošlješ prijateljem: izberi jih s seznama in tapni Pošlji prijateljem ali tapni Preskoči — vstopnice, ki jih ne pošlješ, ostanejo pod Vstopnice.\n\nTako kot vstopnice tudi VIP mize za dogodek z datumom po nakupu ni mogoče vrniti. Prodajalec je klub; Outly je posrednik."
+          }
+        }
+      }
+    },
+    "On an event page tap Bar prices to open the club's drink list, grouped by category. Prices are set by the club and may change.\n\nIf it says Not added yet, the club has not shared its prices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na strani dogodka tapni Cenik bara, da odpreš klubov seznam pijač, razvrščen po kategorijah. Cene določi klub in se lahko spremenijo.\n\nČe piše Še ni dodano, klub svojih cen še ni delil."
+          }
+        }
+      }
+    },
+    "On Home tap the sliders icon next to Where to?. Choose a City, tick Music genres and move the sliders for Distance, Age range and Entry price. Tap Apply filters.\n\nA blue dot on the icon means filters are on. Tap Reset to clear them.\n\nTurn on Use my preferences to fill in the filters from Profile > My Account > Preferences > My preferences.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zavihku Domov tapni ikono drsnikov ob Kam gremo?. Izberi Mesto, označi Glasbeni žanri in premakni drsnike za Razdalja, Starost in Cena vstopnice. Tapni Uporabi filtre.\n\nModra pika na ikoni pomeni, da so filtri vklopljeni. Tapni Ponastavi, da jih počistiš.\n\nVklopi Uporabi moje nastavitve, da se filtri izpolnijo iz Profil > Moj račun > Nastavitve > Moje nastavitve."
+          }
+        }
+      }
+    },
+    "On Home, Friends plans shows your friends as circles: a blue ring means they have a ticket, a white ring means they are interested. Tap View to see their events, then Join them to buy a ticket for the same event or View event to open it. Tap Invite more to share Outly with someone who isn't on it yet.\n\nYour friends can see your plans too. To switch that off, go to Profile > My Account > Preferences and turn off Friends can see my plans.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zavihku Domov Načrti prijateljev prikažejo prijatelje kot kroge: moder rob pomeni, da imajo vstopnico, bel rob, da jih dogodek zanima. Tapni Prikaži, da vidiš njihove dogodke, nato Pridruži se, da kupiš vstopnico za isti dogodek, ali Poglej dogodek, da ga odpreš. Tapni Povabi še koga, da Outly deliš z nekom, ki ga še nima.\n\nTudi prijatelji vidijo tvoje načrte. Če tega ne želiš, odpri Profil > Moj račun > Nastavitve in izklopi Prijatelji vidijo moje načrte."
+          }
+        }
+      }
+    },
     "This ticket has an old code. It can only be checked with a connection.": {
       "extractionState": "manual",
       "localizations": {
@@ -11822,6 +12856,17 @@
         }
       }
     },
+    "Add friends and answer requests": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj prijatelje in odgovori na prošnje"
+          }
+        }
+      }
+    },
     "Tickets sent": {
       "extractionState": "manual",
       "localizations": {
@@ -11906,6 +12951,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seznami gostov"
+          }
+        }
+      }
+    },
+    "Guest lists: invite your friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznami gostov: povabi prijatelje"
           }
         }
       }
