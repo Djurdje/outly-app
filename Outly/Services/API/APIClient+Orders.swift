@@ -167,7 +167,7 @@ struct APITicket: Codable, Identifiable {
         }
     }
     /// Veljavna vstopnica prihodnjega dogodka. Za barvo napisa: `statusLabel` je preveden, zato ga ne smemo primerjati z angleskim nizom.
-    var jeVeljavna: Bool { !isUsed && status == "valid" && !isPast }
+    var jeVeljavna: Bool { !isUsed && status == "valid" && !isPast && !paymentDisputed }   // vstopnica v sporu ni veljavna (rdeca, ne modra)
     var isPast: Bool { (startDate ?? .distantFuture) < Date().addingTimeInterval(-8 * 3600) }
 }
 
