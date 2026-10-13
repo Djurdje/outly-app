@@ -621,6 +621,7 @@ private struct Line: Shape {
     }
 }
 
+/// Iskalno polje (Help Center): siva prosojna podlaga s tankim robom, kot HelpCard (modra je samo za glavni gumb).
 struct SearchBar: View {
     @Binding var text: String
     var placeholder: String = "Search"
@@ -628,13 +629,18 @@ struct SearchBar: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.white)
+                .foregroundColor(.gray)
 
-            TextField(LocalizedStringKey(placeholder), text: $text)
+            TextField(LocalizedStringKey(placeholder), text: $text,
+                      prompt: Text(LocalizedStringKey(placeholder)).foregroundColor(.gray))
                 .foregroundColor(.white)
         }
         .padding(12)
-        .background(Color.outlyBlue)
+        .background(Color.white.opacity(0.08))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
         .cornerRadius(12)
     }
 }
