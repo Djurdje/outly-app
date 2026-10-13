@@ -98,7 +98,9 @@ private final class ClubAnnotation: NSObject, MKAnnotation {
         clubId = club.clubId
         coordinate = CLLocationCoordinate2D(latitude: club.lat, longitude: club.lng)
         title = club.name
-        subtitle = club.city.isEmpty ? nil : club.city
+        // Kartica ob izbiri pina je MapKitova klicalka (samo besedilo): demo klub dobi »Demo · mesto« (backend#243).
+        let deli = [club.isDemo ? String(localized: "Demo") : "", club.city].filter { !$0.isEmpty }
+        subtitle = deli.isEmpty ? nil : deli.joined(separator: " \u{00B7} ")
     }
 }
 

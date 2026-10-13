@@ -12,11 +12,14 @@ struct MapClub: Identifiable, Decodable {
     let city: String
     let minAge: Int
     let genres: [String]
+    /// Demo klub (backend#243): kartica ob izbiri pina kaze »Demo«. Star backend -> false.
+    let isDemo: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, name, lat, lng, city, genres
         case logoUrl = "logo_url"
         case minAge = "min_age"
+        case isDemo = "is_demo"
     }
 
     init(from decoder: Decoder) throws {
@@ -29,6 +32,7 @@ struct MapClub: Identifiable, Decodable {
         city    = try c.decodeIfPresent(String.self, forKey: .city) ?? ""
         minAge  = try c.decodeIfPresent(Int.self, forKey: .minAge) ?? 18
         genres  = try c.decodeIfPresent([String].self, forKey: .genres) ?? []
+        isDemo  = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
     }
 }
 
@@ -39,10 +43,13 @@ struct SearchResults: Decodable {
         let name: String
         let city: String
         let logoUrl: String
+        /// Demo klub (backend#243). Star backend -> false.
+        let isDemo: Bool
 
         enum CodingKeys: String, CodingKey {
             case id, name, city
             case logoUrl = "logo_url"
+            case isDemo = "is_demo"
         }
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -50,6 +57,7 @@ struct SearchResults: Decodable {
             name    = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
             city    = try c.decodeIfPresent(String.self, forKey: .city) ?? ""
             logoUrl = try c.decodeIfPresent(String.self, forKey: .logoUrl) ?? ""
+            isDemo  = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
         }
     }
 
@@ -60,6 +68,8 @@ struct SearchResults: Decodable {
         let posterUrl: String
         let startAt: String
         let clubName: String
+        /// Prodajalec dogodka je demo klub (backend#243). Star backend -> false.
+        let isDemo: Bool
 
         enum CodingKeys: String, CodingKey {
             case id, title
@@ -67,6 +77,7 @@ struct SearchResults: Decodable {
             case posterUrl = "poster_url"
             case startAt = "start_at"
             case clubName = "club_name"
+            case isDemo = "is_demo"
         }
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -76,6 +87,7 @@ struct SearchResults: Decodable {
             posterUrl = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
             startAt   = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
             clubName  = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
+            isDemo    = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
         }
 
         var startDate: Date? { DateParsing.parseBackendDate(startAt) }

@@ -62,6 +62,9 @@ struct HitCard: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
+                    if event.isDemo {
+                        DemoZnacka(kompakten: true)
+                    }
                     if !event.genres.isEmpty {
                         Text(event.genres.map { $0.uppercased() }.joined(separator: "  "))
                             .font(.system(size: 10, weight: .bold))
@@ -134,6 +137,9 @@ struct HeroEventCard: View {
                         .lineLimit(1)
                     }
                     Spacer()
+                    if event.isDemo || club?.isDemo == true {
+                        DemoZnacka(kompakten: true)
+                    }
                     if let badge = event.badgeText {
                         Text(badge)
                             .font(.system(size: 10, weight: .heavy))

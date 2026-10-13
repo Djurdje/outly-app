@@ -101,6 +101,10 @@ struct EventCardAPI: View {
                 if let planBadge {
                     znacka(planBadge)
                 }
+
+                if event.isDemo {
+                    DemoZnacka()
+                }
             }
         }
         .padding(12)
@@ -145,6 +149,10 @@ struct EventCardAPI: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                }
+
+                if event.isDemo {
+                    DemoZnacka(kompakten: true)
                 }
 
                 HStack(spacing: 10) {
@@ -256,6 +264,9 @@ struct EventCardAPI: View {
                 }
             }
             .padding(16)
+        }
+        .overlay(alignment: .topTrailing) {
+            if event.isDemo { DemoZnacka().padding(14) }
         }
         .contentShape(RoundedRectangle(cornerRadius: 24))
     }

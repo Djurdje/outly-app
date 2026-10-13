@@ -58,6 +58,11 @@ extension APIError {
         // na POST /events/:id/orders in /events/:id/tables/:tableId/orders. PRED splosnim 409 in pred pravili po vsebini spodaj.
         if t.contains("seller_incomplete")              { return String(localized: "Purchases aren't available yet: the organizer hasn't completed their seller details.") }
 
+        // Nakup pri demo klubu (backend#243): 409 `{ "error": "demo_club", "message": "This is a demo club. Tickets can't be bought." }`
+        // na POST /events/:id/orders in /events/:id/tables/:tableId/orders. Po KODI (ne po sporocilu), PRED splosnim 409 in pred
+        // pravili po vsebini spodaj (sporocilo vsebuje »club« in »tickets«).
+        if t.contains("demo_club")                      { return DemoKlub.sporocilo }
+
         // Prenos vstopnice prijatelju brez racuna (JSON `{ error, message }`): kode PRED vsem ostalim, ker je telo celoten JSON.
         if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }
         if t.contains("guest_transfer_disabled")        { return String(localized: "Sending tickets to people without an Outly account is not available yet.") }
