@@ -13535,6 +13535,3218 @@
           }
         }
       }
+    },
+    "Where to find it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kje to najdeš"
+          }
+        }
+      }
+    },
+    "Steps": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koraki"
+          }
+        }
+      }
+    },
+    "Take me there": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pelji me tja"
+          }
+        }
+      }
+    },
+    "Good to know": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dobro je vedeti"
+          }
+        }
+      }
+    },
+    "Was this article helpful?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ti je bil ta članek v pomoč?"
+          }
+        }
+      }
+    },
+    "Thanks for your feedback.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvala za tvoj odziv."
+          }
+        }
+      }
+    },
+    "Related articles": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sorodni članki"
+          }
+        }
+      }
+    },
+    "Helpful": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V pomoč"
+          }
+        }
+      }
+    },
+    "Not helpful": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni v pomoč"
+          }
+        }
+      }
+    },
+    "Create your Outly account with your email and confirm it with a code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari račun v Outlyju z e-pošto in ga potrdi s kodo."
+          }
+        }
+      }
+    },
+    "Tap Sign up.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Registracija."
+          }
+        }
+      }
+    },
+    "Enter your username, email and a password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi uporabniško ime, e-pošto in geslo."
+          }
+        }
+      }
+    },
+    "Type in the code (6–10 digits) we send to your email to confirm your address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši kodo (6–10 števk), ki ti jo pošljemo na e-pošto, da potrdiš naslov."
+          }
+        }
+      }
+    },
+    "Complete your profile: date of birth, country and the music you like.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokončaj profil: datum rojstva, država in glasba, ki jo imaš rad(a)."
+          }
+        }
+      }
+    },
+    "Your date of birth is used only to check age limits on events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum rojstva uporabimo samo za preverjanje starostnih omejitev pri dogodkih."
+          }
+        }
+      }
+    },
+    "You must be at least 15 to use Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za uporabo Outlyja moraš imeti vsaj 15 let."
+          }
+        }
+      }
+    },
+    "The bar at the bottom has four tabs, and Home has a few shortcuts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spodnja vrstica ima štiri zavihke, Domov pa ima nekaj bližnjic."
+          }
+        }
+      }
+    },
+    "Use the bar at the bottom: Home, Search, Map and Profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabi spodnjo vrstico: Domov, Iskanje, Zemljevid in Profil."
+          }
+        }
+      }
+    },
+    "On Home, tap your picture (top left) to open your Profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zavihku Domov tapni svojo sliko (zgoraj levo), da odpreš Profil."
+          }
+        }
+      }
+    },
+    "Tap the bell (top right) to see notifications.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni zvonec (zgoraj desno), da vidiš obvestila."
+          }
+        }
+      }
+    },
+    "Tap Where to? to search, or the sliders icon next to it to open Filters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Kam gremo?, da iščeš, ali ikono drsnikov ob njem, da odpreš Filtre."
+          }
+        }
+      }
+    },
+    "Pull down to refresh.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povleci navzdol za osvežitev."
+          }
+        }
+      }
+    },
+    "Everything you can do in Outly is explained in the Help Center — use its search field to jump to an article.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse, kar lahko narediš v Outlyju, je razloženo v Centru za pomoč — z njegovim iskalnim poljem hitro najdeš pravi članek."
+          }
+        }
+      }
+    },
+    "Home is a feed of what is on, shown in sections.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domov je pregled dogajanja, razdeljen na razdelke."
+          }
+        }
+      }
+    },
+    "Scroll down to browse the sections.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pomikaj se navzdol in prebrskaj razdelke."
+          }
+        }
+      }
+    },
+    "Tap any card to open it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni katerokoli kartico, da jo odpreš."
+          }
+        }
+      }
+    },
+    "Under In your area, tap a club to open it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod V tvoji bližini tapni klub, da ga odpreš."
+          }
+        }
+      }
+    },
+    "Under Discover your genre, tap a genre to see its upcoming events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Odkrij svoj žanr tapni žanr, da vidiš njegove prihajajoče dogodke."
+          }
+        }
+      }
+    },
+    "Tap See all events at the bottom of Home to see every upcoming event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na dnu zavihka Domov tapni Prikaži vse dogodke za seznam vseh prihajajočih dogodkov."
+          }
+        }
+      }
+    },
+    "Depending on what is available you will see Suggestions (clubs that match your genres), Tonight or This week, Interested events, Last week's biggest hits, In your area, Friends plans, Big events coming up, This weekend and Discover your genre.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glede na ponudbo vidiš Predlogi (klubi, ki ustrezajo tvojim žanrom), Nocoj ali Ta teden, Zanima me, Največji hiti prejšnjega tedna, V tvoji bližini, Načrti prijateljev, Veliki dogodki, ki prihajajo, Ta vikend in Odkrij svoj žanr."
+          }
+        }
+      }
+    },
+    "If you allowed your location, the first tap on a club under In your area shows how far away it is and the second tap opens it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če si dovolil lokacijo, prvi dotik na klub pod V tvoji bližini pokaže, kako daleč je, drugi ga odpre."
+          }
+        }
+      }
+    },
+    "Find clubs and events by name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči klube in dogodke po imenu."
+          }
+        }
+      }
+    },
+    "Open the Search tab, or tap Where to? on Home.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri zavihek Iskanje ali tapni Kam gremo? na zavihku Domov."
+          }
+        }
+      }
+    },
+    "Look through the results, split into Clubs and Events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej rezultate, razdeljene na Klubi in Dogodki."
+          }
+        }
+      }
+    },
+    "Tap a result to open it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni rezultat, da ga odpreš."
+          }
+        }
+      }
+    },
+    "Before you type, Search shows Browse by genre — tap a genre to see its events — and a list of clubs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preden začneš tipkati, Iskanje prikaže Prebrskaj po žanru — tapni žanr, da vidiš njegove dogodke — in seznam klubov."
+          }
+        }
+      }
+    },
+    "Narrow down events by city, music genre, distance, age and price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoži izbiro dogodkov po mestu, glasbenem žanru, razdalji, starosti in ceni."
+          }
+        }
+      }
+    },
+    "Tap the sliders icon next to Where to?.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni ikono drsnikov ob Kam gremo?."
+          }
+        }
+      }
+    },
+    "Choose a City and tick Music genres.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi Mesto in označi Glasbeni žanri."
+          }
+        }
+      }
+    },
+    "Move the sliders for Distance, Age range and Entry price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premakni drsnike za Razdalja, Starost in Cena vstopnice."
+          }
+        }
+      }
+    },
+    "Tap Apply filters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Uporabi filtre."
+          }
+        }
+      }
+    },
+    "A blue dot on the icon means filters are on. Tap Reset to clear them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modra pika na ikoni pomeni, da so filtri vklopljeni. Tapni Ponastavi, da jih počistiš."
+          }
+        }
+      }
+    },
+    "Turn on Use my preferences to fill in the filters from Profile > My Account > Preferences > My preferences.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vklopi Uporabi moje nastavitve, da se filtri izpolnijo iz Profil > Moj račun > Nastavitve > Moje nastavitve."
+          }
+        }
+      }
+    },
+    "See every club on a map and open its page.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej vse klube na zemljevidu in odpri njihovo stran."
+          }
+        }
+      }
+    },
+    "Open the Map tab.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri zavihek Zemljevid."
+          }
+        }
+      }
+    },
+    "Tap a pin to see the club's name and city.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni žebljiček, da vidiš ime in mesto kluba."
+          }
+        }
+      }
+    },
+    "Tap the info button (i) next to it to open the club page.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni gumb z informacijami (i) ob njem, da odpreš stran kluba."
+          }
+        }
+      }
+    },
+    "Every club on Outly is a pin. You see yourself too if you allowed your location.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsak klub na Outlyju je žebljiček, vidiš pa tudi sebe, če si dovolil lokacijo."
+          }
+        }
+      }
+    },
+    "Mark events you like, so you find them again on Home.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označi dogodke, ki ti ugajajo, da jih na zavihku Domov najdeš znova."
+          }
+        }
+      }
+    },
+    "Open an event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri dogodek."
+          }
+        }
+      }
+    },
+    "Tap I'm in next to its title. The button changes to Interested.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Grem zraven ob naslovu. Gumb se spremeni v Zanima me."
+          }
+        }
+      }
+    },
+    "Tap it again to take it back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni ga znova, da ga razveljaviš."
+          }
+        }
+      }
+    },
+    "Once you have a ticket it shows Going.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko imaš vstopnico, piše Grem."
+          }
+        }
+      }
+    },
+    "Events you are interested in appear on Home under Interested events. Tap See all to open the full list, split into Coming up and Already happened.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki, ki te zanimajo, so na zavihku Domov pod Zanima me. Tapni Prikaži vse za celoten seznam, razdeljen na Prihaja in Že minilo."
+          }
+        }
+      }
+    },
+    "A quick tour of what you can see and tap on an event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kratek ogled vsega, kar je na dogodku vidno in tapljivo."
+          }
+        }
+      }
+    },
+    "Open an event from Home, Search, a club page or the Map.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek odpri z zavihka Domov, iz Iskanja, s strani kluba ali z Zemljevida."
+          }
+        }
+      }
+    },
+    "Check the poster at the top: it shows the ticket price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zgoraj poglej plakat: pokaže ceno vstopnice."
+          }
+        }
+      }
+    },
+    "Below it find the club, the date and time, and the address with a small map.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod njim so klub, datum in ura ter naslov z majhnim zemljevidom."
+          }
+        }
+      }
+    },
+    "Tap the club to open its page, or the small map for directions.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni klub, da odpreš njegovo stran, ali majhen zemljevid za navodila za pot."
+          }
+        }
+      }
+    },
+    "Tap Bar prices to see drinks, and read the description under ABOUT.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Cenik bara za pijače in preberi opis pod O DOGODKU."
+          }
+        }
+      }
+    },
+    "The event page also shows who is selling the tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na strani dogodka je tudi podatek, kdo prodaja vstopnice."
+          }
+        }
+      }
+    },
+    "If friends are going or interested, you see them under the title.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če prijatelji gredo ali jih zanima, jih vidiš pod naslovom."
+          }
+        }
+      }
+    },
+    "To report an event, tap the … menu at the top right and choose Report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek prijaviš tako, da zgoraj desno tapneš meni … in izbereš Prijavi."
+          }
+        }
+      }
+    },
+    "See a club's events and details, and follow it to hear about new events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej klubove dogodke in podatke ter mu sledi, da izveš za nove dogodke."
+          }
+        }
+      }
+    },
+    "Open a club from Search, the Map or an event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri klub iz Iskanja, z Zemljevida ali z dogodka."
+          }
+        }
+      }
+    },
+    "Scroll through its events, the map with the address and Contact.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preglej njegove dogodke, zemljevid z naslovom in Kontakt."
+          }
+        }
+      }
+    },
+    "Tap an event to open it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni dogodek, da ga odpreš."
+          }
+        }
+      }
+    },
+    "Tap Follow to get a notification when the club posts a new event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Sledi, da dobiš obvestilo, ko klub objavi nov dogodek."
+          }
+        }
+      }
+    },
+    "Tap Following to stop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Sledim, da nehaš slediti."
+          }
+        }
+      }
+    },
+    "A club page has photos, the city, music genres and minimum age, then Popular and Coming Soon events, a map with the address, Contact (email, phone, Instagram, website) and a description.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stran kluba ima fotografije, mesto, glasbene žanre in najnižjo starost, nato dogodke Priljubljeno in Kmalu na sporedu, zemljevid z naslovom, Kontakt (e-pošta, telefon, Instagram, spletna stran) in opis."
+          }
+        }
+      }
+    },
+    "Allow notifications when Outly asks, or turn them on under Preferences.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dovoli obvestila, ko te Outly vpraša, ali jih vklopi pod Nastavitve."
+          }
+        }
+      }
+    },
+    "To report a club, tap the … menu at the top right and choose Report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klub prijaviš tako, da zgoraj desno tapneš meni … in izbereš Prijavi."
+          }
+        }
+      }
+    },
+    "Look up the club's drink prices before you go.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej cene pijač v klubu, še preden greš."
+          }
+        }
+      }
+    },
+    "Tap Bar prices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Cenik bara."
+          }
+        }
+      }
+    },
+    "Browse the club's drink list, grouped by category.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preglej klubov seznam pijač, razvrščen po kategorijah."
+          }
+        }
+      }
+    },
+    "If it says Not added yet, the club has not shared its prices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če piše Še ni dodano, klub svojih cen še ni delil."
+          }
+        }
+      }
+    },
+    "Reserve a table at an event that offers VIP tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezerviraj mizo na dogodku, ki ponuja VIP mize."
+          }
+        }
+      }
+    },
+    "On an event page, scroll to VIP & TABLES.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na strani dogodka se pomakni do VIP IN MIZE."
+          }
+        }
+      }
+    },
+    "Tap Reserve a VIP table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Rezerviraj VIP mizo."
+          }
+        }
+      }
+    },
+    "Tap a free table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni prosto mizo."
+          }
+        }
+      }
+    },
+    "Choose your bottle, if the club offers packages.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi svojo steklenico, če klub ponuja pakete."
+          }
+        }
+      }
+    },
+    "Tap Reserve table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Rezerviraj mizo."
+          }
+        }
+      }
+    },
+    "To send tickets to friends, choose them from the list and tap Send to friends, or tap Skip.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za pošiljanje vstopnic prijateljem jih izberi s seznama in tapni Pošlji prijateljem ali tapni Preskoči."
+          }
+        }
+      }
+    },
+    "If the club has published a table layout you see the floor plan; if not, call the club on the number shown under the card.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če je klub objavil razpored miz, vidiš tloris; če ne, pokliči klub na številko, ki je prikazana pod kartico."
+          }
+        }
+      }
+    },
+    "The bottle is included in the table price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steklenica je vključena v ceno mize."
+          }
+        }
+      }
+    },
+    "If you pay through Stripe, the table is held for you until you finish paying.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če plačaš prek Stripa, je miza zate zadržana, dokler ne končaš plačila."
+          }
+        }
+      }
+    },
+    "Tickets you don't send stay under Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice, ki jih ne pošlješ, ostanejo pod Vstopnice."
+          }
+        }
+      }
+    },
+    "Like tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club; Outly is the intermediary.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tako kot vstopnice tudi VIP mize za dogodek z datumom po nakupu ni mogoče vrniti. Prodajalec je klub; Outly je posrednik."
+          }
+        }
+      }
+    },
+    "Outly is for people aged 15 and over, and some events have a higher age limit.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outly je za osebe, stare 15 let ali več, nekateri dogodki pa imajo višjo starostno mejo."
+          }
+        }
+      }
+    },
+    "Find the Date of birth card.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči kartico Datum rojstva."
+          }
+        }
+      }
+    },
+    "Tap Edit and enter your date of birth.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Uredi in vnesi svoj datum rojstva."
+          }
+        }
+      }
+    },
+    "You must be 15 or older to use Outly. Some events are 18+ — this is shown on the event and you need a date of birth in your profile to buy tickets for them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za uporabo Outlyja moraš imeti vsaj 15 let. Nekateri dogodki so 18+ — to je označeno pri dogodku, za nakup vstopnic pa potrebuješ datum rojstva v profilu."
+          }
+        }
+      }
+    },
+    "The club may ask for an ID at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klub lahko pri vhodu zahteva osebni dokument."
+          }
+        }
+      }
+    },
+    "Buy tickets for an event and find them under Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupi vstopnice za dogodek in jih najdi pod Vstopnice."
+          }
+        }
+      }
+    },
+    "Open an event and tap the price on the poster.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri dogodek in tapni ceno na plakatu."
+          }
+        }
+      }
+    },
+    "Choose how many tickets you want with the minus and plus buttons.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z gumboma minus in plus izberi število vstopnic."
+          }
+        }
+      }
+    },
+    "Tap Pay (it shows the total), or Get ticket if the event is free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Plačaj (pokaže skupni znesek) ali Kupi vstopnico, če je dogodek brezplačen."
+          }
+        }
+      }
+    },
+    "If a secure Stripe page opens, pay there. It brings you back to Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če se odpre varna Stripova stran, plačaj tam. Po plačilu se vrneš v Outly."
+          }
+        }
+      }
+    },
+    "Open Profile > Tickets to see your tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Profil > Vstopnice, da vidiš svoje vstopnice."
+          }
+        }
+      }
+    },
+    "Your tickets appear under Profile > Tickets as soon as the payment goes through. Each ticket has its own QR code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice se pojavijo pod Profil > Vstopnice, takoj ko plačilo steče. Vsaka vstopnica ima svojo QR kodo."
+          }
+        }
+      }
+    },
+    "If the poster says at the door, you pay at the club; if it says sold by the club, the button opens the club's own ticket page.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če na plakatu piše pri vhodu (at the door), plačaš v klubu; če piše prodaja klub (sold by the club), gumb odpre klubovo stran z vstopnicami."
+          }
+        }
+      }
+    },
+    "Events marked 18+ require a date of birth in your profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodki z oznako 18+ zahtevajo datum rojstva v tvojem profilu."
+          }
+        }
+      }
+    },
+    "All your tickets are in one place, each with its own QR code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vse tvoje vstopnice so na enem mestu, vsaka s svojo QR kodo."
+          }
+        }
+      }
+    },
+    "Look for upcoming tickets on top and Past below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihajajoče vstopnice so na vrhu, Pretekle pod njimi."
+          }
+        }
+      }
+    },
+    "Tap a ticket to open it with its QR code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni vstopnico, da jo odpreš z njeno QR kodo."
+          }
+        }
+      }
+    },
+    "For a VIP table, tap the group to open its tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pri VIP mizi tapni skupino, da odpreš njene vstopnice."
+          }
+        }
+      }
+    },
+    "Tickets that were already scanned move to Used tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že skenirane vstopnice se premaknejo med Uporabljene vstopnice."
+          }
+        }
+      }
+    },
+    "Tickets someone sent you and guest list tickets are here too.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu so tudi vstopnice, ki ti jih je kdo poslal, in vstopnice s seznama gostov."
+          }
+        }
+      }
+    },
+    "No signal? Tickets keeps the last list it downloaded, so you can still open your QR code at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brez signala? Vstopnice ohranijo zadnji prenesen seznam, zato lahko QR kodo pri vhodu še vedno odpreš."
+          }
+        }
+      }
+    },
+    "Show your QR code at the entrance and the staff scan it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaži QR kodo pri vhodu in osebje jo skenira."
+          }
+        }
+      }
+    },
+    "Tap the ticket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni vstopnico."
+          }
+        }
+      }
+    },
+    "Show the QR code to the staff at the entrance. They scan it with Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kodo QR pokaži osebju pri vhodu — skenirajo jo z Outlyjem."
+          }
+        }
+      }
+    },
+    "A ticket can be scanned only once.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnico je mogoče skenirati samo enkrat."
+          }
+        }
+      }
+    },
+    "Screenshots work, but keep your brightness up so the code is readable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posnetek zaslona deluje, a naj bo osvetlitev dovolj visoka, da je koda berljiva."
+          }
+        }
+      }
+    },
+    "Give a ticket to a friend. It moves to their account with a new QR code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podari vstopnico prijatelju. Preide na njegov račun z novo QR kodo."
+          }
+        }
+      }
+    },
+    "Open the ticket you want to send.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri vstopnico, ki jo želiš poslati."
+          }
+        }
+      }
+    },
+    "Tap Send to a friend.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Pošlji prijatelju."
+          }
+        }
+      }
+    },
+    "Choose a friend from your list, or tap Send by email instead and enter their email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi prijatelja s seznama ali tapni Raje pošlji po e-pošti in vpiši njegov e-poštni naslov."
+          }
+        }
+      }
+    },
+    "Tap Send ticket and confirm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Pošlji vstopnico in potrdi."
+          }
+        }
+      }
+    },
+    "The ticket moves to their account with a new QR code — your old code stops working.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica preide na njegov račun z novo QR kodo — tvoja stara koda preneha veljati."
+          }
+        }
+      }
+    },
+    "Your friend needs an Outly account with a confirmed email and must meet the event's age limit. (Where the screen says we'll email them the ticket, a friend without an account can get it by email too.) For events with an age limit you confirm that your friend is old enough.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelj potrebuje Outly račun s potrjeno e-pošto in mora izpolnjevati starostno mejo dogodka. (Kjer zaslon pove, da mu vstopnico pošljemo po e-pošti, jo lahko prejme po e-pošti tudi prijatelj brez računa.) Pri dogodkih s starostno mejo potrdiš, da je prijatelj dovolj star."
+          }
+        }
+      }
+    },
+    "Tickets can be sent until the event starts. Guest list tickets can't be sent.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice lahko pošlješ do začetka dogodka. Vstopnic s seznama gostov ni mogoče pošiljati naprej."
+          }
+        }
+      }
+    },
+    "Invite friends to an event from your own guest list.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi prijatelje na dogodek s svojega seznama gostov."
+          }
+        }
+      }
+    },
+    "Open the guest list.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri seznam gostov."
+          }
+        }
+      }
+    },
+    "Tap Invite friends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Povabi prijatelje."
+          }
+        }
+      }
+    },
+    "Choose friends from your list and confirm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi prijatelje s seznama in potrdi."
+          }
+        }
+      }
+    },
+    "To free a spot, tap the x next to a friend before they have entered.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesto sprostiš tako, da tapneš x ob prijatelju, preden je vstopil."
+          }
+        }
+      }
+    },
+    "A guest list is set up by Outly for an event, with you as the host and a set number of spots. You get your own ticket with a QR code under Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam gostov za dogodek nastavi Outly; ti si gostitelj z določenim številom mest. Svojo vstopnico s QR kodo dobiš pod Vstopnice."
+          }
+        }
+      }
+    },
+    "Each friend gets their own ticket with their own QR code and can arrive separately.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsak prijatelj dobi svojo vstopnico s svojo QR kodo in lahko pride ločeno."
+          }
+        }
+      }
+    },
+    "When you free a spot, that friend's ticket stops working.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko mesto sprostiš, prijateljeva vstopnica preneha veljati."
+          }
+        }
+      }
+    },
+    "If a friend adds you to their guest list, you get a notification and the ticket appears under Tickets as Invited by @name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če te prijatelj doda na svoj seznam gostov, dobiš obvestilo, vstopnica pa se pod Vstopnice pokaže kot Povabil te je @ime."
+          }
+        }
+      }
+    },
+    "How refunds work for tickets and cancelled events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kako delujejo vračila za vstopnice in odpovedane dogodke."
+          }
+        }
+      }
+    },
+    "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice prodaja klub; Outly je tržnica. Ker je vstopnica vezana na določen datum, po nakupu ni 14-dnevne pravice do odstopa."
+          }
+        }
+      }
+    },
+    "If the club cancels an event, you are entitled to a refund from the club, to your original payment method.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če klub odpove dogodek, imaš pravico do vračila denarja s strani kluba na izvirni način plačila."
+          }
+        }
+      }
+    },
+    "For anything else, contact the club or write to luka@outly.si with your ticket number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za vse ostalo se obrni na klub ali piši na luka@outly.si s številko svoje vstopnice."
+          }
+        }
+      }
+    },
+    "Find people by username, send requests and answer the ones you receive.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči osebe po uporabniškem imenu, pošlji prošnje in odgovori na prejete."
+          }
+        }
+      }
+    },
+    "Tap Add friends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Dodaj prijatelje."
+          }
+        }
+      }
+    },
+    "Search by username (at least 2 letters).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Išči po uporabniškem imenu (vsaj 2 črki)."
+          }
+        }
+      }
+    },
+    "Tap Add next to a person.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Dodaj ob osebi."
+          }
+        }
+      }
+    },
+    "To answer a request, find it under Friend requests at the top and tap Accept or Decline.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za odgovor na prošnjo jo poišči pod Prošnje za prijateljstvo na vrhu in tapni Sprejmi ali Zavrni."
+          }
+        }
+      }
+    },
+    "To remove a friend, open the … menu next to them and choose Remove friend.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelja odstraniš tako, da ob njem odpreš meni … in izbereš Odstrani prijatelja."
+          }
+        }
+      }
+    },
+    "Requested means the request is waiting; tap it to cancel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslano pomeni, da prošnja čaka; tapni ga, da jo prekličeš."
+          }
+        }
+      }
+    },
+    "Requests you receive also appear in the bell on Home.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prejete prošnje so tudi pod zvoncem na zavihku Domov."
+          }
+        }
+      }
+    },
+    "See which events your friends are going to or are interested in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej, na katere dogodke gredo prijatelji ali jih zanimajo."
+          }
+        }
+      }
+    },
+    "On Home, find Friends plans.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zavihku Domov poišči Načrti prijateljev."
+          }
+        }
+      }
+    },
+    "Tap View to see a friend's events.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Prikaži, da vidiš prijateljeve dogodke."
+          }
+        }
+      }
+    },
+    "Tap Join them to buy a ticket for the same event, or View event to open it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Pridruži se, da kupiš vstopnico za isti dogodek, ali Poglej dogodek, da ga odpreš."
+          }
+        }
+      }
+    },
+    "Tap Invite more to share Outly with someone who isn't on it yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Povabi še koga, da Outly deliš z nekom, ki ga še nima."
+          }
+        }
+      }
+    },
+    "Friends are shown as circles: a blue ring means they have a ticket, a white ring means they are interested.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji so prikazani kot krogi: moder rob pomeni, da imajo vstopnico, bel rob, da jih dogodek zanima."
+          }
+        }
+      }
+    },
+    "Your friends can see your plans too. To switch that off, go to Profile > My Account > Preferences and turn off Friends can see my plans.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tudi prijatelji vidijo tvoje načrte. Če tega ne želiš, odpri Profil > Moj račun > Nastavitve in izklopi Prijatelji vidijo moje načrte."
+          }
+        }
+      }
+    },
+    "The bell shows what is new for you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zvonec pokaže, kaj je zate novega."
+          }
+        }
+      }
+    },
+    "Tap the bell at the top right of Home.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni zvonec zgoraj desno na zavihku Domov."
+          }
+        }
+      }
+    },
+    "Tap an item to open it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni vnos, da ga odpreš."
+          }
+        }
+      }
+    },
+    "You see invitations to join a club team, friend requests, a ticket a friend sent you, guest list invitations, new events from clubs you follow and, for club staff, VIP tables ready to serve.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vidiš vabila v klubsko ekipo, prošnje za prijateljstvo, vstopnico, ki ti jo je poslal prijatelj, vabila na seznam gostov, nove dogodke klubov, katerim slediš, in — za osebje kluba — VIP mize, ki so pripravljene za strežbo."
+          }
+        }
+      }
+    },
+    "A number on the bell means something is waiting.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Številka na zvoncu pomeni, da nekaj čaka."
+          }
+        }
+      }
+    },
+    "Get a push notification when something needs your attention.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dobi potisno obvestilo, ko nekaj zahteva tvojo pozornost."
+          }
+        }
+      }
+    },
+    "Open Notifications under Preferences.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Obvestila pod Nastavitve."
+          }
+        }
+      }
+    },
+    "Tap Turn on notifications.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Vklopi obvestila."
+          }
+        }
+      }
+    },
+    "You get a notification for a ticket someone sent you, new events from clubs you follow, an invitation to a guest list and, for club staff, table service requests.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obvestilo dobiš za vstopnico, ki ti jo je kdo poslal, nove dogodke klubov, katerim slediš, vabilo na seznam gostov in — za osebje kluba — zahteve za strežbo miz."
+          }
+        }
+      }
+    },
+    "If you said no earlier, turn them on in iOS Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če si prej rekel(-a) ne, jih vklopi v nastavitvah iOS."
+          }
+        }
+      }
+    },
+    "Report an event, a club or a person, or block someone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavi dogodek, klub ali osebo, ali koga blokiraj."
+          }
+        }
+      }
+    },
+    "To report an event or a club, tap the … menu at the top right of its page and choose Report.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek ali klub prijaviš tako, da zgoraj desno na njegovi strani tapneš meni … in izbereš Prijavi."
+          }
+        }
+      }
+    },
+    "Pick a reason and tap Send.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi razlog in tapni Pošlji."
+          }
+        }
+      }
+    },
+    "To report or block a person, open the … menu next to their name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Osebo prijaviš ali blokiraš tako, da ob njenem imenu odpreš meni …."
+          }
+        }
+      }
+    },
+    "Choose Report or Block.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi Prijavi ali Blokiraj."
+          }
+        }
+      }
+    },
+    "You find the person's … menu in My Friends and when you search for friends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meni … ob osebi najdeš pri Moji prijatelji in ko iščeš prijatelje."
+          }
+        }
+      }
+    },
+    "We review reports within 24 hours.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijave pregledamo v 24 urah."
+          }
+        }
+      }
+    },
+    "People you block can't find you or send you requests, and they are not notified.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blokirani te ne najdejo in ti ne morejo pošiljati prošenj, o blokadi pa niso obveščeni."
+          }
+        }
+      }
+    },
+    "You can undo a block under Profile > My Account > Blocked users with Unblock; the friendship does not come back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blokado razveljaviš pod Profil > Moj račun > Blokirani uporabniki z Odblokiraj; prijateljstvo se ne obnovi."
+          }
+        }
+      }
+    },
+    "Get back into your account with a code we send to your email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrni se v račun s kodo, ki ti jo pošljemo na e-pošto."
+          }
+        }
+      }
+    },
+    "On the login screen, tap Forgot password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na zaslonu za prijavo tapni Forgot password (pozabljeno geslo)."
+          }
+        }
+      }
+    },
+    "Enter your email.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi e-pošto."
+          }
+        }
+      }
+    },
+    "Enter the code we send you, together with a new password.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi kodo, ki ti jo pošljemo, skupaj z novim geslom."
+          }
+        }
+      }
+    },
+    "If you are logged in, go to My Account > Password and security to change your password. This logs you out on all other devices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če si prijavljen(a), pojdi na Moj račun > Geslo in varnost, da spremeniš geslo. To te odjavi na vseh drugih napravah."
+          }
+        }
+      }
+    },
+    "Change your password, or sign out of all your devices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremeni geslo ali se odjavi z vseh naprav."
+          }
+        }
+      }
+    },
+    "Under Login, tap Edit.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Prijava tapni Uredi."
+          }
+        }
+      }
+    },
+    "Enter your current password and the new one twice.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši trenutno geslo in dvakrat novo."
+          }
+        }
+      }
+    },
+    "Tap Done.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Končano."
+          }
+        }
+      }
+    },
+    "To sign out of all devices, tap Sign out under Sessions and confirm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za odjavo z vseh naprav pod Seje tapni Odjava in potrdi."
+          }
+        }
+      }
+    },
+    "When you change your password, other devices are signed out; this one stays signed in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko spremeniš geslo, se druge naprave odjavijo, ta ostane prijavljena."
+          }
+        }
+      }
+    },
+    "Sign out under Sessions signs you out of all devices, including this one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odjava pod Seje te odjavi z vseh naprav, tudi s te."
+          }
+        }
+      }
+    },
+    "To log out of this device only, tap Log out at the bottom of Profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če se želiš odjaviti samo s te naprave, tapni Odjava na dnu zavihka Profil."
+          }
+        }
+      }
+    },
+    "Change your photo, username, phone number, date of birth and country.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremeni fotografijo, uporabniško ime, telefonsko številko, datum rojstva in državo."
+          }
+        }
+      }
+    },
+    "Tap the picture with the + to add or change your profile photo.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni sliko s plusom, da dodaš ali zamenjaš profilno fotografijo."
+          }
+        }
+      }
+    },
+    "On a card — Username, Phone number, Date of birth or Country — tap Edit.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na kartici — Uporabniško ime, Telefonska številka, Datum rojstva ali Država — tapni Uredi."
+          }
+        }
+      }
+    },
+    "Your username needs 3–20 characters: letters, numbers and underscore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabniško ime mora imeti 3–20 znakov: črke, števke in podčrtaj."
+          }
+        }
+      }
+    },
+    "Your email can't be changed in the app; to change it, write to luka@outly.si.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-pošte v aplikaciji ni mogoče spremeniti; če jo želiš spremeniti, piši na luka@outly.si."
+          }
+        }
+      }
+    },
+    "Set your favourites, the app language, notifications and who sees your plans.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavi svoje priljubljene, jezik aplikacije, obvestila in kdo vidi tvoje načrte."
+          }
+        }
+      }
+    },
+    "Tap My preferences to save your favourite music genres, maximum distance, age range and ticket price range.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Moje nastavitve, da shraniš najljubše glasbene žanre, največjo razdaljo, starostni razpon in razpon cene vstopnice."
+          }
+        }
+      }
+    },
+    "Tap Language to switch between English and Slovenščina.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Jezik, da preklopiš med English in Slovenščina."
+          }
+        }
+      }
+    },
+    "Tap Notifications to turn on push notifications.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Obvestila, da vklopiš potisna obvestila."
+          }
+        }
+      }
+    },
+    "Turn Friends can see my plans on or off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vklopi ali izklopi Prijatelji vidijo moje načrte."
+          }
+        }
+      }
+    },
+    "My preferences are saved on this phone. Switch on Use my preferences in Filters to apply them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moje nastavitve so shranjene na tem telefonu. Vklopi Uporabi moje nastavitve v Filtrih, da se uporabijo."
+          }
+        }
+      }
+    },
+    "The language switches straight away.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jezik se preklopi takoj."
+          }
+        }
+      }
+    },
+    "Friends can see my plans decides whether your friends see which events you are going to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji vidijo moje načrte določa, ali prijatelji vidijo, na katere dogodke greš."
+          }
+        }
+      }
+    },
+    "Tickets are paid at checkout, through Stripe.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice plačaš ob nakupu, prek Stripa."
+          }
+        }
+      }
+    },
+    "Tickets are paid at checkout.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice plačaš ob nakupu."
+          }
+        }
+      }
+    },
+    "Payments are processed by Stripe; Outly never sees or stores your card details, and the app does not hold a balance.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačila obdeluje Stripe; Outly nikoli ne vidi in ne shranjuje podatkov tvoje kartice, aplikacija pa ne vodi stanja."
+          }
+        }
+      }
+    },
+    "You can read this any time under Profile > Payment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To lahko kadar koli prebereš pod Profil > Plačilo."
+          }
+        }
+      }
+    },
+    "Permanently delete your account and personal data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trajno izbriši svoj račun in osebne podatke."
+          }
+        }
+      }
+    },
+    "Tap Delete Account and confirm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Izbriši račun in potrdi."
+          }
+        }
+      }
+    },
+    "Your personal data is removed; records of past purchases are kept anonymised, as required for accounting.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoji osebni podatki bodo izbrisani; zapisi preteklih nakupov ostanejo anonimizirani, kot to zahteva računovodstvo."
+          }
+        }
+      }
+    },
+    "Valid tickets on a deleted account cannot be recovered, so use them or send them to a friend first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veljavnih vstopnic na izbrisanem računu ni mogoče obnoviti, zato jih najprej uporabi ali pošlji prijatelju."
+          }
+        }
+      }
+    },
+    "Apply for a club account and, once approved, manage your club in Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaprosi za klubski račun in po odobritvi upravljaj svoj klub v Outlyju."
+          }
+        }
+      }
+    },
+    "Fill in the short form.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izpolni kratek obrazec."
+          }
+        }
+      }
+    },
+    "Follow the status of your request on the same screen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stanje prošnje spremljaj na istem zaslonu."
+          }
+        }
+      }
+    },
+    "Once approved, your profile switches to the business view. If it does not, log out and log in again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko je prošnja odobrena, se tvoj profil preklopi na poslovni pogled. Če se ne, se odjavi in znova prijavi."
+          }
+        }
+      }
+    },
+    "We review requests by hand.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prošnje pregledamo ročno."
+          }
+        }
+      }
+    },
+    "The business view has Edit your page, Dashboard, Events, My team and Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslovni pogled ima Uredi svojo stran, Pregled, Dogodki, My team (ekipa) in Settings (nastavitve)."
+          }
+        }
+      }
+    },
+    "Scanning tickets is under Profile > My Clubs — see Scan tickets at the door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeniranje vstopnic je pod Profil > Moji klubi — glej Skeniranje vstopnic pri vhodu."
+          }
+        }
+      }
+    },
+    "Owners can switch between the club and the personal profile: Settings > Switch to personal account, and back with My Account > Switch to club account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastnik lahko preklaplja med klubskim in osebnim profilom: Settings (nastavitve) > Switch to personal account (preklop na osebni račun), nazaj pa z Moj račun > Switch to club account (preklop na klubski račun)."
+          }
+        }
+      }
+    },
+    "Add your logo and details so guests can find your club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj logotip in podatke, da gostje najdejo tvoj klub."
+          }
+        }
+      }
+    },
+    "In Set up your club, add a logo, the name, address and city, minimum age and music genres.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Set up your club (nastavi svoj klub) dodaj logotip, ime, naslov in mesto, najnižjo starost in glasbene žanre."
+          }
+        }
+      }
+    },
+    "Tap Create club.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Create club (ustvari klub)."
+          }
+        }
+      }
+    },
+    "Later, tap Edit your page, then Club info, to change details.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kasneje tapni Uredi svojo stran, nato Podatki o klubu, da spremeniš podrobnosti."
+          }
+        }
+      }
+    },
+    "Under Bar prices, tap Add item.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Cenik bara tapni Dodaj postavko."
+          }
+        }
+      }
+    },
+    "Enter a name and price (category is optional) and tap Save.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši ime in ceno (kategorija ni obvezna) in tapni Shrani."
+          }
+        }
+      }
+    },
+    "You see Set up your club the first time you open the club profile.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up your club (nastavi svoj klub) vidiš, ko prvič odpreš klubski profil."
+          }
+        }
+      }
+    },
+    "If you organize events without your own venue, switch on I organize events without my own venue — there is then no address or map pin and you choose the venue for each event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če dogodke organiziraš brez lastnega prizorišča, vklopi Organiziram dogodke brez lastnega prizorišča — takrat ni naslova in oznake na zemljevidu, prizorišče pa izbereš za vsak dogodek posebej."
+          }
+        }
+      }
+    },
+    "Club info (also under Settings) covers: Club name, Phone number, Website, Instagram, Email, About club, Address, City, Minimum age, Music genres, Slideshow (up to 3 photos), Club video and Bar prices.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podatki o klubu (tudi pod Settings) obsegajo: Ime kluba, Telefonska številka, Spletna stran, Instagram, E-pošta, O klubu, Naslov, Mesto, Najnižja starost, Glasbeni žanri, Galerija (do 3 fotografije), Video kluba in Cenik bara."
+          }
+        }
+      }
+    },
+    "Seller details (company name, registered office, registration number, tax number) and VAT status are shown to buyers before payment. Only the club owner can change them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podatki prodajalca (ime podjetja, sedež, matična številka, davčna številka) in Status DDV so kupcem prikazani pred plačilom. Spremeniti jih sme samo lastnik kluba."
+          }
+        }
+      }
+    },
+    "Publish an event with tickets, and change or cancel it later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objavi dogodek z vstopnicami, pozneje pa ga spremeni ali prekliči."
+          }
+        }
+      }
+    },
+    "Open Events and tap Add event (managers: Profile > My Clubs > your club > Create event).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri Dogodki in tapni Dodaj dogodek (upravitelji: Profil > Moji klubi > tvoj klub > Ustvari dogodek)."
+          }
+        }
+      }
+    },
+    "Fill in Title and Description.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izpolni Naslov in Opis."
+          }
+        }
+      }
+    },
+    "Under When, set Starts, and Has end time if the event has an end.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Kdaj nastavi Začetek in Ima čas zaključka, če ima dogodek konec."
+          }
+        }
+      }
+    },
+    "Under Who, set Minimum age and music genres.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Kdo nastavi Najnižja starost in glasbene žanre."
+          }
+        }
+      }
+    },
+    "Under Tickets, set Price in EUR, Capacity and an optional external ticket link.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Vstopnice nastavi Cena (EUR), Kapaciteta in neobvezno zunanjo povezavo do vstopnic."
+          }
+        }
+      }
+    },
+    "Choose a poster, switch on Published (visible to everyone) and tap Save.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi plakat, vklopi Objavljeno (vidno vsem) in tapni Shrani."
+          }
+        }
+      }
+    },
+    "Leave Price empty if tickets are not sold on Outly; 0 means free entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pusti Cena prazno, če vstopnic ne prodajaš na Outlyju; 0 pomeni brezplačen vstop."
+          }
+        }
+      }
+    },
+    "Tap an event in the list to edit it. To remove one, tap Cancel or delete event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni dogodek na seznamu, da ga urediš. Dogodek odstraniš z Prekliči ali izbriši dogodek."
+          }
+        }
+      }
+    },
+    "If tickets were already sold, the event is cancelled instead of deleted, so buyers keep proof of purchase.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če so bile vstopnice že prodane, se dogodek prekliče namesto izbriše, da kupci obdržijo dokazilo o nakupu."
+          }
+        }
+      }
+    },
+    "Past events can get an Event video that guests see on your club page — only your three most popular past events qualify.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pretekli dogodki lahko dobijo Video dogodka, ki ga gostje vidijo na strani tvojega kluba — to velja samo za tvoje tri najbolj priljubljene pretekle dogodke."
+          }
+        }
+      }
+    },
+    "See your sales, payout, followers and how each event is doing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej prodajo, izplačilo, sledilce in kako gre vsakemu dogodku."
+          }
+        }
+      }
+    },
+    "Under Sales, choose By year, By month or By week.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Prodaja izberi Po letu, Po mesecu ali Po tednu."
+          }
+        }
+      }
+    },
+    "Read Total revenue, Tickets sold, Outly fee and Your payout below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spodaj preberi Skupni prihodek, Prodane vstopnice, Provizija Outly in Tvoje izplačilo."
+          }
+        }
+      }
+    },
+    "Open Check activity for clicks on your profile and events, and your Followers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Preveri aktivnost vidiš klike na svoj profil in dogodke ter Sledilce."
+          }
+        }
+      }
+    },
+    "Under Event performance, tap an event for Door check-in and VIP reservations, or tap View all.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pod Uspešnost dogodkov tapni dogodek za Vstop pri vratih in VIP rezervacije ali tapni Prikaži vse."
+          }
+        }
+      }
+    },
+    "Sales shows revenue for the period you choose. Your payout is what is left after fee and refunds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja prikaže prihodek za izbrano obdobje. Tvoje izplačilo je ostanek po proviziji in vračilih."
+          }
+        }
+      }
+    },
+    "Staff activity shows what your team scanned.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivnost ekipe prikaže, kaj je skenirala tvoja ekipa."
+          }
+        }
+      }
+    },
+    "While payments are in test mode, a TEST label shows and no money moves.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokler so plačila v testnem načinu, je prikazana oznaka TEST in denar se ne premika."
+          }
+        }
+      }
+    },
+    "Scan guests' QR codes with the camera and let them in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeniraj QR kode gostov s kamero in jih spusti noter."
+          }
+        }
+      }
+    },
+    "Tap your club, then Scan ticket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni svoj klub, nato Skeniraj vstopnico."
+          }
+        }
+      }
+    },
+    "Point the camera at the guest's QR code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usmeri kamero v QR kodo gosta."
+          }
+        }
+      }
+    },
+    "Green WELCOME IN means you let the guest in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeleno DOBRODOŠLI pomeni, da gosta spustiš noter."
+          }
+        }
+      }
+    },
+    "Red means no. Do not let the guest in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rdeče pomeni ne. Gosta ne spustiš noter."
+          }
+        }
+      }
+    },
+    "Tap Next for the following guest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Naprej za naslednjega gosta."
+          }
+        }
+      }
+    },
+    "Owners, managers and door staff scan with the camera. Owners first switch to their personal profile: Settings > Switch to personal account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastniki, upravitelji in vratarji skenirajo s kamero. Lastniki se najprej preklopijo na osebni profil: Settings (nastavitve) > Switch to personal account (preklop na osebni račun)."
+          }
+        }
+      }
+    },
+    "The scanner opens straight away — you don't pick an event. It covers the club's events from 12 hours before the start until 6 hours after the end.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skener se odpre takoj — dogodka ne izbiraš. Zajame klubove dogodke od 12 ur pred začetkom do 6 ur po koncu."
+          }
+        }
+      }
+    },
+    "Red is for example ALREADY SCANNED, REFUNDED, CANCELLED, NOT PAID or INVALID CODE. A gold bar marks a VIP table, a white bar a guest list guest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rdeče je na primer ŽE SKENIRANO, VRNJENO, PREKLICANO, NEPLAČANO ali NEVELJAVNA KODA. Zlata vrstica označuje VIP mizo, bela gosta s seznama gostov."
+          }
+        }
+      }
+    },
+    "Yellow means the phone can't check the ticket by itself. If you decide to let the guest in, tap Let in; the server checks later and anything wrong appears under Conflicts (triangle, top right).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rumeno pomeni, da telefon vstopnice ne more preveriti sam. Če se odločiš gosta spustiti, tapni Spusti; strežnik preveri pozneje, vse, kar ni v redu, pa se pokaže pod Konflikti (trikotnik, zgoraj desno)."
+          }
+        }
+      }
+    },
+    "Use the flashlight button in dark rooms.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V temnih prostorih uporabi gumb svetilke."
+          }
+        }
+      }
+    },
+    "The scanner also works without signal: it downloads the ticket list and sends scans when you are back online. Until the list is downloaded, tickets can only be checked with a connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skener deluje tudi brez signala: prenese seznam vstopnic, skene pa pošlje, ko je spet povezan. Dokler seznam ni prenesen, je vstopnice mogoče preveriti samo s povezavo."
+          }
+        }
+      }
+    },
+    "You can also check guests in by hand: Dashboard > event > Check in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goste lahko prijaviš tudi ročno: Pregled > dogodek > Prijavi vstop."
+          }
+        }
+      }
+    },
+    "Invite people to your club's team and choose what each can do.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povabi ljudi v klubsko ekipo in izberi, kaj lahko kdo dela."
+          }
+        }
+      }
+    },
+    "Open My team (managers: Profile > My Clubs > your club > Team).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri My team (ekipa) (upravitelji: Profil > Moji klubi > tvoj klub > Ekipa)."
+          }
+        }
+      }
+    },
+    "Tap Invite member.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Povabi člana."
+          }
+        }
+      }
+    },
+    "Enter their Outly email and choose a role.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši njihov Outly e-poštni naslov in izberi vlogo."
+          }
+        }
+      }
+    },
+    "Tap Send invite.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Pošlji vabilo."
+          }
+        }
+      }
+    },
+    "To remove someone, or cancel a pending invitation, tap the x next to the name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nekoga odstraniš ali čakajoče vabilo prekličeš tako, da tapneš x ob imenu."
+          }
+        }
+      }
+    },
+    "They need an Outly account with that email; the invitation reaches them in the app and they join when they accept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrebujejo Outly račun s tem e-poštnim naslovom; vabilo prispe v aplikacijo, ekipi pa se pridružijo, ko ga sprejmejo."
+          }
+        }
+      }
+    },
+    "Manager — events, sales, club page and door staff; only the owner can add managers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upravitelj — dogodki, prodaja, stran kluba in vratarji; upravitelje lahko dodaja samo lastnik."
+          }
+        }
+      }
+    },
+    "Door staff — scans tickets at the door, nothing else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vratar — skenira vstopnice pri vhodu, nič drugega."
+          }
+        }
+      }
+    },
+    "Bartender — sees VIP tables to serve and marks them delivered, with no guest details.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natakar — vidi VIP mize za strežbo in jih označi kot dostavljene, brez podatkov o gostih."
+          }
+        }
+      }
+    },
+    "A removed person loses access to the club tools right away.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstranjena oseba takoj izgubi dostop do klubskih orodij."
+          }
+        }
+      }
+    },
+    "My team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My team"
+          }
+        }
+      }
+    },
+    "Join a club's team by accepting its invitation.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridruži se klubski ekipi s sprejetjem vabila."
+          }
+        }
+      }
+    },
+    "Find the invitation in the bell on Home, or in My Clubs (bell, top right).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poišči vabilo pod zvoncem na zavihku Domov ali v Moji klubi (zvonec, zgoraj desno)."
+          }
+        }
+      }
+    },
+    "Open the invitation.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri vabilo."
+          }
+        }
+      }
+    },
+    "Tap Accept to join, or Reject to decline.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Sprejmi, da se pridružiš, ali Zavrni."
+          }
+        }
+      }
+    },
+    "The club then shows under My Clubs, with the tools for your role.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klub se nato pokaže pod Moji klubi, z orodji za tvojo vlogo."
+          }
+        }
+      }
+    },
+    "To leave a team, open the club under My Clubs and tap Leave the team. The club can invite you again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipo zapustiš tako, da pod Moji klubi odpreš klub in tapneš Zapusti ekipo. Klub te lahko znova povabi."
+          }
+        }
+      }
+    },
+    "Set up VIP tables for an event, and take reservations by phone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavi VIP mize za dogodek in sprejemaj rezervacije po telefonu."
+          }
+        }
+      }
+    },
+    "Open the event and go to VIP tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpri dogodek in pojdi na VIP mize."
+          }
+        }
+      }
+    },
+    "Choose Use the venue's layout, Own layout for this event or No VIP tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi Uporabi razpored prizorišča, Lasten razpored za ta dogodek ali Brez VIP miz."
+          }
+        }
+      }
+    },
+    "Tap Edit tables and layout to add tables, drag them into place and set seats and price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z Uredi mize in tloris dodaš mize, jih povlečeš na mesto in nastaviš sedeže in ceno."
+          }
+        }
+      }
+    },
+    "To take a phone reservation, go to Dashboard > event > VIP reservations.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervacijo po telefonu vneseš takole: Pregled > dogodek > VIP rezervacije."
+          }
+        }
+      }
+    },
+    "On a free table, tap Mark as reserved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pri prosti mizi tapni Označi kot rezervirano."
+          }
+        }
+      }
+    },
+    "Enter the Guest name and a Note, and tap Reserve.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši Ime gosta in Opombo ter tapni Rezerviraj."
+          }
+        }
+      }
+    },
+    "To free the table again, tap Release.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Sprosti, da mizo spet sprostiš."
+          }
+        }
+      }
+    },
+    "If the app says Set up VIP tables at outly.si/app, the floor plan and prices are set up there. Organizers without their own venue can also do it in the app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če aplikacija pove, da VIP mize nastaviš na outly.si/app, tloris in cene nastaviš tam. Organizatorji brez lastnega prizorišča to lahko naredijo tudi v aplikaciji."
+          }
+        }
+      }
+    },
+    "Save the event first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej shrani dogodek."
+          }
+        }
+      }
+    },
+    "Only owners and managers can take phone reservations.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To lahko naredita samo lastnik in upravitelj."
+          }
+        }
+      }
+    },
+    "See which VIP tables have arrived and mark them as served.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej, katere VIP mize so prispele, in jih označi kot postrežene."
+          }
+        }
+      }
+    },
+    "Tap your club, then Table service.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni svoj klub, nato Strežba miz."
+          }
+        }
+      }
+    },
+    "Choose the event at the top, if there is more than one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zgoraj izberi dogodek, če jih je več."
+          }
+        }
+      }
+    },
+    "Find the table in the list once door staff have scanned its VIP ticket.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mizo poišči na seznamu, ko vratar skenira njeno VIP vstopnico."
+          }
+        }
+      }
+    },
+    "Tap Delivered once the table has been served.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ko je miza postrežena, tapni Dostavljeno."
+          }
+        }
+      }
+    },
+    "Tapped by mistake? Tap Undo.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po pomoti? Tapni Razveljavi."
+          }
+        }
+      }
+    },
+    "Owners, managers and bartenders can serve tables. Owners switch to their personal profile first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lastniki, upravitelji in natakarji strežejo mize. Lastniki se najprej preklopijo na osebni profil."
+          }
+        }
+      }
+    },
+    "Each table shows its package and the time it was scanned.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vsaka miza ima prikazan paket in čas skena."
+          }
+        }
+      }
+    },
+    "The list refreshes by itself; pull down to refresh it yourself.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam se osvežuje sam; povleci navzdol, če ga želiš osvežiti sam."
+          }
+        }
+      }
+    },
+    "Staff also get a notification when a table is ready to serve.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Osebje dobi tudi obvestilo, ko je miza pripravljena za strežbo."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
