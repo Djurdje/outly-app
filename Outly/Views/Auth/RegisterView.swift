@@ -151,6 +151,9 @@ struct RegisterView: View {
             await MainActor.run {
                 if ustvarjen {
                     pendingEmail = cleanEmail
+                    // Samo v pomnilniku: ce uporabnik potrdi e-naslov s povezavo v mailu, ga VerifyEmailView
+                    // ob vrnitvi tiho prijavi (koda je takrat ze porabljena).
+                    CakajocaPotrditev.shared.shrani(email: cleanEmail, geslo: password)
                     messageIsSuccess = true
                     message = String(localized: "Account created. Check your email for the code.")
                     authStage = "verifyEmail"

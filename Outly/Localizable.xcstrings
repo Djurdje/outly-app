@@ -13513,6 +13513,28 @@
           }
         }
       }
+    },
+    "This code is wrong or no longer works. If you already confirmed your email with the link, tap “Already confirmed? Sign in” below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta koda je napačna ali ne velja več. Če si e-naslov že potrdil/a s povezavo, tapni »Že potrjeno? Prijava« spodaj."
+          }
+        }
+      }
+    },
+    "If your email is already confirmed, no new code is sent. Tap “Already confirmed? Sign in” below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če je e-naslov že potrjen, nove kode ne pošljemo. Tapni »Že potrjeno? Prijava« spodaj."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
