@@ -342,7 +342,7 @@ struct TicketDetailView: View {
                 }
 
                 if ticket.jeVSporu {
-                    Text("This ticket can't be used while the payment is disputed. Contact the club.")
+                    Text("This ticket is not valid while its payment is disputed. Contact Outly if you think this is a mistake.")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)

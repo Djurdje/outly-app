@@ -128,8 +128,9 @@ struct APITicket: Codable, Identifiable {
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
     var isUsed: Bool { status == "used" }
-    /// Placilo je v sporu in vstopnica se se ni uporabila: kartica jo kaze kot neveljavno (rdece), QR je zatemnjen.
-    var jeVSporu: Bool { paymentDisputed && !isUsed }
+    /// Placilo je v sporu, vstopnica je sicer `valid` in dogodek ni mimo: kartica jo kaze kot neveljavno (rdece), QR je zatemnjen.
+    /// Spor prevlada SAMO pri `valid`: used / refunded / void ostanejo, kar so, pri preteklem dogodku ostane EXPIRED.
+    var jeVSporu: Bool { paymentDisputed && status == "valid" && !isPast }
 
     /// "Invited by @host" samo pri vstopnici guest liste, ki pripada PRIJATELJU: gostitelj na svoji vstopnici vidi samo oznako
     /// »Guest list« (backend mu vrne njegovo ime kot gostitelja). `jaz` = moje uporabnisko ime.
@@ -157,7 +158,7 @@ struct APITicket: Codable, Identifiable {
     /// sicer USED / REFUNDED / VOID / EXPIRED (prej je bilo vse razen used "VALID").
     var statusLabel: String {
         if isUsed { return String(localized: "USED") }
-        if paymentDisputed { return String(localized: "PAYMENT DISPUTED") }
+        if jeVSporu { return String(localized: "PAYMENT DISPUTED") }
         switch status {
         case "valid": return isPast ? String(localized: "EXPIRED") : String(localized: "VALID")
         case "refunded": return String(localized: "REFUNDED")
@@ -166,7 +167,7 @@ struct APITicket: Codable, Identifiable {
         }
     }
     /// Veljavna vstopnica prihodnjega dogodka. Za barvo napisa: `statusLabel` je preveden, zato ga ne smemo primerjati z angleskim nizom.
-    var jeVeljavna: Bool { !isUsed && !paymentDisputed && status == "valid" && !isPast }
+    var jeVeljavna: Bool { !isUsed && status == "valid" && !isPast }
     var isPast: Bool { (startDate ?? .distantFuture) < Date().addingTimeInterval(-8 * 3600) }
 }
 

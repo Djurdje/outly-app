@@ -268,11 +268,14 @@ final class SkenOdlocitevTests: XCTestCase {
     /// Placilo v sporu (backend#232): seznam ga vrne kot `unpaid` + `payment_disputed`; brez polja ostane genericni »neplacana«.
     func testPlaciloVSporuJeLocenoOdNeplacanega() {
         let spor = Pomoc.serial(), navadna = Pomoc.serial(), veljavnaVSporu = Pomoc.serial(), uporabljenaVSporu = Pomoc.serial()
+        let vrnjenaVSporu = Pomoc.serial(), preklicanaVSporu = Pomoc.serial()
         let seznam = ScanList(eventId: dogodek, tickets: [
             ScanListTicket(serial: spor, status: "unpaid", paymentDisputed: true),
             ScanListTicket(serial: navadna, status: "unpaid"),
             ScanListTicket(serial: veljavnaVSporu, status: "valid", paymentDisputed: true),
             ScanListTicket(serial: uporabljenaVSporu, status: "used", usedAt: "2026-10-01T21:15:00.000Z", paymentDisputed: true),
+            ScanListTicket(serial: vrnjenaVSporu, status: "refunded", paymentDisputed: true),
+            ScanListTicket(serial: preklicanaVSporu, status: "void", paymentDisputed: true),
         ])
         let r = odloci(Pomoc.koda(kljuc, serial: spor, event: dogodek), seznam: seznam)
         XCTAssertEqual(r.razlog, .placiloVSporu)
@@ -281,6 +284,9 @@ final class SkenOdlocitevTests: XCTestCase {
         XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: navadna, event: dogodek), seznam: seznam).razlog, .neplacana)
         XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: veljavnaVSporu, event: dogodek), seznam: seznam).razlog, .placiloVSporu)
         XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: uporabljenaVSporu, event: dogodek), seznam: seznam).razlog, .zeUporabljena)
+        // refunded / void ostaneta, kar sta, tudi ce ima vstopnica se oznako spora
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: vrnjenaVSporu, event: dogodek), seznam: seznam).razlog, .vrnjena)
+        XCTAssertEqual(odloci(Pomoc.koda(kljuc, serial: preklicanaVSporu, event: dogodek), seznam: seznam).razlog, .preklicana)
     }
 
     func testDvojniLokalniSkenJeRdece() {

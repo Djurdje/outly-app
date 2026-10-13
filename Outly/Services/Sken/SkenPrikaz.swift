@@ -107,7 +107,8 @@ struct SkenPrikaz: Equatable {
             return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: r.message, vip: vip, guestList: gl)
         }
         if r.result == "event_cancelled" { return odpovedanDogodek(vip: vip, guestList: gl) }
-        // Besedilo strezniga (angleski stavek za vsa odjemalca) zamenja nas prevedeni prikaz: vratar mora jasno videti, kaj storiti.
+        // Namenoma NE uporabimo `r.message`: strezniku besedilo (angleski stavek, enak za vse odjemalce) zavrzemo in pokazemo
+        // svoj prevedeni prikaz, da vratar jasno vidi, kaj storiti (gosta napotiti k vodji kluba).
         if r.result == "payment_disputed" { return placiloVSporu(vip: vip, guestList: gl) }
         let naslov: String
         switch r.result {
@@ -121,7 +122,7 @@ struct SkenPrikaz: Equatable {
         return SkenPrikaz(barva: .rdece, naslov: naslov, podnaslov: r.message, vip: vip, guestList: gl)
     }
 
-    /// Dokoncen odgovor strezniga na sken, ki je bil na telefonu zelen (K2: z povezavo odloci streznik).
+    /// Dokoncen odgovor streznika na sken, ki je bil na telefonu zelen (K2: z povezavo odloci streznik).
     /// `sodba` je lokalna sodba (za VIP in ime imetnika pri `ok`).
     static func iz(streznik rezultat: String, usedAt: String?, sodba: SkenSodba) -> SkenPrikaz {
         if rezultat == "ok" { return iz(sodba, qr: "") }

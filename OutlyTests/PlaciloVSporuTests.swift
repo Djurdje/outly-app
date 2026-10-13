@@ -44,6 +44,28 @@ final class PlaciloVSporuTests: XCTestCase {
         XCTAssertEqual(t.statusLabel, String(localized: "PAYMENT DISPUTED"))
     }
 
+    func testSporPrevladaSamoPriValid() throws {
+        let vrnjena = try vstopnica(status: "refunded", polje: #", "payment_disputed": true"#)
+        XCTAssertFalse(vrnjena.jeVSporu)
+        XCTAssertEqual(vrnjena.statusLabel, String(localized: "REFUNDED"))
+        let preklicana = try vstopnica(status: "void", polje: #", "payment_disputed": true"#)
+        XCTAssertFalse(preklicana.jeVSporu)
+        XCTAssertEqual(preklicana.statusLabel, String(localized: "VOID"))
+        let valid = try vstopnica(status: "valid", polje: #", "payment_disputed": true"#)
+        XCTAssertTrue(valid.jeVSporu)
+        XCTAssertEqual(valid.statusLabel, String(localized: "PAYMENT DISPUTED"))
+    }
+
+    func testSporNePrekrijeExpiredPriPreteklemDogodku() throws {
+        let json = """
+        {"id": 1, "serial": "ABC123", "status": "valid", "qr": "signed", "payment_disputed": true,
+         "start_at": "\(DateParsing.isoFrac.string(from: Date().addingTimeInterval(-60 * 60 * 24 * 30)))"}
+        """
+        let t = try decode(APITicket.self, json)
+        XCTAssertFalse(t.jeVSporu)
+        XCTAssertEqual(t.statusLabel, String(localized: "EXPIRED"))
+    }
+
     func testUporabljenaVstopnicaOstaneUporabljena() throws {
         let t = try vstopnica(status: "used", polje: #", "payment_disputed": true"#)
         XCTAssertFalse(t.jeVSporu)

@@ -12447,13 +12447,13 @@
         }
       }
     },
-    "This ticket can't be used while the payment is disputed. Contact the club.": {
+    "This ticket is not valid while its payment is disputed. Contact Outly if you think this is a mistake.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Te vstopnice ni mogoče uporabiti, dokler je plačilo v sporu. Obrni se na klub."
+            "value": "Ta vstopnica ne velja, dokler je plačilo v sporu. Če meniš, da gre za napako, piši Outlyju."
           }
         }
       }

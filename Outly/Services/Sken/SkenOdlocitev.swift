@@ -153,9 +153,9 @@ enum SkenOdlocitev {
         if indeks?.prenesene.contains(serial) == true { return SkenSodba(razlog: .prenesena, serial: serial) }
         if let cas = lokalni[serial] { return SkenSodba(razlog: .zeUporabljenaLokalno, serial: serial, kdaj: cas) }
         guard let v = indeks?.vstopnice[serial] else { return nil }
-        // Spor pri banki je pomembnejsi od genericnega unpaid (in od `valid`, ce bi ga star/novejsi backend tako poslal).
-        // Ze uporabljena vstopnica ostane »already scanned«: gost je vstopil, preden je spor nastal.
-        if v.paymentDisputed && v.status != "used" { return SkenSodba(razlog: .placiloVSporu, serial: serial, vstopnica: v) }
+        // Spor pri banki je pomembnejsi od genericnega unpaid (in od `valid`, ce bi ga backend tako poslal). Samo za valid / unpaid:
+        // used, refunded in void ostanejo, kar so (backend za refunded / void vrne to stanje pred sporom).
+        if v.paymentDisputed && (v.status == "valid" || v.status == "unpaid") { return SkenSodba(razlog: .placiloVSporu, serial: serial, vstopnica: v) }
         switch v.status {
         case "valid": return nil
         case "used": return SkenSodba(razlog: .zeUporabljena, serial: serial, kdaj: SkenCas.razcleni(v.usedAt), vstopnica: v)
