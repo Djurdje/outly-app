@@ -9,7 +9,7 @@ struct HelpCenterView: View {
     @State private var search = ""
 
     /// Clanki po skupinah, v vrstnem redu prve pojavitve v `HelpArticle.all` (iskanje filtrira cez vse skupine).
-    /// `HelpArticle.all` je racunana lastnost z ~600 iskanji prevodov, zato jo body poklice samo enkrat.
+    /// `HelpArticle.all` je racunana lastnost z ~600 iskanji prevodov, zato jo body poklice samo enkrat in jo poda clankom.
     private func groups(of all: [HelpArticle]) -> [HelpGroup] {
         let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let filtered = q.isEmpty ? all : all.filter { $0.matches(q) }
@@ -25,7 +25,8 @@ struct HelpCenterView: View {
     }
 
     var body: some View {
-        let skupine = groups(of: HelpArticle.all)
+        let vsi = HelpArticle.all
+        let skupine = groups(of: vsi)
         Screen {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -67,7 +68,7 @@ struct HelpCenterView: View {
 
                                     VStack(spacing: 12) {
                                         ForEach(g.articles) { a in
-                                            NavigationLink { HelpArticleView(article: a) } label: {
+                                            NavigationLink { HelpArticleView(article: a, all: vsi) } label: {
                                                 HelpCard(topLine: a.topic, title: a.title)
                                             }
                                             .buttonStyle(.plain)
@@ -139,8 +140,10 @@ private struct HelpGroup: Identifiable {
 /// Brez lastnega NavigationStack (potisnjen je v stack Profila, sicer bi se skril gumb nazaj).
 struct HelpArticleView: View {
     let article: HelpArticle
-    /// Sorodni clanki, razreseni enkrat ob nastanku (ne v body: `HelpArticle.all` je draga).
+    /// Sorodni clanki iz seznama, ki ga poda klicatelj. `HelpArticle.all` je draga (~560 iskanj prevodov), NavigationLink
+    /// pa cilj zgradi ze ob izrisu vrstice: zato se seznam zgradi enkrat v body Help Centra in se podaja naprej.
     private let related: [HelpArticle]
+    private let all: [HelpArticle]
 
     @EnvironmentObject private var session: SessionStore
     /// nil = se ni glasoval; true = v pomoc; false = ni v pomoc. Zacne iz shranjenega glasu (HelpFeedback).
@@ -148,9 +151,9 @@ struct HelpArticleView: View {
 
     private let dnevnik = Logger(subsystem: "si.outly.app", category: "pomoc")
 
-    init(article: HelpArticle) {
+    init(article: HelpArticle, all: [HelpArticle]) {
         self.article = article
-        let all = HelpArticle.all
+        self.all = all
         self.related = article.related.compactMap { id in all.first { $0.id == id } }
         _vote = State(initialValue: HelpFeedback.vote(for: article.id))
     }
@@ -353,7 +356,7 @@ struct HelpArticleView: View {
 
             VStack(spacing: 12) {
                 ForEach(related) { a in
-                    NavigationLink { HelpArticleView(article: a) } label: {
+                    NavigationLink { HelpArticleView(article: a, all: all) } label: {
                         HelpCard(topLine: a.topic, title: a.title)
                     }
                     .buttonStyle(.plain)
