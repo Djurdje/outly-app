@@ -72,6 +72,8 @@ struct SkenPrikaz: Equatable {
         case .neplacana:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "NOT PAID"),
                               podnaslov: String(localized: "The order for this ticket is not paid."))
+        case .placiloVSporu:
+            return placiloVSporu(vip: vip, guestList: gl)
         case .napacenDogodek:
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG EVENT"),
                               podnaslov: String(localized: "This ticket is for a different event."))
@@ -105,6 +107,9 @@ struct SkenPrikaz: Equatable {
             return SkenPrikaz(barva: .zeleno, naslov: String(localized: "WELCOME IN"), podnaslov: r.message, vip: vip, guestList: gl)
         }
         if r.result == "event_cancelled" { return odpovedanDogodek(vip: vip, guestList: gl) }
+        // Namenoma NE uporabimo `r.message`: strezniku besedilo (angleski stavek, enak za vse odjemalce) zavrzemo in pokazemo
+        // svoj prevedeni prikaz, da vratar jasno vidi, kaj storiti (gosta napotiti k vodji kluba).
+        if r.result == "payment_disputed" { return placiloVSporu(vip: vip, guestList: gl) }
         let naslov: String
         switch r.result {
         case "already_used": naslov = String(localized: "ALREADY SCANNED")
@@ -117,7 +122,7 @@ struct SkenPrikaz: Equatable {
         return SkenPrikaz(barva: .rdece, naslov: naslov, podnaslov: r.message, vip: vip, guestList: gl)
     }
 
-    /// Dokoncen odgovor strezniga na sken, ki je bil na telefonu zelen (K2: z povezavo odloci streznik).
+    /// Dokoncen odgovor streznika na sken, ki je bil na telefonu zelen (K2: z povezavo odloci streznik).
     /// `sodba` je lokalna sodba (za VIP in ime imetnika pri `ok`).
     static func iz(streznik rezultat: String, usedAt: String?, sodba: SkenSodba) -> SkenPrikaz {
         if rezultat == "ok" { return iz(sodba, qr: "") }
@@ -133,6 +138,7 @@ struct SkenPrikaz: Equatable {
         // Streznik (okno -12 h ... +6 h, backend #170): dogodek ni danes. Isti prikaz kot lokalni razlog.
         case "not_today": return iz(SkenSodba(razlog: .nijeZaDanes, serial: sodba.serial), qr: "")
         case "event_cancelled": return odpovedanDogodek(vip: nil)
+        case "payment_disputed": return placiloVSporu(vip: nil)
         case "wrong_club":
             return SkenPrikaz(barva: .rdece, naslov: String(localized: "WRONG CLUB"), podnaslov: String(localized: "This ticket is for another club."))
         case "unknown":
@@ -147,6 +153,13 @@ struct SkenPrikaz: Equatable {
     static func odpovedanDogodek(vip: String?, guestList: String? = nil) -> SkenPrikaz {
         SkenPrikaz(barva: .rdece, naslov: String(localized: "EVENT CANCELLED"),
                    podnaslov: String(localized: "This event was cancelled."), vip: vip, guestList: guestList)
+    }
+
+    /// Placilo vstopnice je v sporu pri banki (backend 13. 10. 2026, #232): vstopnica ne velja, gosta napoti k vodji kluba.
+    /// Rdece (nikoli rumeno, brez gumba »Let in«): vratar tega gosta ne sme spustiti sam.
+    static func placiloVSporu(vip: String?, guestList: String? = nil) -> SkenPrikaz {
+        SkenPrikaz(barva: .rdece, naslov: String(localized: "PAYMENT DISPUTED"),
+                   podnaslov: String(localized: "Ticket not valid. Send the guest to the club manager."), vip: vip, guestList: guestList)
     }
 
     /// Streznik je povedal, da uporabnik ni vec v ekipi kluba (404 »Club not found.« / 403 »Forbidden.«).
@@ -173,6 +186,7 @@ struct SkenPrikaz: Equatable {
         case "void": return String(localized: "The ticket was cancelled.")
         case "event_cancelled": return String(localized: "This event was cancelled.")
         case "not_today": return String(localized: "This ticket is not for today's event.")
+        case "payment_disputed": return String(localized: "The payment is disputed: this guest was let in, but the ticket is not valid.")
         case "invalid": return String(localized: "The server rejected the code.")
         default: return String(localized: "The server did not confirm this entry.")
         }

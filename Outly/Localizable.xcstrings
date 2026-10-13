@@ -12413,6 +12413,50 @@
           }
         }
       }
+    },
+    "PAYMENT DISPUTED": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLAČILO V SPORU"
+          }
+        }
+      }
+    },
+    "Ticket not valid. Send the guest to the club manager.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnica ni veljavna. Gosta napoti k vodji kluba."
+          }
+        }
+      }
+    },
+    "The payment is disputed: this guest was let in, but the ticket is not valid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo je v sporu: gost je vstopil, vstopnica pa ni veljavna."
+          }
+        }
+      }
+    },
+    "This ticket is not valid while its payment is disputed. Contact Outly if you think this is a mistake.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica ne velja, dokler je plačilo v sporu. Če meniš, da gre za napako, piši Outlyju."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

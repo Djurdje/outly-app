@@ -59,6 +59,10 @@ struct APITicket: Codable, Identifiable {
     /// Uporabnisko ime gostitelja liste; pri gostiteljevi vstopnici je to on sam (glej `povabilGostitelj`).
     let guestListHostUsername: String?
 
+    /// Kupec je pri banki sprozil spor (chargeback) in je odprt ali izgubljen (backend 13. 10. 2026, outly-backend#232): `status` ostane
+    /// `valid`, a vstopnica NE velja (skener jo zavrne). Star backend polja nima -> false.
+    let paymentDisputed: Bool
+
     // Encodable (sintetiziran iz CodingKeys) samo za shranjen seznam na telefonu (VstopniceShramba), ne za klice na streznik.
     enum CodingKeys: String, CodingKey {
         case id, serial, status, qr, address, city, transferable, transferred
@@ -69,6 +73,7 @@ struct APITicket: Codable, Identifiable {
         case packageDescription = "package_description"
         case isGuestList = "is_guest_list"
         case guestListHostUsername = "guest_list_host_username"
+        case paymentDisputed = "payment_disputed"
         case holderUsername = "holder_username"
         case buyerUsername = "buyer_username"
         case orderId = "order_id"
@@ -118,10 +123,14 @@ struct APITicket: Codable, Identifiable {
         packageDescription = (try? c.decodeIfPresent(String.self, forKey: .packageDescription)) ?? nil
         isGuestList = (try? c.decodeIfPresent(Bool.self, forKey: .isGuestList)) ?? false
         guestListHostUsername = (try? c.decodeIfPresent(String.self, forKey: .guestListHostUsername)) ?? nil
+        paymentDisputed = (try? c.decodeIfPresent(Bool.self, forKey: .paymentDisputed)) ?? false
     }
 
     var startDate: Date? { DateParsing.parseBackendDate(startAt) }
     var isUsed: Bool { status == "used" }
+    /// Placilo je v sporu, vstopnica je sicer `valid` in dogodek ni mimo: kartica jo kaze kot neveljavno (rdece), QR je zatemnjen.
+    /// Spor prevlada SAMO pri `valid`: used / refunded / void ostanejo, kar so, pri preteklem dogodku ostane EXPIRED.
+    var jeVSporu: Bool { paymentDisputed && status == "valid" && !isPast }
 
     /// "Invited by @host" samo pri vstopnici guest liste, ki pripada PRIJATELJU: gostitelj na svoji vstopnici vidi samo oznako
     /// »Guest list« (backend mu vrne njegovo ime kot gostitelja). `jaz` = moje uporabnisko ime.
@@ -149,6 +158,7 @@ struct APITicket: Codable, Identifiable {
     /// sicer USED / REFUNDED / VOID / EXPIRED (prej je bilo vse razen used "VALID").
     var statusLabel: String {
         if isUsed { return String(localized: "USED") }
+        if jeVSporu { return String(localized: "PAYMENT DISPUTED") }
         switch status {
         case "valid": return isPast ? String(localized: "EXPIRED") : String(localized: "VALID")
         case "refunded": return String(localized: "REFUNDED")
@@ -157,7 +167,7 @@ struct APITicket: Codable, Identifiable {
         }
     }
     /// Veljavna vstopnica prihodnjega dogodka. Za barvo napisa: `statusLabel` je preveden, zato ga ne smemo primerjati z angleskim nizom.
-    var jeVeljavna: Bool { !isUsed && status == "valid" && !isPast }
+    var jeVeljavna: Bool { !isUsed && status == "valid" && !isPast && !paymentDisputed }   // vstopnica v sporu ni veljavna (rdeca, ne modra)
     var isPast: Bool { (startDate ?? .distantFuture) < Date().addingTimeInterval(-8 * 3600) }
 }
 
@@ -475,7 +485,8 @@ struct BusinessSales: Decodable {
 
 /// Odgovor POST /business/tickets/scan (200 in 4xx imata isto obliko).
 struct ScanResult: Decodable {
-    /// ok | already_used | invalid | unknown | wrong_club | unpaid | void | refunded | event_cancelled | not_today
+    /// ok | already_used | invalid | unknown | wrong_club | unpaid | void | refunded | event_cancelled | not_today | payment_disputed
+    /// (zadnji: HTTP 409, vstopnica s sporom pri banki; backend#232).
     let result: String
     let message: String
     let usedAt: String?
@@ -514,6 +525,8 @@ struct ScanTicketInfo: Decodable {
     /// Guest lista (backend 8. 10. 2026): skener pokaze oznako »Guest list · @gostitelj«. Star backend -> false / nil.
     let isGuestList: Bool
     let guestListHostUsername: String?
+    /// Placilo v sporu (backend#232). Star backend -> false.
+    let paymentDisputed: Bool
 
     enum CodingKeys: String, CodingKey {
         case isVip = "is_vip"
@@ -522,12 +535,14 @@ struct ScanTicketInfo: Decodable {
         case packageName = "package_name"
         case isGuestList = "is_guest_list"
         case guestListHostUsername = "guest_list_host_username"
+        case paymentDisputed = "payment_disputed"
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         isGuestList = (try? c.decodeIfPresent(Bool.self, forKey: .isGuestList)) ?? false
         guestListHostUsername = (try? c.decodeIfPresent(String.self, forKey: .guestListHostUsername)) ?? nil
+        paymentDisputed = (try? c.decodeIfPresent(Bool.self, forKey: .paymentDisputed)) ?? false
         isVip = (try? c.decodeIfPresent(Bool.self, forKey: .isVip)) ?? false
         tableLabel = (try? c.decodeIfPresent(String.self, forKey: .tableLabel)) ?? nil
         tableSeats = (try? c.decodeIfPresent(Int.self, forKey: .tableSeats)) ?? nil

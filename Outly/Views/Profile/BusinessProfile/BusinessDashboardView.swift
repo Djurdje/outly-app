@@ -676,6 +676,15 @@ struct EventTicketsView: View {
                                         .padding(.horizontal, 10).padding(.vertical, 6)
                                         .background(Color.green.opacity(0.15))
                                         .clipShape(Capsule())
+                                } else if t.paymentDisputed && t.status == "valid" {
+                                    // Spor pri banki: polje `payment_disputed` na tej poti doda locen backend PR (#233); na starem backendu je
+                                    // vedno false in gumb ostane, rocni vpis pa zavrne streznik (409 payment_disputed, sporocilo v checkIn).
+                                    Text("PAYMENT DISPUTED")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundColor(.red)
+                                        .padding(.horizontal, 10).padding(.vertical, 6)
+                                        .background(Color.red.opacity(0.15))
+                                        .clipShape(Capsule())
                                 } else {
                                     Button {
                                         Task { await checkIn(t) }

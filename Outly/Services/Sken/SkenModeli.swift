@@ -39,6 +39,7 @@ struct ScanKey: Codable, Equatable {
 struct ScanListTicket: Codable, Equatable {
     var serial: String
     /// valid | used | refunded | void | unpaid (vstopnica neplacanega narocila; backend jih vrne od 2. 10. 2026)
+    /// Vstopnica s sporom pri banki ima status `unpaid` IN `paymentDisputed == true` (backend#232).
     var status: String
     var usedAt: String?
     var isVip: Bool
@@ -48,6 +49,9 @@ struct ScanListTicket: Codable, Equatable {
     /// Guest lista (backend 8. 10. 2026): star backend ali star seznam na disku polj nima -> false / nil.
     var isGuestList: Bool
     var guestListHostUsername: String?
+    /// Placilo v sporu (chargeback, backend 13. 10. 2026): gosta NE spustiti, napoti ga k vodji kluba. Star backend ali star seznam
+    /// na disku polja nima -> false (stanje potem pove samo `status`).
+    var paymentDisputed: Bool
 
     enum CodingKeys: String, CodingKey {
         case serial, status
@@ -58,11 +62,12 @@ struct ScanListTicket: Codable, Equatable {
         case holderUsername = "holder_username"
         case isGuestList = "is_guest_list"
         case guestListHostUsername = "guest_list_host_username"
+        case paymentDisputed = "payment_disputed"
     }
 
     init(serial: String, status: String = "valid", usedAt: String? = nil, isVip: Bool = false,
          tableLabel: String? = nil, packageName: String? = nil, holderUsername: String? = nil,
-         isGuestList: Bool = false, guestListHostUsername: String? = nil) {
+         isGuestList: Bool = false, guestListHostUsername: String? = nil, paymentDisputed: Bool = false) {
         self.serial = serial
         self.status = status
         self.usedAt = usedAt
@@ -72,6 +77,7 @@ struct ScanListTicket: Codable, Equatable {
         self.holderUsername = holderUsername
         self.isGuestList = isGuestList
         self.guestListHostUsername = guestListHostUsername
+        self.paymentDisputed = paymentDisputed
     }
 
     init(from decoder: Decoder) throws {
@@ -86,6 +92,7 @@ struct ScanListTicket: Codable, Equatable {
         holderUsername = (try? c.decodeIfPresent(String.self, forKey: .holderUsername)) ?? nil
         isGuestList = (try? c.decodeIfPresent(Bool.self, forKey: .isGuestList)) ?? false
         guestListHostUsername = (try? c.decodeIfPresent(String.self, forKey: .guestListHostUsername)) ?? nil
+        paymentDisputed = (try? c.decodeIfPresent(Bool.self, forKey: .paymentDisputed)) ?? false
     }
 }
 
@@ -129,7 +136,7 @@ struct ScanList: Codable, Equatable {
 struct ScanBatchResult: Decodable, Equatable {
     var clientScanId: String
     var serial: String?
-    /// ok | already_used | transferred | invalid | wrong_club | unknown | unpaid | refunded | void | event_cancelled | not_today (dokoncni) ali error (poskusi znova).
+    /// ok | already_used | transferred | invalid | wrong_club | unknown | unpaid | refunded | void | event_cancelled | not_today | payment_disputed (dokoncni) ali error (poskusi znova).
     var result: String
     var usedAt: String?
 
