@@ -168,7 +168,8 @@ struct HelpArticle: Identifiable {
     let title: String
     let body: String
 
-    static let all: [HelpArticle] = [
+    /// Racunana lastnost (ne `static let`): Jezik preklopi jezik brez ponovnega zagona, clanki morajo slediti.
+    static var all: [HelpArticle] { [
         HelpArticle(
             id: "account",
             group: String(localized: "Getting started"),
@@ -621,5 +622,5 @@ struct HelpArticle: Identifiable {
             Tap Delivered once the table has been served. Tapped by mistake? Tap Undo. Staff also get a notification when a table is ready to serve.
             """)
         ),
-    ]
+    ] }
 }
