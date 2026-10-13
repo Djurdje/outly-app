@@ -12,17 +12,28 @@ struct OutlyPrimaryButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                if isLoading { ProgressView().tint(.white) }
-                Text(LocalizedStringKey(title))
-                    .font(.system(size: 16, weight: .semibold))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Color.outlyBlue)
-            .foregroundColor(.white)
-            .cornerRadius(14)
+            OutlyPrimaryButtonLabel(title: title, isLoading: isLoading)
         }
+    }
+}
+
+/// Videz glavnega modrega gumba brez Button ovitka — za NavigationLink, ki mora izgledati kot glavni gumb
+/// (npr. »Take me there« v clanku pomoci). Isti izgled kot OutlyPrimaryButton, en vir.
+struct OutlyPrimaryButtonLabel: View {
+    let title: String
+    var isLoading: Bool = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if isLoading { ProgressView().tint(.white) }
+            Text(LocalizedStringKey(title))
+                .font(.system(size: 16, weight: .semibold))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Color.outlyBlue)
+        .foregroundColor(.white)
+        .cornerRadius(14)
     }
 }
 
