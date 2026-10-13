@@ -161,6 +161,7 @@ struct LoginView: View {
             let seja = try await SupabaseAuth.shared.signIn(email: cleanEmail, password: password)
 
             session.setSession(token: seja.accessToken, refreshToken: seja.refreshToken)
+            CakajocaPotrditev.shared.pocisti()
             guard session.isLoggedIn else {
                 // Keychain je zavrnil zapis (redko; npr. naprava se ni odklenjena po zagonu).
                 message = String(localized: "Could not save your session on this device. Please try again.")
@@ -178,6 +179,8 @@ struct LoginView: View {
                 // E-naslov se ni potrjen: na zaslon s kodo iz maila.
                 if nepotrjen {
                     pendingEmail = cleanEmail
+                    // Samo v pomnilniku (glej CakajocaPotrditev): isti tok kot po registraciji.
+                    CakajocaPotrditev.shared.shrani(email: cleanEmail, geslo: password)
                     authStage = "verifyEmail"
                 }
             }
