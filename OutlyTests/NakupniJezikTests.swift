@@ -70,8 +70,8 @@ final class NakupniJezikTests: XCTestCase {
             with: JSONSerialization.data(withJSONObject: APIClient.telesoNakupaVstopnic(quantity: 1, locale: "en"))) as? [String: Any])
         let miza = try XCTUnwrap(try JSONSerialization.jsonObject(
             with: JSONSerialization.data(withJSONObject: APIClient.telesoNakupaMize(packageId: 3, expectedPriceCents: 100, locale: "en"))) as? [String: Any])
-        XCTAssertEqual(vstopnice["terms_version"] as? String, "1.1")
-        XCTAssertEqual(miza["terms_version"] as? String, "1.1")
+        XCTAssertEqual(vstopnice["terms_version"] as? String, LegalLinks.termsVersion)
+        XCTAssertEqual(miza["terms_version"] as? String, LegalLinks.termsVersion)
         // Format, ki ga backend sprejme (^[A-Za-z0-9._:-]{1,40}$).
         XCTAssertNotNil(LegalLinks.termsVersion.range(of: "^[A-Za-z0-9._:-]{1,40}$", options: .regularExpression))
     }
