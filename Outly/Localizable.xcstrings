@@ -16791,6 +16791,28 @@
           }
         }
       }
+    },
+    "Test mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testni način"
+          }
+        }
+      }
+    },
+    "Shows what test mode means": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaže, kaj pomeni testni način"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

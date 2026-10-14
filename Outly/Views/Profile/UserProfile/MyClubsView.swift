@@ -361,7 +361,7 @@ struct MyClubDetailView: View {
                             .buttonStyle(.plain)
 
                             NavigationLink {
-                                BusinessDashboardView(clubId: clubId, clubName: club?.name)
+                                BusinessDashboardView(clubId: clubId, clubName: club?.name, clubLogoUrl: (club?.logoUrl ?? "").isEmpty ? logoUrl : (club?.logoUrl ?? ""))
                             } label: {
                                 OutlyMenuRowButton(icon: "chart.bar", title: "Dashboard")
                             }
