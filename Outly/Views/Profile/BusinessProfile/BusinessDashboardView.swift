@@ -9,6 +9,8 @@ import Charts
 struct BusinessDashboardView: View {
     var clubId: Int? = nil
     let clubName: String?
+    /// Logo kluba za glavo (sredina zaslona). Privzeto prazen -> nadomestna ikona.
+    var clubLogoUrl: String = ""
 
     @EnvironmentObject private var session: SessionStore
 
@@ -18,6 +20,7 @@ struct BusinessDashboardView: View {
     @State private var isChartLoading = false
     @State private var errorText: String?
     @State private var range: SalesRange = .month
+    @State private var showTestInfo = false
 
     /// Opozorilo, ko kupci ne morejo kupovati. Pri nepopolnih podatkih prodajalca (samo lastnik jih lahko izpolni, backend#94)
     /// kartica vodi v Club info, kjer je razdelek »Seller details«; sicer samo besedilo.
@@ -37,34 +40,7 @@ struct BusinessDashboardView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 26) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Dashboard")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(.white)
-                    Spacer()
-                    if let sales, sales.jeTestni {
-                        Text("TEST")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(Color.orange.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
-                }
-                .padding(.top, 6)
-
-                if let clubName {
-                    Text(clubName)
-                        .font(.headline)
-                        .foregroundColor(.white.opacity(0.7))
-                }
-
-                if let sales, sales.jeTestni {
-                    Text("Test mode: purchases are simulated, no money moves. They are counted under Test purchases, not in the totals.")
-                        .font(.system(size: 11))
-                        .foregroundColor(.orange.opacity(0.85))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                glava
 
                 if let sales, sales.nacinPlacila.prodajaNedosegljiva {
                     prodajaNedosegljivaNapotek(sales.razlogNedosegljivosti)
@@ -102,6 +78,66 @@ struct BusinessDashboardView: View {
         // Samostojna naloga: SwiftUI sicer prekine osvezitev ob spremembi stanja (glej HomeView).
         .refreshable { await Task { await load() }.value }
         .onAppear { Task { await load() } }
+    }
+
+    // MARK: - Glava: logo in ime kluba na sredini, TEST kot gumb desno zgoraj
+
+    private var glava: some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 12) {
+                klubLogo
+                if let clubName, !clubName.isEmpty {
+                    Text(clubName)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            if let sales, sales.jeTestni {
+                Button { showTestInfo = true } label: {
+                    Text("TEST")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Color.orange.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Test mode")
+                .accessibilityHint("Shows what test mode means")
+                .popover(isPresented: $showTestInfo) {
+                    Text("Test mode: purchases are simulated, no money moves. They are counted under Test purchases, not in the totals.")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(16)
+                        .frame(width: 260)
+                        .presentationCompactAdaptation(.popover)
+                }
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private var klubLogo: some View {
+        Group {
+            if !clubLogoUrl.isEmpty, let u = URL(string: clubLogoUrl) {
+                OutlyAsyncImage(url: u) { img in
+                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
+                } placeholder: {
+                    Rectangle().fill(Color.white.opacity(0.1))
+                }
+            } else {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.outlyBlue.opacity(0.2))
+                    .overlay(Image(systemName: "building.2").font(.system(size: 28)).foregroundColor(.outlyBlue))
+            }
+        }
+        .frame(width: 76, height: 76)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     // MARK: - 1) Graf prodaje (kartica, identicna skici Martina 25. 9. 2026)

@@ -22,13 +22,31 @@ struct ClubDetailView: View {
     private var jeOrganizator: Bool { club?.isOrganizer == true }
 
     var body: some View {
+        // GeometryReader samo za zgornji odmik varnega obmocja (status + navigacijska vrstica; konstanta, ne spreminja se med drsenjem).
+        GeometryReader { geo in
+            vsebina(zgornjiOdmik: geo.safeAreaInsets.top)
+        }
+        .navigationTitle("")
+        .outlyOzadje()
+        .navigationBarTitleDisplayMode(.inline)
+        // Slika do vrha zaslona (Martin, 14. 10. 2026): navigacijska vrstica brez ozadja, gumb nazaj in »…« plavata cez sliko.
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .preferredColorScheme(.dark)
+        // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za klub, v katerem sam delam.
+        .prijavaMeni(targetType: .club, targetId: clubId, targetName: club?.name ?? "", skrij: jeMojKlub)
+        .task { await load() }
+        // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
+        .task { await APIClient.shared.postView(clubId: clubId) }
+    }
+
+    private func vsebina(zgornjiOdmik: CGFloat) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
 
                 // Vrstni red po Lukovih navodilih (14. 9. 2026), dopolnjen 22. 9.:
                 // 1) Slideshow (do 3 slike) + ime kluba, stevilo sledilcev in gumb Follow cez sliko.
                 //    Pasice (banner_url) tu NI: stran kluba kaze samo slideshow (DECISIONS 22. 9.).
-                header
+                header(zgornjiOdmik: zgornjiOdmik)
 
                 // 2) Logo, mesto, zanri, min age — takoj pod slideshowom
                 infoBlock
@@ -65,15 +83,8 @@ struct ClubDetailView: View {
             }
             .padding(.bottom, 90)
         }
-        .navigationTitle("")
-        .outlyOzadje()
-        .navigationBarTitleDisplayMode(.inline)
-        .preferredColorScheme(.dark)
-        // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za klub, v katerem sam delam.
-        .prijavaMeni(targetType: .club, targetId: clubId, targetName: club?.name ?? "", skrij: jeMojKlub)
-        .task { await load() }
-        // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
-        .task { await APIClient.shared.postView(clubId: clubId) }
+        // Samo zgornje varno obmocje; spodnje ostane (plavajoca spodnja vrstica, odmik 90).
+        .ignoresSafeArea(edges: .top)
     }
 
     /// Ali sem lastnik ali clan ekipe tega kluba (Me.clubs / Me.clubId).
@@ -84,13 +95,26 @@ struct ClubDetailView: View {
 
     // MARK: - 1) Header: slideshow do treh slik in ime kluba
     // Slike so povsod ovite v Color.clear.overlay(...).clipped() (past 12).
-    private var header: some View {
+    // Visina: 260 pt pod navigacijsko vrstico kot doslej + zgornji odmik (status + nav), ker slika zdaj sega do vrha
+    // zaslona; tako vidni del slike ni nizji in ime kluba (spodaj levo) ne pride pod gumb nazaj.
+    private func header(zgornjiOdmik: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
             ClubSlideshow(urls: club?.slideshowUrls ?? [])
 
             LinearGradient(
                 colors: [.clear, .black.opacity(0.85)],
                 startPoint: .center,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+
+            // Rahlo temnenje na vrhu (kot na dogodku), da sta statusna vrstica in gumb nazaj berljiva na svetlih slikah.
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.30), location: 0),
+                    .init(color: .clear, location: 0.20)
+                ],
+                startPoint: .top,
                 endPoint: .bottom
             )
             .allowsHitTesting(false)
@@ -105,7 +129,7 @@ struct ClubDetailView: View {
                 .padding(.bottom, 14)
                 .allowsHitTesting(false)
         }
-        .frame(height: 260)
+        .frame(height: 260 + max(zgornjiOdmik, 0))
         .clipped()
     }
 
