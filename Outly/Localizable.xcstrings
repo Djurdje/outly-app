@@ -1219,6 +1219,17 @@
         }
       }
     },
+    "Orders: %lld · not real money, not included above": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naročila: %lld · ni pravi denar, ni vključeno zgoraj"
+          }
+        }
+      }
+    },
     "%lld refused": {
       "extractionState": "manual",
       "localizations": {
@@ -8375,13 +8386,13 @@
         }
       }
     },
-    "Test mode: purchases are simulated, no money moves. Numbers show how the real dashboard will look.": {
+    "Test mode: purchases are simulated, no money moves. They are counted under Test purchases, not in the totals.": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Testni način: nakupi so simulirani, denar se ne premika. Številke kažejo, kako bo videti pravi pregled."
+            "value": "Testni način: nakupi so simulirani, denar se ne premika. Šteti so pod Testni nakupi, ne v zneskih."
           }
         }
       }
@@ -8393,6 +8404,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Testni nakup — nič ni bilo zaračunano"
+          }
+        }
+      }
+    },
+    "Test purchases": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testni nakupi"
           }
         }
       }
