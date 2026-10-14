@@ -338,6 +338,27 @@ struct BusinessSales: Decodable {
         }
     }
 
+    /// Ves testni promet kluba (backend#236): lazni nacin ali Stripe sandbox, ni pravi denar in ni v `summary`.
+    /// Star backend polja ne vraca -> `BusinessSales.testSummary == nil`, kartice ni.
+    struct TestSummary: Decodable {
+        let orders: Int
+        let grossCents: Int
+        let ticketsSold: Int
+
+        enum CodingKeys: String, CodingKey {
+            case orders
+            case grossCents = "gross_cents"
+            case ticketsSold = "tickets_sold"
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            orders = try c.decodeIfPresent(Int.self, forKey: .orders) ?? 0
+            grossCents = try c.decodeIfPresent(Int.self, forKey: .grossCents) ?? 0
+            ticketsSold = try c.decodeIfPresent(Int.self, forKey: .ticketsSold) ?? 0
+        }
+    }
+
     struct EventSales: Decodable, Identifiable {
         let id: Int
         let title: String
@@ -450,9 +471,12 @@ struct BusinessSales: Decodable {
     /// Zakaj je `paymentMode == "unavailable"` (backend#221): "seller_incomplete" | "stripe_not_ready" | "payments_not_configured" | "demo_club" (backend#243);
     /// nil = star backend, null ali polje manjka -> obstojece besedilo (glej `RazlogNedosegljivosti`).
     let paymentUnavailableReason: String?
+    /// Testni promet kluba (backend#236, `test_summary`); nil = star backend. `summary` in grafi stejejo samo pravi promet.
+    let testSummary: TestSummary?
 
     enum CodingKeys: String, CodingKey {
         case mode, summary, events, series
+        case testSummary = "test_summary"
         case paymentMode = "payment_mode"
         case paymentUnavailableReason = "payment_unavailable_reason"
         case feePercent = "fee_percent"
@@ -471,6 +495,8 @@ struct BusinessSales: Decodable {
         series = try c.decodeIfPresent([SeriesPoint].self, forKey: .series) ?? []
         paymentMode = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
         paymentUnavailableReason = (try? c.decodeIfPresent(String.self, forKey: .paymentUnavailableReason)) ?? nil
+        // try?: nenavadno polje testnega prometa ne sme podreti dekodiranja cele prodaje.
+        testSummary = (try? c.decodeIfPresent(TestSummary.self, forKey: .testSummary)) ?? nil
     }
 
     /// Dashboard kaze TEST samo, ko je placilo TEGA kluba testno (`payment_mode`); star backend: globalni `mode`.

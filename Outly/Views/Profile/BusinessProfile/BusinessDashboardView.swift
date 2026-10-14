@@ -60,7 +60,7 @@ struct BusinessDashboardView: View {
                 }
 
                 if let sales, sales.jeTestni {
-                    Text("Test mode: purchases are simulated, no money moves. Numbers show how the real dashboard will look.")
+                    Text("Test mode: purchases are simulated, no money moves. They are counted under Test purchases, not in the totals.")
                         .font(.system(size: 11))
                         .foregroundColor(.orange.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
@@ -288,11 +288,17 @@ struct BusinessDashboardView: View {
     // MARK: - Povzetek (Martin, 25. 9. 2026: vrni te stevilke — odstranjen je bil samo "Recent sales")
 
     private func povzetek(_ s: BusinessSales) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            summaryCard("Total revenue", Denar.evri(s.summary.grossCents), "gross, all events")
-            summaryCard("Tickets sold", stevilka(s.summary.ticketsSold), "\(s.summary.orders) orders · \(s.summary.buyers) buyers")
-            summaryCard("Outly fee", Denar.evri(s.summary.feeCents), "\(Int(s.feePercent)) % of gross")
-            summaryCard("Your payout", Denar.evri(s.summary.netCents), "after fee and refunds", modra: true)
+        VStack(spacing: 10) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                summaryCard("Total revenue", Denar.evri(s.summary.grossCents), "gross, all events")
+                summaryCard("Tickets sold", stevilka(s.summary.ticketsSold), "\(s.summary.orders) orders · \(s.summary.buyers) buyers")
+                summaryCard("Outly fee", Denar.evri(s.summary.feeCents), "\(Int(s.feePercent)) % of gross")
+                summaryCard("Your payout", Denar.evri(s.summary.netCents), "after fee and refunds", modra: true)
+            }
+            // Testni promet (backend#236): ni v zneskih zgoraj; ista kartica, cez celo sirino, ne modra.
+            if let t = s.testSummary, t.orders > 0 {
+                summaryCard("Test purchases", Denar.evri(t.grossCents), "Orders: \(t.orders) · not real money, not included above")
+            }
         }
     }
 
