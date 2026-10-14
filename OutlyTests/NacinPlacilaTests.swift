@@ -92,6 +92,29 @@ final class NacinPlacilaTests: XCTestCase {
         XCTAssertNil(napacenTip.paymentUnavailableReason)
     }
 
+    // MARK: - test_summary (backend#236)
+
+    func testTestniPrometDekodiranje() throws {
+        // polja ni (star backend)
+        XCTAssertNil(try decode(BusinessSales.self, #"{"mode": "live", \#(osnovaProdaje)}"#).testSummary)
+        // null
+        XCTAssertNil(try decode(BusinessSales.self, #"{"mode": "live", "test_summary": null, \#(osnovaProdaje)}"#).testSummary)
+        // prazen objekt: vsa notranja polja 0
+        let prazen = try decode(BusinessSales.self, #"{"mode": "live", "test_summary": {}, \#(osnovaProdaje)}"#)
+        XCTAssertEqual(prazen.testSummary?.orders, 0)
+        XCTAssertEqual(prazen.testSummary?.grossCents, 0)
+        XCTAssertEqual(prazen.testSummary?.ticketsSold, 0)
+        // pravilen objekt
+        let poln = try decode(BusinessSales.self, #"{"mode": "live", "test_summary": {"orders": 2, "gross_cents": 2000, "tickets_sold": 3}, \#(osnovaProdaje)}"#)
+        XCTAssertEqual(poln.testSummary?.orders, 2)
+        XCTAssertEqual(poln.testSummary?.grossCents, 2000)
+        XCTAssertEqual(poln.testSummary?.ticketsSold, 3)
+        // napacen tip: nil, prodaja se vseeno dekodira
+        let napacenTip = try decode(BusinessSales.self, #"{"mode": "live", "test_summary": {"orders": 1, "gross_cents": "2000", "tickets_sold": 1}, \#(osnovaProdaje)}"#)
+        XCTAssertNil(napacenTip.testSummary)
+        XCTAssertEqual(napacenTip.mode, "live")
+    }
+
     func testRazlogIzbiraBesedila() {
         XCTAssertEqual(RazlogNedosegljivosti("seller_incomplete"), .prodajalecNepopoln)
         XCTAssertEqual(RazlogNedosegljivosti("payments_not_configured"), .placilaNenastavljena)
