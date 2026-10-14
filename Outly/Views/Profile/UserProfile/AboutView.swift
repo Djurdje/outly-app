@@ -59,7 +59,7 @@ struct AboutUsView: View {
                     .foregroundColor(.white.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("NEXT DIMENSIONS, družba za marketing, d.o.o.\nTrebče 81, 3256 Bistrica ob Sotli, Slovenia")
+                Text("TIP&TAP, storitve, razvoj in izobraževanje, d.o.o.\nKvedrova cesta 6, 1000 Ljubljana, Slovenia")
                     .font(.footnote)
                     .foregroundColor(.gray)
 
