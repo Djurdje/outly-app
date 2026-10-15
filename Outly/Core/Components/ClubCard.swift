@@ -82,8 +82,12 @@ struct ClubCard: View {
                             VStack(spacing: 4) {
                                 Image(systemName: "location.fill")
                                     .font(.system(size: 14, weight: .semibold))
+                                // Martin (14. 10. 2026): samo razdalja je modra s subtilnim sijem; ikona in »Tap to open« ostaneta beli.
                                 Text(distanceText)
                                     .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(Color.outlyBlue)
+                                    .shadow(color: Color.outlyBlue.opacity(0.8), radius: 6)
+                                    .shadow(color: Color.outlyBlue.opacity(0.4), radius: 12)
                                 Text("Tap to open")
                                     .font(.system(size: 10, weight: .medium))
                                     .opacity(0.7)

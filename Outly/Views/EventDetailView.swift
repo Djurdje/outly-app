@@ -70,8 +70,13 @@ struct EventDetailView: View {
                 Spacer(minLength: 40)
             }
         }
+        // Plakat do samega vrha zaslona (Martin, 14. 10. 2026): vsebina ignorira SAMO zgornje varno obmocje
+        // (spodnje ostane zaradi plavajoce spodnje vrstice), navigacijska vrstica brez ozadja,
+        // gumb nazaj in meni »…« plavata cez sliko.
+        .ignoresSafeArea(edges: .top)
         .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .preferredColorScheme(.dark)
         // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za dogodek kluba, v katerem sam delam.
         .prijavaMeni(targetType: .event, targetId: event.id, targetName: event.title, skrij: jeMojDogodek)

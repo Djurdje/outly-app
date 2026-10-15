@@ -5215,13 +5215,13 @@
         }
       }
     },
-    "NEXT DIMENSIONS, družba za marketing, d.o.o.\nTrebče 81, 3256 Bistrica ob Sotli, Slovenia": {
+    "TIP&TAP, storitve, razvoj in izobraževanje, d.o.o.\nKvedrova cesta 6, 1000 Ljubljana, Slovenia": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "NEXT DIMENSIONS, družba za marketing, d.o.o.\nTrebče 81, 3256 Bistrica ob Sotli, Slovenija"
+            "value": "TIP&TAP, storitve, razvoj in izobraževanje, d.o.o.\nKvedrova cesta 6, 1000 Ljubljana, Slovenija"
           }
         }
       }
@@ -16788,6 +16788,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Osebje dobi tudi obvestilo, ko je miza pripravljena za strežbo."
+          }
+        }
+      }
+    },
+    "Test mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testni način"
+          }
+        }
+      }
+    },
+    "Shows what test mode means": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaže, kaj pomeni testni način"
           }
         }
       }
