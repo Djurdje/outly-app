@@ -1,5 +1,6 @@
 import XCTest
 import Foundation
+import AVFoundation
 @testable import Outly
 
 /// outly-backend#257: odjemalec poslje Cloudinaryju natanko podpisane parametre (iz odgovora backenda).
@@ -60,6 +61,12 @@ final class CloudinaryPodpisTests: XCTestCase {
         XCTAssertTrue(VideoZaNalaganje.jeLokacijskiKljuc("mdta/com.apple.quicktime.location.ISO6709"))
         XCTAssertTrue(VideoZaNalaganje.jeLokacijskiKljuc("udta/\u{00A9}xyz"))
         XCTAssertFalse(VideoZaNalaganje.jeLokacijskiKljuc("mdta/com.apple.quicktime.make"))
+    }
+
+    func testSamoVideoInZvokStaDovoljeniSledi() {
+        XCTAssertTrue(VideoZaNalaganje.jeVideoAliZvok(.video))
+        XCTAssertTrue(VideoZaNalaganje.jeVideoAliZvok(.audio))
+        XCTAssertFalse(VideoZaNalaganje.jeVideoAliZvok(.metadata))
     }
 
     func testVhodnaKoncnica() {

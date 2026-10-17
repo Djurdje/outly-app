@@ -45,7 +45,14 @@ enum VideoZaNalaganje {
         } catch {
             throw VideoNapaka.neBerljiv
         }
-        let asset = AVURLAsset(url: vhod)
+        // Casovne metapodatkovne/podatkovne sledi (GPMF `gpmd` GoPro/dron, `mebx`, sledi lokacije) lahko nosijo GPS
+        // in jih passthrough prepise. Ce jih vir ima, izvazamo kompozicijo SAMO iz video in avdio sledi.
+        let asset: AVAsset
+        do {
+            asset = try await samoVideoInZvok(AVURLAsset(url: vhod))
+        } catch {
+            throw VideoNapaka.lokacijeNiMogoceOdstraniti
+        }
 
         let preseti = [AVAssetExportPresetPassthrough, AVAssetExportPresetHighestQuality]
         for (indeks, preset) in preseti.enumerated() {
@@ -53,6 +60,10 @@ enum VideoZaNalaganje {
             guard let izvoz = try? await izvozi(asset, preset: preset, mapa: mapa, indeks: indeks) else { continue }
             // Preveri izvozeno datoteko: ce lokacije ni mogoce prebrati ali je se tam -> naslednji preset.
             guard await brezLokacije(izvoz.url) else { continue }
+            // Velikost iz datoteke PRED branjem v pomnilnik.
+            if let velikost = try? izvoz.url.resourceValues(forKeys: [.fileSizeKey]).fileSize, velikost > najvecBajtov {
+                throw VideoNapaka.prevelik
+            }
             let rezultat: Data
             do {
                 rezultat = try Data(contentsOf: izvoz.url)
@@ -67,9 +78,35 @@ enum VideoZaNalaganje {
         throw VideoNapaka.lokacijeNiMogoceOdstraniti
     }
 
+    /// Vir brez sledi, ki niso video/avdio: ce ima vir samo video in avdio, ga vrne nespremenjenega, sicer
+    /// `AVMutableComposition` iz video in avdio sledi (orientacija: `preferredTransform` video sledi se ohrani).
+    nonisolated static func samoVideoInZvok(_ asset: AVURLAsset) async throws -> AVAsset {
+        let sledi = try await asset.load(.tracks)
+        guard sledi.contains(where: { !jeVideoAliZvok($0.mediaType) }) else { return asset }
+        let sestava = AVMutableComposition()
+        var steviloVideo = 0
+        for sled in sledi where jeVideoAliZvok(sled.mediaType) {
+            guard let nova = sestava.addMutableTrack(withMediaType: sled.mediaType, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                throw VideoNapaka.lokacijeNiMogoceOdstraniti
+            }
+            let obseg = try await sled.load(.timeRange)
+            try nova.insertTimeRange(obseg, of: sled, at: obseg.start)
+            if sled.mediaType == .video {
+                nova.preferredTransform = try await sled.load(.preferredTransform)
+                steviloVideo += 1
+            }
+        }
+        guard steviloVideo > 0 else { throw VideoNapaka.neBerljiv }
+        return sestava
+    }
+
+    nonisolated static func jeVideoAliZvok(_ tip: AVMediaType) -> Bool {
+        tip == .video || tip == .audio
+    }
+
     /// Izvoz v `mapa` z izbranim presetom; izhod brez metapodatkov vsebnika in s filtrom za deljenje.
     nonisolated private static func izvozi(
-        _ asset: AVURLAsset,
+        _ asset: AVAsset,
         preset: String,
         mapa: URL,
         indeks: Int
@@ -95,13 +132,15 @@ enum VideoZaNalaganje {
         return (izhod, tip)
     }
 
-    /// true samo, ce se izvozena datoteka da prebrati IN nima nobenega metapodatka o lokaciji
-    /// (ne na ravni vsebnika ne na ravni sledi). Ce branje ne uspe, velja kot "ima lokacijo".
+    /// true samo, ce se izvozena datoteka da prebrati, ima samo video/avdio sledi (nobene casovne metapodatkovne
+    /// ali podatkovne sledi, npr. GPMF) IN nima nobenega metapodatka o lokaciji (ne vsebnik ne sledi).
+    /// Ce branje ne uspe, velja kot "ima lokacijo".
     nonisolated static func brezLokacije(_ url: URL) async -> Bool {
         let asset = AVURLAsset(url: url)
         do {
             var vsi = try await asset.load(.metadata)
             for sled in try await asset.load(.tracks) {
+                if !jeVideoAliZvok(sled.mediaType) { return false }
                 vsi += try await sled.load(.metadata)
             }
             return !vsi.contains(where: { jeLokacija($0) })
