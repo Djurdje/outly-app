@@ -628,8 +628,11 @@ final class SkenSeja: ObservableObject {
             // Ponovni poskus z naraščajočim odmikom (15/30/60/120 s) in raztrosom: tudi 503/429 (backend namenoma zavrne preveč hkratnih
             // scan-list), omrezje in pokvarjen odgovor. Stari seznam ostane; odlocitev na vratih od tega ni odvisna.
             if jeSvoj(), stanja[id] != nil {
-                stanja[id]?.neuspehiPrenosa += 1
-                stanja[id]?.naslednjaOsvezitev = ura().addingTimeInterval(Self.odmikPrenosaSeznama(stanja[id]?.neuspehiPrenosa ?? 1))
+                let neuspehi = (stanja[id]?.neuspehiPrenosa ?? 0) + 1
+                let odmik = Self.odmikPrenosaSeznama(neuspehi)
+                let kdaj = ura().addingTimeInterval(odmik)
+                stanja[id]?.neuspehiPrenosa = neuspehi
+                stanja[id]?.naslednjaOsvezitev = kdaj
             }
             posodobiPripravo()
         }
