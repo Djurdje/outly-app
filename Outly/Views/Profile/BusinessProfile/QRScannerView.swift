@@ -130,9 +130,9 @@ struct QRScannerView: View {
             svetilka = false
             omrezje.ustavi()
             seja.ustavi()
-            // Zadnji poskus pred odhodom; kar ostane, je na disku in se poslje ob naslednjem odprtju skenerja.
+            // Zadnji poskus pred odhodom (spostuje odmik zasedene baze, #108); kar ostane, je na disku in se poslje ob naslednjem odprtju skenerja.
             let s = seja
-            Task { await s.poslji() }
+            Task { await s.posljiObOdhodu() }
         }
     }
 

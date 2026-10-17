@@ -24,6 +24,8 @@ enum SkenOdjava {
                 let klubZaApi: Int? = klub > 0 ? klub : nil
                 let odgovor = await SkenRok.zRokom(rok) { try await api.paket(token: token, klubId: klubZaApi, vnosi: paket, deviceId: deviceId) }
                 guard case .success(let rezultati)? = odgovor, vrsta.uporabi(rezultati, poslani: paket) > 0 else { break }
+                // Delni paket (`error` = zasedena baza, outly-app#108): preostanka ne posiljamo takoj znova; ostane na disku do naslednje prijave.
+                if SkenSeja.jeDelniPaket(rezultati, poslani: paket) { break }
             }
         }
     }

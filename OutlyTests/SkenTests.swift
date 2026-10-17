@@ -2689,3 +2689,139 @@ final class SkenSejaTests: XCTestCase {
         XCTAssertNotEqual(SkenNaprava.id(drug), prvi)
     }
 }
+
+/// outly-app#108: ko scan-batch vrne delni paket (`error` za preostanek po SKEN_BATCH_ROK_MS, zasedena baza), telefon preostanka ne
+/// poslje takoj znova, ampak z odmikom (5 s ... 60 s, raztros). Ura je podtaknjena; nic ne caka na pravi cas.
+@MainActor
+final class SkenOdmikPosiljanjaTests: XCTestCase {
+    private var mapa: URL!
+
+    override func setUp() async throws { mapa = Pomoc.zacasnaMapa() }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
+
+    private func lazniApi() -> LazniApi {
+        LazniApi(kljuc: Pomoc.scanKey(Curve25519.Signing.PrivateKey()), seznam: ScanList(eventId: 42, kid: "kid1", tickets: []))
+    }
+
+    /// Vrsta s `n` vnosi na disku (kot po vecerih brez povezave) in seja nad njo.
+    private func seja(_ a: LazniApi, ura: TestnaUra, vnosov n: Int) -> (SkenSeja, SkenVrsta) {
+        let disk = SkenDisk(mapa: mapa)
+        let vrsta = SkenVrsta(disk: disk)
+        for i in 0..<n {
+            vrsta.dodaj(SkenVnos(qr: "o2.x.\(i)", serial: Pomoc.serial(), eventId: 42, klubId: 1, uporabnikId: 7,
+                                 scannedAt: ura.zdaj.addingTimeInterval(Double(i))))
+        }
+        let s = SkenSeja(klubId: 1, uporabnikId: 7, api: a, disk: disk, deviceId: "naprava-1", vrsta: vrsta, rokStreznika: 1, rokSpletni: 1,
+                         kljucOdmik: 0)
+        s.zeton = { "zeton" }
+        s.ura = { ura.zdaj }
+        return (s, vrsta)
+    }
+
+    /// Caka na POGOJ (ne na cas): gornja meja je samo varovalka pred obvisanjem testa.
+    private func pocakaj(_ pogoj: () -> Bool, rok: Double = 30) async -> Bool {
+        let konec = Date().addingTimeInterval(rok)
+        while !pogoj() && Date() < konec { try? await Task.sleep(nanoseconds: 2_000_000) }
+        return pogoj()
+    }
+
+    private func odmik(_ s: SkenSeja, od t: Date) -> Double { s.posiljanjeOdlozenoDo.timeIntervalSince(t) }
+
+    func testOdmikPosiljanjaJeEksponentenZRaztrosomInNajvec60s() {
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(1, raztros: 1), 5, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(2, raztros: 1), 10, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(3, raztros: 1), 20, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(4, raztros: 1), 40, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(5, raztros: 1), 50, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(100, raztros: 1.5), 60, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(1, raztros: 0.8), 4, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPosiljanja(0, raztros: 1), 5, accuracy: 1e-9)
+        for _ in 0..<50 { XCTAssertTrue((3.99...6.01).contains(SkenSeja.odmikPosiljanja(1))) }
+    }
+
+    func testDelniPaketPrepozna() {
+        let a = SkenVnos(clientScanId: "a", qr: "q", serial: nil, eventId: 42, klubId: 1, uporabnikId: 7)
+        let b = SkenVnos(clientScanId: "b", qr: "q", serial: nil, eventId: 42, klubId: 1, uporabnikId: 7)
+        let ok = ScanBatchResult(clientScanId: "a", result: "ok")
+        XCTAssertFalse(SkenSeja.jeDelniPaket([ok, ScanBatchResult(clientScanId: "b", result: "already_used")], poslani: [a, b]))
+        XCTAssertTrue(SkenSeja.jeDelniPaket([ok, ScanBatchResult(clientScanId: "b", result: "error")], poslani: [a, b]))
+        XCTAssertTrue(SkenSeja.jeDelniPaket([ok], poslani: [a, b]))   // rezultat manjka
+    }
+
+    func testDelniPaketPreostanekZOdmikomNeTakoj() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = lazniApi()
+        // Backend ob zasedeni bazi: prvi element obdelan, preostali `error`.
+        a.paketOdgovor = { v in .success(v.enumerated().map { e in
+            ScanBatchResult(clientScanId: e.element.clientScanId, serial: e.element.serial, result: e.offset == 0 ? "ok" : "error")
+        }) }
+        let (s, vrsta) = seja(a, ura: ura, vnosov: 3)
+        XCTAssertEqual(s.cakajoce, 3)
+
+        await s.poslji()
+        XCTAssertEqual(a.paketi.count, 1)          // pred popravkom: takoj druga zahteva s preostankom
+        XCTAssertEqual(s.cakajoce, 2)              // obdelani je sel iz vrste, `error` ostaneta
+        let prvi = odmik(s, od: t0)
+        XCTAssertTrue((3.99...6.01).contains(prvi), "prvi odmik ~5 s: \(prvi)")
+
+        // Vratar odklene telefon / omrezje se vrne: odmik zasedene baze ostane.
+        s.takojOsvezi()
+        XCTAssertEqual(odmik(s, od: t0), prvi)
+        s.omrezjeSpremenjeno(gor: false)
+        s.omrezjeSpremenjeno(gor: true)
+        XCTAssertEqual(odmik(s, od: t0), prvi)
+        // Odhod z zaslona med odmikom ne poslje (vnosi so na disku).
+        await s.posljiObOdhodu()
+        XCTAssertEqual(a.paketi.count, 1)
+
+        // Se en delni paket: odmik se podvoji.
+        ura.zdaj = s.posiljanjeOdlozenoDo
+        await s.poslji()
+        XCTAssertEqual(a.paketi.count, 2)
+        XCTAssertEqual(s.cakajoce, 1)
+        let drugi = odmik(s, od: ura.zdaj)
+        XCTAssertTrue((7.99...12.01).contains(drugi), "drugi odmik ~10 s: \(drugi)")
+
+        // Po izteku odmika tik poslje preostanek; uspesen paket brez `error` odmik ponastavi.
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
+        ura.zdaj = s.posiljanjeOdlozenoDo
+        s.tik()
+        let poslano = await pocakaj { a.paketi.count == 3 }
+        XCTAssertTrue(poslano)
+        await s.pocakajPosiljanje()
+        XCTAssertEqual(s.cakajoce, 0)
+
+        // Ponastavljeno: naslednji delni paket spet zacne pri ~5 s, ne pri ~20 s.
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, result: "error") }) }
+        vrsta.dodaj(SkenVnos(qr: "o2.x.n", serial: Pomoc.serial(), eventId: 42, klubId: 1, uporabnikId: 7, scannedAt: ura.zdaj))
+        await s.poslji()
+        let tretji = odmik(s, od: ura.zdaj)
+        XCTAssertTrue((3.99...6.01).contains(tretji), "po uspehu spet ~5 s: \(tretji)")
+    }
+
+    /// 503 (preobremenjen streznik) se obnasa kot `error`: vrnitev v ospredje odmika ne preskoci. Izpad omrezja (ni odgovora) ga preskoci.
+    func testOdmikOb503OstaneOdmikOmrezjaSePreskoci() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = lazniApi()
+        a.paketOdgovor = { _ in .failure(APIError.requestFailed(503, "Service temporarily unavailable. Please try again shortly.")) }
+        let (s, _) = seja(a, ura: ura, vnosov: 1)
+        await s.poslji()
+        XCTAssertEqual(s.cakajoce, 1)
+        let prvi = odmik(s, od: t0)
+        XCTAssertTrue((3.99...6.01).contains(prvi))
+        s.takojOsvezi()
+        XCTAssertEqual(odmik(s, od: t0), prvi)
+        // Po izteku odmika ga takojOsvezi spet sme ponastaviti.
+        ura.zdaj = s.posiljanjeOdlozenoDo
+        s.takojOsvezi()
+        XCTAssertEqual(s.posiljanjeOdlozenoDo, .distantPast)
+
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        await s.poslji()
+        XCTAssertGreaterThan(s.posiljanjeOdlozenoDo, ura.zdaj)
+        s.takojOsvezi()                            // povezava je nazaj: skeni gredo takoj
+        XCTAssertEqual(s.posiljanjeOdlozenoDo, .distantPast)
+    }
+}
