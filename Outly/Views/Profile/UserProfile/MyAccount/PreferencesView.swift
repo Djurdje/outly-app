@@ -9,7 +9,7 @@ struct PreferencesView: View {
 
     /// "Friends can see my plans" (users.share_plans_with_friends, migracija 016). Shranjeno na
     /// strezniku prek PATCH /me; lokalno stanje se ob napaki vrne na prejsnje.
-    @State private var sharePlans = true
+    @State private var sharePlans = false
     @State private var sharePlansError: String?
     @State private var sharePlansSaving = false
 
@@ -64,9 +64,9 @@ struct PreferencesView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .onAppear { sharePlans = session.me?.sharePlansWithFriends ?? true }
+        .onAppear { sharePlans = session.me?.sharePlansWithFriends ?? false }
         .onChange(of: sharePlans) { _, nova in
-            guard nova != (session.me?.sharePlansWithFriends ?? true) else { return }
+            guard nova != (session.me?.sharePlansWithFriends ?? false) else { return }
             Task { await shraniSharePlans(nova) }
         }
     }
@@ -82,7 +82,7 @@ struct PreferencesView: View {
             session.me = me
         } catch {
             sharePlansError = error.userMessage
-            sharePlans = session.me?.sharePlansWithFriends ?? true
+            sharePlans = session.me?.sharePlansWithFriends ?? false
         }
     }
 }

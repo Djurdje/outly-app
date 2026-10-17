@@ -6,6 +6,7 @@ extension Error {
     var userMessage: String {
         if let api = self as? APIError { return api.userMessage }
         if let sb = self as? SupabaseAuthError { return sb.userMessage }
+        if self is SlikaNapaka { return String(localized: "Failed to read selected image data.") }
         if let url = self as? URLError {
             switch url.code {
             case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:

@@ -107,7 +107,15 @@ extension APIClient {
         fileName: String,
         signature: CloudinarySignature
     ) async throws -> String {
-        try await uploadToCloudinary(data: imageData, fileName: fileName, contentType: "image/jpeg", resourceType: "image", signature: signature)
+        // Nikoli izvirnik: ponovno kodiranje odstrani EXIF/GPS (SlikaZaNalaganje). Ce ne uspe, vrze napako.
+        let slika = try await SlikaZaNalaganje.pripravi(imageData)
+        return try await uploadToCloudinary(
+            data: slika.podatki,
+            fileName: SlikaZaNalaganje.imeDatoteke(fileName, koncnica: slika.koncnica),
+            contentType: slika.contentType,
+            resourceType: "image",
+            signature: signature
+        )
     }
 
     private func uploadToCloudinary(
@@ -118,7 +126,10 @@ extension APIClient {
         signature: CloudinarySignature
     ) async throws -> String {
 
-        let url = URL(string: "https://api.cloudinary.com/v1_1/\(signature.cloudName)/\(resourceType)/upload")!
+        // cloudName pride s streznika: napacna vrednost (presledek ipd.) ne sme sesuti aplikacije.
+        guard let url = URL(string: "https://api.cloudinary.com/v1_1/\(signature.cloudName)/\(resourceType)/upload") else {
+            throw APIError.invalidURL
+        }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
 

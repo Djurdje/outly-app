@@ -526,13 +526,24 @@ struct EventDetailView: View {
                 if event.ticketPriceCents != nil {
                     showBuy = true
                 } else if let urlStr = event.ticketUrl,
-                          !urlStr.isEmpty,
-                          let url = URL(string: urlStr) {
+                          let url = Self.varnaPovezavaVstopnic(urlStr) {
                     UIApplication.shared.open(url)
                 }
             }
             Spacer(minLength: 0)
         }
+    }
+
+    /// `ticket_url` vnese organizator, backend ga ne preverja: odpremo SAMO http/https s hostom
+    /// (kot ClubContact v ClubView). javascript:, file:, tel:, sheme drugih aplikacij ... -> nic.
+    static func varnaPovezavaVstopnic(_ niz: String) -> URL? {
+        let t = niz.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty,
+              let url = URL(string: t),
+              let shema = url.scheme?.lowercased(),
+              shema == "http" || shema == "https",
+              let host = url.host, !host.isEmpty else { return nil }
+        return url
     }
 
     /// "€26.00" -> ("€26", ".00"); nil, ce napis ni cena z decimalkami (npr. "Tickets", "FREE").
