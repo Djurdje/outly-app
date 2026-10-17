@@ -37,6 +37,7 @@ struct EventFormView: View {
     @State private var venueCity = ""
 
     @State private var allGenres: [String] = []
+    @State private var genresFailed = false
     @State private var selectedGenres: Set<String> = []
 
     @State private var pickedPoster: PhotosPickerItem?
@@ -103,7 +104,26 @@ struct EventFormView: View {
                 Section("Who") {
                     Stepper("Minimum age: \(minAge)", value: $minAge, in: 0...99)
                     if allGenres.isEmpty {
-                        Text("Loading genres...").foregroundStyle(.secondary)
+                        if genresFailed {
+                            Text("Could not load genres.").foregroundStyle(.secondary)
+                            // Zanri se ob napaki ne posljejo (ZanriDogodka), uporabnik pa mora vedeti, kaj se bo zgodilo.
+                            if isEditing {
+                                Text("The event keeps its current genres.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("The event will use your club's genres.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Button {
+                                Task { await loadGenres() }
+                            } label: {
+                                Text("Try again").foregroundStyle(.white)
+                            }
+                        } else {
+                            Text("Loading genres...").foregroundStyle(.secondary)
+                        }
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], spacing: 8) {
                             ForEach(allGenres, id: \.self) { g in
@@ -356,9 +376,16 @@ struct EventFormView: View {
         }
     }
 
+    /// Ob napaki ostane `allGenres` prazen: obrazec pokaze napako, `save()` pa polja `genres` ne posije (glej `ZanriDogodka`).
     private func loadGenres() async {
-        do { allGenres = try await APIClient.shared.fetchGenres() }
-        catch { allGenres = [] }
+        guard allGenres.isEmpty else { return }
+        genresFailed = false
+        do {
+            allGenres = try await APIClient.shared.fetchGenres()
+            if allGenres.isEmpty { genresFailed = true }
+        } catch {
+            genresFailed = true
+        }
     }
 
     /// "12,50" ali "12.50" -> 1250. Decimal, da 0.1 + 0.2 ne postane 0.30000000000000004.
@@ -424,7 +451,8 @@ struct EventFormView: View {
             startAt: startAt,
             endAt: hasEnd ? endAt : nil,
             minAge: minAge,
-            genres: allGenres.filter { selectedGenres.contains($0) },
+            // nil, dokler se seznam zanrov ni nalozil: prazen [] bi pri urejanju izbrisal zanre dogodka (#97).
+            genres: ZanriDogodka.zaPosiljanje(vsi: allGenres, izbrani: selectedGenres),
             ticketPriceCents: centsOpt,
             ticketUrl: url,
             posterUrl: posterUrl,

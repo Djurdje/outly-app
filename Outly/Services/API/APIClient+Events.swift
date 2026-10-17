@@ -28,7 +28,8 @@ extension APIClient {
         var startAt: Date
         var endAt: Date?
         var minAge: Int
-        var genres: [String]
+        /// nil = polja `genres` ne posljemo (PATCH zanrov ne spremeni, POST podeduje zanre kluba). Glej `ZanriDogodka`.
+        var genres: [String]?
         var ticketPriceCents: Int?
         var ticketUrl: String
         var posterUrl: String
@@ -59,12 +60,12 @@ extension APIClient {
                 "description": description,
                 "startAt": Self.isoOut.string(from: startAt),
                 "minAge": minAge,
-                "genres": genres,
                 "status": status,
                 "currency": "EUR",
                 "ticketUrl": ticketUrl,
                 "posterUrl": posterUrl,
             ]
+            if let genres { j["genres"] = genres }
             if let endAt { j["endAt"] = Self.isoOut.string(from: endAt) } else { j["endAt"] = NSNull() }
             if let ticketPriceCents { j["ticketPriceCents"] = ticketPriceCents } else { j["ticketPriceCents"] = NSNull() }
             if let capacity { j["capacity"] = capacity } else { j["capacity"] = NSNull() }
