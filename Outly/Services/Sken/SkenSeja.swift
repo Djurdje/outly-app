@@ -251,7 +251,7 @@ final class SkenSeja: ObservableObject {
     static let najvecjaOsnovaOdmika: Double = 50
     static let najdaljsiOdmik: Double = 60
     /// Odmik ponovnega prenosa seznama po zaporednih neuspehih: 15, 30, 60, nato 120 s, vsakic z raztrosom 0,8-1,2 (1000 telefonov, ki jih
-    /// je backend zavrnil s 503, se ne sme vrniti v isti sekundi). Upostevan je tudi `Retry-After`, ce ga klicatelj ve.
+    /// je backend zavrnil s 503, se ne sme vrniti v isti sekundi). `Retry-After` se iz `send()` ne bere (glave ne vrne); parameter `retryAfter` je spodnja meja za klicatelja, ki ga pozna.
     static let odmikiPrenosaSeznama: [Double] = [15, 30, 60, 120]
     static let raztrosOdmikaPrenosa: ClosedRange<Double> = 0.8...1.2
     static func odmikPrenosaSeznama(_ neuspehi: Int, raztros: Double = Double.random(in: raztrosOdmikaPrenosa), retryAfter: Double? = nil) -> Double {
@@ -599,7 +599,9 @@ final class SkenSeja: ObservableObject {
                 stanja[id]?.neuspehiPrenosa = 0
                 osveziPovzetek()
                 if cakajociZapisi[id] != nil {
-                    cakajociZapisi[id]?.meta = SkenSeznamMeta(hash: hash, prenesenoOb: zdaj)   // seznam se zapisuje: meta gre za njim
+                    cakajociZapisi[id]?.meta = SkenSeznamMeta(hash: hash, prenesenoOb: zdaj)   // seznam caka na zapis: meta gre za njim
+                } else if zapisSeznamovTece != nil {
+                    // Zapis seznama z istim hashem ze tece in zapise tudi meta: sinhrona meta bi ob ubitju pustila nov hash ob starem seznamu.
                 } else {
                     disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
                 }
@@ -927,8 +929,6 @@ final class SkenSeja: ObservableObject {
 
     // MARK: - Dostop (403)
 
-    /// Streznik je vrnil 403: uporabnik ni vec clan ekipe tega kluba. Najprej poskusimo poslati, kar caka (ce napaka ni ze od
-    /// posiljanja), nato pobrisemo seznami in lokalne skene kluba (imena imetnikov). Neposlani vnosi OSTANEJO na disku.
     /// Zapise seznam in njegovo meta datoteko na disk IZVEN glavne niti. Za dogodek se hrani najvec en cakajoc zapis (novejsi nadomesti
     /// starejsega, zadnji zmaga), pise ga en sam Task po vrsti, torej dva zapisa nikoli ne tecesta hkrati.
     private func zapisiSeznamNaDisk(_ id: Int, _ podatki: Data, meta: SkenSeznamMeta) {
@@ -954,6 +954,8 @@ final class SkenSeja: ObservableObject {
     /// Za teste in pred ponovnim branjem z diska: pocaka, da so cakajoci zapisi seznamov na disku.
     func pocakajZapiseSeznamov() async { await zapisSeznamovTece?.value }
 
+    /// Streznik je vrnil 403: uporabnik ni vec clan ekipe tega kluba. Najprej poskusimo poslati, kar caka (ce napaka ni ze od
+    /// posiljanja), nato pobrisemo seznami in lokalne skene kluba (imena imetnikov). Neposlani vnosi OSTANEJO na disku.
     /// Vrne true, ce je bila napaka 403.
     private func jeOdvzemDostopa(_ napaka: Error, poskusiPoslati: Bool = true) async -> Bool {
         guard Self.jeOdvzemDostopaNapaka(napaka) else { return false }
