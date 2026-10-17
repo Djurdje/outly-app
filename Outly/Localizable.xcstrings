@@ -5215,6 +5215,28 @@
         }
       }
     },
+    "The event keeps its current genres.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek obdrži trenutne žanre."
+          }
+        }
+      }
+    },
+    "The event will use your club's genres.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek bo prevzel žanre kluba."
+          }
+        }
+      }
+    },
     "TIP&TAP, storitve, razvoj in izobraževanje, d.o.o.\nKvedrova cesta 6, 1000 Ljubljana, Slovenia": {
       "extractionState": "manual",
       "localizations": {
