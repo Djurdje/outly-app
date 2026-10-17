@@ -101,7 +101,7 @@ struct EventPosterCard: View {
                 .padding(.horizontal, 7)
         }
         .frame(width: width, height: barHeight)
-        .background(.ultraThinMaterial.opacity(0.55))
+        .background(.ultraThinMaterial.opacity(0.70))
         .environment(\.colorScheme, .dark)
     }
 
