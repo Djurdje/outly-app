@@ -7,6 +7,16 @@ extension Error {
         if let api = self as? APIError { return api.userMessage }
         if let sb = self as? SupabaseAuthError { return sb.userMessage }
         if self is SlikaNapaka { return String(localized: "Failed to read selected image data.") }
+        if let video = self as? VideoNapaka {
+            switch video {
+            case .prevelik:
+                return String(localized: "The video is larger than 100 MB. Please pick a shorter one.")
+            case .neBerljiv:
+                return String(localized: "Failed to read the selected video.")
+            case .lokacijeNiMogoceOdstraniti:
+                return String(localized: "The video could not be prepared without location data, so it was not uploaded. Please try another video.")
+            }
+        }
         if let url = self as? URLError {
             switch url.code {
             case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:

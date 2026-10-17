@@ -8617,6 +8617,17 @@
         }
       }
     },
+    "The video could not be prepared without location data, so it was not uploaded. Please try another video.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videa ni bilo mogoče pripraviti brez podatkov o lokaciji, zato ni bil naložen. Poskusi z drugim videom."
+          }
+        }
+      }
+    },
     "The video is larger than 100 MB. Please pick a shorter one.": {
       "extractionState": "manual",
       "localizations": {
