@@ -12,7 +12,8 @@ import CryptoKit
 //  - Sken kode v2 se odloci LOKALNO (SkenOdlocitev). BREZ povezave je lokalna sodba dokoncna: zeleno takoj, zapis v trajno vrsto.
 //    Z POVEZAVO je zelena sodba samo predlog (K2): vnos gre v vrsto in takoj prek scan-batch na streznik s kratkim rokom
 //    (~2 s); odgovor streznika odloci (ok -> zeleno, already_used/transferred/... -> rdece), ob roku ali napaki velja lokalna sodba.
-//  - Vrsta se poslje prek scan-batch takoj po skenu in vsako sekundo, ce kaj caka (eksponentno odlaganje ob napaki).
+//  - Vrsta se poslje prek scan-batch takoj po skenu in vsako sekundo, ce kaj caka (eksponentno odlaganje z raztrosom ob napaki
+//    IN ob delnem paketu: element z `error` pomeni zasedeno bazo, outly-app#108). Odmik velja samo za sinhronizacijo, ne za vrata.
 //    Streznik je razsodnik: ce je isto vstopnico pred nami spustil drug telefon brez povezave, pride `already_used` in to postane konflikt.
 //  - Kode v1: s povezavo obstojec POST /business/tickets/scan (kratek rok), brez nje rumeno; vratar sme v1 spustiti sam (potrditev).
 
@@ -207,6 +208,10 @@ final class SkenSeja: ObservableObject {
     private var dogodkiVTeku = false
     private var zaporedneNapake = 0
     private var naslednjePosiljanje = Date.distantPast
+    /// Trenutni odmik posiljanja je postavil STREZNIK (paket z `error`, 5xx/429/408): baza je zasedena. Takega odmika vrnitev v
+    /// ospredje / omrezja in odhod z zaslona ne preskocita (1000 telefonov bi ga sicer obslo hkrati). Odmik zaradi omrezja (ni odgovora)
+    /// pa se ob vrnitvi povezave preskoci: skeni naj gredo takoj.
+    private var odmikZaradiStreznika = false
     /// Prvi prenos dogodkov naredi `naloziDogodke()`; od takrat jih osvezuje tik.
     private var naslednjaOsvezitevDogodkov = Date.distantFuture
     private var zanka: Task<Void, Never>?
@@ -229,7 +234,10 @@ final class SkenSeja: ObservableObject {
     static let rokBranjaIzDiska: Double = 1.0
     /// Razlika ure telefona in `generated_at`, nad katero opozorimo.
     nonisolated static let dovoljenaRazlikaUre: Double = 5 * 60
-    static let najdaljsiOdmik: Double = 120
+    /// Odmik posiljanja vrste (outly-app#108): osnova 5 s, 10, 20, 40, nato 50 s; raztros +-20 % (`odmikPosiljanja`), torej najvec 60 s.
+    static let odmikPosiljanjaOd: Double = 5
+    static let najvecjaOsnovaOdmika: Double = 50
+    static let najdaljsiOdmik: Double = 60
     static let odmikOsvezitveOdNapake: Double = 15
     /// Seznam je »star«, ce ni bil osvezen toliko sekund (osvezevanje je na ~2 min).
     nonisolated static let seznamStarPoSekundah: Double = 10 * 60
@@ -283,9 +291,14 @@ final class SkenSeja: ObservableObject {
     }
 
     /// Aplikacija je spet aktivna (npr. po zaklepu zaslona) ali se je vrnila povezava: takoj poskusi osvezitev in posiljanje.
+    /// Izjema: odmik, ki ga je postavil streznik (zasedena baza), ostane; posiljanje gre ob njegovem izteku (najvec ~60 s), skeniranje
+    /// na vratih pa od tega ni odvisno (lokalna odlocitev / hitra pot).
     func takojOsvezi() {
-        zaporedneNapake = 0
-        naslednjePosiljanje = .distantPast
+        if !odmikZaradiStreznika || ura() >= naslednjePosiljanje {
+            zaporedneNapake = 0
+            odmikZaradiStreznika = false
+            naslednjePosiljanje = .distantPast
+        }
         // Posiljanje vrste gre takoj; osvezitve (seznam dogodkov, seznami vstopnic) z jitterjem 0-15 s, da se ob vrnitvi Wi-Fi na lokaciji
         // 1000 telefonov ne zbudi v isti sekundi.
         let zdaj = ura()
@@ -781,25 +794,44 @@ final class SkenSeja: ObservableObject {
 
     // MARK: - Posiljanje vrste
 
-    /// Poslje vse, kar caka (po paketih do 500). Ob napaki odlozi z eksponentnim odmikom (5 s ... 2 min).
+    /// Poslje vse, kar caka (po paketih do 500). Ob napaki ALI delnem paketu (kateri koli element brez dokoncnega rezultata, npr.
+    /// `error` po SKEN_BATCH_ROK_MS na backendu, outly-app#108) odlozi z eksponentnim odmikom z raztrosom (~5 s ... 60 s); preostanek
+    /// NE gre takoj znova. Uspesen paket brez `error` odmik ponastavi. Klic sam odmika ne preverja (tik in `posljiObOdhodu` ga).
     func poslji() async {
         guard !posiljanjeVTeku, !dostopOdvzet else { return }
         posiljanjeVTeku = true
         defer { posiljanjeVTeku = false }
         while true {
             let paket = vrsta.paket(klub: klubId, uporabnik: uporabnikId)
-            if paket.isEmpty { zaporedneNapake = 0; osveziStevce(); return }
+            if paket.isEmpty { zaporedneNapake = 0; odmikZaradiStreznika = false; osveziStevce(); return }
             do {
                 let rezultati = try await api.paket(token: zeton(), klubId: klubZaApi, vnosi: paket, deviceId: deviceId)
                 zabeleziUspeh()
                 let odstranjeni = vrsta.uporabi(rezultati, poslani: paket)
                 osveziStevce()
-                if odstranjeni == 0 { odlozi(); return }   // streznik je odgovoril, a vse so `error`
+                // Delni paket (backend ob zasedeni bazi po SKEN_BATCH_ROK_MS vrne `error` za preostanek, ali rezultat manjka): preostanek
+                // takoj znova bi vsak telefon tolkel po zaklenjeni bazi. Odmik, nato tik poslje znova.
+                // Tudi brez `error` lahko vnos ostane v vrsti (zapis konflikta na disk ni uspel, SkenVrsta.uporabi `obdrzi`): brez odmika bi
+                // `while` isti vnos posiljal v nedogled.
+                let delni = Self.jeDelniPaket(rezultati, poslani: paket)
+                if delni || odstranjeni < paket.count {
+                    if !delni && odstranjeni > 0 {
+                        // Napredek brez `error` (vnos je ostal le zaradi neuspelega zapisa na disk): osnovni odmik brez stopnjevanja.
+                        odloziOsnovno(zaradiStreznika: false)
+                    } else {
+                        // `error` VEDNO stopnjuje, tudi z napredkom: backend vrne `error` po roku sele po ~5 s obdelave, zato ima delni
+                        // paket ob zasedeni bazi skoraj vedno napredek; osnovni ~5 s bi pomenil ~200 zahtev/s iz 1000 telefonov.
+                        // Sprejeta posledica: en trajno pokvarjen vnos upocasni sinhronizacijo do ~60 s.
+                        odlozi(zaradiStreznika: delni)
+                    }
+                    return
+                }
                 zaporedneNapake = 0
+                odmikZaradiStreznika = false
             } catch {
                 if await jeOdvzemDostopa(error, poskusiPoslati: false) { return }
                 zabeleziNapako(error)
-                odlozi()
+                odlozi(zaradiStreznika: Self.jePreobremenitev(error))
                 return
             }
         }
@@ -810,10 +842,50 @@ final class SkenSeja: ObservableObject {
         while posiljanjeVTeku { try? await Task.sleep(nanoseconds: 2_000_000) }
     }
 
-    private func odlozi() {
+    /// Zadnji poskus ob odhodu z zaslona skenerja. Odmik, ki ga je postavil streznik (zasedena baza), spostuje: vnosi so na disku in
+    /// gredo ob naslednjem odprtju skenerja (ali ob odjavi); ob odmiku zaradi omrezja poskusi takoj (povezava je morda spet tu,
+    /// neuspel klic bazi ne skodi).
+    func posljiObOdhodu() async {
+        if odmikZaradiStreznika && ura() < naslednjePosiljanje { return }
+        await poslji()
+    }
+
+    /// Za teste: kdaj tik najprej spet poslje vrsto.
+    var posiljanjeOdlozenoDo: Date { naslednjePosiljanje }
+
+    /// Kateri koli poslan vnos nima dokoncnega rezultata (`error` ali manjka v odgovoru).
+    static func jeDelniPaket(_ rezultati: [ScanBatchResult], poslani: [SkenVnos]) -> Bool {
+        let dokoncni = Set(rezultati.filter { $0.jeDokoncen }.map { $0.clientScanId })
+        return poslani.contains { !dokoncni.contains($0.clientScanId) }
+    }
+
+    /// Streznik je preobremenjen: odgovoril je s 5xx, 429 ali 408, ali pa ni odgovoril v roku (URLError.timedOut: pocasen streznik,
+    /// ne izpad omrezja; tak odmik vrnitev v ospredje ne preskoci). Ostale URLError (ni povezave) niso preobremenitev.
+    static func jePreobremenitev(_ e: Error) -> Bool {
+        if let u = e as? URLError { return u.code == .timedOut }
+        guard let a = e as? APIError, case let .requestFailed(koda, _) = a else { return false }
+        return koda == 408 || koda == 429 || koda >= 500
+    }
+
+    /// Odmik posiljanja po `napake` zaporednih neuspehih: 5 s, 10, 20, 40, nato 50 s, krat raztros (0,8-1,2): 1000 telefonov, ki so
+    /// dobili `error` v isti sekundi, ne pride nazaj v isti sekundi. Najvec 60 s. `raztros` je za teste.
+    static func odmikPosiljanja(_ napake: Int, raztros: Double = Double.random(in: 0.8...1.2)) -> Double {
+        let osnova = min(odmikPosiljanjaOd * pow(2.0, Double(max(napake, 1) - 1)), najvecjaOsnovaOdmika)
+        return min(osnova * raztros, najdaljsiOdmik)
+    }
+
+    /// Stopnjevan odmik: zaporedni neuspeh brez napredka. Razlog zadnjega odmika doloci, ali ga vrnitev v ospredje sme preskociti.
+    private func odlozi(zaradiStreznika: Bool) {
         zaporedneNapake += 1
-        let odmik = min(5 * pow(2.0, Double(zaporedneNapake - 1)), Self.najdaljsiOdmik)
-        naslednjePosiljanje = ura().addingTimeInterval(odmik)
+        odmikZaradiStreznika = zaradiStreznika
+        naslednjePosiljanje = ura().addingTimeInterval(Self.odmikPosiljanja(zaporedneNapake))
+    }
+
+    /// Osnovni odmik (~5 s) brez stopnjevanja: paket je napredoval brez `error`, a vnos je ostal v vrsti (neuspel zapis konflikta).
+    private func odloziOsnovno(zaradiStreznika: Bool) {
+        zaporedneNapake = 1
+        odmikZaradiStreznika = zaradiStreznika
+        naslednjePosiljanje = ura().addingTimeInterval(Self.odmikPosiljanja(1))
     }
 
     func potrdiKonflikt(_ k: SkenKonflikt) {
