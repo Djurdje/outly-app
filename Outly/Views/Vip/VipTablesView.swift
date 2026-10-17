@@ -323,6 +323,8 @@ struct VipTablesView: View {
         return "\(VipOznaka.miza(m.label)) · \(osebe) · \(Denar.evri(m.priceCents, koda: koda))"
     }
 
+    private func starostMize(_ vip: EventVip) -> Int { vip.prikazanaStarost(minAgeDogodka: event.minAge) }
+
     private func karticaMize(_ m: VipTable, vip: EventVip) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 10) {
@@ -371,8 +373,9 @@ struct VipTablesView: View {
                 }
             }
 
-            if event.minAge > 0 {
-                Text("\(event.minAge)+ · ID at the door")
+            // Miza s paketom pijace: starost je vsaj package_min_age (18), pri strozji meji dogodka ta (enako kot kljukica pri prenosu).
+            if starostMize(vip) > 0 {
+                Text("\(starostMize(vip))+ · ID at the door")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.white.opacity(0.75))
                     .padding(.horizontal, 8).padding(.vertical, 4)

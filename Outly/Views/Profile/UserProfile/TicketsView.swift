@@ -308,6 +308,8 @@ struct TicketDetailView: View {
     let ticket: APITicket
     @State private var prikazana = false
     @State private var showTransfer = false
+    /// Prenos je uspel (sheet to sporoci takoj): ob zaprtju sheeta, tudi s potegom, zapremo se detajl vstopnice.
+    @State private var prenosOpravljen = false
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionStore
 
@@ -383,11 +385,16 @@ struct TicketDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
         .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { prikazana = true } }
-        .sheet(isPresented: $showTransfer) {
-            // Po prenosu vstopnica ni vec moja -> nazaj na seznam, ki se ob prikazu osvezi.
+        .sheet(isPresented: $showTransfer, onDismiss: {
+            // Sheet je zaprt (gumb ali poteg): po prenosu vstopnica ni vec moja -> nazaj na seznam, ki se ob prikazu osvezi.
+            if prenosOpravljen {
+                prenosOpravljen = false
+                dismiss()
+            }
+        }) {
             TransferTicketView(ticket: ticket, onTransferred: {
                 VstopniceShramba().odstrani(vstopnicaId: ticket.id)
-                dismiss()
+                prenosOpravljen = true
             })
                 .environmentObject(session)
         }
