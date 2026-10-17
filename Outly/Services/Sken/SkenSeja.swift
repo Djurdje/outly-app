@@ -128,6 +128,15 @@ final class SkenSeja: ObservableObject {
         let generacija: Int
         /// Zadnji PRESEZEN seznam tega dogodka kaze, da ura telefona ni prava.
         var uraNapacna = false
+        /// Zaporedni neuspeli prenosi seznama (503/429, omrezje, pokvarjen odgovor): doloca stopnjevan odmik. Uspeh ga ponastavi.
+        var neuspehiPrenosa = 0
+    }
+
+    /// Seznam, ki caka na zapis na disk (izven glavne niti), skupaj z meta datoteko: meta se zapise SELE po seznamu, da po ubitju
+    /// aplikacije ne obstaja novejsi hash ob starem seznamu.
+    private struct CakajociZapis {
+        var podatki: Data
+        var meta: SkenSeznamMeta
     }
 
     // MARK: Kar vidi zaslon
@@ -215,6 +224,9 @@ final class SkenSeja: ObservableObject {
     /// Prvi prenos dogodkov naredi `naloziDogodke()`; od takrat jih osvezuje tik.
     private var naslednjaOsvezitevDogodkov = Date.distantFuture
     private var zanka: Task<Void, Never>?
+    /// Zapis seznama na disk (4-5 MB pri 20 000 vstopnicah): po dogodku najvec en cakajoc zapis (zadnji zmaga), pise ga en sam Task.
+    private var cakajociZapisi: [Int: CakajociZapis] = [:]
+    private var zapisSeznamovTece: Task<Void, Never>?
 
     static let osvezitevSekunde: ClosedRange<Double> = 105...135   // ~2 min z odmikom, da 1000 telefonov ne vleče naenkrat
     /// Seznam dogodkov se osvezuje redkeje (novi, preklicani, prestavljeni dogodki); odmik tudi tu razprsi telefone.
@@ -238,7 +250,14 @@ final class SkenSeja: ObservableObject {
     static let odmikPosiljanjaOd: Double = 5
     static let najvecjaOsnovaOdmika: Double = 50
     static let najdaljsiOdmik: Double = 60
-    static let odmikOsvezitveOdNapake: Double = 15
+    /// Odmik ponovnega prenosa seznama po zaporednih neuspehih: 15, 30, 60, nato 120 s, vsakic z raztrosom 0,8-1,2 (1000 telefonov, ki jih
+    /// je backend zavrnil s 503, se ne sme vrniti v isti sekundi). Upostevan je tudi `Retry-After`, ce ga klicatelj ve.
+    static let odmikiPrenosaSeznama: [Double] = [15, 30, 60, 120]
+    static let raztrosOdmikaPrenosa: ClosedRange<Double> = 0.8...1.2
+    static func odmikPrenosaSeznama(_ neuspehi: Int, raztros: Double = Double.random(in: raztrosOdmikaPrenosa), retryAfter: Double? = nil) -> Double {
+        let i = min(max(neuspehi, 1), odmikiPrenosaSeznama.count) - 1
+        return max(odmikiPrenosaSeznama[i] * raztros, retryAfter ?? 0)
+    }
     /// Seznam je »star«, ce ni bil osvezen toliko sekund (osvezevanje je na ~2 min).
     nonisolated static let seznamStarPoSekundah: Double = 10 * 60
     nonisolated static let kljucNajmanjMedPoskusi: Double = 20
@@ -473,6 +492,7 @@ final class SkenSeja: ObservableObject {
         if !idji.isEmpty, kljuc?.surovi == nil { await osveziKljuc() }
         for id in idji { await osveziSeznam(id) }
         posodobiPripravo()
+        await pocakajZapiseSeznamov()   // ob odprtju skenerja (ne na poti odlocitve): po vrnitvi je seznam na disku
     }
 
     /// `zadnjiPrenos` (najstarejsi med aktivnimi) in `seznamStar` (kateri koli star). Objavi samo spremembo.
@@ -535,7 +555,7 @@ final class SkenSeja: ObservableObject {
             return true
         } catch {
             if await jeOdvzemDostopa(error) { return false }
-            zabeleziNapako(error)
+            zabeleziNapakoPrenosa(error)
             kljucPoskusNeuspel = true
             posodobiPripravo()
             return jePripravljen
@@ -576,8 +596,13 @@ final class SkenSeja: ObservableObject {
                     if let generiran { stanja[id]?.uraNapacna = Self.jeUraNapacna(generatedAt: generiran, zdaj: zdaj) }
                 }
                 stanja[id]?.zadnjiPrenos = zdaj
+                stanja[id]?.neuspehiPrenosa = 0
                 osveziPovzetek()
-                disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
+                if cakajociZapisi[id] != nil {
+                    cakajociZapisi[id]?.meta = SkenSeznamMeta(hash: hash, prenesenoOb: zdaj)   // seznam se zapisuje: meta gre za njim
+                } else {
+                    disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
+                }
                 return
             }
             let (seznam, idx) = try await Task.detached { () -> (ScanList, SkenIndeks) in
@@ -590,18 +615,22 @@ final class SkenSeja: ObservableObject {
             stanja[id]?.zadnjiPrenos = zdaj
             // Spremenjena vsebina je prisla s streznika (200), torej je `generated_at` svez: razlika od ure telefona je napaka ure.
             stanja[id]?.uraNapacna = Self.jeUraNapacna(generatedAt: seznam.generatedAt, zdaj: zdaj)
+            stanja[id]?.neuspehiPrenosa = 0
             osveziPovzetek()
-            disk.zapisiSurovo(podatki, SkenDisk.imeSeznama(klub: klubId, dogodek: id))
-            disk.zapisi(SkenSeznamMeta(hash: hash, prenesenoOb: zdaj), SkenDisk.imeMeta(klub: klubId, dogodek: id))
+            zapisiSeznamNaDisk(id, podatki, meta: SkenSeznamMeta(hash: hash, prenesenoOb: zdaj))
             // Kljuc primerjamo po `kid` ob vsakem prenosu (STATE.md: zamenjava QR_SECRET spremeni javni kljuc). Stari kljuc ostane,
             // dokler novega ne dobimo: kode z novim `kid` so takrat rumene, ne rdece (SkenOdlocitev).
             if !seznam.kid.isEmpty, kljuc?.kid != seznam.kid { await osveziKljuc() }
             posodobiPripravo()
         } catch {
             if await jeOdvzemDostopa(error) { return }
-            zabeleziNapako(error)
-            // Brez povezave ali s pokvarjenim odgovorom poskusi kmalu znova (vratar naj vidi, da se je povezava vrnila), ne cez 2 min.
-            if jeSvoj() { stanja[id]?.naslednjaOsvezitev = ura().addingTimeInterval(Self.odmikOsvezitveOdNapake) }
+            zabeleziNapakoPrenosa(error)
+            // Ponovni poskus z naraščajočim odmikom (15/30/60/120 s) in raztrosom: tudi 503/429 (backend namenoma zavrne preveč hkratnih
+            // scan-list), omrezje in pokvarjen odgovor. Stari seznam ostane; odlocitev na vratih od tega ni odvisna.
+            if jeSvoj(), stanja[id] != nil {
+                stanja[id]?.neuspehiPrenosa += 1
+                stanja[id]?.naslednjaOsvezitev = ura().addingTimeInterval(Self.odmikPrenosaSeznama(stanja[id]?.neuspehiPrenosa ?? 1))
+            }
             posodobiPripravo()
         }
     }
@@ -897,11 +926,39 @@ final class SkenSeja: ObservableObject {
 
     /// Streznik je vrnil 403: uporabnik ni vec clan ekipe tega kluba. Najprej poskusimo poslati, kar caka (ce napaka ni ze od
     /// posiljanja), nato pobrisemo seznami in lokalne skene kluba (imena imetnikov). Neposlani vnosi OSTANEJO na disku.
+    /// Zapise seznam in njegovo meta datoteko na disk IZVEN glavne niti. Za dogodek se hrani najvec en cakajoc zapis (novejsi nadomesti
+    /// starejsega, zadnji zmaga), pise ga en sam Task po vrsti, torej dva zapisa nikoli ne tecesta hkrati.
+    private func zapisiSeznamNaDisk(_ id: Int, _ podatki: Data, meta: SkenSeznamMeta) {
+        guard !dostopOdvzet else { return }
+        cakajociZapisi[id] = CakajociZapis(podatki: podatki, meta: meta)
+        guard zapisSeznamovTece == nil else { return }
+        zapisSeznamovTece = Task { [weak self] in
+            while let self {
+                guard let (dogodek, zapis) = self.cakajociZapisi.first.map({ ($0.key, $0.value) }) else { break }
+                self.cakajociZapisi.removeValue(forKey: dogodek)
+                let disku = self.disk
+                let klub = self.klubId
+                // Neuspel zapis seznama ni napaka za vrata: seznam je v pomnilniku, naslednji prenos ga zapise znova.
+                await Task.detached(priority: .utility) {
+                    disku.zapisiSurovo(zapis.podatki, SkenDisk.imeSeznama(klub: klub, dogodek: dogodek))
+                    disku.zapisi(zapis.meta, SkenDisk.imeMeta(klub: klub, dogodek: dogodek))
+                }.value
+            }
+            self?.zapisSeznamovTece = nil
+        }
+    }
+
+    /// Za teste in pred ponovnim branjem z diska: pocaka, da so cakajoci zapisi seznamov na disku.
+    func pocakajZapiseSeznamov() async { await zapisSeznamovTece?.value }
+
     /// Vrne true, ce je bila napaka 403.
     private func jeOdvzemDostopa(_ napaka: Error, poskusiPoslati: Bool = true) async -> Bool {
         guard Self.jeOdvzemDostopaNapaka(napaka) else { return false }
         if poskusiPoslati, !posiljanjeVTeku, cakajoce > 0 { await poslji() }
         dostopOdvzet = true
+        // Cakajoci in tekoci zapis seznama ne sme obiti brisanja: seznam z imeni imetnikov bi ostal na disku.
+        cakajociZapisi.removeAll()
+        await zapisSeznamovTece?.value
         disk.pocistiKlub(klubId)
         SkenOdjava.pocistiPredpomnilnik()   // scan-list z imeni imetnikov je tudi v URLCache
         postaviDogodke([])
@@ -937,6 +994,19 @@ final class SkenSeja: ObservableObject {
     private func zabeleziRok() {
         zadnjiKlicOK = false
         posodobiPovezavo()
+    }
+
+    /// Prenos seznama ali kljuca: 503/429 je odgovor strezniga (backend zavrne preveč hkratnih scan-list), NE izpad povezave. Vratar ne sme
+    /// videti »Offline«, sken pa mora se vedno vprasati streznik (hitra pot). Pravi izpad se pozna po paketu, roku in omrezni napaki.
+    private func zabeleziNapakoPrenosa(_ e: Error) {
+        if Self.jeZasedenostStrezbe(e) { return }
+        zabeleziNapako(e)
+    }
+
+    /// 503 ali 429 s strezniskega odgovora (ne omrezna napaka).
+    nonisolated static func jeZasedenostStrezbe(_ e: Error) -> Bool {
+        guard let a = e as? APIError, case let .requestFailed(koda, _) = a else { return false }
+        return koda == 503 || koda == 429
     }
 
     private func zabeleziNapako(_ e: Error) {

@@ -2565,6 +2565,7 @@ final class SkenSejaTests: XCTestCase {
         // spremenjen odgovor se zapise
         a.nastaviSeznam(ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: s1), ScanListTicket(serial: Pomoc.serial())]))
         await seja.osveziSeznam(42)
+        await seja.pocakajZapiseSeznamov()   // zapis seznama tece izven glavne niti
         XCTAssertNotEqual(try String(contentsOf: datoteka, encoding: .utf8), "marker")
     }
 
@@ -2891,5 +2892,173 @@ final class SkenOdmikPosiljanjaTests: XCTestCase {
         await s.posljiObOdhodu()
         XCTAssertEqual(a.paketi.count, 2)
         XCTAssertEqual(s.cakajoce, 0)
+    }
+}
+
+/// outly-app#111: 503/429 iz scan-list / scan-key ni izpad povezave (backend ob preveč hkratnih scan-list takoj vrne 503); ponovni prenos
+/// z odmikom 15/30/60/120 s z raztrosom; zapis seznama na disk izven glavne niti (zadnji zmaga). Ura je podtaknjena; nic ne caka na pravi cas.
+@MainActor
+final class SkenZasedenostSeznamaTests: XCTestCase {
+    private var mapa: URL!
+    private let kljuc = Curve25519.Signing.PrivateKey()
+
+    override func setUp() async throws { mapa = Pomoc.zacasnaMapa() }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
+
+    private func lazniApi(vstopnice: [ScanListTicket] = []) -> LazniApi {
+        LazniApi(kljuc: Pomoc.scanKey(kljuc), seznam: ScanList(eventId: 42, kid: "kid1", tickets: vstopnice))
+    }
+
+    private func seja(_ a: LazniApi, ura: TestnaUra) -> SkenSeja {
+        let disk = SkenDisk(mapa: mapa)
+        let s = SkenSeja(klubId: 1, uporabnikId: 7, api: a, disk: disk, deviceId: "naprava-1", vrsta: SkenVrsta(disk: disk),
+                         rokStreznika: 1, rokSpletni: 1, kljucOdmik: 0)
+        s.zeton = { "zeton" }
+        s.ura = { ura.zdaj }
+        return s
+    }
+
+    private func odmik(_ s: SkenSeja, od t: Date) -> Double { (s.naslednjaOsvezitevSeznama(dogodek: 42) ?? .distantPast).timeIntervalSince(t) }
+
+    func testOdmikPrenosaSeznamaJe15_30_60_120ZRaztrosom() {
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(1, raztros: 1), 15, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(2, raztros: 1), 30, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(3, raztros: 1), 60, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(4, raztros: 1), 120, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(50, raztros: 1), 120, accuracy: 1e-9)   // osnova ne preseze 120 s
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(0, raztros: 1), 15, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(1, raztros: 0.8), 12, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(2, raztros: 1.2), 36, accuracy: 1e-9)
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(1, raztros: 1, retryAfter: 40), 40, accuracy: 1e-9)   // Retry-After je spodnja meja
+        XCTAssertEqual(SkenSeja.odmikPrenosaSeznama(2, raztros: 1, retryAfter: 5), 30, accuracy: 1e-9)
+        for _ in 0..<50 { XCTAssertTrue((11.99...18.01).contains(SkenSeja.odmikPrenosaSeznama(1))) }
+    }
+
+    func testZasedenostStrezbeJe503In429SamoOdStrezniga() {
+        XCTAssertTrue(SkenSeja.jeZasedenostStrezbe(APIError.requestFailed(503, "Service temporarily unavailable.")))
+        XCTAssertTrue(SkenSeja.jeZasedenostStrezbe(APIError.requestFailed(429, "")))
+        XCTAssertFalse(SkenSeja.jeZasedenostStrezbe(APIError.requestFailed(500, "")))
+        XCTAssertFalse(SkenSeja.jeZasedenostStrezbe(APIError.requestFailed(502, "")))
+        XCTAssertFalse(SkenSeja.jeZasedenostStrezbe(URLError(.notConnectedToInternet)))
+        XCTAssertFalse(SkenSeja.jeZasedenostStrezbe(URLError(.timedOut)))
+    }
+
+    /// 503 ob prenosu seznama: povezava ostane (vratar ne vidi »Offline«), sken s povezavo se vedno vprasa streznik, odmik se stopnjuje.
+    func testSeznam503NiIzpadPovezaveInSkenSeVednoVprasaStreznik() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let s1 = Pomoc.serial()
+        let a = lazniApi(vstopnice: [ScanListTicket(serial: s1)])
+        let s = seja(a, ura: ura)
+        await s.naloziDogodke()
+        XCTAssertTrue(s.povezava)
+
+        a.seznamOdgovor = .failure(APIError.requestFailed(503, "Service temporarily unavailable. Please try again."))
+        await s.osveziSeznam(42)
+        XCTAssertTrue(s.povezava, "503 iz scan-list ni izpad povezave")
+        let prvi = odmik(s, od: t0)
+        XCTAssertTrue((11.99...18.01).contains(prvi), "prvi odmik 15 s +-20 %: \(prvi)")
+
+        // Sken s povezavo gre na streznik (hitra pot) in je zelen.
+        let p = await s.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+        XCTAssertEqual(a.paketi.count, 1)
+
+        await s.osveziSeznam(42)
+        let drugi = odmik(s, od: t0)
+        XCTAssertTrue((23.99...36.01).contains(drugi), "drugi odmik 30 s: \(drugi)")
+        await s.osveziSeznam(42)
+        let tretji = odmik(s, od: t0)
+        XCTAssertTrue((47.99...72.01).contains(tretji), "tretji odmik 60 s: \(tretji)")
+        await s.osveziSeznam(42)
+        await s.osveziSeznam(42)
+        let peti = odmik(s, od: t0)
+        XCTAssertTrue((95.99...144.01).contains(peti), "najvec 120 s +-20 %: \(peti)")
+        XCTAssertTrue(s.povezava)
+
+        // Uspeh ponastavi stopnjevanje: naslednja napaka spet 15 s.
+        a.seznamOdgovor = .success(Pomoc.seznamPodatki(ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: s1)])))
+        await s.osveziSeznam(42)
+        a.seznamOdgovor = .failure(APIError.requestFailed(429, ""))
+        await s.osveziSeznam(42)
+        let poUspehu = odmik(s, od: t0)
+        XCTAssertTrue((11.99...18.01).contains(poUspehu), "po uspehu spet 15 s: \(poUspehu)")
+    }
+
+    func testKljuc503NiIzpadPovezave() async {
+        let ura = TestnaUra(Pomoc.sedajNaSekundo())
+        let a = lazniApi()
+        a.kljucOdgovor = .failure(APIError.requestFailed(503, "Service temporarily unavailable."))
+        let s = seja(a, ura: ura)
+        await s.naloziDogodke()
+        XCTAssertTrue(s.povezava)
+        XCTAssertNotEqual(s.priprava, .pripravljen)   // kljuca ni (ne na napravi ne s streznika)
+    }
+
+    /// Pravi izpad (omrezje, 500) se kot prej steje za izpad povezave, odmik pa je enak.
+    func testOmreznaNapakaSeznamaJeSeVednoIzpadPovezave() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = lazniApi()
+        let s = seja(a, ura: ura)
+        await s.naloziDogodke()
+        a.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
+        await s.osveziSeznam(42)
+        XCTAssertFalse(s.povezava)
+        XCTAssertTrue((11.99...18.01).contains(odmik(s, od: t0)))
+    }
+
+    /// Pokvarjen odgovor: isti odmik, stari seznam ostane (sken deluje naprej).
+    func testPokvarjenOdgovorSeznamaIstiOdmikStariSeznamOstane() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let s1 = Pomoc.serial()
+        let a = lazniApi(vstopnice: [ScanListTicket(serial: s1)])
+        let s = seja(a, ura: ura)
+        await s.naloziDogodke()
+        a.seznamOdgovor = .success(Data("{ni json".utf8))
+        await s.osveziSeznam(42)
+        XCTAssertTrue(s.povezava)
+        XCTAssertTrue((11.99...18.01).contains(odmik(s, od: t0)))
+        await s.osveziSeznam(42)
+        XCTAssertTrue((23.99...36.01).contains(odmik(s, od: t0)))
+        let p = await s.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(p.barva, .zeleno)
+    }
+
+    /// Zapis seznama gre izven glavne niti; dva zaporedna zapisa: zadnji zmaga, meta ustreza seznamu.
+    func testZapisSeznamaNaDiskZadnjiZmaga() async throws {
+        let ura = TestnaUra(Pomoc.sedajNaSekundo())
+        let a = lazniApi()
+        let s = seja(a, ura: ura)
+        await s.naloziDogodke()
+        let prvi = ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial())])
+        let drugi = ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial()), ScanListTicket(serial: Pomoc.serial())])
+        a.nastaviSeznam(prvi)
+        await s.osveziSeznam(42)
+        a.nastaviSeznam(drugi)
+        await s.osveziSeznam(42)   // zapis prvega se lahko ni koncal: drugi ga nadomesti, nikoli obratno
+        await s.pocakajZapiseSeznamov()
+        let disk = SkenDisk(mapa: mapa)
+        XCTAssertEqual(disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42)), Pomoc.seznamPodatki(drugi))
+        let meta = try XCTUnwrap(disk.preberi(SkenSeznamMeta.self, SkenDisk.imeMeta(klub: 1, dogodek: 42)))
+        XCTAssertEqual(meta.hash, SkenRok.sha256(Pomoc.seznamPodatki(drugi)))
+    }
+
+    /// Odvzem dostopa po zapisu: cakajoci zapis ne sme obuditi seznama z imeni imetnikov.
+    func testOdvzemDostopaPoZapisuSeznamaNePustiDatotek() async {
+        let ura = TestnaUra(Pomoc.sedajNaSekundo())
+        let a = lazniApi()
+        let s = seja(a, ura: ura)
+        await s.naloziDogodke()
+        a.nastaviSeznam(ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial(), holderUsername: "ana")]))
+        await s.osveziSeznam(42)
+        a.seznamOdgovor = .failure(APIError.requestFailed(404, "Club not found."))
+        await s.osveziSeznam(42)
+        XCTAssertTrue(s.dostopOdvzet)
+        await s.pocakajZapiseSeznamov()
+        let imena = Set(SkenDisk(mapa: mapa).imena())
+        XCTAssertFalse(imena.contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        XCTAssertFalse(imena.contains(SkenDisk.imeMeta(klub: 1, dogodek: 42)))
     }
 }
