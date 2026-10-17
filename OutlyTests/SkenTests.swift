@@ -2775,22 +2775,22 @@ final class SkenOdmikPosiljanjaTests: XCTestCase {
         await s.posljiObOdhodu()
         XCTAssertEqual(a.paketi.count, 1)
 
-        // Se en delni paket, ki je KAJ obdelal: odmik se ne stopnjuje (en trajno `error` vnos ne sme vse vrste zadrzati na ~50 s).
+        // Se en delni paket, ki je KAJ obdelal: `error` vseeno stopnjuje (zasedena baza; delni paket ima skoraj vedno napredek).
         ura.zdaj = s.posiljanjeOdlozenoDo
         await s.poslji()
         XCTAssertEqual(a.paketi.count, 2)
         XCTAssertEqual(s.cakajoce, 1)
         let drugi = odmik(s, od: ura.zdaj)
-        XCTAssertTrue((3.99...6.01).contains(drugi), "z napredkom spet ~5 s: \(drugi)")
+        XCTAssertTrue((7.99...12.01).contains(drugi), "drugi delni ~10 s: \(drugi)")
 
-        // Paket brez napredka (vse `error`): odmik se stopnjuje.
+        // Paket brez napredka (vse `error`): stopnjuje naprej.
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, result: "error") }) }
         ura.zdaj = s.posiljanjeOdlozenoDo
         await s.poslji()
         XCTAssertEqual(a.paketi.count, 3)
         XCTAssertEqual(s.cakajoce, 1)
-        let brezNapredka = odmik(s, od: ura.zdaj)
-        XCTAssertTrue((7.99...12.01).contains(brezNapredka), "brez napredka ~10 s: \(brezNapredka)")
+        let tretjiDelni = odmik(s, od: ura.zdaj)
+        XCTAssertTrue((15.99...24.01).contains(tretjiDelni), "tretji ~20 s: \(tretjiDelni)")
 
         // Po izteku odmika tik poslje preostanek; uspesen paket brez `error` odmik ponastavi.
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
@@ -2832,6 +2832,24 @@ final class SkenOdmikPosiljanjaTests: XCTestCase {
         XCTAssertGreaterThan(s.posiljanjeOdlozenoDo, ura.zdaj)
         s.takojOsvezi()                            // povezava je nazaj: skeni gredo takoj
         XCTAssertEqual(s.posiljanjeOdlozenoDo, .distantPast)
+    }
+
+    /// Odjava: delni paket (`error` za preostanek) ne sprozi takojsnjih ponovitev; preostanek ostane na disku.
+    func testOdjavaObDelnemPaketuPreneha() async {
+        let disk = SkenDisk(mapa: mapa)
+        let vrsta = SkenVrsta.deljena(disk)
+        for i in 0..<3 {
+            vrsta.dodaj(SkenVnos(qr: "o2.o.\(i)", serial: Pomoc.serial(), eventId: 42, klubId: 3, uporabnikId: 7,
+                                 scannedAt: Date(timeIntervalSince1970: 1_790_000_000 + Double(i))))
+        }
+        let a = lazniApi()
+        a.paketOdgovor = { v in .success(v.enumerated().map { e in
+            ScanBatchResult(clientScanId: e.element.clientScanId, serial: e.element.serial, result: e.offset == 0 ? "ok" : "error")
+        }) }
+        await SkenOdjava.poslji(token: "zeton", uporabnikId: 7, api: a, disk: disk, rok: 2, deviceId: "naprava-1")
+        XCTAssertEqual(a.paketi.count, 1)
+        XCTAssertEqual(vrsta.stevilo(klub: 3, uporabnik: 7), 2)
+        XCTAssertEqual(SkenVrsta(disk: disk).vnosi.count, 2)
     }
 
     func testPreobremenitevVkljucujeRokNeIzpadaOmrezja() {

@@ -815,10 +815,13 @@ final class SkenSeja: ObservableObject {
                 // `while` isti vnos posiljal v nedogled.
                 let delni = Self.jeDelniPaket(rezultati, poslani: paket)
                 if delni || odstranjeni < paket.count {
-                    if odstranjeni > 0 {
-                        // Napredek: paket je kaj obdelal, zato odmik ne stopnjuje (en trajno `error` vnos ne sme vse vrste zadrzati na ~50 s).
-                        odloziOsnovno(zaradiStreznika: delni)
+                    if !delni && odstranjeni > 0 {
+                        // Napredek brez `error` (vnos je ostal le zaradi neuspelega zapisa na disk): osnovni odmik brez stopnjevanja.
+                        odloziOsnovno(zaradiStreznika: false)
                     } else {
+                        // `error` VEDNO stopnjuje, tudi z napredkom: backend vrne `error` po roku sele po ~5 s obdelave, zato ima delni
+                        // paket ob zasedeni bazi skoraj vedno napredek; osnovni ~5 s bi pomenil ~200 zahtev/s iz 1000 telefonov.
+                        // Sprejeta posledica: en trajno pokvarjen vnos upocasni sinhronizacijo do ~60 s.
                         odlozi(zaradiStreznika: delni)
                     }
                     return
@@ -878,7 +881,7 @@ final class SkenSeja: ObservableObject {
         naslednjePosiljanje = ura().addingTimeInterval(Self.odmikPosiljanja(zaporedneNapake))
     }
 
-    /// Osnovni odmik (~5 s) brez stopnjevanja: paket je napredoval, a kaj je ostalo v vrsti.
+    /// Osnovni odmik (~5 s) brez stopnjevanja: paket je napredoval brez `error`, a vnos je ostal v vrsti (neuspel zapis konflikta).
     private func odloziOsnovno(zaradiStreznika: Bool) {
         zaporedneNapake = 1
         odmikZaradiStreznika = zaradiStreznika
