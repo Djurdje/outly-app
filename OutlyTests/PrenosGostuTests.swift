@@ -93,4 +93,28 @@ final class PrenosGostuTests: XCTestCase {
         XCTAssertEqual(telo["user_id"] as? Int, 7)
         XCTAssertEqual(telo["age_confirmed"] as? Bool, true)
     }
+
+    // MARK: outly-app#111: izgubljen odgovor + ponovitev
+
+    func testNejasenPoskusJeOmrezjeRokIn5xxNeZavrnitev() {
+        XCTAssertTrue(PrenosStarosti.jeNejasenPoskus(URLError(.timedOut)))
+        XCTAssertTrue(PrenosStarosti.jeNejasenPoskus(URLError(.networkConnectionLost)))
+        XCTAssertTrue(PrenosStarosti.jeNejasenPoskus(APIError.requestFailed(502, "")))
+        XCTAssertTrue(PrenosStarosti.jeNejasenPoskus(APIError.requestFailed(-1, "No HTTP response")))
+        XCTAssertFalse(PrenosStarosti.jeNejasenPoskus(APIError.requestFailed(429, "")))
+        XCTAssertFalse(PrenosStarosti.jeNejasenPoskus(APIError.requestFailed(409, "Ticket was already used.")))
+        XCTAssertFalse(PrenosStarosti.jeNejasenPoskus(APIError.requestFailed(400, "Invalid user_id.")))
+        XCTAssertFalse(PrenosStarosti.jeNejasenPoskus(URLError(.cancelled)))
+    }
+
+    func testTicketNotFoundPoNejasnemPoskusuJeVerjetnoZePoslana() {
+        let nf = APIError.requestFailed(404, "Ticket not found.")
+        XCTAssertTrue(PrenosStarosti.jeVerjetnoZePoslana(nf, prejsnjiNejasen: true))
+        XCTAssertFalse(PrenosStarosti.jeVerjetnoZePoslana(nf, prejsnjiNejasen: false))   // prvi poskus: navadno sporocilo
+        // druge 404 in druge napake ne
+        XCTAssertFalse(PrenosStarosti.jeVerjetnoZePoslana(APIError.requestFailed(404, "You can only send a ticket by user to one of your friends."),
+                                                          prejsnjiNejasen: true))
+        XCTAssertFalse(PrenosStarosti.jeVerjetnoZePoslana(APIError.requestFailed(409, "Ticket was already used."), prejsnjiNejasen: true))
+        XCTAssertFalse(PrenosStarosti.jeVerjetnoZePoslana(URLError(.timedOut), prejsnjiNejasen: true))
+    }
 }

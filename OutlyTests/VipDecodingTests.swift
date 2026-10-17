@@ -261,3 +261,44 @@ final class VipDecodingTests: XCTestCase {
         XCTAssertNil(VipOznaka.privzetNaziv(tip: "wall"))
     }
 }
+
+/// outly-app#111: VIP 18+ (backend `package_min_age`) in prikaz starosti pri mizi s paketom.
+@MainActor
+final class VipStarostPaketaTests: XCTestCase {
+
+    private func vip(_ json: String) throws -> EventVip {
+        try JSONDecoder().decode(EventVip.self, from: Data(json.utf8))
+    }
+
+    func testPackageMinAgeIzOdgovora() throws {
+        XCTAssertEqual(try vip(#"{"event_id": 1, "package_min_age": 21}"#).packageMinAge, 21)
+        XCTAssertEqual(try vip(#"{"event_id": 1, "package_min_age": 18}"#).packageMinAge, 18)
+    }
+
+    func testStarBackendBrezPoljaImaPrivzetih18() throws {
+        XCTAssertEqual(try vip(#"{"event_id": 1}"#).packageMinAge, 18)
+        XCTAssertEqual(try vip(#"{"event_id": 1, "package_min_age": null}"#).packageMinAge, 18)
+        XCTAssertEqual(try vip(#"{"event_id": 1, "package_min_age": "x"}"#).packageMinAge, 18)   // pokvarjeno polje ne podre dekodiranja
+        XCTAssertEqual(try vip(#"{"event_id": 1, "package_min_age": 0}"#).packageMinAge, 18)
+    }
+
+    func testMizaSPaketomKazeVecjoOdMinAgeDogodkaInPaketMeje() throws {
+        let sPaketom = try vip(#"{"event_id": 1, "package_min_age": 18, "packages": [{"id": 1, "name": "Jameson"}]}"#)
+        XCTAssertEqual(sPaketom.prikazanaStarost(minAgeDogodka: 16), 18)   // dogodek 16+, paket pijace 18+
+        XCTAssertEqual(sPaketom.prikazanaStarost(minAgeDogodka: 21), 21)   // strozja meja dogodka ostane
+        XCTAssertEqual(sPaketom.prikazanaStarost(minAgeDogodka: 0), 18)    // dogodek brez meje, paket pijace vseeno 18+
+    }
+
+    func testMizaBrezPaketovKazeMejoDogodka() throws {
+        let brez = try vip(#"{"event_id": 1, "package_min_age": 18, "packages": []}"#)
+        XCTAssertEqual(brez.prikazanaStarost(minAgeDogodka: 16), 16)
+        XCTAssertEqual(brez.prikazanaStarost(minAgeDogodka: 0), 0)
+    }
+
+    func testPrenosMejaSePodudariZPrikazom() {
+        // Vstopnica s paketom: kljukica in besedilo uporabljata isto mejo (vsaj 18).
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 16, imaPaket: true, izStrezniku: nil), 18)
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 16, imaPaket: false, izStrezniku: nil), 16)
+        XCTAssertEqual(PrenosStarosti.meja(minAge: 16, imaPaket: false, izStrezniku: 21), 21)
+    }
+}

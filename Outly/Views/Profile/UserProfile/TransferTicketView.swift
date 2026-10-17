@@ -17,6 +17,18 @@ enum PrenosStarosti {
               let n = obj["min_age"] as? Int, n > 0 else { return nil }
         return n
     }
+
+    /// Odgovor na poskus se je lahko izgubil (omrezna napaka, rok, 5xx): strezniku je prenos morda uspel. 429 je izrecna zavrnitev.
+    static func jeNejasenPoskus(_ error: Error) -> Bool {
+        if let api = error as? APIError, case let .requestFailed(koda, _) = api, koda == 429 { return false }
+        return error.jeIzpadPovezave
+    }
+
+    /// 404 »Ticket not found.« po nejasnem prejsnjem poskusu: vstopnice ni vec med mojimi, torej je prenos najbrz uspel.
+    static func jeVerjetnoZePoslana(_ error: Error, prejsnjiNejasen: Bool) -> Bool {
+        guard prejsnjiNejasen, let api = error as? APIError, case let .requestFailed(koda, raw) = api, koda == 404 else { return false }
+        return raw.contains("Ticket not found")
+    }
 }
 
 /// Posiljanje vstopnice prijatelju (sheet iz TicketDetailView).
@@ -28,7 +40,8 @@ enum PrenosStarosti {
 @MainActor
 struct TransferTicketView: View {
     let ticket: APITicket
-    /// Poklicano po uspesnem prenosu (starsevski pogled zapre detajl vstopnice).
+    /// Poklicano TAKOJ ob uspesnem prenosu (ne sele ob gumbu): ob zaprtju sheeta s potegom mora starsevski pogled vseeno odstraniti
+    /// vstopnico in zapreti detajl. Klic je idempotenten (lahko pride veckrat).
     var onTransferred: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -55,6 +68,8 @@ struct TransferTicketView: View {
     @State private var starostIzStrezniku: Int?
     /// Sporocilo streznika po uspehu prenosa po e-naslovu (npr. "Ticket sent to ana@mail.com.").
     @State private var uspehSporocilo: String?
+    /// Prejsnji poskus prenosa je koncal brez odgovora (omrezje, rok, 5xx): prenos je morda uspel.
+    @State private var nejasenPoskus = false
 
     /// Zajeta vrednost za potrditveni dialog in klic `posli`.
     private struct PotrditevPrenosa {
@@ -125,7 +140,6 @@ struct TransferTicketView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
                         dismiss()
-                        if stanje == .uspeh { onTransferred() }
                     } label: {
                         Text("Cancel")
                     }
@@ -245,8 +259,8 @@ struct TransferTicketView: View {
                         Text("If your friend doesn't have an Outly account, we'll email them the ticket with a QR code.")
                         // Obvestilo posiljatelju (GDPR 13): prejemnik dobi njegovo uporabnisko ime.
                         Text("We'll email them the ticket with your username. Only enter the address of someone who is expecting it.")
-                    } else if ticket.minAge > 0 {
-                        Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account and must be \(ticket.minAge)+.")
+                    } else if starostnaMeja > 0 {
+                        Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account and must be \(starostnaMeja)+.")
                     } else {
                         Text("The ticket moves to your friend's account with a new QR code. Your copy stops working. Your friend needs an Outly account.")
                     }
@@ -299,7 +313,6 @@ struct TransferTicketView: View {
 
                     Button {
                         dismiss()
-                        onTransferred()
                     } label: {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
@@ -383,11 +396,19 @@ struct TransferTicketView: View {
                 }
             }
             stanje = .uspeh
+            onTransferred()   // takoj: tudi ce uporabnik sheet zapre s potegom, vstopnica ni vec moja
         } catch {
             if let n = PrenosStarosti.izNapake(error) { starostIzStrezniku = n }
             // Kljukica velja za eno poskusno posiljanje: po napaki jo uporabnik znova zavestno oznaci.
             starostPotrjena = false
-            errorMessage = error.userMessage
+            if PrenosStarosti.jeVerjetnoZePoslana(error, prejsnjiNejasen: nejasenPoskus) {
+                // Izgubljen odgovor + ponovitev: vstopnice ni vec med mojimi. Ne kazemo »Ticket not found.«, ampak, kaj se je najbrz zgodilo.
+                errorMessage = String(localized: "This ticket may already have been sent. Close this and refresh your tickets.")
+                onTransferred()
+            } else {
+                errorMessage = error.userMessage
+            }
+            if PrenosStarosti.jeNejasenPoskus(error) { nejasenPoskus = true }
             stanje = .napaka
         }
     }

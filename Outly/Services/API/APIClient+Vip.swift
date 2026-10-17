@@ -123,9 +123,13 @@ struct EventVip: Decodable {
     /// Prodajalec je demo klub (backend#243; `GET /events/:id/vip` ima tudi `is_demo`): brez rezervacije mize (409 `demo_club`),
     /// admin sme. Star backend -> false.
     let isDemo: Bool
+    /// Najmanjsa starost za mizo Z IZBRANIM PAKETOM pijace (backend `starostZaPaket`: vsaj 18, pri strozji meji dogodka ta).
+    /// Star backend polja nima -> 18.
+    let packageMinAge: Int
 
     enum CodingKeys: String, CodingKey {
         case enabled, currency, plan, tables, packages, seller
+        case packageMinAge = "package_min_age"
         case eventId = "event_id"
         case onSale = "on_sale"
         case paymentMode = "payment_mode"
@@ -144,6 +148,16 @@ struct EventVip: Decodable {
         paymentMode = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
         seller = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
         isDemo = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
+        let paketStarost = (try? c.decodeIfPresent(Int.self, forKey: .packageMinAge)) ?? nil
+        packageMinAge = paketStarost.flatMap { $0 > 0 ? $0 : nil } ?? Self.privzetaStarostPaketa
+    }
+
+    static let privzetaStarostPaketa = 18
+
+    /// Starost, ki jo kaze kartica mize: pri mizi s paketom pijace `max(min_age dogodka, package_min_age)`, sicer `min_age` dogodka.
+    /// 0 = brez omejitve (oznaka se ne kaze).
+    func prikazanaStarost(minAgeDogodka: Int) -> Int {
+        packages.isEmpty ? minAgeDogodka : max(minAgeDogodka, packageMinAge)
     }
 
     /// Tloris je uporaben, ce je vklopljen, ima mrezo in vsaj eno mizo.

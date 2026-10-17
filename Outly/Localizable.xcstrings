@@ -8020,6 +8020,17 @@
         }
       }
     },
+    "This ticket may already have been sent. Close this and refresh your tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta vstopnica je morda že poslana. Zapri okno in osveži vstopnice."
+          }
+        }
+      }
+    },
     "This is a demo club. Tickets can't be bought.": {
       "extractionState": "manual",
       "localizations": {
