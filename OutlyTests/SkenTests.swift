@@ -2775,19 +2775,28 @@ final class SkenOdmikPosiljanjaTests: XCTestCase {
         await s.posljiObOdhodu()
         XCTAssertEqual(a.paketi.count, 1)
 
-        // Se en delni paket: odmik se podvoji.
+        // Se en delni paket, ki je KAJ obdelal: odmik se ne stopnjuje (en trajno `error` vnos ne sme vse vrste zadrzati na ~50 s).
         ura.zdaj = s.posiljanjeOdlozenoDo
         await s.poslji()
         XCTAssertEqual(a.paketi.count, 2)
         XCTAssertEqual(s.cakajoce, 1)
         let drugi = odmik(s, od: ura.zdaj)
-        XCTAssertTrue((7.99...12.01).contains(drugi), "drugi odmik ~10 s: \(drugi)")
+        XCTAssertTrue((3.99...6.01).contains(drugi), "z napredkom spet ~5 s: \(drugi)")
+
+        // Paket brez napredka (vse `error`): odmik se stopnjuje.
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, result: "error") }) }
+        ura.zdaj = s.posiljanjeOdlozenoDo
+        await s.poslji()
+        XCTAssertEqual(a.paketi.count, 3)
+        XCTAssertEqual(s.cakajoce, 1)
+        let brezNapredka = odmik(s, od: ura.zdaj)
+        XCTAssertTrue((7.99...12.01).contains(brezNapredka), "brez napredka ~10 s: \(brezNapredka)")
 
         // Po izteku odmika tik poslje preostanek; uspesen paket brez `error` odmik ponastavi.
         a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
         ura.zdaj = s.posiljanjeOdlozenoDo
         s.tik()
-        let poslano = await pocakaj { a.paketi.count == 3 }
+        let poslano = await pocakaj { a.paketi.count == 4 }
         XCTAssertTrue(poslano)
         await s.pocakajPosiljanje()
         XCTAssertEqual(s.cakajoce, 0)
@@ -2823,5 +2832,46 @@ final class SkenOdmikPosiljanjaTests: XCTestCase {
         XCTAssertGreaterThan(s.posiljanjeOdlozenoDo, ura.zdaj)
         s.takojOsvezi()                            // povezava je nazaj: skeni gredo takoj
         XCTAssertEqual(s.posiljanjeOdlozenoDo, .distantPast)
+    }
+
+    func testPreobremenitevVkljucujeRokNeIzpadaOmrezja() {
+        XCTAssertTrue(SkenSeja.jePreobremenitev(URLError(.timedOut)))
+        XCTAssertTrue(SkenSeja.jePreobremenitev(APIError.requestFailed(503, "x")))
+        XCTAssertTrue(SkenSeja.jePreobremenitev(APIError.requestFailed(429, "x")))
+        XCTAssertFalse(SkenSeja.jePreobremenitev(URLError(.notConnectedToInternet)))
+        XCTAssertFalse(SkenSeja.jePreobremenitev(APIError.requestFailed(400, "x")))
+    }
+
+    /// K1 (pregled #109): zapis konflikta na disk ne uspe, zato vnos z dokoncnim rezultatom ostane v vrsti. Brez `error` v odgovoru
+    /// `poslji` ne sme v zanki znova posiljati istega vnosa: ena zahteva, nato odmik.
+    func testNeuspelZapisKonfliktaNePosiljaVZanki() async throws {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = lazniApi()
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "already_used") }) }
+        let (s, _) = seja(a, ura: ura, vnosov: 1)
+        // zapis konfliktov ne uspe (na poti je mapa)
+        try FileManager.default.createDirectory(at: mapa.appendingPathComponent(SkenVrsta.datotekaKonfliktov), withIntermediateDirectories: true)
+        await s.poslji()
+        XCTAssertEqual(a.paketi.count, 1)
+        XCTAssertEqual(s.cakajoce, 1)              // vnos ostane, konflikt se ne izgubi
+        let o = odmik(s, od: t0)
+        XCTAssertTrue((3.99...6.01).contains(o), "odmik ~5 s: \(o)")
+    }
+
+    /// Odhod z zaslona med odmikom ZARADI OMREZJA (ni odgovora) vseeno poskusi poslati: povezava je morda spet tu.
+    func testPosljiObOdhoduObOdmikuOmrezjaPoslje() async {
+        let t0 = Pomoc.sedajNaSekundo()
+        let ura = TestnaUra(t0)
+        let a = lazniApi()
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        let (s, _) = seja(a, ura: ura, vnosov: 1)
+        await s.poslji()
+        XCTAssertEqual(a.paketi.count, 1)
+        XCTAssertGreaterThan(s.posiljanjeOdlozenoDo, t0)
+        a.paketOdgovor = { v in .success(v.map { ScanBatchResult(clientScanId: $0.clientScanId, serial: $0.serial, result: "ok") }) }
+        await s.posljiObOdhodu()
+        XCTAssertEqual(a.paketi.count, 2)
+        XCTAssertEqual(s.cakajoce, 0)
     }
 }

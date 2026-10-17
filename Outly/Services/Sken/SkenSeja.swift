@@ -807,11 +807,22 @@ final class SkenSeja: ObservableObject {
             do {
                 let rezultati = try await api.paket(token: zeton(), klubId: klubZaApi, vnosi: paket, deviceId: deviceId)
                 zabeleziUspeh()
-                vrsta.uporabi(rezultati, poslani: paket)
+                let odstranjeni = vrsta.uporabi(rezultati, poslani: paket)
                 osveziStevce()
                 // Delni paket (backend ob zasedeni bazi po SKEN_BATCH_ROK_MS vrne `error` za preostanek, ali rezultat manjka): preostanek
                 // takoj znova bi vsak telefon tolkel po zaklenjeni bazi. Odmik, nato tik poslje znova.
-                if Self.jeDelniPaket(rezultati, poslani: paket) { odlozi(zaradiStreznika: true); return }
+                // Tudi brez `error` lahko vnos ostane v vrsti (zapis konflikta na disk ni uspel, SkenVrsta.uporabi `obdrzi`): brez odmika bi
+                // `while` isti vnos posiljal v nedogled.
+                let delni = Self.jeDelniPaket(rezultati, poslani: paket)
+                if delni || odstranjeni < paket.count {
+                    if odstranjeni > 0 {
+                        // Napredek: paket je kaj obdelal, zato odmik ne stopnjuje (en trajno `error` vnos ne sme vse vrste zadrzati na ~50 s).
+                        odloziOsnovno(zaradiStreznika: delni)
+                    } else {
+                        odlozi(zaradiStreznika: delni)
+                    }
+                    return
+                }
                 zaporedneNapake = 0
                 odmikZaradiStreznika = false
             } catch {
@@ -845,8 +856,10 @@ final class SkenSeja: ObservableObject {
         return poslani.contains { !dokoncni.contains($0.clientScanId) }
     }
 
-    /// Streznik je odgovoril, da je preobremenjen (5xx, 429, 408); ne izpad omrezja (URLError).
+    /// Streznik je preobremenjen: odgovoril je s 5xx, 429 ali 408, ali pa ni odgovoril v roku (URLError.timedOut: pocasen streznik,
+    /// ne izpad omrezja; tak odmik vrnitev v ospredje ne preskoci). Ostale URLError (ni povezave) niso preobremenitev.
     static func jePreobremenitev(_ e: Error) -> Bool {
+        if let u = e as? URLError { return u.code == .timedOut }
         guard let a = e as? APIError, case let .requestFailed(koda, _) = a else { return false }
         return koda == 408 || koda == 429 || koda >= 500
     }
@@ -858,10 +871,18 @@ final class SkenSeja: ObservableObject {
         return min(osnova * raztros, najdaljsiOdmik)
     }
 
+    /// Stopnjevan odmik: zaporedni neuspeh brez napredka. Razlog zadnjega odmika doloci, ali ga vrnitev v ospredje sme preskociti.
     private func odlozi(zaradiStreznika: Bool) {
         zaporedneNapake += 1
-        if zaradiStreznika { odmikZaradiStreznika = true }
+        odmikZaradiStreznika = zaradiStreznika
         naslednjePosiljanje = ura().addingTimeInterval(Self.odmikPosiljanja(zaporedneNapake))
+    }
+
+    /// Osnovni odmik (~5 s) brez stopnjevanja: paket je napredoval, a kaj je ostalo v vrsti.
+    private func odloziOsnovno(zaradiStreznika: Bool) {
+        zaporedneNapake = 1
+        odmikZaradiStreznika = zaradiStreznika
+        naslednjePosiljanje = ura().addingTimeInterval(Self.odmikPosiljanja(1))
     }
 
     func potrdiKonflikt(_ k: SkenKonflikt) {
