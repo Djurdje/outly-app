@@ -3035,14 +3035,19 @@ final class SkenZasedenostSeznamaTests: XCTestCase {
         let prvi = ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial())])
         let drugi = ScanList(eventId: 42, kid: "kid1", tickets: [ScanListTicket(serial: Pomoc.serial()), ScanListTicket(serial: Pomoc.serial())])
         a.nastaviSeznam(prvi)
+        let prviBajti = try a.seznamOdgovor.get()
         await s.osveziSeznam(42)
         a.nastaviSeznam(drugi)
+        // Primerjamo z bajti, ki jih je streznik DEJANSKO vrnil: JSONEncoder brez .sortedKeys ob ponovnem kodiranju iste vrednosti ne
+        // zagotavlja enakega vrstnega reda kljucev (enaka velikost, drug hash), zato `seznamPodatki(drugi)` drugic ni merilo.
+        let drugiBajti = try a.seznamOdgovor.get()
+        XCTAssertNotEqual(prviBajti, drugiBajti)
         await s.osveziSeznam(42)   // zapis prvega se lahko ni koncal: drugi ga nadomesti, nikoli obratno
         await s.pocakajZapiseSeznamov()
         let disk = SkenDisk(mapa: mapa)
-        XCTAssertEqual(disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42)), Pomoc.seznamPodatki(drugi))
+        XCTAssertEqual(disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42)), drugiBajti)
         let meta = try XCTUnwrap(disk.preberi(SkenSeznamMeta.self, SkenDisk.imeMeta(klub: 1, dogodek: 42)))
-        XCTAssertEqual(meta.hash, SkenRok.sha256(Pomoc.seznamPodatki(drugi)))
+        XCTAssertEqual(meta.hash, SkenRok.sha256(drugiBajti))
     }
 
     /// Odvzem dostopa po zapisu: cakajoci zapis ne sme obuditi seznama z imeni imetnikov.
