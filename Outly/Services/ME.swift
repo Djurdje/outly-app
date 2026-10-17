@@ -90,7 +90,7 @@ struct Me: Codable, Equatable {
         pendingClubEvents = try c.decodeIfPresent(Int.self, forKey: .pendingClubEvents) ?? 0
         pendingGuestListInvites = (try? c.decodeIfPresent(Int.self, forKey: .pendingGuestListInvites)) ?? 0
         pendingTableService = (try? c.decodeIfPresent(Int.self, forKey: .pendingTableService)) ?? 0
-        sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? true
+        sharePlansWithFriends = try c.decodeIfPresent(Bool.self, forKey: .sharePlansWithFriends) ?? false
         clubs = (try? c.decodeIfPresent([MeClub].self, forKey: .clubs)) ?? []
         canTransferToGuest = (try? c.decodeIfPresent(Bool.self, forKey: .canTransferToGuest)) ?? false
         // Postgres DATE pride kot "YYYY-MM-DD" ali kot ISO cas; obdrzimo prvih 10 znakov.
