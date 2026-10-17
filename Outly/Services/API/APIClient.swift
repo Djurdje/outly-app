@@ -79,6 +79,87 @@ struct CloudinarySignature: Decodable {
     /// Ker je del podpisa, ga MORAMO poslati naprej Cloudinaryju nespremenjenega,
     /// sicer podpis ne velja. Hkrati preprecuje pisanje cez tuje slike.
     let publicId: String
+
+    /// outly-backend#257 — pogodba (ista kot splet, outly_webpage#78 `parametriPodpisa`): VSAKO polje odgovora
+    /// razen `nepodpisanaPolja` je podpisan parameter in gre Cloudinaryju nespremenjeno; ime camelCase -> snake_case
+    /// (publicId -> public_id), seznam -> niz z vejicami, `null` se izpusti. Tako backend podpisu doda npr.
+    /// `allowedFormats` brez nove razlicice aplikacije. Danasnji backend: folder, public_id, timestamp.
+    /// Razvrsceno po imenu (vrstni red Cloudinaryju ni pomemben, je pa stabilen za teste).
+    let podpisaniParametri: [(ime: String, vrednost: String)]
+
+    /// Polja odgovora, ki NISO podpisani parametri (enako kot NEPODPISANA na spletu).
+    nonisolated static let nepodpisanaPolja: Set<String> = [
+        "signature", "apiKey", "api_key", "cloudName", "cloud_name", "resourceType", "resource_type",
+    ]
+
+    enum CodingKeys: String, CodingKey {
+        case cloudName, apiKey, timestamp, folder, signature, publicId
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        cloudName = try c.decode(String.self, forKey: .cloudName)
+        apiKey    = try c.decode(String.self, forKey: .apiKey)
+        timestamp = try c.decode(Int.self, forKey: .timestamp)
+        folder    = try c.decode(String.self, forKey: .folder)
+        signature = try c.decode(String.self, forKey: .signature)
+        publicId  = try c.decode(String.self, forKey: .publicId)
+
+        let vsa = try decoder.container(keyedBy: PoljeOdgovora.self)
+        var parametri: [(ime: String, vrednost: String)] = []
+        for kljuc in vsa.allKeys where !Self.nepodpisanaPolja.contains(kljuc.stringValue) {
+            if (try? vsa.decodeNil(forKey: kljuc)) == true { continue }
+            // Neznana oblika (objekt) ne podre dekodiranja; Cloudinary bi tedaj vrnil "Invalid Signature".
+            guard let vrednost = try? vsa.decode(PodpisanaVrednost.self, forKey: kljuc) else { continue }
+            parametri.append((ime: Self.vSnake(kljuc.stringValue), vrednost: vrednost.niz))
+        }
+        podpisaniParametri = parametri.sorted { $0.ime < $1.ime }
+    }
+
+    /// "publicId" -> "public_id", "allowedFormats" -> "allowed_formats" (kot `vSnake` na spletu: vsaka A-Z -> "_" + mala).
+    nonisolated static func vSnake(_ ime: String) -> String {
+        var izhod = ""
+        for znak in ime {
+            if znak.isASCII && znak.isUppercase {
+                izhod += "_" + znak.lowercased()
+            } else {
+                izhod.append(znak)
+            }
+        }
+        return izhod
+    }
+}
+
+/// Poljuben kljuc JSON odgovora (za branje vseh polj podpisa).
+nonisolated struct PoljeOdgovora: CodingKey {
+    let stringValue: String
+    let intValue: Int? = nil
+    init?(stringValue: String) { self.stringValue = stringValue }
+    init?(intValue: Int) { return nil }
+}
+
+/// Vrednost podpisanega parametra kot niz, kot jo poslje splet (`String(v)`, seznam z vejicami).
+nonisolated struct PodpisanaVrednost: Decodable, Sendable {
+    let niz: String
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if let s = try? c.decode(String.self) {
+            niz = s
+        } else if let i = try? c.decode(Int64.self) {
+            niz = String(i)
+        } else if let b = try? c.decode(Bool.self) {
+            niz = b ? "true" : "false"
+        } else if let d = try? c.decode(Double.self) {
+            niz = String(d)
+        } else if let seznam = try? c.decode([String].self) {
+            niz = seznam.joined(separator: ",")
+        } else if let stevila = try? c.decode([Int64].self) {
+            niz = stevila.map { String($0) }.joined(separator: ",")
+        } else {
+            throw DecodingError.dataCorruptedError(in: c, debugDescription: "Nepodprta vrednost podpisanega parametra")
+        }
+    }
 }
 
 struct CloudinaryUploadResponse: Decodable {
@@ -92,14 +173,22 @@ struct CloudinaryUploadResponse: Decodable {
 // Nalaganje na Cloudinary gre na TUJ streznik (api.cloudinary.com), ne na nas backend,
 // zato ne gre skozi send().
 extension APIClient {
-    /// Video kluba (migracija 015). Isti podpis kot za slike (podpisani so folder,
-    /// public_id, timestamp — resource_type ni del podpisa), druga pot: /video/upload.
+    /// Video kluba (migracija 015) in posnetek dogodka. Isti podpis kot za slike (resource_type ni del podpisa),
+    /// druga pot: /video/upload.
     func uploadVideoToCloudinary(
         videoData: Data,
         fileName: String,
         signature: CloudinarySignature
     ) async throws -> String {
-        try await uploadToCloudinary(data: videoData, fileName: fileName, contentType: "video/mp4", resourceType: "video", signature: signature)
+        // Nikoli izvirnik: izvoz brez metapodatkov odstrani lokacijo (VideoZaNalaganje). Ce ne uspe, vrze napako.
+        let video = try await VideoZaNalaganje.pripravi(videoData)
+        return try await uploadToCloudinary(
+            data: video.podatki,
+            fileName: SlikaZaNalaganje.imeDatoteke(fileName, koncnica: video.koncnica),
+            contentType: video.contentType,
+            resourceType: "video",
+            signature: signature
+        )
     }
 
     func uploadImageToCloudinary(
@@ -152,10 +241,11 @@ extension APIClient {
             body.append("\r\n".data(using: .utf8)!)
         }
 
+        // outly-backend#257: natanko podpisani parametri (iz odgovora backenda), ne trdo kodiran seznam.
         addField("api_key", signature.apiKey)
-        addField("timestamp", String(signature.timestamp))
-        addField("folder", signature.folder)
-        addField("public_id", signature.publicId)
+        for parameter in signature.podpisaniParametri {
+            addField(parameter.ime, parameter.vrednost)
+        }
         addField("signature", signature.signature)
 
         addFile("file", fileName, payload)
