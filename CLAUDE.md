@@ -17,7 +17,7 @@ Odgovarjaj v slovenščini, kratko. Skupni možgani so v repozitoriju `outly-bac
   ujame napake prevajalnika, ki se pokažejo samo z optimizacijo, incident 2. 10. 2026). TestFlight se preskoči — rdeč PR se ne sme združiti.
   Release prevod je dogovor (rdeča lučka), ne tehnična zapora: rulesets na zasebnem brezplačnem repu ne delujejo, zato pred merge-om preveri, da je zelen.
 - Bundle ID `si.outly.app`, aplikacija v App Store Connect »Outly - Nightlife« (ime »Outly« je zasedeno), Martinov Individual
-  Apple Developer račun; pozneje pretvorba v Organization na podjetje TIP&TAP, d.o.o. (do 14. 10. 2026 NEXT DIMENSIONS; backend DECISIONS 2026-10-14). `DEVELOPMENT_TEAM` je v projektu prazen — poda ga CI.
+  Apple Developer račun; pozneje pretvorba v Organization na podjetje NEXT DIMENSIONS, družba za marketing, d.o.o. (14.–17. 10. 2026 TIP&TAP; backend DECISIONS 2026-10-18). `DEVELOPMENT_TEAM` je v projektu prazen — poda ga CI.
 - Testerji dobijo build prek TestFlighta (~5–15 min po zelenem Actions). **Vsak merge v master = nov build pri testerjih.**
   Zato v `master` samo, kar je preverjeno; polovične stvari ostanejo na veji.
 - »Dela« pomeni: zelen Actions **in** Martin preveril na napravi. Dokler tega ni, piši »preverjeno s parse + pregledom tipov, na napravi ne«.
