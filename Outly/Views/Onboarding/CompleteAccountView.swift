@@ -21,12 +21,12 @@ struct CompleteAccountView: View {
         Calendar.current.date(byAdding: .year, value: -20, to: Date()) ?? Date()
     }
 
-    /// Najstarejsi/najmlajsi dovoljeni datum: 120 let nazaj do danes. Starostno mejo
-    /// (15 let za privolitev, ZVOP-2 8. clen) preverimo ob potrditvi, ne v kolescku.
+    /// Najstarejsi/najmlajsi dovoljeni datum: 120 let nazaj do danes - 18 let (koledarsko, StarostRacuna; Martin 19. 10. 2026,
+    /// prej 15). Ze vpisan datum (racun 15-17 let, vpisan pred 19. 10.) ostane izbirljiv, ker ga backend sprejme (ni sprememba).
     private var dateRange: ClosedRange<Date> {
         let cal = Calendar.current
         let min = cal.date(byAdding: .year, value: -120, to: Date()) ?? .distantPast
-        return min...Date()
+        return min...StarostRacuna.zgornjaMejaIzbirnika(obstojec: session.me?.dateOfBirth.flatMap(Self.parse))
     }
 
     var body: some View {
@@ -202,10 +202,12 @@ struct CompleteAccountView: View {
     private func save() async {
         message = nil
 
-        // Starostna meja: pod 15 let v Sloveniji ni veljavne privolitve (ZVOP-2, 8. clen).
-        let years = Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
-        guard years >= 15 else {
-            message = String(localized: "You must be at least 15 years old to use Outly.")
+        // Najnizja starost racuna 18 let (Martin 19. 10. 2026; backend #301, po ljubljanskem koledarju). Datum, ki je ze v racunu,
+        // ni sprememba: backend ga sprejme, zato ga tudi tu ne zavrnemo (obstojec racun 15-17 let).
+        let izbran = Self.format(birthDate)
+        guard StarostRacuna.smeShraniti(izbran: izbran, shranjen: session.me?.dateOfBirth,
+                                        danes: StarostRacuna.dan(Date())) else {
+            message = String(localized: "You must be at least 18 years old to use Outly.")
             return
         }
         guard Countries.name(for: countryCode) != nil else {
@@ -214,7 +216,7 @@ struct CompleteAccountView: View {
         }
 
         var update = APIClient.MeUpdate()
-        update.dateOfBirth = Self.format(birthDate)
+        update.dateOfBirth = izbran
         update.country = countryCode
 
         let digits = phoneNumber.filter { $0.isNumber }

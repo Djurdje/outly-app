@@ -624,6 +624,10 @@ enum SalesRange: String, CaseIterable {
 /// Vrata: seznam vstopnic dogodka in "Check in" (POST /business/tickets/scan).
 /// Kamera za branje QR pride pozneje; tu je isti klic, sprozen z gumbom, da se tok
 /// vstopa vidi od konca do konca.
+///
+/// Seznam po pogodbi #277 N1 (backend ARCHITECTURE »Seznam vstopnic dogodka za vrata«): strani po 200 (`?limit=200`), stevci iz
+/// `counts` (vse vstopnice dogodka, ne samo nalozene), iskanje `q` na strezniku (koda, serijska, ime; lastnik in manager tudi
+/// e-naslov), »Load more« po `has_more` / `next_offset`. 503 `search_timeout` = seznam je zaseden, poskusi znova.
 @MainActor
 struct EventTicketsView: View {
     let event: BusinessSales.EventSales
@@ -631,6 +635,16 @@ struct EventTicketsView: View {
     @EnvironmentObject private var session: SessionStore
 
     @State private var tickets: [APITicket] = []
+    /// Stevci vseh vstopnic dogodka (`counts`); nil = se ni nalozeno.
+    @State private var stevci: SeznamVstopnicDogodka.Stevci?
+    /// Iskanje (ime, koda, serijska; strezniku gre kot `q`). Seznam se po kratkem premoru nalozi znova.
+    @State private var iskanje = ""
+    /// Zadetki iskanja (`total`).
+    @State private var zadetkov = 0
+    @State private var naslednjiOdmik: Int?
+    @State private var nalagamVec = false
+    /// Prvo nalaganje zaslona gre brez premora (premor je samo med tipkanjem).
+    @State private var nalozeno = false
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var zadnjiRezultat: ScanResult?
@@ -646,7 +660,7 @@ struct EventTicketsView: View {
     /// Rezervacijo po telefonu sme dodati/sprostiti samo lastnik in manager; vratar vidi, spreminjati ne more.
     private var smeUrejatiRezervacije: Bool { session.me?.canManageClub ?? false }
 
-    private var used: Int { tickets.filter { $0.isUsed }.count }
+    private var iskanjeAktivno: Bool { !APIClient.ocistiIskanjeVstopnic(iskanje).isEmpty }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -657,9 +671,9 @@ struct EventTicketsView: View {
                     .padding(.top, 6)
 
                 HStack(spacing: 14) {
-                    stevilka("\(tickets.count)", "sold")
-                    stevilka("\(used)", "checked in")
-                    stevilka("\(tickets.count - used)", "expected")
+                    stevilka(stevci.map { "\($0.sold)" } ?? "–", "sold")
+                    stevilka(stevci.map { "\($0.checkedIn)" } ?? "–", "checked in")
+                    stevilka(stevci.map { "\($0.expected)" } ?? "–", "expected")
                 }
 
                 if let r = zadnjiRezultat {
@@ -682,13 +696,25 @@ struct EventTicketsView: View {
                     .font(.title3.bold())
                     .foregroundColor(.white)
 
+                poljeIskanja
+
+                if let errorText {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(errorText).foregroundColor(.red).font(.subheadline)
+                        Button("Try again") { Task { await load() } }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .disabled(isLoading)
+                    }
+                }
+
                 if isLoading && tickets.isEmpty {
                     HStack { Spacer(); ProgressView().tint(.white); Spacer() }
-                } else if let errorText {
-                    Text(errorText).foregroundColor(.red).font(.subheadline)
                 } else if tickets.isEmpty {
-                    Text("No tickets sold for this event yet.")
-                        .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                    if errorText == nil {
+                        Text(LocalizedStringKey(iskanjeAktivno ? "No tickets match your search." : "No tickets sold for this event yet."))
+                            .font(.subheadline).foregroundColor(.white.opacity(0.6))
+                    }
                 } else {
                     VStack(spacing: 8) {
                         ForEach(tickets) { t in
@@ -749,6 +775,30 @@ struct EventTicketsView: View {
                             .background(Color.white.opacity(0.05))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
+
+                        if iskanjeAktivno {
+                            Text("\(zadetkov) results")
+                                .font(.caption).foregroundColor(.white.opacity(0.5))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        if naslednjiOdmik != nil {
+                            Button {
+                                Task { await naloziVec() }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    if nalagamVec { ProgressView().tint(.white) }
+                                    Text("Load more")
+                                        .font(.subheadline.weight(.semibold))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.white)
+                            .disabled(nalagamVec || isLoading)
+                        }
                     }
                 }
 
@@ -765,7 +815,15 @@ struct EventTicketsView: View {
         .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .onAppear { Task { await load() } }
+        // Ob vsakem prikazu in ob spremembi iskanja (s kratkim premorom med tipkanjem; prvo nalaganje takoj).
+        .task(id: iskanje) {
+            if nalozeno {
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                if Task.isCancelled { return }
+            }
+            nalozeno = true
+            await load()
+        }
         .sheet(item: $rezervirajMizo) { m in
             VipHoldSheet(eventId: event.id, miza: m, onDone: { vip = $0 }, onNapaka: { Task { await naloziVip() } })
                 .environmentObject(session)
@@ -983,16 +1041,77 @@ struct EventTicketsView: View {
         }
     }
 
-    private func load() async {
+    /// Iskalno polje (`q` na strezniku). Brez samodejnega popravljanja: kode in serijske so tocne.
+    private var poljeIskanja: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundColor(.white.opacity(0.5))
+            TextField("Search by name, code or serial", text: $iskanje)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .submitLabel(.search)
+                .foregroundColor(.white)
+            if !iskanje.isEmpty {
+                Button { iskanje = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundColor(.white.opacity(0.45))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Clear"))
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 44)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Prva stran (ali po vpisu: toliko vrstic, kot jih je ze nalozenih, najvec 1000), stevci in VIP.
+    /// `obdrziNalozene`: po »Check in« ostanejo vse ze nalozene strani (vratar ne izgubi mesta na seznamu).
+    private func load(obdrziNalozene: Bool = false) async {
         isLoading = true
         defer { isLoading = false }
+        let q = iskanje
+        let limit = obdrziNalozene
+            ? min(APIClient.najvecVstopnicVrata, max(APIClient.stranVstopnicVrata, tickets.count))
+            : APIClient.stranVstopnicVrata
         do {
-            tickets = try await APIClient.shared.fetchEventTickets(token: session.token, eventId: event.id)
+            let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, q: q, limit: limit)
+            // Medtem spremenjeno iskanje: odgovor je za star niz, nov klic je ze na poti.
+            guard q == iskanje else { return }
+            tickets = stran.tickets
+            stevci = stran.counts
+            zadetkov = stran.total
+            naslednjiOdmik = stran.nextOffset
+            errorText = nil
+        } catch is CancellationError {
+            return
+        } catch let url as URLError where url.code == .cancelled {
+            return
+        } catch {
+            // 503 search_timeout: »The ticket list is busy. Try again in a few seconds.« (APIErrorMessages) + Try again.
+            errorText = error.userMessage
+        }
+        await naloziVip()
+    }
+
+    /// Naslednja stran (`next_offset`), pripeta na seznam brez podvojenih vrstic.
+    private func naloziVec() async {
+        guard let odmik = naslednjiOdmik, !nalagamVec else { return }
+        nalagamVec = true
+        defer { nalagamVec = false }
+        let q = iskanje
+        do {
+            let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, offset: odmik, q: q)
+            guard q == iskanje else { return }
+            let znani = Set(tickets.map(\.id))
+            tickets.append(contentsOf: stran.tickets.filter { !znani.contains($0.id) })
+            stevci = stran.counts
+            zadetkov = stran.total
+            // Odmik se mora premakniti naprej, sicer bi gumb vedno nalozil isto stran.
+            naslednjiOdmik = (stran.nextOffset ?? 0) > odmik ? stran.nextOffset : nil
             errorText = nil
         } catch {
             errorText = error.userMessage
         }
-        await naloziVip()
     }
 
     /// Tiho: starejsi streznik poti nima (404) in VIP je dodatek - seznam vstopnic ne sme zaradi tega odpovedati.
@@ -1022,7 +1141,7 @@ struct EventTicketsView: View {
         defer { delujoc = nil }
         do {
             zadnjiRezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr)
-            await load()
+            await load(obdrziNalozene: true)
         } catch {
             errorText = error.userMessage
         }

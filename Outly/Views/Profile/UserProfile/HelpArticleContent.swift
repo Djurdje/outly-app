@@ -23,7 +23,7 @@ extension HelpArticle {
             ],
             notes: [
                 String(localized: "Your date of birth is used only to check age limits on events."),
-                String(localized: "You must be at least 15 to use Outly."),
+                String(localized: "You must be at least 18 to create an Outly account. You can browse events without an account."),
             ],
             destination: nil,
             related: ["age", "profile", "password"]
@@ -259,7 +259,7 @@ extension HelpArticle {
             group: String(localized: "Events & clubs"),
             topic: String(localized: "Events  >  Age limits"),
             title: String(localized: "Age limits"),
-            summary: String(localized: "Outly is for people aged 15 and over, and some events have a higher age limit."),
+            summary: String(localized: "An Outly account is for people aged 18 and over, and some events have a higher age limit."),
             path: [
                 String(localized: "Profile"),
                 String(localized: "My Account"),
@@ -270,7 +270,7 @@ extension HelpArticle {
                 String(localized: "Tap Edit and enter your date of birth."),
             ],
             notes: [
-                String(localized: "You must be 15 or older to use Outly. Some events are 18+ — this is shown on the event and you need a date of birth in your profile to buy tickets for them."),
+                String(localized: "You must be 18 or older to create an Outly account. Some events have a higher age limit — this is shown on the event and you need a date of birth in your profile to buy tickets for them."),
                 String(localized: "The club may ask for an ID at the door."),
             ],
             destination: .personalInfo,

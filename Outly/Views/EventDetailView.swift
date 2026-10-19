@@ -14,6 +14,8 @@ struct EventDetailView: View {
     @State private var showBarPrices = false
     @State private var showVip = false
     @EnvironmentObject private var session: SessionStore
+    /// Brskanje brez racuna: nakup in »I'm in« najprej odpreta prijavo (PrijavaTok), nato se dejanje nadaljuje.
+    @State private var prijava: PrijavaZahteva?
 
     // "I'm in" (backend migracija 020, 23. 9. 2026): moj nacrt + prijatelji, ki grejo/jih zanima.
     // Nalozi se loceno od dogodka (GET /events/:id z zetonom), da fetchEvent(id:) v
@@ -82,7 +84,8 @@ struct EventDetailView: View {
         .prijavaMeni(targetType: .event, targetId: event.id, targetName: event.title, skrij: jeMojDogodek)
         .task { await loadClub() }
         .task { await loadVenueClub() }
-        .task { await loadPlan() }
+        // Ponovno ob prijavi (gost -> prijavljen na tem zaslonu): moj nacrt in prijatelji.
+        .task(id: session.isLoggedIn) { await loadPlan() }
         .task { await loadOpis() }
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(eventId: event.id) }
@@ -99,6 +102,7 @@ struct EventDetailView: View {
                 VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
             }
         }
+        .prijavaPoZahtevi($prijava)
         .sheet(isPresented: $showBarPrices) {
             BarPricesView(clubName: barClub?.name ?? String(localized: "Club"), items: barClub?.barPrices ?? [])
         }
@@ -209,9 +213,8 @@ struct EventDetailView: View {
                 .lineLimit(3)
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
-            if session.isLoggedIn {
-                imInPill
-            }
+            // Tudi gost vidi »I'm in«; dotik odpre prijavo (glej preklopiZanimanje).
+            imInPill
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
@@ -524,7 +527,12 @@ struct EventDetailView: View {
                 // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView, testni nacin do Stripa).
                 // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
                 if event.ticketPriceCents != nil {
-                    showBuy = true
+                    // Nakup zahteva racun (iOS nima nakupa brez racuna): gost najprej prijava, nato se odpre nakup.
+                    if session.isLoggedIn {
+                        showBuy = true
+                    } else {
+                        prijava = PrijavaZahteva(nadaljuj: { showBuy = true })
+                    }
                 } else if let urlStr = event.ticketUrl,
                           let url = Self.varnaPovezavaVstopnic(urlStr) {
                     UIApplication.shared.open(url)
@@ -919,7 +927,16 @@ struct EventDetailView: View {
     private func preklopiZanimanje() {
         guard !planSubmitting, myPlan != .going else { return }
         let token = session.token
-        guard !token.isEmpty else { return }
+        guard !token.isEmpty else {
+            // Gost: prijava, nato moj nacrt s streznika in sele potem »I'm in« (ce ga se ni: lahko je ze interested ali going).
+            prijava = PrijavaZahteva(nadaljuj: {
+                Task {
+                    await loadPlan()
+                    if myPlan == nil { preklopiZanimanje() }
+                }
+            })
+            return
+        }
         let prejsnje = myPlan
         let novo: EventPlan? = (myPlan == .interested) ? nil : .interested
         withAnimation(.snappy) { myPlan = novo }

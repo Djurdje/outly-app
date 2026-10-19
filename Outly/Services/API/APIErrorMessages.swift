@@ -54,9 +54,40 @@ extension APIError {
         return String(localized: "You must be at least \(n) to buy tickets for this event.")
     }
 
+    /// Polje `field` iz JSON napake (`{ error, field, message }`); nil, ce ga ni ali telo ni JSON.
+    static func poljeNapake(_ raw: String) -> String? {
+        guard let d = raw.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+              let f = o["field"] as? String, !f.isEmpty else { return nil }
+        return f
+    }
+
+    /// 400 `invalid_url` po polju (backend `url_polja.js`: website, instagram, logo_url, banner_url, poster_url, ticket_url).
+    static func napacnaPovezava(polje: String?) -> String {
+        switch polje {
+        case "website":
+            return String(localized: "Enter a website link starting with http:// or https://, e.g. https://klub.si.")
+        case "instagram":
+            return String(localized: "Enter an Instagram handle like @velvet.lj or a link starting with https://.")
+        case "ticket_url":
+            return String(localized: "Enter a ticket link starting with http:// or https://.")
+        case "logo_url", "banner_url", "poster_url":
+            return String(localized: "The image link is not valid. Upload the image again.")
+        default:
+            return String(localized: "Enter a link starting with http:// or https://.")
+        }
+    }
+
     /// Znana sporocila backenda (index.js) -> razumljiva sporocila.
     private static func translate(code: Int, raw: String) -> String {
         let t = raw.lowercased()
+
+        // 400 { error: "invalid_url", field, message } (backend url_polja.js, #269 / #293, I48): sporocilo po polju. Prvo, ker
+        // `message` (»website must be a web link …«) ne sme pasti v druge podnize spodaj.
+        if t.contains("invalid_url") { return napacnaPovezava(polje: APIError.poljeNapake(raw)) }
+        // Seznam vstopnic za vrata (#277 N1): 503 search_timeout = poskusi znova; 400 invalid_q = predolgo iskanje.
+        if t.contains("search_timeout") { return String(localized: "The ticket list is busy. Try again in a few seconds.") }
+        if t.contains("invalid_q") { return String(localized: "Search text is too long or contains characters that aren't allowed.") }
 
         // Podatki prodajalca (PATCH /business/clubs/me, backend#94): manager jih ne sme spremeniti (403 `{ "error": "owner_only" }`).
         if t.contains("owner_only")                     { return String(localized: "Only the club owner can change seller details.") }
@@ -111,6 +142,9 @@ extension APIError {
         if t.contains("auth service unavailable")       { return String(localized: "Sign-in service is temporarily unavailable. Please try again.") }
         if t.contains("identity provider")              { return String(localized: "Please sign out and sign in again, then retry.") }
         if t.contains("could not delete the account")   { return String(localized: "Could not delete the account right now. Please try again.") }
+        // Najnizja starost racuna (PATCH /me z datumom rojstva): od 19. 10. 2026 »You must be at least 18 years old.« (backend #301),
+        // star backend »… at least 15 years old.«. PRED »date of birth« in »you must be at least« (meja nakupa) spodaj.
+        if t.contains("at least 18 years")              { return String(localized: "You must be at least 18 years old to use Outly.") }
         if t.contains("at least 15 years")              { return String(localized: "You must be at least 15 years old to use Outly.") }
         if t.contains("title is required")              { return String(localized: "Enter a title.") }
         if t.contains("need a venue")                   { return String(localized: "Choose the venue for this event.") }
@@ -171,6 +205,9 @@ extension APIError {
         if t.contains("quantity must be")               { return String(localized: "Choose between 1 and 10 tickets.") }
         // VIP mize (POST /events/:id/tables/:tableId/orders)
         if t.contains("already booked")                 { return String(localized: "This table is already booked.") }
+        // Nakup vstopnic z `expected_price_cents` (#277 N2): »The ticket price has changed.« PRED splosnim »price has changed«
+        // (VIP: »The table price has changed.«), sicer bi kupec vstopnice bral »table price«.
+        if t.contains("ticket price has changed")       { return String(localized: "The ticket price has changed. Check the new price and try again.") }
         if t.contains("price has changed")              { return String(localized: "The table price has changed. Check the new price and try again.") }
         if t.contains("choose a bottle package") || t.contains("package does not belong") { return String(localized: "Choose a bottle for your table.") }
         if t.contains("table not found")                { return String(localized: "This table is not available anymore.") }
@@ -240,6 +277,13 @@ extension Error {
     var jeProdajalecNepopoln: Bool {
         guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
         return raw.lowercased().contains("seller_incomplete")
+    }
+
+    /// 409 »The ticket price has changed.« (nakup vstopnic z `expected_price_cents`, #277 N2): narocilo ni nastalo, cena se osvezi
+    /// (GET /events/:id) in kupec jo potrdi. VIP ima svoje besedilo (»The table price has changed.«) in osvezi tloris.
+    var jeSpremenjenaCenaVstopnice: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
+        return raw.lowercased().contains("ticket price has changed")
     }
 
     /// Vsak 503 pri nakupu: gumb je kratek cas onemogocen (nakupa se ne ponavlja samodejno).

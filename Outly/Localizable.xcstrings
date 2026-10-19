@@ -16857,6 +16857,237 @@
           }
         }
       }
+    },
+    "You must be at least 18 years old to use Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za uporabo Outlyja moraš biti star vsaj 18 let."
+          }
+        }
+      }
+    },
+    "You must be at least 18 to create an Outly account. You can browse events without an account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za račun Outly moraš imeti vsaj 18 let. Dogodke lahko brskaš tudi brez računa."
+          }
+        }
+      }
+    },
+    "An Outly account is for people aged 18 and over, and some events have a higher age limit.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Račun Outly je za osebe, stare 18 let ali več, nekateri dogodki pa imajo višjo starostno mejo."
+          }
+        }
+      }
+    },
+    "You must be 18 or older to create an Outly account. Some events have a higher age limit — this is shown on the event and you need a date of birth in your profile to buy tickets for them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za račun Outly moraš imeti vsaj 18 let. Nekateri dogodki imajo višjo starostno mejo — to je označeno pri dogodku, za nakup vstopnic pa potrebuješ datum rojstva v profilu."
+          }
+        }
+      }
+    },
+    "The ticket price has changed. Check the new price and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cena vstopnice se je spremenila. Preveri novo ceno in poskusi znova."
+          }
+        }
+      }
+    },
+    "The ticket list is busy. Try again in a few seconds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam vstopnic je trenutno zaseden. Poskusi znova čez nekaj sekund."
+          }
+        }
+      }
+    },
+    "Search text is too long or contains characters that aren't allowed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iskalni niz je predolg ali vsebuje nedovoljene znake."
+          }
+        }
+      }
+    },
+    "Enter a website link starting with http:// or https://, e.g. https://klub.si.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi povezavo do spletne strani, ki se začne s http:// ali https://, npr. https://klub.si."
+          }
+        }
+      }
+    },
+    "Enter a ticket link starting with http:// or https://.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi povezavo do vstopnic, ki se začne s http:// ali https://."
+          }
+        }
+      }
+    },
+    "The image link is not valid. Upload the image again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povezava do slike ni veljavna. Sliko naloži znova."
+          }
+        }
+      }
+    },
+    "Enter a link starting with http:// or https://.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vnesi povezavo, ki se začne s http:// ali https://."
+          }
+        }
+      }
+    },
+    "Sign in to Outly": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijavi se v Outly"
+          }
+        }
+      }
+    },
+    "Buy tickets, reserve VIP tables, follow clubs and see your friends' plans. You can browse events without an account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kupuj vstopnice, rezerviraj VIP mize, sledi klubom in poglej načrte prijateljev. Dogodke lahko brskaš tudi brez računa."
+          }
+        }
+      }
+    },
+    "Outly is the seller.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodajalec je Outly."
+          }
+        }
+      }
+    },
+    "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnic za dogodek z določenim datumom po nakupu ni mogoče vrniti (ZVPot-1, 135/12)."
+          }
+        }
+      }
+    },
+    "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP miz (skupaj s paketom) in vstopnic za dogodek z določenim datumom po nakupu ni mogoče vrniti (ZVPot-1, 135/12)."
+          }
+        }
+      }
+    },
+    "Search by name, code or serial": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Išči po imenu, kodi ali serijski številki"
+          }
+        }
+      }
+    },
+    "No tickets match your search.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobena vstopnica ne ustreza iskanju."
+          }
+        }
+      }
+    },
+    "%lld results": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadetkov: %lld"
+          }
+        }
+      }
+    },
+    "Load more": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naloži več"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počisti"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

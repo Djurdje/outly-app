@@ -5,6 +5,7 @@ import SwiftUI
 /// poudarjena stvar na zaslonu ostane gumb.
 /// - `kazeDdv`: vrstica o DDV (po `vat_payer`) v bloku; pri nakupu vstopnic je DDV vrstica ze pod skupnim zneskom, zato tam false.
 /// - `kazePosrednika`: stavek »Outly is the intermediary.«; false tam, kjer ga zaslon ze ima (nakup vstopnic).
+///   Pri `seller.isPlatform` (uradni profil Outly, backend I50) namesto njega vedno »Outly is the seller.«.
 struct OutlyProdajalecBlok: View {
     let seller: Seller
     var kazeDdv: Bool = false
@@ -30,7 +31,14 @@ struct OutlyProdajalecBlok: View {
             if kazeDdv {
                 vrstica(Seller.ddvBesedilo(seller))
             }
-            if kazePosrednika {
+            if seller.isPlatform {
+                // Uradni profil Outly (backend I50): prodajalec je platforma sama, posrednika ni (tudi tam, kjer bi sicer stal stavek o njem).
+                Text("Outly is the seller.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.45))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            } else if kazePosrednika {
                 Text("Outly is the intermediary.")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.45))

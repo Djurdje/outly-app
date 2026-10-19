@@ -293,14 +293,22 @@ private struct PrijavaMeniModifier: ViewModifier {
 
     @EnvironmentObject private var session: SessionStore
     @State private var showReport = false
+    /// Brskanje brez racuna: Report zahteva racun (POST /reports), zato gost najprej prijava, nato se list odpre.
+    @State private var prijava: PrijavaZahteva?
 
     func body(content: Content) -> some View {
         content
             .toolbar {
-                if session.isLoggedIn && !skrij {
+                if !skrij {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
-                            Button { showReport = true } label: {
+                            Button {
+                                if session.isLoggedIn {
+                                    showReport = true
+                                } else {
+                                    prijava = PrijavaZahteva(nadaljuj: { showReport = true })
+                                }
+                            } label: {
                                 Label("Report", systemImage: "flag")
                             }
                         } label: {
@@ -316,11 +324,12 @@ private struct PrijavaMeniModifier: ViewModifier {
                 ReportSheet(targetType: targetType, targetId: targetId, targetName: targetName)
                     .environmentObject(session)
             }
+            .prijavaPoZahtevi($prijava)
     }
 }
 
 extension View {
-    /// Doda v vrstico zaslona meni »…« z dejanjem Report (klub, dogodek). Prijavljeni uporabniki, ne za lastno vsebino.
+    /// Doda v vrstico zaslona meni »…« z dejanjem Report (klub, dogodek); ne za lastno vsebino. Gost ob Report najprej prijava.
     func prijavaMeni(targetType: ReportTargetType, targetId: Int, targetName: String, skrij: Bool = false) -> some View {
         modifier(PrijavaMeniModifier(targetType: targetType, targetId: targetId, targetName: targetName, skrij: skrij))
     }

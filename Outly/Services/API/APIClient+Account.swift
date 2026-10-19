@@ -116,7 +116,14 @@ extension APIClient {
         guard var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false) else {
             throw APIError.invalidURL
         }
-        if !query.isEmpty { comps.queryItems = query }
+        if !query.isEmpty {
+            comps.queryItems = query
+            // URLComponents pusti »+« v poizvedbi nekodiran, streznik (Express) pa ga bere kot presledek: iskanje
+            // »ana+klub@gmail.com« bi iskalo »ana klub@gmail.com«. Vrednosti so surovi nizi, zato je »+« vedno dobesedni znak.
+            if let pq = comps.percentEncodedQuery, pq.contains("+") {
+                comps.percentEncodedQuery = pq.replacingOccurrences(of: "+", with: "%2B")
+            }
+        }
         guard let url = comps.url else { throw APIError.invalidURL }
 
         var req = URLRequest(url: url)

@@ -35,11 +35,16 @@ struct BuyTicketsView: View {
     @Environment(\.accessibilityReduceMotion) private var manjGibanja
     /// Prodajalec, prebran ob odprtju lista, ko ga ni ne od klicatelja ne v dogodku (dogodek iz seznama).
     @State private var nalozenProdajalec: Seller?
+    /// Cena po 409 »The ticket price has changed.« (GET /events/:id); nil = cena iz `event`. Kupec jo vidi na kartici in gumbu
+    /// in jo potrdi z novim pritiskom na Pay (nakup se ne ponovi sam).
+    @State private var svezaCenaCents: Int?
 
     private var prodajalec: Seller? { seller ?? event.seller ?? nalozenProdajalec }
 
     private var koda: String { event.currency ?? "EUR" }
-    private var unitCents: Int { event.ticketPriceCents ?? 0 }
+    /// Cena ENE vstopnice, kot jo kupec vidi: po 409 »The ticket price has changed.« sveza iz GET /events/:id (`svezaCenaCents`),
+    /// sicer iz dogodka. Ista vrednost gre v `expected_price_cents` (#277 N2).
+    private var unitCents: Int { svezaCenaCents ?? event.ticketPriceCents ?? 0 }
     private var totalCents: Int { unitCents * quantity }
     private var isFree: Bool { unitCents == 0 }
     /// Nacin placila kluba (backend `payment_mode`); nil iz starega backenda = `.neznan` (danasnje vedenje).
@@ -187,7 +192,10 @@ struct BuyTicketsView: View {
 
                 OutlyPogojiNakupa()
 
-                Text("Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.")
+                // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni.
+                Text(LocalizedStringKey(prodajalec?.isPlatform == true
+                     ? "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12)."
+                     : "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary."))
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.40))
                     .fixedSize(horizontal: false, vertical: true)
@@ -615,6 +623,13 @@ struct BuyTicketsView: View {
         }
     }
 
+    /// Po 409 »The ticket price has changed.«: sveza cena iz GET /events/:id. Ob napaki ostane prejsnja (sporocilo je ze na zaslonu,
+    /// ponovni Pay bo spet 409, dokler cena ni sveza). Brez cene na dogodku (`nil`, prodaja ni vec na Outlyju) ostane prejsnja.
+    private func osveziCeno() async {
+        guard let poln = try? await APIClient.shared.fetchEvent(id: event.id), let nova = poln.ticketPriceCents else { return }
+        withAnimation(.easeOut(duration: 0.2)) { svezaCenaCents = nova }
+    }
+
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay
     /// poslje isto vsebino z istim kljucem (NakupniKljucShramba). Vsebina VIP mize (mizaId != nil) tu ne velja.
     /// Zapomni nerazresen poskus za napotek (kolicine ne zaklene; napotek sledi trenutni izbiri, glej `napotek`).
@@ -652,8 +667,10 @@ struct BuyTicketsView: View {
         let kljucNakupa = NakupniKljucShramba.deljena.zaNakup(
             uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, kolicina: quantity))
         do {
+            // `expected_price_cents` = cena ENE vstopnice, ki jo kupec vidi (#277 N2); brez cene na dogodku polja ne posljemo.
+            let videnaCena: Int? = (svezaCenaCents ?? event.ticketPriceCents) == nil ? nil : unitCents
             let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
-                                                          idempotencyKey: kljucNakupa)
+                                                          expectedPriceCents: videnaCena, idempotencyKey: kljucNakupa)
             if p.cakaPlacilo {
                 // Stripe: vstopnic se ni (nastanejo po webhooku), zato NE »You're in!«. Kljuc se NE pozabi: ponovni pritisk Pay,
                 // dokler je narocilo pending, vrne isto narocilo in isti checkout_url. Pozabi ga StripeNakup, ko je placano.
@@ -677,6 +694,10 @@ struct BuyTicketsView: View {
             NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice, izid: error.nakupniIzid)
             errorMessage = error.nakupUserMessage
             stanje = .napaka
+            // 409 »The ticket price has changed.«: narocila ni; preberemo dogodek znova in pokazemo novo ceno (kupec potrdi z Pay).
+            if error.jeSpremenjenaCenaVstopnice {
+                await osveziCeno()
+            }
             if let premor = error.nakupPremorNanosekund {
                 naval = true
                 try? await Task.sleep(nanoseconds: premor)

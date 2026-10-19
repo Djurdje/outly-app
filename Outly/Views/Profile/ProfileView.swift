@@ -28,7 +28,10 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            if jeLastnik, let trenutni {
+            if !session.isLoggedIn {
+                // Brskanje brez racuna (19. 10. 2026): povabilo k prijavi namesto profila.
+                GostProfilView()
+            } else if jeLastnik, let trenutni {
                 OwnerProfileView(me: trenutni)
             } else {
                 osebni
@@ -37,6 +40,10 @@ struct ProfileView: View {
         // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me).
         .onAppear {
             Task { await loadProfile() }
+        }
+        // Prijava iz povabila na tem zavihku: profil se nalozi takoj (zavihek je ze na zaslonu, onAppear se ne ponovi).
+        .onChange(of: session.isLoggedIn) { _, prijavljen in
+            if prijavljen { Task { await loadProfile() } } else { user = nil }
         }
         .preferredColorScheme(.dark)
     }

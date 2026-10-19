@@ -16,6 +16,8 @@ struct ClubDetailView: View {
     @State private var sledim = false
     @State private var sledilci = 0
     @State private var sledenjeTece = false
+    /// Brskanje brez racuna: Follow najprej odpre prijavo (PrijavaTok), nato se sledenje nadaljuje.
+    @State private var prijava: PrijavaZahteva?
 
     /// Organizator brez lastnega prizorisca (backend 037): brez naslova, zemljevida in pina;
     /// namesto "Club" pisemo "Organizer".
@@ -35,6 +37,7 @@ struct ClubDetailView: View {
         // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za klub, v katerem sam delam.
         .prijavaMeni(targetType: .club, targetId: clubId, targetName: club?.name ?? "", skrij: jeMojKlub)
         .task { await load() }
+        .prijavaPoZahtevi($prijava)
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(clubId: clubId) }
     }
@@ -149,36 +152,43 @@ struct ClubDetailView: View {
         .fixedSize()
     }
 
-    @ViewBuilder
     private var followButton: some View {
-        if session.isLoggedIn {
-            Button {
+        // Tudi gost vidi Follow; dotik odpre prijavo, po njej se klub prebere znova (is_following) in sledenje nadaljuje.
+        Button {
+            if session.isLoggedIn {
                 Task { await preklopiSledenje() }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: sledim ? "checkmark" : "plus")
-                        .font(.system(size: 12, weight: .bold))
-                    Text(sledim ? String(localized: "Following") : String(localized: "Follow"))
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .foregroundStyle(sledim ? Color.white.opacity(0.9) : Color.white)
-                .padding(.horizontal, 16)
-                .frame(height: 36)
-                .background(
-                    Capsule().fill(sledim ? Color.white.opacity(0.08) : Color.outlyBlue)
-                )
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(sledim ? 0.35 : 0), lineWidth: 1)
-                )
-                .contentShape(Capsule())
+            } else {
+                prijava = PrijavaZahteva(nadaljuj: {
+                    Task {
+                        await load()
+                        if !sledim { await preklopiSledenje() }
+                    }
+                })
             }
-            .buttonStyle(.plain)
-            .disabled(sledenjeTece)
-            .opacity(sledenjeTece ? 0.6 : 1)
-            .accessibilityLabel(Text(sledim ? String(localized: "Following") : String(localized: "Follow")))
-            // Sij samo dokler se ne sledi - potem, ko uporabnik ze sledi, gumb ni vec CTA.
-            .outlySij(moc: 1.0, aktiven: !sledim)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: sledim ? "checkmark" : "plus")
+                    .font(.system(size: 12, weight: .bold))
+                Text(sledim ? String(localized: "Following") : String(localized: "Follow"))
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(sledim ? Color.white.opacity(0.9) : Color.white)
+            .padding(.horizontal, 16)
+            .frame(height: 36)
+            .background(
+                Capsule().fill(sledim ? Color.white.opacity(0.08) : Color.outlyBlue)
+            )
+            .overlay(
+                Capsule().stroke(Color.white.opacity(sledim ? 0.35 : 0), lineWidth: 1)
+            )
+            .contentShape(Capsule())
         }
+        .buttonStyle(.plain)
+        .disabled(sledenjeTece)
+        .opacity(sledenjeTece ? 0.6 : 1)
+        .accessibilityLabel(Text(sledim ? String(localized: "Following") : String(localized: "Follow")))
+        // Sij samo dokler se ne sledi - potem, ko uporabnik ze sledi, gumb ni vec CTA.
+        .outlySij(moc: 1.0, aktiven: !sledim)
     }
 
     /// 0–999 kot je, potem 1.2k. Da se dolgo stevilo ne zaleti v ime kluba.
