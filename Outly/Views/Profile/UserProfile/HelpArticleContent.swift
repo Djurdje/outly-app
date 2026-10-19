@@ -249,7 +249,7 @@ extension HelpArticle {
                 String(localized: "The bottle is included in the table price."),
                 String(localized: "If you pay through Stripe, the table is held for you until you finish paying."),
                 String(localized: "Tickets you don't send stay under Tickets."),
-                String(localized: "Like tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club; Outly is the intermediary."),
+                String(localized: "Like tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club or event organiser; for Outly's own events the seller is the operator of Outly."),
             ],
             destination: nil,
             related: ["buy", "transfer", "refund"]
@@ -409,9 +409,9 @@ extension HelpArticle {
             path: [],
             steps: [],
             notes: [
-                String(localized: "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase."),
-                String(localized: "If the club cancels an event, you are entitled to a refund from the club, to your original payment method."),
-                String(localized: "For anything else, contact the club or write to luka@outly.si with your ticket number."),
+                String(localized: "Tickets are sold by the club or event organiser, with Outly as the intermediary; for Outly's own events the seller is the operator of Outly. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase."),
+                String(localized: "If an event is cancelled, you are entitled to a refund from the seller, to your original payment method."),
+                String(localized: "For anything else, contact the seller or write to luka@outly.si with your ticket number."),
             ],
             destination: nil,
             related: ["buy", "transfer", "my-tickets"]

@@ -266,8 +266,9 @@ struct VipTablesView: View {
                         }
                         OutlyPogojiNakupa()
                         // Slog kot v BuyTicketsView; besedilo navaja tudi mizo in paket (ZVPot-1 130/1-10, 135/12): miza je vedno za dogodek z datumom.
-                        // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni.
-                        Text(LocalizedStringKey(prodajalec?.isPlatform == true
+                        // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni. Dokler prodajalca
+                // ne poznamo (nalaganje, napaka, star backend), stavka o posredniku tudi ne kazemo.
+                        Text(LocalizedStringKey(prodajalec == nil || prodajalec?.isPlatform == true
                              ? "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12)."
                              : "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary."))
                             .font(.system(size: 11))

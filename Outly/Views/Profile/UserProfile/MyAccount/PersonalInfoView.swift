@@ -137,7 +137,7 @@ struct PersonalInfoView: View {
         case .phone: editText = user?.phone ?? ""
         case .birthDate:
             editDate = user?.dateOfBirth.flatMap(Self.parse)
-                ?? Calendar.current.date(byAdding: .year, value: -20, to: Date()) ?? Date()
+                ?? StarostRacuna.gregorijanski().date(byAdding: .year, value: -20, to: Date()) ?? Date()
         case .country: editCountry = user?.country ?? (Locale.current.region?.identifier ?? "SI")
         }
         activeEdit = field
@@ -162,7 +162,7 @@ struct PersonalInfoView: View {
                 case .birthDate:
                     // Zgornja meja: danes - 18 let (StarostRacuna); ze vpisan datum (racun 15-17 let) ostane izbirljiv.
                     DatePicker("", selection: $editDate,
-                               in: (Calendar.current.date(byAdding: .year, value: -120, to: Date()) ?? .distantPast)...StarostRacuna.zgornjaMejaIzbirnika(obstojec: user?.dateOfBirth.flatMap(Self.parse)),
+                               in: StarostRacuna.obsegIzbirnika(obstojec: user?.dateOfBirth.flatMap(Self.parse)),
                                displayedComponents: .date)
                         .datePickerStyle(.wheel)
                         .labelsHidden()

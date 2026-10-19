@@ -600,7 +600,7 @@ struct ClubInfoView: View {
                             return
                         }
                         // Spletna stran: samo http(s) povezava (kot splet in backend url_polja.js, #293 / I48); brez sheme dobi https://.
-                        if field == .website, SpletnaStranVnos.normaliziraj(editText) == nil {
+                        if field == .website, SpletnaStranVnos.normaliziraj(editText, stara: clubWebsite) == nil {
                             editError = String(localized: "Enter a website link starting with http:// or https://, e.g. https://klub.si.")
                             return
                         }
@@ -632,7 +632,7 @@ struct ClubInfoView: View {
         switch field {
         case .name: clubName = v
         case .phone: clubPhone = v
-        case .website: clubWebsite = SpletnaStranVnos.normaliziraj(v) ?? clubWebsite
+        case .website: clubWebsite = SpletnaStranVnos.normaliziraj(v, stara: clubWebsite) ?? clubWebsite
         case .email: clubEmail = v
         case .description: clubDescription = v
         case .address: clubAddress = v
@@ -878,15 +878,17 @@ struct ClubInfoView: View {
 /// Vnos spletne strani kluba (outly-backend#293, url_polja.js, I48): backend sprejme samo absoluten http(s) URL z imenom gostitelja
 /// (brez uporabnika/gesla, presledkov, kontrolnih znakov in `\`), vnos brez sheme dopolni z https:// (gostitelj mora imeti piko),
 /// `-` in prazno brisata. Aplikacija isto preveri PRED shranjevanjem (kot splet: povezava samo http(s)), da lastnik ne dobi 400
-/// in da se ob napaki ne shrani nic drugega. Najvec 200 znakov kot na spletu (backend dovoli 2048).
+/// in da se ob napaki ne shrani nic drugega. Najvec 2048 znakov kot backend (`NAJVEC_DOLZINA_URL`).
 enum SpletnaStranVnos {
-    static let najvecZnakov = 200
+    static let najvecZnakov = 2048
 
     /// "" (prazno ali "-" = odstrani), sicer http(s) povezava (brez sheme dobi https://); nil, ce vnos ni veljaven.
-    static func normaliziraj(_ vnos: String) -> String? {
+    /// `stara`: vrednost, ki je ze shranjena. Enak vnos se ne preverja (backend ga tudi ne: star zapis ne sme blokirati urejanja).
+    static func normaliziraj(_ vnos: String, stara: String? = nil) -> String? {
         let t = vnos.trimmingCharacters(in: .whitespacesAndNewlines)
         if t.isEmpty || t == "-" { return "" }
-        guard t.count <= najvecZnakov else { return nil }
+        if let stara, t == stara.trimmingCharacters(in: .whitespacesAndNewlines) { return t }
+        guard t.utf16.count <= najvecZnakov else { return nil }
         // Presledki, kontrolni znaki in »\« (WHATWG in RFC razclenjevalnik se pri »https://dobra.si\@zla.si« razideta).
         if t.unicodeScalars.contains(where: { CharacterSet.whitespacesAndNewlines.contains($0) || CharacterSet.controlCharacters.contains($0) || $0 == "\\" }) {
             return nil

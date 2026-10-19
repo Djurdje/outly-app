@@ -18,17 +18,23 @@ struct AuthGateView: View {
     @State private var glavniZiv = false
     /// Stevec odjav: nov `.id` MainTabView, da se po odjavi zgradi na novo.
     @State private var odjav = 0
-    /// Tok prijave, ki ga odpre koren sam (potekla seja, nedokoncan racun, nedokoncana registracija ob zagonu).
+    /// Tok prijave, ki ga odpre koren sam (potekla seja, nedokoncan racun, `me` ni nalozen, nedokoncana registracija ob zagonu).
     @State private var korenska: PrijavaZahteva?
+    /// Odjava (ali zavrnjena seja) med odprtim listom s prijavo: zavihki se zgradijo na novo, ko se list zapre (glej `poZaprtjuTokov`).
+    @State private var odjavaMedTokom = false
+    /// Zadnji znan uporabnik (`me.id`): ce se po odjavi v listu prijavi DRUG racun, se zavihki zgradijo na novo.
+    @State private var zadnjiUporabnik: Int?
+    @State private var uporabnikPredOdjavo: Int?
 
     /// Zagon s prijavo, preden je MainTabView kdaj bil na zaslonu: najprej /me in dokoncanje racuna (kot doslej).
     private var zacetniTok: Bool {
         session.isLoggedIn && !glavniZiv && (session.me == nil || session.needsOnboarding)
     }
 
-    /// Varovalo: prijavljen z nedokoncanim racunom, a noben tok prijave ni odprt (npr. list z VIP mizami je bil zaprt).
-    private var nedokoncanBrezToka: Bool {
-        glavniZiv && session.isLoggedIn && session.needsOnboarding && nadzor.odprtih == 0
+    /// Varovalo: prijavljen, a `me` ni nalozen ali racun ni dokoncan, in noben tok prijave ni odprt (npr. pogled, ki je drzal list,
+    /// je izginil). Koren takrat sam odpre tok: SessionLoadingView (z »Try again«) ali dokoncanje racuna.
+    private var tokManjka: Bool {
+        glavniZiv && session.isLoggedIn && (session.me == nil || session.needsOnboarding) && !nadzor.jeKajOdprto
     }
 
     var body: some View {
@@ -48,25 +54,63 @@ struct AuthGateView: View {
             }
         }
         .prijavaPoZahtevi($korenska)
+        .onChange(of: session.me?.id) { _, novi in
+            if let novi { zadnjiUporabnik = novi }
+        }
         .onChange(of: session.isLoggedIn) { prej, zdaj in
-            // Odjava iz profila / zavrnjena seja: zavihki od zacetka. Odjava ZNOTRAJ toka prijave (npr. »Log out« na
-            // SessionLoadingView v listu) zaslona pod listom ne podre.
-            if prej && !zdaj && nadzor.odprtih == 0 { odjav += 1 }
+            guard prej && !zdaj else { return }
+            // Odjava iz profila / zavrnjena seja: zavihki od zacetka. Med odprtim listom s prijavo (npr. »Log out« na
+            // SessionLoadingView v listu) zaslona pod listom ne podremo takoj, ampak ko se list zapre.
+            if nadzor.jeKajOdprto {
+                if !odjavaMedTokom { uporabnikPredOdjavo = zadnjiUporabnik }
+                odjavaMedTokom = true
+            } else {
+                odjav += 1
+            }
+        }
+        .onChange(of: nadzor.jeKajOdprto) { _, odprto in
+            if !odprto { poZaprtjuTokov() }
         }
         .onChange(of: session.sessionExpiredNotice) { _, obvestilo in
-            // Streznik je sejo zavrnil: prijava (LoginView pokaze obvestilo), ce tok se ni odprt.
-            guard obvestilo != nil, korenska == nil, nadzor.odprtih == 0 else { return }
+            // Streznik je sejo zavrnil: prijava (LoginView pokaze obvestilo).
+            guard obvestilo != nil else { return }
             authStage = "login"
-            korenska = PrijavaZahteva(zacetek: "login")
+            odpriKorensko(zacetek: "login") { !session.isLoggedIn }
         }
-        .onChange(of: nedokoncanBrezToka) { _, da in
-            if da, korenska == nil { korenska = PrijavaZahteva() }
+        .onChange(of: tokManjka) { _, manjka in
+            if manjka { odpriKorensko { tokManjka } }
         }
         .task {
             // Registracija, prekinjena pred vnosom kode (aplikacija zaprta): ob zagonu spet zaslon s kodo.
+            // Gost, ki je list s kodo zaprl sam, ima authStage "login" (PrijavaPoZahteviModifier) in tega ne dobi.
             if !session.isLoggedIn && authStage == "verifyEmail" && korenska == nil {
-                korenska = PrijavaZahteva()
+                odpriKorensko(zamik: 0) { !session.isLoggedIn && authStage == "verifyEmail" }
             }
+        }
+    }
+
+    /// Vsi listi s prijavo so zaprti: odlozena prenova zavihkov po odjavi med tokom. Isti racun, ki se je v listu prijavil znova,
+    /// obdrzi zaslon; gost ali drug racun dobi zavihke na novo (brez podatkov prejsnjega).
+    private func poZaprtjuTokov() {
+        guard odjavaMedTokom else { return }
+        odjavaMedTokom = false
+        if !session.isLoggedIn || session.me?.id != uporabnikPredOdjavo { odjav += 1 }
+        uporabnikPredOdjavo = nil
+    }
+
+    /// Koren odpre svoj tok prijave z zamikom (drug list se morda se zapira; SwiftUI dveh hkrati ne pokaze). Ce se list v 1,5 s
+    /// ne pokaze (PrijavaNadzor ga ne pozna), se `korenska` ponastavi in poskusi znova (najvec 3-krat), da ne ostane visela.
+    private func odpriKorensko(zacetek: String? = nil, zamik: UInt64 = 600_000_000, poskus: Int = 0,
+                               pogoj: @escaping () -> Bool) {
+        Task {
+            if zamik > 0 { try? await Task.sleep(nanoseconds: zamik) }
+            guard pogoj(), korenska == nil, !nadzor.jeKajOdprto else { return }
+            let z = PrijavaZahteva(zacetek: zacetek)
+            korenska = z
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            guard korenska?.id == z.id, !nadzor.odprti.contains(z.id) else { return }
+            korenska = nil
+            if poskus < 2 { odpriKorensko(zacetek: zacetek, poskus: poskus + 1, pogoj: pogoj) }
         }
     }
 }

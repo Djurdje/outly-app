@@ -65,16 +65,35 @@ enum StarostRacuna {
         (leto % 4 == 0 && leto % 100 != 0) || leto % 400 == 0
     }
 
-    /// Zgornja meja izbirnika datuma rojstva (DatePicker v koledarju naprave): konec najkasnejsega dovoljenega dne.
+    /// Gregorijanski koledar v casovnem pasu naprave (ali podanega koledarja). Leta, ki jih racuna StarostRacuna (2008, ...), so
+    /// gregorijanska: z budisticnim, hebrejskim ali japonskim koledarjem naprave bi `date(from:)` vrnil datum stoletja stran
+    /// (budisticno leto 2008 = 1465), zgornja meja bi padla pred spodnjo in `min...max` bi sesul aplikacijo.
+    static func gregorijanski(vPasu koledar: Calendar = .current) -> Calendar {
+        var g = Calendar(identifier: .gregorian)
+        g.timeZone = koledar.timeZone
+        return g
+    }
+
+    /// Zgornja meja izbirnika datuma rojstva: konec najkasnejsega dovoljenega dne (gregorijansko, v casovnem pasu naprave).
     /// `obstojec`: ze shranjen datum rojstva (racun 15-17 let pred 19. 10. 2026) - meja ga mora vkljuciti, sicer bi ga
-    /// izbirnik ob odprtju premaknil na drug dan.
+    /// izbirnik ob odprtju premaknil na drug dan. `koledarNaprave` da samo casovni pas (vrsta koledarja se ne uporabi).
     static func zgornjaMejaIzbirnika(zdaj: Date = Date(), obstojec: Date? = nil,
-                                                 koledarNaprave: Calendar = .current) -> Date {
+                                     koledarNaprave: Calendar = .current) -> Date {
+        let g = gregorijanski(vPasu: koledarNaprave)
         let d = najkasnejsiRojstniDan(danes: dan(zdaj))
-        let zacetek = koledarNaprave.date(from: DateComponents(year: d.leto, month: d.mesec, day: d.dan)) ?? zdaj
-        let konec = koledarNaprave.date(byAdding: DateComponents(day: 1, second: -1), to: zacetek) ?? zacetek
+        let zacetek = g.date(from: DateComponents(year: d.leto, month: d.mesec, day: d.dan)) ?? zdaj
+        let konec = g.date(byAdding: DateComponents(day: 1, second: -1), to: zacetek) ?? zacetek
         if let obstojec, obstojec > konec { return obstojec }
         return konec
+    }
+
+    /// Celoten obseg izbirnika: 120 let nazaj do zgornje meje. Spodnja meja nikoli ni za zgornjo (`min...max` bi sicer sesul aplikacijo).
+    static func obsegIzbirnika(zdaj: Date = Date(), obstojec: Date? = nil,
+                               koledarNaprave: Calendar = .current) -> ClosedRange<Date> {
+        let zgoraj = zgornjaMejaIzbirnika(zdaj: zdaj, obstojec: obstojec, koledarNaprave: koledarNaprave)
+        let g = gregorijanski(vPasu: koledarNaprave)
+        let spodaj = g.date(byAdding: .year, value: -120, to: zdaj) ?? .distantPast
+        return min(spodaj, zgoraj)...zgoraj
     }
 
     /// Preverba ob shranjevanju: `izbran` je "YYYY-MM-DD" iz izbirnika, `shranjen` datum, ki je ze v racunu (ali nil).

@@ -20,7 +20,7 @@ struct PushPrehod: View {
     @ObservedObject private var nadzor = PrijavaNadzor.deljen
 
     /// Prijavljen, `me` nalozen in noben list s prijavo ni odprt.
-    private var pripravljen: Bool { session.isLoggedIn && session.me != nil && nadzor.odprtih == 0 }
+    private var pripravljen: Bool { session.isLoggedIn && session.me != nil && !nadzor.jeKajOdprto }
 
     var body: some View {
         Color.clear

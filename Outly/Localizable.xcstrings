@@ -17088,6 +17088,50 @@
           }
         }
       }
+    },
+    "Like tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club or event organiser; for Outly's own events the seller is the operator of Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tako kot vstopnic tudi VIP mize za dogodek z določenim datumom po nakupu ni mogoče vrniti. Prodajalec je klub ali organizator dogodka; pri lastnih dogodkih Outly je prodajalec upravljavec Outlyja."
+          }
+        }
+      }
+    },
+    "Tickets are sold by the club or event organiser, with Outly as the intermediary; for Outly's own events the seller is the operator of Outly. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vstopnice prodaja klub ali organizator dogodka, Outly je posrednik; pri lastnih dogodkih Outly je prodajalec upravljavec Outlyja. Ker je vstopnica za določen datum, po nakupu ni 14-dnevne pravice do odstopa."
+          }
+        }
+      }
+    },
+    "If an event is cancelled, you are entitled to a refund from the seller, to your original payment method.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če je dogodek odpovedan, imaš pravico do vračila kupnine od prodajalca, na prvotni način plačila."
+          }
+        }
+      }
+    },
+    "For anything else, contact the seller or write to luka@outly.si with your ticket number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za vse ostalo se obrni na prodajalca ali piši na luka@outly.si s številko vstopnice."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

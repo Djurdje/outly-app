@@ -14,6 +14,10 @@ struct BuyTicketsView: View {
     /// Prodajalec (klub dogodka), ce ga klicatelj ze ima (EventDetailView: GET /clubs/:id). Sicer `event.seller` (GET /events/:id),
     /// sicer ga list sam prebere ob odprtju (`naloziProdajalca`); star backend ga nima -> nil in zaslon je kot doslej.
     var seller: Seller? = nil
+    /// Cena ene vstopnice, ki jo je ta list ze izvedel po 409 (EventDetailView jo hrani), da ponovno odprt list ne kaze stare cene.
+    var znanaCenaCents: Int? = nil
+    /// Klice se z novo ceno po 409 »The ticket price has changed.« (EventDetailView jo shrani za naslednje odprtje lista).
+    var priNoviCeni: (Int) -> Void = { _ in }
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionStore
@@ -44,7 +48,7 @@ struct BuyTicketsView: View {
     private var koda: String { event.currency ?? "EUR" }
     /// Cena ENE vstopnice, kot jo kupec vidi: po 409 »The ticket price has changed.« sveza iz GET /events/:id (`svezaCenaCents`),
     /// sicer iz dogodka. Ista vrednost gre v `expected_price_cents` (#277 N2).
-    private var unitCents: Int { svezaCenaCents ?? event.ticketPriceCents ?? 0 }
+    private var unitCents: Int { svezaCenaCents ?? znanaCenaCents ?? event.ticketPriceCents ?? 0 }
     private var totalCents: Int { unitCents * quantity }
     private var isFree: Bool { unitCents == 0 }
     /// Nacin placila kluba (backend `payment_mode`); nil iz starega backenda = `.neznan` (danasnje vedenje).
@@ -192,8 +196,9 @@ struct BuyTicketsView: View {
 
                 OutlyPogojiNakupa()
 
-                // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni.
-                Text(LocalizedStringKey(prodajalec?.isPlatform == true
+                // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni. Dokler prodajalca
+                // ne poznamo (nalaganje, napaka, star backend), stavka o posredniku tudi ne kazemo.
+                Text(LocalizedStringKey(prodajalec == nil || prodajalec?.isPlatform == true
                      ? "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12)."
                      : "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary."))
                     .font(.system(size: 11))
@@ -628,6 +633,7 @@ struct BuyTicketsView: View {
     private func osveziCeno() async {
         guard let poln = try? await APIClient.shared.fetchEvent(id: event.id), let nova = poln.ticketPriceCents else { return }
         withAnimation(.easeOut(duration: 0.2)) { svezaCenaCents = nova }
+        priNoviCeni(nova)
     }
 
     /// Ponovno odprt list po nejasnem izidu (timeout, zapri, odpri): kolicina zadnjega nerazresenega poskusa, da Pay
@@ -668,7 +674,7 @@ struct BuyTicketsView: View {
             uporabnik: uporabnik, vsebina: NakupniKljuc.Vsebina(dogodekId: event.id, kolicina: quantity))
         do {
             // `expected_price_cents` = cena ENE vstopnice, ki jo kupec vidi (#277 N2); brez cene na dogodku polja ne posljemo.
-            let videnaCena: Int? = (svezaCenaCents ?? event.ticketPriceCents) == nil ? nil : unitCents
+            let videnaCena: Int? = (svezaCenaCents ?? znanaCenaCents ?? event.ticketPriceCents) == nil ? nil : unitCents
             let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
                                                           expectedPriceCents: videnaCena, idempotencyKey: kljucNakupa)
             if p.cakaPlacilo {

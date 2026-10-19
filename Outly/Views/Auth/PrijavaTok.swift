@@ -15,21 +15,32 @@ struct PrijavaZahteva: Identifiable {
     var nadaljuj: (() -> Void)? = nil
 }
 
-/// Koliko tokov prijave je odprtih (lahko je list v listu, npr. VIP mize). AuthGateView po njem ve, ali sme sam odpreti tok
-/// (potekla seja, nedokoncan racun), da ne odpre drugega lista cez obstojecega.
+/// Kateri tokovi prijave so odprti (lahko je list v listu, npr. VIP mize). AuthGateView po njem ve, ali sme sam odpreti tok
+/// (potekla seja, nedokoncan racun), da ne odpre drugega lista cez obstojecega; PushPrehod pocaka na zaprtje.
+/// Mnozica po `PrijavaZahteva.id`, ne stevec: ponovljen onAppear ali manjkajoc onDisappear ne more trajno blokirati
+/// (zapiranje istega id je idempotentno, onDismiss modifikatorja ga zapre se enkrat).
 @MainActor
 final class PrijavaNadzor: ObservableObject {
     static let deljen = PrijavaNadzor()
-    @Published private(set) var odprtih = 0
+    @Published private(set) var odprti: Set<UUID> = []
 
-    func odprt() { odprtih += 1 }
-    func zaprt() { odprtih = max(0, odprtih - 1) }
+    var jeKajOdprto: Bool { !odprti.isEmpty }
+
+    func odpri(_ id: UUID) {
+        if !odprti.contains(id) { odprti.insert(id) }
+    }
+
+    func zapri(_ id: UUID) {
+        if odprti.contains(id) { odprti.remove(id) }
+    }
 }
 
 /// Tok prijave v listu: obstojeci zasloni (RegisterView, LoginView, VerifyEmailView) po `authStage`, po prijavi nalaganje /me
 /// (SessionLoadingView) in po potrebi dokoncanje racuna (CompleteAccountView -> SelectGenresView). Ko je vse nared, poklice `koncano`.
 @MainActor
 struct PrijavaTok: View {
+    /// `PrijavaZahteva.id` (za PrijavaNadzor).
+    let id: UUID
     var zacetek: String? = nil
     let koncano: () -> Void
 
@@ -64,7 +75,7 @@ struct PrijavaTok: View {
         .preferredColorScheme(.dark)
         .interactiveDismissDisabled(session.isLoggedIn)
         .onAppear {
-            PrijavaNadzor.deljen.odprt()
+            PrijavaNadzor.deljen.odpri(id)
             if let zacetek {
                 authStage = zacetek
             } else if !["register", "verifyEmail", "login"].contains(authStage) {
@@ -73,7 +84,7 @@ struct PrijavaTok: View {
             }
             if pripravljen { zakljuci() }
         }
-        .onDisappear { PrijavaNadzor.deljen.zaprt() }
+        .onDisappear { PrijavaNadzor.deljen.zapri(id) }
         .onChange(of: pripravljen) { _, da in
             if da { zakljuci() }
         }
@@ -109,21 +120,30 @@ struct PrijavaTok: View {
 private struct PrijavaPoZahteviModifier: ViewModifier {
     @Binding var zahteva: PrijavaZahteva?
     @EnvironmentObject private var session: SessionStore
+    @AppStorage("authStage") private var authStage: String = "register"
     /// Nadaljevanje uspesne zahteve; izvede se v onDismiss (ko je list res zaprt, da lahko nadaljevanje odpre drug list).
     @State private var poZaprtju: (() -> Void)?
+    /// Id zadnje prikazane zahteve (onDismiss ga pri PrijavaNadzor zapre, tudi ce onDisappear ni prisel).
+    @State private var prikazanaId: UUID?
 
     func body(content: Content) -> some View {
         content
             .sheet(item: $zahteva, onDismiss: {
+                if let id = prikazanaId { PrijavaNadzor.deljen.zapri(id) }
+                prikazanaId = nil
+                // Gost je list zaprl na zaslonu s kodo (X ali poteg): ob naslednjem zagonu ali menjavi jezika se ne sme vec
+                // sam odpreti (AuthGateView). Koda iz maila ostane veljavna; prijava z geslom ga vrne na zaslon s kodo.
+                if !session.isLoggedIn && authStage == "verifyEmail" { authStage = "login" }
                 let n = poZaprtju
                 poZaprtju = nil
                 n?()
             }) { z in
-                PrijavaTok(zacetek: z.zacetek) {
+                PrijavaTok(id: z.id, zacetek: z.zacetek) {
                     poZaprtju = z.nadaljuj
                     zahteva = nil
                 }
                 .environmentObject(session)
+                .onAppear { prikazanaId = z.id }
             }
     }
 }
@@ -139,7 +159,8 @@ extension View {
 @MainActor
 struct GostProfilView: View {
     @EnvironmentObject private var jezik: Jezik
-    @State private var prijava: PrijavaZahteva?
+    /// List s prijavo pripne ProfileView (nivo, ki se ob prijavi ne zamenja), tu se samo nastavi.
+    @Binding var prijava: PrijavaZahteva?
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -209,6 +230,5 @@ struct GostProfilView: View {
         }
         .navigationTitle("")
         .outlyOzadje()
-        .prijavaPoZahtevi($prijava)
     }
 }

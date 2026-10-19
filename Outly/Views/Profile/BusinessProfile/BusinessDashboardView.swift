@@ -51,7 +51,7 @@ struct BusinessDashboardView: View {
                 } else if let errorText {
                     VStack(spacing: 10) {
                         Text(errorText).foregroundColor(.red).font(.subheadline)
-                        Button("Try again") { Task { await load() } }.foregroundColor(.outlyBlue)
+                        Button("Try again") { Task { if napakaNaprej { await naloziVec() } else { await load() } } }.foregroundColor(.outlyBlue)
                     }
                     .frame(maxWidth: .infinity)
                 } else if let sales {
@@ -634,15 +634,15 @@ struct EventTicketsView: View {
 
     @EnvironmentObject private var session: SessionStore
 
-    @State private var tickets: [APITicket] = []
-    /// Stevci vseh vstopnic dogodka (`counts`); nil = se ni nalozeno.
-    @State private var stevci: SeznamVstopnicDogodka.Stevci?
+    /// Vrstice, stevci, zadetki in odmik za »Load more« (VrataSeznam: velja za iskanje, za katero je bil nalozen).
+    @State private var seznam = VrataSeznam()
+    private var tickets: [APITicket] { seznam.vrstice }
+    private var stevci: SeznamVstopnicDogodka.Stevci? { seznam.stevci }
     /// Iskanje (ime, koda, serijska; strezniku gre kot `q`). Seznam se po kratkem premoru nalozi znova.
     @State private var iskanje = ""
-    /// Zadetki iskanja (`total`).
-    @State private var zadetkov = 0
-    @State private var naslednjiOdmik: Int?
     @State private var nalagamVec = false
+    /// Zadnja napaka je bila pri »Load more«: »Try again« ponovi isto stran, ne prve.
+    @State private var napakaNaprej = false
     /// Prvo nalaganje zaslona gre brez premora (premor je samo med tipkanjem).
     @State private var nalozeno = false
     @State private var isLoading = false
@@ -701,7 +701,7 @@ struct EventTicketsView: View {
                 if let errorText {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(errorText).foregroundColor(.red).font(.subheadline)
-                        Button("Try again") { Task { await load() } }
+                        Button("Try again") { Task { if napakaNaprej { await naloziVec() } else { await load() } } }
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(.white)
                             .disabled(isLoading)
@@ -777,11 +777,11 @@ struct EventTicketsView: View {
                         }
 
                         if iskanjeAktivno {
-                            Text("\(zadetkov) results")
+                            Text("\(seznam.zadetkov) results")
                                 .font(.caption).foregroundColor(.white.opacity(0.5))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        if naslednjiOdmik != nil {
+                        if seznam.odmikNaprej(iskanje: iskanje) != nil {
                             Button {
                                 Task { await naloziVec() }
                             } label: {
@@ -1064,24 +1064,31 @@ struct EventTicketsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// Prva stran (ali po vpisu: toliko vrstic, kot jih je ze nalozenih, najvec 1000), stevci in VIP.
-    /// `obdrziNalozene`: po »Check in« ostanejo vse ze nalozene strani (vratar ne izgubi mesta na seznamu).
+    /// Prva stran za trenutno iskanje, stevci in VIP. `obdrziNalozene` (po »Check in»): vse ze nalozene vrstice v kosih po najvec 1000
+    /// (VrataSeznam.kosiOsvezitve), da vratar ne izgubi mesta na seznamu.
     private func load(obdrziNalozene: Bool = false) async {
         isLoading = true
         defer { isLoading = false }
         let q = iskanje
-        let limit = obdrziNalozene
-            ? min(APIClient.najvecVstopnicVrata, max(APIClient.stranVstopnicVrata, tickets.count))
-            : APIClient.stranVstopnicVrata
         do {
-            let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, q: q, limit: limit)
-            // Medtem spremenjeno iskanje: odgovor je za star niz, nov klic je ze na poti.
-            guard q == iskanje else { return }
-            tickets = stran.tickets
-            stevci = stran.counts
-            zadetkov = stran.total
-            naslednjiOdmik = stran.nextOffset
+            if obdrziNalozene {
+                var strani: [SeznamVstopnicDogodka] = []
+                for kos in VrataSeznam.kosiOsvezitve(nalozenih: seznam.vrstice.count) {
+                    let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id,
+                                                                                  offset: kos.offset, q: q, limit: kos.limit)
+                    strani.append(stran)
+                    if !stran.hasMore { break }
+                }
+                guard q == iskanje else { return }
+                seznam.zamenjajKose(strani, iskanje: q)
+            } else {
+                let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, q: q)
+                // Medtem spremenjeno iskanje: odgovor je za star niz, nov klic je ze na poti.
+                guard q == iskanje else { return }
+                seznam.zamenjaj(stran, iskanje: q)
+            }
             errorText = nil
+            napakaNaprej = false
         } catch is CancellationError {
             return
         } catch let url as URLError where url.code == .cancelled {
@@ -1089,28 +1096,27 @@ struct EventTicketsView: View {
         } catch {
             // 503 search_timeout: »The ticket list is busy. Try again in a few seconds.« (APIErrorMessages) + Try again.
             errorText = error.userMessage
+            napakaNaprej = false
         }
         await naloziVip()
     }
 
-    /// Naslednja stran (`next_offset`), pripeta na seznam brez podvojenih vrstic.
+    /// Naslednja stran (`next_offset`) za iskanje, za katero je seznam nalozen; med premorom tipkanja gumba ni (odmikNaprej nil).
     private func naloziVec() async {
-        guard let odmik = naslednjiOdmik, !nalagamVec else { return }
+        guard let odmik = seznam.odmikNaprej(iskanje: iskanje), !nalagamVec else { return }
         nalagamVec = true
         defer { nalagamVec = false }
         let q = iskanje
         do {
             let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, offset: odmik, q: q)
-            guard q == iskanje else { return }
-            let znani = Set(tickets.map(\.id))
-            tickets.append(contentsOf: stran.tickets.filter { !znani.contains($0.id) })
-            stevci = stran.counts
-            zadetkov = stran.total
-            // Odmik se mora premakniti naprej, sicer bi gumb vedno nalozil isto stran.
-            naslednjiOdmik = (stran.nextOffset ?? 0) > odmik ? stran.nextOffset : nil
-            errorText = nil
+            // pripni zavrne stran, ce je medtem drugo iskanje ali drug odmik.
+            if seznam.pripni(stran, iskanje: iskanje, odmik: odmik) {
+                errorText = nil
+                napakaNaprej = false
+            }
         } catch {
             errorText = error.userMessage
+            napakaNaprej = true
         }
     }
 

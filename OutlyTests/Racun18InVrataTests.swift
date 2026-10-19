@@ -68,6 +68,24 @@ final class Racun18InVrataTests: XCTestCase {
         XCTAssertEqual(star, trenutek("2008-10-19T23:59:59Z"))
     }
 
+    func testBudisticniInHebrejskiKoledarNapraveNePodreMeje() {
+        // Leta so gregorijanska: z budisticnim koledarjem bi bila meja leta 1465 (pred spodnjo) in min...max bi sesul aplikacijo.
+        let zdaj = trenutek("2026-10-19T10:00:00Z")
+        for id in [Calendar.Identifier.buddhist, .hebrew, .japanese, .islamicUmmAlQura] {
+            var k = Calendar(identifier: id)
+            k.timeZone = TimeZone(identifier: "UTC")!
+            XCTAssertEqual(StarostRacuna.zgornjaMejaIzbirnika(zdaj: zdaj, koledarNaprave: k), trenutek("2008-10-19T23:59:59Z"), "\(id)")
+            let obseg = StarostRacuna.obsegIzbirnika(zdaj: zdaj, koledarNaprave: k)
+            XCTAssertLessThan(obseg.lowerBound, obseg.upperBound, "\(id)")
+            XCTAssertEqual(obseg.upperBound, trenutek("2008-10-19T23:59:59Z"), "\(id)")
+        }
+    }
+
+    func testObsegIzbirnikaJe120LetNazaj() {
+        let obseg = StarostRacuna.obsegIzbirnika(zdaj: trenutek("2026-10-19T10:00:00Z"), koledarNaprave: utc)
+        XCTAssertEqual(obseg.lowerBound, trenutek("1906-10-19T10:00:00Z"))
+    }
+
     func testIstiDatumObstojecegaRacunaSeSmeShranitiSpremembaPodMejoNe() {
         let danes = dan("2026-10-19")
         XCTAssertTrue(StarostRacuna.smeShraniti(izbran: "2010-05-05", shranjen: "2010-05-05", danes: danes))  // 16 let, nespremenjen
@@ -202,6 +220,72 @@ final class Racun18InVrataTests: XCTestCase {
         XCTAssertEqual(s.counts, SeznamVstopnicDogodka.Stevci(all: 4, sold: 2, checkedIn: 1, expected: 1, refunded: 1, void: 1))
     }
 
+    // MARK: - Load more in iskanje (VrataSeznam)
+
+    private func stran(_ json: String) throws -> SeznamVstopnicDogodka {
+        try JSONDecoder().decode(SeznamVstopnicDogodka.self, from: Data(json.utf8))
+    }
+
+    func testLoadMoreSeNovimIskanjemInStarimOdmikomNeZgodi() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1}, {"id": 2}], "counts": {"all": 400}, "total": 400, "has_more": true, "next_offset": 200}"#),
+                   iskanje: "")
+        XCTAssertEqual(s.odmikNaprej(iskanje: ""), 200)
+        XCTAssertEqual(s.odmikNaprej(iskanje: "  "), 200)          // ocisceno je isto iskanje
+        // Uporabnik tipka (premor pred novim nalaganjem): gumba ni, stran za drugo iskanje se ne pripne.
+        XCTAssertNil(s.odmikNaprej(iskanje: "ana"))
+        XCTAssertFalse(s.pripni(try stran(#"{"tickets": [{"id": 9}], "has_more": false}"#), iskanje: "ana", odmik: 200))
+        XCTAssertEqual(s.vrstice.map(\.id), [1, 2])
+        // Isto iskanje: pripne brez podvojenih, odmik naprej.
+        XCTAssertTrue(s.pripni(try stran(#"{"tickets": [{"id": 2}, {"id": 3}], "counts": {"all": 400}, "total": 400, "has_more": true, "next_offset": 400}"#),
+                               iskanje: "", odmik: 200))
+        XCTAssertEqual(s.vrstice.map(\.id), [1, 2, 3])
+        XCTAssertEqual(s.odmikNaprej(iskanje: ""), 400)
+        // Dvojni dotik (stara stran za ze premaknjen odmik) se ne pripne.
+        XCTAssertFalse(s.pripni(try stran(#"{"tickets": [{"id": 5}]}"#), iskanje: "", odmik: 200))
+    }
+
+    func testOdmikKiSeNePremakneUstaviLoadMore() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1}], "has_more": true, "next_offset": 200}"#), iskanje: "x")
+        XCTAssertTrue(s.pripni(try stran(#"{"tickets": [{"id": 2}], "has_more": true, "next_offset": 200}"#), iskanje: "x", odmik: 200))
+        XCTAssertNil(s.odmikNaprej(iskanje: "x"))
+    }
+
+    func testOsvezitevPoVpisuNeKrajsaNa1000() {
+        XCTAssertEqual(VrataSeznam.kosiOsvezitve(nalozenih: 0).map { [$0.offset, $0.limit] }, [[0, 200]])
+        XCTAssertEqual(VrataSeznam.kosiOsvezitve(nalozenih: 600).map { [$0.offset, $0.limit] }, [[0, 600]])
+        XCTAssertEqual(VrataSeznam.kosiOsvezitve(nalozenih: 2300).map { [$0.offset, $0.limit] },
+                       [[0, 1000], [1000, 1000], [2000, 300]])
+    }
+
+    func testZdruzeniKosiBrezPodvojenih() throws {
+        var s = VrataSeznam()
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1}, {"id": 2}], "has_more": true, "next_offset": 2}"#),
+                        try stran(#"{"tickets": [{"id": 2}, {"id": 3}], "counts": {"all": 3, "sold": 3}, "total": 3, "has_more": false}"#)],
+                       iskanje: "")
+        XCTAssertEqual(s.vrstice.map(\.id), [1, 2, 3])
+        XCTAssertEqual(s.stevci?.sold, 3)
+        XCTAssertNil(s.odmikNaprej(iskanje: ""))
+    }
+
+    // MARK: - Odprti tokovi prijave (PrijavaNadzor)
+
+    func testNadzorTokovPoIdNePoStevcu() {
+        let n = PrijavaNadzor()   // lasten primerek, ne deljeni
+        let a = UUID(), b = UUID()
+        XCTAssertFalse(n.jeKajOdprto)
+        n.odpri(a)
+        n.odpri(a)                // ponovljen onAppear istega lista
+        n.odpri(b)                // list v listu
+        n.zapri(a)
+        XCTAssertTrue(n.jeKajOdprto)
+        n.zapri(b)
+        XCTAssertFalse(n.jeKajOdprto)   // en par se ni stel dvakrat
+        n.zapri(b)                // onDisappear in onDismiss oba: brez napake
+        XCTAssertFalse(n.jeKajOdprto)
+    }
+
     // MARK: - Potrditev cene (#277 N2)
 
     func testTeloNakupaNosiPricakovanoCenoEneVstopnice() {
@@ -230,9 +314,19 @@ final class Racun18InVrataTests: XCTestCase {
         XCTAssertEqual(SpletnaStranVnos.normaliziraj("-"), "")
         for slab in ["javascript:alert(1)", "data:text/html,x", "ftp://klub.si", "https:klub.si", "klub",
                      "https://dobra.si\\@zla.si", "https://ime:geslo@klub.si", "https://klub .si", "/pot",
-                     "https://" + String(repeating: "a", count: 200) + ".si"] {
+                     "https://" + String(repeating: "a", count: 2048) + ".si"] {
             XCTAssertNil(SpletnaStranVnos.normaliziraj(slab), slab)
         }
+        // Meja je 2048 kot na strezniku (ne 200 kot na spletu).
+        let dolga = "https://klub.si/" + String(repeating: "a", count: 300)
+        XCTAssertEqual(SpletnaStranVnos.normaliziraj(dolga), dolga)
+    }
+
+    func testNespremenjenaStaraSpletnaStranSeNePreverja() {
+        // Star neveljaven zapis (vpisan pred #293) ne sme blokirati shranjevanja; backend ga ob enakem vnosu tudi ne preverja.
+        XCTAssertEqual(SpletnaStranVnos.normaliziraj(" klub ", stara: "klub"), "klub")
+        XCTAssertNil(SpletnaStranVnos.normaliziraj("klub2", stara: "klub"))
+        XCTAssertEqual(SpletnaStranVnos.normaliziraj("www.novi.si", stara: "klub"), "https://www.novi.si")
     }
 
     // MARK: - Prodajalec platforma (I50)

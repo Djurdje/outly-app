@@ -127,3 +127,67 @@ extension APIClient {
         return try decode(SeznamVstopnicDogodka.self, from: data)
     }
 }
+
+/// Stanje seznama vstopnic na vratih (EventTicketsView), cista logika za strani in iskanje (testi: Racun18InVrataTests).
+/// Vrstice in `naslednjiOdmik` veljajo za iskanje `q`, za katero so bile nalozene: ko uporabnik tipka (premor pred novim
+/// nalaganjem), »Load more« ne sme vzeti NOVEGA `q` s STARIM odmikom.
+struct VrataSeznam {
+    private(set) var vrstice: [APITicket] = []
+    /// Stevci vseh vstopnic dogodka (`counts`); nil = se ni nalozeno.
+    private(set) var stevci: SeznamVstopnicDogodka.Stevci?
+    /// Zadetki iskanja (`total`).
+    private(set) var zadetkov = 0
+    private(set) var naslednjiOdmik: Int?
+    /// Ocisceno iskanje, za katero veljajo vrstice in odmik; nil = nic nalozeno.
+    private(set) var q: String?
+
+    static func kljuc(_ iskanje: String) -> String { APIClient.ocistiIskanjeVstopnic(iskanje) }
+
+    /// Odmik za »Load more«, samo ce seznam velja za trenutno iskanje (sicer nil: gumba ni, klic se ne poslje).
+    func odmikNaprej(iskanje: String) -> Int? {
+        q == Self.kljuc(iskanje) ? naslednjiOdmik : nil
+    }
+
+    /// Prva stran za iskanje (zamenja vse).
+    mutating func zamenjaj(_ stran: SeznamVstopnicDogodka, iskanje: String) {
+        zamenjajKose([stran], iskanje: iskanje)
+    }
+
+    /// Osvezitev po vpisu v vec kosih (`kosiOsvezitve`): vrstice zdruzene brez podvojenih, stevci in odmik iz zadnjega kosa.
+    mutating func zamenjajKose(_ strani: [SeznamVstopnicDogodka], iskanje: String) {
+        guard let zadnja = strani.last else { return }
+        var znani = Set<Int>()
+        vrstice = strani.flatMap(\.tickets).filter { znani.insert($0.id).inserted }
+        stevci = zadnja.counts
+        zadetkov = zadnja.total
+        naslednjiOdmik = zadnja.nextOffset
+        q = Self.kljuc(iskanje)
+    }
+
+    /// Pripne naslednjo stran. false (nic se ne spremeni), ce je vmes drugo iskanje ali stran ni za trenutni odmik (dvojni dotik).
+    @discardableResult
+    mutating func pripni(_ stran: SeznamVstopnicDogodka, iskanje: String, odmik: Int) -> Bool {
+        guard q == Self.kljuc(iskanje), naslednjiOdmik == odmik else { return false }
+        let znani = Set(vrstice.map(\.id))
+        vrstice.append(contentsOf: stran.tickets.filter { !znani.contains($0.id) })
+        stevci = stran.counts
+        zadetkov = stran.total
+        // Odmik se mora premakniti naprej, sicer bi gumb vedno nalozil isto stran.
+        if let n = stran.nextOffset, n > odmik { naslednjiOdmik = n } else { naslednjiOdmik = nil }
+        return true
+    }
+
+    /// Kosi za osvezitev po »Check in«: vse ze nalozene vrstice (najmanj ena stran), v kosih po najvec 1000 (meja `limit`),
+    /// da vratar pri vec kot 1000 nalozenih ne izgubi mesta na seznamu.
+    static func kosiOsvezitve(nalozenih: Int) -> [(offset: Int, limit: Int)] {
+        let skupaj = max(APIClient.stranVstopnicVrata, nalozenih)
+        var kosi: [(offset: Int, limit: Int)] = []
+        var odmik = 0
+        while odmik < skupaj {
+            let l = min(APIClient.najvecVstopnicVrata, skupaj - odmik)
+            kosi.append((offset: odmik, limit: l))
+            odmik += l
+        }
+        return kosi
+    }
+}

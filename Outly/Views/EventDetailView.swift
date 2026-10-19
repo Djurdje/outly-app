@@ -16,6 +16,10 @@ struct EventDetailView: View {
     @EnvironmentObject private var session: SessionStore
     /// Brskanje brez racuna: nakup in »I'm in« najprej odpreta prijavo (PrijavaTok), nato se dejanje nadaljuje.
     @State private var prijava: PrijavaZahteva?
+    /// Cena ene vstopnice po 409 »The ticket price has changed.« v nakupnem listu (ponovno odprt list jo pokaze namesto stare).
+    @State private var cenaPo409: Int?
+    /// Stevec sprememb »I'm in«: loadPlan, ki se je zacel pred zadnjo spremembo, ne prepise optimisticnega stanja.
+    @State private var planVerzija = 0
 
     // "I'm in" (backend migracija 020, 23. 9. 2026): moj nacrt + prijatelji, ki grejo/jih zanima.
     // Nalozi se loceno od dogodka (GET /events/:id z zetonom), da fetchEvent(id:) v
@@ -90,7 +94,8 @@ struct EventDetailView: View {
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(eventId: event.id) }
         .sheet(isPresented: $showBuy) {
-            BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"), seller: prodajalec)
+            BuyTicketsView(event: event, clubName: club?.name ?? String(localized: "Club"), seller: prodajalec,
+                           znanaCenaCents: cenaPo409, priNoviCeni: { cenaPo409 = $0 })
                 .environmentObject(session)
         }
         .sheet(isPresented: $showVip) {
@@ -891,10 +896,12 @@ struct EventDetailView: View {
     /// (zasebno stanje, ne sme podreti ostalega zaslona).
     private func loadPlan() async {
         guard session.isLoggedIn, !session.token.isEmpty else { return }
+        let verzija = planVerzija
         do {
             let info = try await APIClient.shared.fetchEventPlan(id: event.id, token: session.token)
             await MainActor.run {
-                myPlan = info.myPlan
+                // »I'm in« je bil medtem pritisnjen (ali se posilja): odgovor je starejsi od uporabnikove izbire.
+                if verzija == planVerzija && !planSubmitting { myPlan = info.myPlan }
                 friendsGoing = info.friendsGoing
                 friendsInterested = info.friendsInterested
                 if event.description.isEmpty { nalozenOpis = info.description }
@@ -939,6 +946,7 @@ struct EventDetailView: View {
         }
         let prejsnje = myPlan
         let novo: EventPlan? = (myPlan == .interested) ? nil : .interested
+        planVerzija += 1
         withAnimation(.snappy) { myPlan = novo }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         planSubmitting = true

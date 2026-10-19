@@ -18,15 +18,13 @@ struct CompleteAccountView: View {
     @State private var goToGenres = false
 
     private static var defaultBirthDate: Date {
-        Calendar.current.date(byAdding: .year, value: -20, to: Date()) ?? Date()
+        StarostRacuna.gregorijanski().date(byAdding: .year, value: -20, to: Date()) ?? Date()
     }
 
     /// Najstarejsi/najmlajsi dovoljeni datum: 120 let nazaj do danes - 18 let (koledarsko, StarostRacuna; Martin 19. 10. 2026,
     /// prej 15). Ze vpisan datum (racun 15-17 let, vpisan pred 19. 10.) ostane izbirljiv, ker ga backend sprejme (ni sprememba).
     private var dateRange: ClosedRange<Date> {
-        let cal = Calendar.current
-        let min = cal.date(byAdding: .year, value: -120, to: Date()) ?? .distantPast
-        return min...StarostRacuna.zgornjaMejaIzbirnika(obstojec: session.me?.dateOfBirth.flatMap(Self.parse))
+        StarostRacuna.obsegIzbirnika(obstojec: session.me?.dateOfBirth.flatMap(Self.parse))
     }
 
     var body: some View {
