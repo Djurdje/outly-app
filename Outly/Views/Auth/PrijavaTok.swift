@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // Brskanje brez racuna (Martin, 19. 10. 2026): neprijavljen uporabnik vidi Home, Search, Map, dogodke, klube, cenik in VIP pregled
 // (vse, kar backend streze javno). Prijava ali registracija se odpre v listu sele, ko gost naredi nekaj, kar zahteva racun
