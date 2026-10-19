@@ -51,7 +51,7 @@ struct BusinessDashboardView: View {
                 } else if let errorText {
                     VStack(spacing: 10) {
                         Text(errorText).foregroundColor(.red).font(.subheadline)
-                        Button("Try again") { Task { if napakaNaprej { await naloziVec() } else { await load() } } }.foregroundColor(.outlyBlue)
+                        Button("Try again") { Task { await load() } }.foregroundColor(.outlyBlue)
                     }
                     .frame(maxWidth: .infinity)
                 } else if let sales {
