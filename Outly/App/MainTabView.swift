@@ -160,13 +160,17 @@ struct MainTabView: View {
     /// pod seboj — to je "Home se zamegli".
     private func odpriIzHome(na nov: Int, izvor: CGRect) {
         let sidro = sidroIz(izvor, v: velikostOkna)
-        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else {
+        // Neveljaven posnetek (okno/meje 0 med navigacijo): navaden preklop brez animacije, nikoli zrusitev.
+        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0), surov.jeVarnaZaPrikaz else {
             zavihek = nov
             return
         }
         // EN zajem hierarhije; zamegljeno ozadje izpeljemo iz istega posnetka s pomanjsavo na cetrtino.
-        let majhen = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
-        posnetekDoma = OzadnjaZameglitev.zamegli(majhen) ?? majhen
+        // Pomanjsan posnetek ima merilo 0.25 — pred prikazom skozi zaPrikaz (merilo 1), sicer
+        // CoreUI zrusi aplikacijo ('scale must be > 0', build 303). Ce ne uspe: crno ozadje.
+        posnetekDoma = OzadnjaZameglitev.pomanjsaj(surov, naMerilo: 0.25)
+            .map { OzadnjaZameglitev.zamegli($0) ?? $0 }
+            .flatMap { OzadnjaZameglitev.zaPrikaz($0) }
         // Prosojnost zive vsebine ostane 1 (29. 9. 2026): animirana prosojnost cez cel ziv zaslon je
         // najdrazji del (vsak frame loceno sestavljanje cele plasti). Pojavljanje nosi oster posnetek
         // Home, ki nad vsem pojema (ZabrisSloj) — videz ostane "kot Revolut", dela je manj.
@@ -190,8 +194,8 @@ struct MainTabView: View {
     /// zaslona, ki ga zapuscamo (brez spodnje vrstice, 100 % -> 40 %, 0,25 s), pod njim pa zbledi
     /// zamegljen posnetek Home (0,35 s) — "domaci zaslon se izostri".
     private func zapriVHome(odIzvora izvor: CGRect) {
-        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0),
-              let izrez = izrezNadVrstico(surov) else {
+        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0), surov.jeVarnaZaPrikaz,
+              let izrez = izrezNadVrstico(surov), izrez.jeVarnaZaPrikaz else {
             zavihek = 0
             return
         }
@@ -210,14 +214,16 @@ struct MainTabView: View {
         let visinaOkna = slika.size.height
         let vrh = okno?.spodnjaVrsticaVrh ?? (visinaOkna - (okno?.safeAreaInsets.bottom ?? 0) - 49)
         let visina = min(max(vrh, 1), visinaOkna)
-        guard let cg = slika.cgImage else { return nil }
+        guard let cg = slika.cgImage, slika.scale > 0, cg.width > 0 else { return nil }
         let px = CGRect(x: 0, y: 0, width: CGFloat(cg.width), height: (visina * slika.scale).rounded(.down))
-        guard let obrezan = cg.cropping(to: px) else { return nil }
+        guard px.height >= 1, let obrezan = cg.cropping(to: px) else { return nil }
         return UIImage(cgImage: obrezan, scale: slika.scale, orientation: .up)
     }
 
     /// Doda plast in jo po trajanju odstrani (po id-ju; ce jo je nov prehod ze pocistil, ni nic za odstraniti).
     private func dodajPlast(_ plast: PrekrivnaPlast) {
+        // Zadnja varovalka: slika brez pikslov ali z merilom < 1 ne gre v Image(uiImage:) (glej zaPrikaz).
+        guard plast.slika.jeVarnaZaPrikaz else { return }
         plasti.append(plast)
         let id = plast.id
         DispatchQueue.main.asyncAfter(deadline: .now() + plast.trajanje + 0.05) {
@@ -227,7 +233,7 @@ struct MainTabView: View {
 
     /// Navaden zabris (Map, ali Reduce Motion): zavihek preklopimo takoj, plast nad njim pojema.
     private func zabris(na nov: Int, trajanje: Double) {
-        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0) else { zavihek = nov; return }
+        guard let surov = UIApplication.shared.surovPosnetek(merilo: 1.0), surov.jeVarnaZaPrikaz else { zavihek = nov; return }
         zavihek = nov
         dodajPlast(PrekrivnaPlast(slika: surov, vrsta: .zabris, trajanje: trajanje))
         prehodDo = Date().addingTimeInterval(trajanje)
