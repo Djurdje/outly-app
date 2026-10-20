@@ -34,6 +34,57 @@ final class Popravki2KrogTests: XCTestCase {
         XCTAssertEqual(s.stevci?.checkedIn, 1)
     }
 
+    func testZastarelaOsvezitevKiVrneValidObdrziOptimisticniIN() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#), iskanje: "")
+        s.oznaciVpisano(1)
+        s.oznaciVpisano(2)
+        // Odgovor izpred vpisa vstopnice 2: 1 je ze `used`, 2 se `valid`.
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
+        XCTAssertTrue(s.jeVpisana(s.vrstice[1]))      // vpis 2 se ne izgubi
+        XCTAssertEqual(s.vpisani, [2])                // streznik je potrdil samo 1
+        // Streznik potrdi se 2: lokalna oznaka ni vec potrebna.
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 2, "status": "used"}], "total": 2}"#)], iskanje: "")
+        XCTAssertTrue(s.vpisani.isEmpty)
+        XCTAssertTrue(s.vrstice.allSatisfy { s.jeVpisana($0) })
+    }
+
+    func testVrnjenaVstopnicaNiIN() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+        s.oznaciVpisano(1)
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "refunded"}], "total": 1}"#)], iskanje: "")
+        XCTAssertFalse(s.jeVpisana(s.vrstice[0]))
+    }
+
+    // MARK: - Preklic ni napaka (VIP razdelek, nalaganje)
+
+    func testPreklicNiNapaka() {
+        XCTAssertTrue(VrataSeznam.jePreklic(CancellationError()))
+        XCTAssertTrue(VrataSeznam.jePreklic(URLError(.cancelled)))
+        XCTAssertFalse(VrataSeznam.jePreklic(URLError(.notConnectedToInternet)))
+        XCTAssertFalse(VrataSeznam.jePreklic(URLError(.timedOut)))
+        XCTAssertFalse(VrataSeznam.jePreklic(APIError.requestFailed(404, "")))
+    }
+
+    func testVipPreklicObdrziRazdelekPravaNapakaGaSkrije() {
+        XCTAssertEqual(VrataSeznam.vipPoNapaki(URLError(.cancelled), prejsnji: 7), 7)
+        XCTAssertEqual(VrataSeznam.vipPoNapaki(CancellationError(), prejsnji: 7), 7)
+        XCTAssertNil(VrataSeznam.vipPoNapaki(APIError.requestFailed(404, "not found"), prejsnji: 7))   // star streznik brez poti
+        XCTAssertNil(VrataSeznam.vipPoNapaki(URLError(.timedOut), prejsnji: 7))
+        XCTAssertNil(VrataSeznam.vipPoNapaki(URLError(.cancelled), prejsnji: Int?.none))
+    }
+
+    func testStevecNalaganjRazveljaviStarejsa() {
+        var n = VrataNalaganje()
+        let a = n.zacni()
+        XCTAssertTrue(n.jeZadnje(a))
+        let b = n.zacni()
+        XCTAssertFalse(n.jeZadnje(a))     // A ne sme prepisati stanja ne sprostiti isLoading
+        XCTAssertTrue(n.jeZadnje(b))
+    }
+
     func testLoadMoreNePobriseLokalnihVpisov() throws {
         var s = VrataSeznam()
         s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 2, "has_more": true, "next_offset": 1}"#), iskanje: "")

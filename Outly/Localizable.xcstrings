@@ -15065,17 +15065,6 @@
         }
       }
     },
-    "For anything else, contact the club or write to luka@outly.si with your ticket number.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Za vse ostalo se obrni na klub ali piši na luka@outly.si s številko svoje vstopnice."
-          }
-        }
-      }
-    },
     "Find people by username, send requests and answer the ones you receive.": {
       "extractionState": "manual",
       "localizations": {

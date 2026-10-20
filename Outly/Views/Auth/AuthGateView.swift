@@ -71,13 +71,9 @@ struct AuthGateView: View {
             }
         }
         .onChange(of: nadzor.jeKajOdprto) { _, odprto in
-            guard !odprto else { return }
-            poZaprtjuTokov()
-            // Koren je lahko po treh neuspelih poskusih odnehal (list se ni pokazal, ker je bil odprt drug list), `tokManjka` pa se
-            // od takrat ni spremenil: ob zaprtju lista s prijavo poskusi znova. Brez zanke: odpriKorensko ima najvec 3 poskuse,
-            // sprozi pa se samo ob zaprtju (odprtje lista ga ne klice), v istem trenutku ga lahko klice se onChange(tokManjka);
-            // drugi klic ga zaradi `korenska == nil` zavrne.
-            if tokManjka { odpriKorensko { tokManjka } }
+            // Ponoven poskus odprtja korenskega toka ob zaprtju lista sprozi onChange(of: tokManjka) (`tokManjka` vsebuje
+            // `!nadzor.jeKajOdprto`, zato ob zaprtju lista preide v true): tu ga ne podvajamo.
+            if !odprto { poZaprtjuTokov() }
         }
         .onChange(of: session.sessionExpiredNotice) { _, obvestilo in
             // Streznik je sejo zavrnil: prijava (LoginView pokaze obvestilo).

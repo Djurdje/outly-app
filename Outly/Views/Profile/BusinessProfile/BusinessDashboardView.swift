@@ -644,8 +644,12 @@ struct EventTicketsView: View {
     /// Kaj ponovi »Try again«: pri napaki »Load more« isto stran, po napaki osvezitve (po »Check in«) osvezitev nalozenih vrstic
     /// (mesto na seznamu ostane), sicer prvo stran. Dejanski klic doloci `VrataSeznam.ponovitev` (iskanje se je lahko vmes spremenilo).
     @State private var ponovitev: VrataPonovitev = .prvaStran
-    /// Osvezitev seznama po »Check in« (v ozadju: vrata ne cakajo nanjo); novejsa nadomesti starejso.
+    /// Osvezitev seznama po »Check in« in po »Try again« za osvezitev (v ozadju: vrata ne cakajo nanjo); novejsa nadomesti starejso.
     @State private var osvezitevPoVpisu: Task<Void, Never>?
+    /// Stevec nalaganj: odgovor starejsega nalaganja (iskanje, osvezitev, »Try again«) ne prepise novejsega stanja.
+    @State private var nalaganja = VrataNalaganje()
+    /// Zaslon je na ekranu: vpis, ki se konca po odhodu z zaslona, ne zacne nove osvezitve.
+    @State private var vidno = false
     /// Prvo nalaganje zaslona gre brez premora (premor je samo med tipkanjem).
     @State private var nalozeno = false
     @State private var isLoading = false
@@ -700,16 +704,6 @@ struct EventTicketsView: View {
                     .foregroundColor(.white)
 
                 poljeIskanja
-
-                if let errorText {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(errorText).foregroundColor(.red).font(.subheadline)
-                        Button("Try again") { Task { await poskusiZnova() } }
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.white)
-                            .disabled(isLoading)
-                    }
-                }
 
                 if isLoading && tickets.isEmpty {
                     HStack { Spacer(); ProgressView().tint(.white); Spacer() }
@@ -805,6 +799,17 @@ struct EventTicketsView: View {
                     }
                 }
 
+                // Napaka in »Try again« POD seznamom: ob vpisu se pojavita/izgineta brez premika vrstic pod prstom vratarja.
+                if let errorText {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(errorText).foregroundColor(.red).font(.subheadline)
+                        Button("Try again") { Task { await poskusiZnova() } }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .disabled(isLoading)
+                    }
+                }
+
                 Text("The QR on each ticket is signed by the server; scanning it twice is refused. Use Scan tickets in your profile for the camera scanner.")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.45))
@@ -818,7 +823,11 @@ struct EventTicketsView: View {
         .outlyOzadje()
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .onDisappear { osvezitevPoVpisu?.cancel() }
+        .onAppear { vidno = true }
+        .onDisappear {
+            vidno = false
+            osvezitevPoVpisu?.cancel()
+        }
         // Ob vsakem prikazu in ob spremembi iskanja (s kratkim premorom med tipkanjem; prvo nalaganje takoj).
         .task(id: iskanje) {
             if nalozeno {
@@ -1071,8 +1080,10 @@ struct EventTicketsView: View {
     /// Prva stran za trenutno iskanje, stevci in VIP. `obdrziNalozene` (po »Check in»): vse ze nalozene vrstice v kosih po najvec 1000
     /// (VrataSeznam.kosiOsvezitve), da vratar ne izgubi mesta na seznamu.
     private func load(obdrziNalozene: Bool = false) async {
+        let moje = nalaganja.zacni()
         isLoading = true
-        defer { isLoading = false }
+        // Preklicano ali nadomescena nalaganja ne sprosti `isLoading`, ce tece novejse.
+        defer { if nalaganja.jeZadnje(moje) { isLoading = false } }
         let q = iskanje
         do {
             if obdrziNalozene {
@@ -1084,26 +1095,27 @@ struct EventTicketsView: View {
                     if !stran.hasMore { break }
                 }
                 // Preklicana osvezitev (nov vpis ali zapusceno okno) ne prepise novejsega stanja.
-                guard !Task.isCancelled, q == iskanje else { return }
+                guard !Task.isCancelled, nalaganja.jeZadnje(moje), q == iskanje else { return }
                 seznam.zamenjajKose(strani, iskanje: q)
             } else {
                 let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, q: q)
                 // Medtem spremenjeno iskanje: odgovor je za star niz, nov klic je ze na poti.
-                guard q == iskanje else { return }
+                guard nalaganja.jeZadnje(moje), q == iskanje else { return }
                 seznam.zamenjaj(stran, iskanje: q)
             }
             errorText = nil
             ponovitev = .prvaStran
-        } catch is CancellationError {
-            return
-        } catch let url as URLError where url.code == .cancelled {
+        } catch let napaka where VrataSeznam.jePreklic(napaka) {
             return
         } catch {
+            // Napaka starejsega nalaganja ne prepise novejsega stanja.
+            guard nalaganja.jeZadnje(moje) else { return }
             // 503 search_timeout: »The ticket list is busy. Try again in a few seconds.« (APIErrorMessages) + Try again.
             errorText = error.userMessage
             // Padla osvezitev po vpisu: »Try again« osvezi nalozene vrstice, ne nalozi spet od zacetka (vratar ne izgubi mesta).
             ponovitev = obdrziNalozene ? .osvezitev : .prvaStran
         }
+        guard nalaganja.jeZadnje(moje) else { return }
         await naloziVip()
     }
 
@@ -1131,7 +1143,10 @@ struct EventTicketsView: View {
     private func poskusiZnova() async {
         switch seznam.ponovitev(ponovitev, iskanje: iskanje) {
         case .naslednjaStran: await naloziVec()
-        case .osvezitev: await load(obdrziNalozene: true)
+        case .osvezitev:
+            // Isti preklicni Task kot po vpisu: nov vpis ali odhod z zaslona ga preklice.
+            osvezitevPoVpisu?.cancel()
+            osvezitevPoVpisu = Task { await load(obdrziNalozene: true) }
         case .prvaStran: await load()
         }
     }
@@ -1141,7 +1156,8 @@ struct EventTicketsView: View {
         do {
             vip = try await APIClient.shared.fetchBusinessEventVip(eventId: event.id, token: session.token)
         } catch {
-            vip = nil
+            // Preklic (nova osvezitev po vpisu) ni napaka: razdelek VIP nad seznamom ne sme izginiti, sicer vrstice skocijo pod prstom.
+            vip = VrataSeznam.vipPoNapaki(error, prejsnji: vip)
         }
     }
 
@@ -1168,7 +1184,8 @@ struct EventTicketsView: View {
             zadnjiRezultat = rezultat
             if VrataSeznam.vpisaniRezultat(rezultat.result) { seznam.oznaciVpisano(t.id) }
             osvezitevPoVpisu?.cancel()
-            osvezitevPoVpisu = Task { await load(obdrziNalozene: true) }
+            // Vratar je medtem zapustil zaslon: osvezitve ne zacnemo (oznaka »IN« ostane, ko se vrne, nalozi seznam .task).
+            if vidno { osvezitevPoVpisu = Task { await load(obdrziNalozene: true) } }
         } catch {
             errorText = error.userMessage
             // »Try again« po napaki vpisa ne sme klicati naloziVec (nanasa se na staro napako »Load more«): osvezi seznam, da se vidi,

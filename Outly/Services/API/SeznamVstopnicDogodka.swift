@@ -138,6 +138,20 @@ enum VrataPonovitev: Equatable {
     case osvezitev
 }
 
+/// Stevec nalaganj seznama na vratih: odgovor starejsega nalaganja (iskanje, »Try again«, osvezitev po vpisu) ne sme prepisati
+/// novejsega stanja in ne sme sprostiti `isLoading`, ce tece novejse. Stevec, ne boolean: vec Taskov teče hkrati.
+struct VrataNalaganje: Equatable {
+    private(set) var zadnje = 0
+
+    /// Novo nalaganje: vrne njegov id in s tem razveljavi vsa starejsa.
+    mutating func zacni() -> Int {
+        zadnje += 1
+        return zadnje
+    }
+
+    func jeZadnje(_ id: Int) -> Bool { id == zadnje }
+}
+
 /// Stanje seznama vstopnic na vratih (EventTicketsView), cista logika za strani in iskanje (testi: Racun18InVrataTests).
 /// Vrstice in `naslednjiOdmik` veljajo za iskanje `q`, za katero so bile nalozene: ko uporabnik tipka (premor pred novim
 /// nalaganjem), »Load more« ne sme vzeti NOVEGA `q` s STARIM odmikom.
@@ -150,8 +164,8 @@ struct VrataSeznam {
     private(set) var naslednjiOdmik: Int?
     /// Ocisceno iskanje, za katero veljajo vrstice in odmik; nil = nic nalozeno.
     private(set) var q: String?
-    /// Vstopnice, vpisane na tem telefonu, preden je osvezitev seznama prisla (vrata ne cakajo na seznam). Prazni se z vsako
-    /// osvezitvijo (`zamenjajKose`): strezniski seznam je takrat merodajen.
+    /// Vstopnice, vpisane na tem telefonu, preden je osvezitev seznama prisla (vrata ne cakajo na seznam). Osvezitev odstrani samo
+    /// tiste, ki jih streznik ze vrne kot `used`; ostale optimisticne »IN« obdrzi (osvezitev je lahko izpred vpisa).
     private(set) var vpisani = Set<Int>()
 
     static func kljuc(_ iskanje: String) -> String { APIClient.ocistiIskanjeVstopnic(iskanje) }
@@ -161,8 +175,20 @@ struct VrataSeznam {
         q == Self.kljuc(iskanje) ? naslednjiOdmik : nil
     }
 
-    /// Je vstopnica vpisana: po streznikovem seznamu (`status == "used"`) ali po vpisu na tem telefonu.
-    func jeVpisana(_ t: APITicket) -> Bool { t.isUsed || vpisani.contains(t.id) }
+    /// Je vstopnica vpisana: po streznikovem seznamu (`status == "used"`) ali po vpisu na tem telefonu (samo dokler streznik
+    /// pravi `valid`: vmes vracilo ali razveljavitev ni »IN«).
+    func jeVpisana(_ t: APITicket) -> Bool { t.isUsed || (vpisani.contains(t.id) && t.status == "valid") }
+
+    /// Preklic (Task preklican, URLSession `.cancelled`) ni napaka streznika ali omrezja: stanje na zaslonu se ne sme spremeniti.
+    static func jePreklic(_ napaka: Error) -> Bool {
+        if napaka is CancellationError { return true }
+        if let u = napaka as? URLError, u.code == .cancelled { return true }
+        return false
+    }
+
+    /// VIP razdelek po napaki nalaganja: preklic obdrzi prejsnje stanje (razdelek nad seznamom ne izgine in vrstice ne skocijo
+    /// pod prstom vratarja), prava napaka (npr. 404 na starem strezniku) razdelek skrije.
+    static func vipPoNapaki<T>(_ napaka: Error, prejsnji: T?) -> T? { jePreklic(napaka) ? prejsnji : nil }
 
     /// Rezultat vpisa (POST /business/tickets/scan), po katerem je vstopnica gotovo vpisana: `ok` ali `already_used`.
     static func vpisaniRezultat(_ result: String) -> Bool { result == "ok" || result == "already_used" }
@@ -194,7 +220,8 @@ struct VrataSeznam {
         zadetkov = zadnja.total
         naslednjiOdmik = zadnja.nextOffset
         q = Self.kljuc(iskanje)
-        vpisani = []
+        let streznikVpisani = Set(vrstice.filter(\.isUsed).map(\.id))
+        vpisani.subtract(streznikVpisani)
     }
 
     /// Pripne naslednjo stran. false (nic se ne spremeni), ce je vmes drugo iskanje ali stran ni za trenutni odmik (dvojni dotik).
