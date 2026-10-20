@@ -220,6 +220,7 @@ struct VrataSeznam {
     func jeVpisana(_ t: APITicket) -> Bool { t.isUsed || (vpisani.contains(t.id) && t.status == "valid") }
 
     /// Preklic (Task preklican, URLSession `.cancelled`) ni napaka streznika ali omrezja: stanje na zaslonu se ne sme spremeniti.
+    /// Izjema je rocni vpis: preklican POST je negotov izid (`napakaIzIzjeme` -> `.nepotrjeno`, #116).
     static func jePreklic(_ napaka: Error) -> Bool {
         if napaka is CancellationError { return true }
         if let u = napaka as? URLError, u.code == .cancelled { return true }
