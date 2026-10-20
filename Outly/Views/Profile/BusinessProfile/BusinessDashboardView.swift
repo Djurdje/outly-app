@@ -1329,8 +1329,12 @@ struct EventTicketsView: View {
             if vidno { osvezitevPoVpisu = Task { await load(obdrziNalozene: true) } }
         } catch {
             // Napaka vpisa je NA vrstici te vstopnice (ne pod seznamom: tam je vratar ne vidi), z opozorilno haptiko. Preklic
-            // (zapustitev zaslona) ni napaka vpisa.
-            guard !VrataSeznam.jePreklic(error) else { return }
+            // (zapustitev zaslona) ni napaka omrezja, a je negotov izid (POST je morda prisel do streznika): vrstica dobi
+            // `.nepotrjeno`, da `used` iz poznejse osvezitve postane oranzno opozorilo, ne tihi zeleni »IN« (#116). Brez haptike in pasu.
+            guard !VrataSeznam.jePreklic(error) else {
+                seznam.oznaciNapakoVpisa(t.id, VrataSeznam.napakaIzIzjeme(error))
+                return
+            }
             pasOpozorilo = nil
             seznam.oznaciNapakoVpisa(t.id, VrataSeznam.napakaIzIzjeme(error))
             haptika(.error)

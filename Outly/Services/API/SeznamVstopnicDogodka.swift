@@ -142,7 +142,7 @@ enum VrataPonovitev: Equatable {
 enum VrataVrsticaNapaka: Equatable {
     /// Klic je padel pred odgovorom (brez povezave, 5xx ...): vpis NI uspel.
     case neuspelo
-    /// Timeout ali prekinjena povezava po posiljanju: vpis je MORDA uspel (»Not confirmed – tap to retry«).
+    /// Timeout, prekinjena povezava po posiljanju ali preklican POST: vpis je MORDA uspel (»Not confirmed – tap to retry«).
     case nepotrjeno
     /// Streznik je vpis zavrnil (neveljavna, napacen klub, neplacana, ni danes, razveljavljena, vracilo, odpovedan dogodek, spor pri
     /// banki ...); nosi sporocilo streznika.
@@ -329,8 +329,11 @@ struct VrataSeznam {
         statusPriZavrnitvi[id] = nil
     }
 
-    /// Kaj pokaze vrstica po izjemi pri vpisu: timeout in prekinjena povezava = vpis je morda uspel, vse ostalo = ni uspel.
+    /// Kaj pokaze vrstica po izjemi pri vpisu: timeout, prekinjena povezava in preklic (CancellationError, URLError.cancelled) =
+    /// vpis je morda uspel, vse ostalo = ni uspel. Preklican POST je lahko ze prisel do streznika: brez `.nepotrjeno` bi `koncajVpis`
+    /// samo odstranil `vTeku` in poznejsi `used` iz osvezitve bi bil tihi zeleni »IN« (outly-app #116).
     static func napakaIzIzjeme(_ napaka: Error) -> VrataVrsticaNapaka {
+        if jePreklic(napaka) { return .nepotrjeno }
         if let u = napaka as? URLError, u.code == .timedOut || u.code == .networkConnectionLost { return .nepotrjeno }
         return .neuspelo
     }

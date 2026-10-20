@@ -196,6 +196,35 @@ final class Popravki2KrogTests: XCTestCase {
         XCTAssertEqual(s3.napakaVrstice(s3.vrstice[0]), .nepotrjeno)
     }
 
+    func testPreklicanVpisJeNepotrjenInUsedPotemOranzenNeZelen() throws {
+        // outly-app #116: preklican POST (Task preklican ali URLSession .cancelled) je negotov izid kot timeout.
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(CancellationError()), .nepotrjeno)
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(URLError(.cancelled)), .nepotrjeno)
+        for preklic in [CancellationError() as Error, URLError(.cancelled)] {
+            var s = try seznamValid()
+            _ = s.zacniVpis(1)
+            // checkIn: catch s preklicem oznaci napako, defer konca vpis.
+            s.oznaciNapakoVpisa(1, VrataSeznam.napakaIzIzjeme(preklic))
+            s.koncajVpis(1)
+            XCTAssertTrue(s.vTeku.isEmpty)
+            XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .nepotrjeno)
+            XCTAssertEqual(VrataSeznam.dotik(.nepotrjeno), .ponoviVpis)
+            XCTAssertFalse(s.jeVpisana(s.vrstice[0]))
+            // Poznejsa osvezitev vrne used: oranzno opozorilo z uro, ne tihi zeleni »IN«.
+            let nova = s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used", "used_at": "2026-10-20T21:07:30Z"}, {"id": 9, "status": "valid"}], "total": 2}"#)], iskanje: "")
+            XCTAssertEqual(nova, [1])
+            XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .vpisanaMedNapako("2026-10-20T21:07:30Z"))
+            XCTAssertNotNil(s.napakaVrstice(s.vrstice[0]))
+        }
+        // Preklic ne zniza ze prikazanega opozorila »vpisana med napako«.
+        var s2 = try seznamValid()
+        s2.oznaciVpisanoMedNapako(1, usedAt: nil)
+        _ = s2.zacniVpis(1)
+        s2.oznaciNapakoVpisa(1, VrataSeznam.napakaIzIzjeme(CancellationError()))
+        s2.koncajVpis(1)
+        XCTAssertEqual(s2.napakaVrstice(s2.vrstice[0]), .vpisanaMedNapako(nil))
+    }
+
     func testNapakaNaVrsticiKiJeUsedNiNikoliNilInNiRdeca() throws {
         var s = VrataSeznam()
         s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "used", "used_at": "2026-10-20T21:07:30Z"}], "total": 1}"#), iskanje: "")
