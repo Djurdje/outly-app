@@ -5710,6 +5710,17 @@
         }
       }
     },
+    "Checked guest": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveril sem"
+          }
+        }
+      }
+    },
     "Not enough tickets left.": {
       "extractionState": "manual",
       "localizations": {

@@ -739,7 +739,7 @@ struct EventTicketsView: View {
                                     // Napaka vpisa NA vrstici (vratar jo vidi, kjer koli je seznam): ista vrstica besedila in ista pisava
                                     // kot koda, zato se visina vrstice ne spremeni.
                                     Group {
-                                        if let napaka = seznam.napakaVrstice(t) {
+                                        if let napaka = napakaZaPrikaz(t) {
                                             vrsticaNapake(napaka)
                                         } else {
                                             Text(t.publicRef)
@@ -759,14 +759,33 @@ struct EventTicketsView: View {
                                     }
                                 }
                                 Spacer()
-                                if seznam.jeVpisana(t) {
-                                    // Zelen »IN« samo za vstopnico brez napake na tej vrstici; vpisana med napako je ORANZNA (glej vrsticaNapake).
-                                    let medNapako = seznam.napakaVrstice(t)?.jeVpisanaMedNapako == true
+                                if delujoc == t.id {
+                                    // Vpis v teku: VEDNO vrtavka, pred vsakim »IN« (osvezitev med POST-om ne sme pokazati zelenega »IN«).
+                                    ProgressView().tint(.white)
+                                        .padding(.horizontal, 12).padding(.vertical, 7)
+                                        .background(Color.outlyBlue)
+                                        .clipShape(Capsule())
+                                } else if seznam.napakaVrstice(t)?.jeVpisanaMedNapako == true {
+                                    // Vpisana med napako (morda jo je vpisal drug vratar): ORANZEN gumb, opozorilo gre stran samo z njim,
+                                    // ne z nehotenim dotikom vrstice. Gumb ne poslje POST-a.
+                                    Button {
+                                        seznam.potrdiPregled(t.id)
+                                    } label: {
+                                        Text("Checked guest")
+                                            .font(.caption.weight(.bold))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 12).padding(.vertical, 7)
+                                    .background(Color.orange)
+                                    .clipShape(Capsule())
+                                } else if seznam.jeVpisana(t) {
+                                    // Zelen »IN« samo za vstopnico brez napake na tej vrstici (po strezniku used ali ok iz POST-a te naprave).
                                     Text("IN")
                                         .font(.caption.weight(.bold))
-                                        .foregroundColor(medNapako ? .orange : .green)
+                                        .foregroundColor(.green)
                                         .padding(.horizontal, 10).padding(.vertical, 6)
-                                        .background((medNapako ? Color.orange : Color.green).opacity(0.15))
+                                        .background(Color.green.opacity(0.15))
                                         .clipShape(Capsule())
                                 } else if t.paymentDisputed && t.status == "valid" {
                                     // Spor pri banki: polje `payment_disputed` na tej poti doda locen backend PR (#233); na starem backendu je
@@ -790,24 +809,20 @@ struct EventTicketsView: View {
                                     }
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12).padding(.vertical, 7)
-                                    .background(seznam.napakaVrstice(t).map(barvaNapake) ?? Color.outlyBlue)
+                                    .background(napakaZaPrikaz(t).map(barvaNapake) ?? Color.outlyBlue)
                                     .clipShape(Capsule())
                                     .disabled(delujoc != nil)
                                 }
                             }
                             .padding(12)
-                            .background(seznam.napakaVrstice(t).map { barvaNapake($0).opacity(0.14) } ?? Color.white.opacity(0.05))
+                            .background(napakaZaPrikaz(t).map { barvaNapake($0).opacity(0.14) } ?? Color.white.opacity(0.05))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .onTapGesture {
-                                // Izpad povezave: dotik kjer koli na vrstici ponovi vpis. Vpisana med napako: dotik pomeni »gosta sem preveril«
-                                // in samo pocisti stanje (NIKOLI POST). Zavrnitev streznika: nic (ostane gumb »Check in«).
-                                guard let n = seznam.napakaVrstice(t) else { return }
-                                switch VrataSeznam.dotik(n) {
-                                case .ponoviVpis: if delujoc == nil { Task { await checkIn(t) } }
-                                case .potrdiPregled: seznam.potrdiPregled(t.id)
-                                case .nic: break
-                                }
+                                // Izpad povezave: dotik kjer koli na vrstici ponovi vpis. Vpisana med napako in zavrnitev streznika: nic
+                                // (opozorilo gre stran samo z gumbom »Checked guest«).
+                                guard delujoc == nil, let n = seznam.napakaVrstice(t) else { return }
+                                if VrataSeznam.dotik(n) == .ponoviVpis { Task { await checkIn(t) } }
                             }
                         }
 
@@ -1216,6 +1231,11 @@ struct EventTicketsView: View {
     }
 
     /// Barva napake na vrstici: oranzna = vpis je morda uspel (ni potrjeno), rdeca = ni uspel ali ga je streznik zavrnil.
+    /// Napaka za prikaz na vrstici: med vpisom v teku vrstica ni obarvana (vrtavka), prejsnja napaka ostane v stanju do izida.
+    private func napakaZaPrikaz(_ t: APITicket) -> VrataVrsticaNapaka? {
+        delujoc == t.id ? nil : seznam.napakaVrstice(t)
+    }
+
     private func barvaNapake(_ n: VrataVrsticaNapaka) -> Color {
         switch n {
         case .nepotrjeno, .vpisanaMedNapako: return .orange
@@ -1282,8 +1302,9 @@ struct EventTicketsView: View {
         delujoc = t.id
         defer { delujoc = nil }
         // Kaj je padlo prej: po timeoutu je prvi vpis morda uspel, zato `already_used` pri ponovitvi dobi opozorilo z uro (ne uspeh).
-        let prejsnja = seznam.napakeVpisa[t.id]
-        seznam.pobrisiNapakoVpisa(t.id)
+        // Prejsnja napaka se NE brise, dokler izid ni znan; vpis je »v teku«, zato osvezitev med POST-om ne naredi tihega zelenega »IN«.
+        let prejsnja = seznam.zacniVpis(t.id)
+        defer { seznam.koncajVpis(t.id) }
         do {
             let rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr, timeout: 10)
             zadnjiRezultat = rezultat

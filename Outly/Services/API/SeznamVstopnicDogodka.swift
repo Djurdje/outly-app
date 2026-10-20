@@ -168,9 +168,8 @@ enum VrataVrsticaNapaka: Equatable {
 enum VrataDotik: Equatable {
     /// Izpad povezave / negotov izid: vpis se ponovi (POST).
     case ponoviVpis
-    /// Vpisana med napako: vratar potrjuje, da je gosta preveril. NIKOLI POST - stanje se samo pocisti.
-    case potrdiPregled
-    /// Zavrnitev streznika: z dotikom se ne spremeni nic (ostane gumb »Check in«).
+    /// Zavrnitev streznika ali vpisana med napako: dotik vrstice ne naredi nicesar. Opozorilo »vpisana med napako« se potrdi
+    /// SAMO z izrecnim gumbom na vrstici (`potrdiPregled`), ne z nehotenim dotikom med drsenjem; gumb ne poslje POST-a.
     case nic
 }
 
@@ -235,24 +234,44 @@ struct VrataSeznam {
     func imaNapakoVpisa(_ t: APITicket) -> Bool { napakaVrstice(t) != nil }
 
     /// Napaka, ki jo pokaze vrstica (nil = ni napake ali je vstopnica ze vpisana).
+    /// Pravilo: vstopnica, ki je po strezniku `used`, in ima KAKRSNOKOLI napako (ali vpis v teku), je NIKOLI nil in nikoli zelen »IN«:
+    /// vedno `.vpisanaMedNapako(used_at)` (oranzno), dokler vratar ne potrdi z gumbom.
     func napakaVrstice(_ t: APITicket) -> VrataVrsticaNapaka? {
-        if let n = napakeVpisa[t.id], n.jeVpisanaMedNapako { return n }   // »IN« po neuspehu NIKOLI tiho
-        return jeVpisana(t) ? nil : napakeVpisa[t.id]
+        if let n = napakeVpisa[t.id] {
+            if n.jeVpisanaMedNapako { return n }
+            if t.isUsed { return .vpisanaMedNapako(t.usedAt) }
+            return jeVpisana(t) ? nil : n
+        }
+        if t.isUsed, vTeku.contains(t.id) { return .vpisanaMedNapako(t.usedAt) }
+        return nil
     }
 
     /// Kaj stori dotik vrstice z dano napako.
     static func dotik(_ n: VrataVrsticaNapaka) -> VrataDotik {
         switch n {
         case .neuspelo, .nepotrjeno: return .ponoviVpis
-        case .vpisanaMedNapako: return .potrdiPregled
-        case .zavrnjeno: return .nic
+        case .vpisanaMedNapako, .zavrnjeno: return .nic
         }
     }
 
-    /// Vratar je tapnil vrstico `.vpisanaMedNapako` (preveril je gosta): stanje se pocisti, vrstica ostane navaden »IN«. Brez POST-a.
+    /// Vratar je z IZRECNIM gumbom na vrstici potrdil, da je gosta preveril: stanje `.vpisanaMedNapako` se pocisti, vrstica ostane
+    /// navaden »IN«. Brez POST-a.
     mutating func potrdiPregled(_ id: Int) {
         if napakeVpisa[id]?.jeVpisanaMedNapako == true { napakeVpisa[id] = nil }
     }
+
+    /// Vstopnice, za katere je POST vpisa na poti. Prejsnja napaka se ne brise, dokler izid ni znan; osvezitev, ki vrne tako vstopnico
+    /// kot `used` (npr. vpis drugega gosta sprozi osvezitev), jo pretvori v `.vpisanaMedNapako`, ne v tihi zeleni »IN«.
+    private(set) var vTeku = Set<Int>()
+
+    /// Zacetek vpisa: vrne prejsnjo napako (ostane na vrstici do izida).
+    mutating func zacniVpis(_ id: Int) -> VrataVrsticaNapaka? {
+        vTeku.insert(id)
+        return napakeVpisa[id]
+    }
+
+    /// Konec vpisa (ok, napaka ali preklic).
+    mutating func koncajVpis(_ id: Int) { vTeku.remove(id) }
 
     /// Vpis je (po neuspehu) ze izvedel nekdo drug: POST te naprave je vrnil `already_used` po negotovem izidu. Vrstica je »IN«,
     /// a oranzna z opozorilom.
@@ -277,7 +296,10 @@ struct VrataSeznam {
     private mutating func uskladiNapake() -> [Int] {
         var nova: [Int] = []
         for t in vrstice where t.isUsed {
-            guard let n = napakeVpisa[t.id], !n.jeVpisanaMedNapako else { continue }
+            let n = napakeVpisa[t.id]
+            if n?.jeVpisanaMedNapako == true { continue }
+            // Napaka ali vpis v teku (POST se ni vrnil): `used` iz osvezitve ni potrditev nasega vpisa.
+            guard n != nil || vTeku.contains(t.id) else { continue }
             napakeVpisa[t.id] = .vpisanaMedNapako(t.usedAt)
             statusPriZavrnitvi[t.id] = nil
             nova.append(t.id)
@@ -295,6 +317,8 @@ struct VrataSeznam {
 
     /// Vpis te vstopnice ni uspel (izjema pri klicu ali zavrnitev streznika): napaka ostane NA vrstici.
     mutating func oznaciNapakoVpisa(_ id: Int, _ napaka: VrataVrsticaNapaka = .neuspelo) {
+        // Opozorilo »vpisana med napako« ne sme postati manj resno (POST, ki pride za osvezitvijo, ga ne prepise z izpadom/zavrnitvijo).
+        if napakeVpisa[id]?.jeVpisanaMedNapako == true { return }
         napakeVpisa[id] = napaka
         statusPriZavrnitvi[id] = napaka.jeZavrnitev ? vrstice.first(where: { $0.id == id })?.status : nil
     }

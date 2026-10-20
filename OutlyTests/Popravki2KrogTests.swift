@@ -124,8 +124,8 @@ final class Popravki2KrogTests: XCTestCase {
         s.oznaciNapakoVpisa(1, .nepotrjeno)
         s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}], "total": 1}"#)], iskanje: "")
         let n = try XCTUnwrap(s.napakaVrstice(s.vrstice[0]))
-        XCTAssertEqual(VrataSeznam.dotik(n), .potrdiPregled)           // NI .ponoviVpis: POST se ne poslje
-        s.potrdiPregled(1)
+        XCTAssertEqual(VrataSeznam.dotik(n), .nic)                     // nehoten dotik vrstice ne naredi nicesar, POST se ne poslje
+        s.potrdiPregled(1)                                              // izrecni gumb »Checked guest«: pocisti brez POST-a
         XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
         XCTAssertTrue(s.jeVpisana(s.vrstice[0]))                        // zdaj navaden »IN«
         // Dotik na drugih stanjih.
@@ -136,6 +136,84 @@ final class Popravki2KrogTests: XCTestCase {
         s.oznaciNapakoVpisa(1, .neuspelo)
         s.potrdiPregled(1)
         XCTAssertNotNil(s.napakeVpisa[1])
+    }
+
+    // MARK: - Vpis v teku (osvezitev med POST-om)
+
+    private func seznamValid(_ id: Int = 1) throws -> VrataSeznam {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": \#(id), "status": "valid"}, {"id": 9, "status": "valid"}], "total": 2}"#), iskanje: "")
+        return s
+    }
+
+    func testOsvezitevZUsedMedVpisomVTekuJeOranznoNeZeleno() throws {
+        var s = try seznamValid()
+        let prejsnja = s.zacniVpis(1)
+        XCTAssertNil(prejsnja)
+        // Vpis drugega gosta sprozi osvezitev, ki vrne X kot used, medtem ko POST za X se ni vrnil.
+        let nova = s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used", "used_at": "2026-10-20T21:07:30Z"}, {"id": 9, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertEqual(nova, [1])
+        XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .vpisanaMedNapako("2026-10-20T21:07:30Z"))
+        // POST vrne already_used (zavrnitev): opozorilo ostane, ne postane rdece/zeleno/nil.
+        s.oznaciNapakoVpisa(1, .zavrnjeno("Already used"))
+        s.koncajVpis(1)
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeVpisanaMedNapako == true)
+        // Izpad povezave POST-a prav tako ne skrije opozorila.
+        var s2 = try seznamValid()
+        _ = s2.zacniVpis(1)
+        s2.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 9, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        s2.oznaciNapakoVpisa(1, .nepotrjeno)
+        s2.koncajVpis(1)
+        XCTAssertTrue(s2.napakaVrstice(s2.vrstice[0])?.jeVpisanaMedNapako == true)
+    }
+
+    func testOkPoVTekuJeEdiniPraviUspehZelen() throws {
+        var s = try seznamValid()
+        _ = s.zacniVpis(1)
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 9, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeVpisanaMedNapako == true)
+        // POST te naprave vrne ok: to je pravi uspeh, vrstica je navaden (zelen) »IN«.
+        s.oznaciVpisano(1)
+        s.koncajVpis(1)
+        XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
+        XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
+        XCTAssertTrue(s.vTeku.isEmpty)
+    }
+
+    func testPonovitevPoNeuspeluNePobrisePrejsnjeNapakeInOsvezitevZUsedJeOranzna() throws {
+        var s = try seznamValid()
+        s.oznaciNapakoVpisa(1, .neuspelo)
+        let prejsnja = s.zacniVpis(1)                       // ponovitev
+        XCTAssertEqual(prejsnja, .neuspelo)
+        XCTAssertEqual(s.napakeVpisa[1], .neuspelo)         // napaka ostane do izida
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 9, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeVpisanaMedNapako == true)
+        // Preklic ponovitve: prejsnja napaka ostane, vpis ni vec v teku.
+        var s3 = try seznamValid()
+        s3.oznaciNapakoVpisa(1, .nepotrjeno)
+        _ = s3.zacniVpis(1)
+        s3.koncajVpis(1)
+        XCTAssertEqual(s3.napakaVrstice(s3.vrstice[0]), .nepotrjeno)
+    }
+
+    func testNapakaNaVrsticiKiJeUsedNiNikoliNilInNiRdeca() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "used", "used_at": "2026-10-20T21:07:30Z"}], "total": 1}"#), iskanje: "")
+        for napaka in [VrataVrsticaNapaka.neuspelo, .nepotrjeno, .zavrnjeno("Already used")] {
+            s.oznaciNapakoVpisa(1, napaka)
+            XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .vpisanaMedNapako("2026-10-20T21:07:30Z"), "\(napaka)")
+        }
+    }
+
+    func testOpozoriloSePocistiSamoZIzrecnimGumbom() throws {
+        var s = try seznamValid()
+        s.oznaciVpisanoMedNapako(1, usedAt: nil)
+        XCTAssertEqual(VrataSeznam.dotik(.vpisanaMedNapako(nil)), .nic)     // dotik vrstice ne pocisti
+        s.oznaciNapakoVpisa(1, .neuspelo)                                    // poznejsi izpad ga ne zniza
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeVpisanaMedNapako == true)
+        s.potrdiPregled(1)                                                   // gumb »Checked guest«: brez POST-a
+        XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
+        XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
     }
 
     func testUsedPriLoadMoreTudiNeTihoIN() throws {
