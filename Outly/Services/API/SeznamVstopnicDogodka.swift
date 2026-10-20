@@ -167,6 +167,9 @@ struct VrataSeznam {
     /// Vstopnice, vpisane na tem telefonu, preden je osvezitev seznama prisla (vrata ne cakajo na seznam). Osvezitev odstrani samo
     /// tiste, ki jih streznik ze vrne kot `used`; ostale optimisticne »IN« obdrzi (osvezitev je lahko izpred vpisa).
     private(set) var vpisani = Set<Int>()
+    /// Vstopnice, pri katerih rocni vpis ni uspel (omrezje, streznik): vrstica sama pokaze »Not checked in – tap to retry«,
+    /// ne glede na to, kje je seznam zdrsnjen. Pobrise ga uspesen (ponovni) vpis ali streznik, ki vstopnico vrne kot `used`.
+    private(set) var napakeVpisa = Set<Int>()
 
     static func kljuc(_ iskanje: String) -> String { APIClient.ocistiIskanjeVstopnic(iskanje) }
 
@@ -190,11 +193,23 @@ struct VrataSeznam {
     /// pod prstom vratarja), prava napaka (npr. 404 na starem strezniku) razdelek skrije.
     static func vipPoNapaki<T>(_ napaka: Error, prejsnji: T?) -> T? { jePreklic(napaka) ? prejsnji : nil }
 
+    /// Vrstica pokaze napako vpisa: vpis je padel in vstopnica (po strezniku in po telefonu) se ni vpisana.
+    func imaNapakoVpisa(_ t: APITicket) -> Bool { napakeVpisa.contains(t.id) && !jeVpisana(t) }
+
+    /// Vpis te vstopnice je padel (izjema pri klicu, ne zavrnjen rezultat): napaka ostane NA vrstici.
+    mutating func oznaciNapakoVpisa(_ id: Int) { napakeVpisa.insert(id) }
+
+    /// Nov poskus vpisa se zacne: vrstica je spet nevtralna (vrtavka), ob novi napaki spet rdeca.
+    mutating func pobrisiNapakoVpisa(_ id: Int) { napakeVpisa.remove(id) }
+
     /// Rezultat vpisa (POST /business/tickets/scan), po katerem je vstopnica gotovo vpisana: `ok` ali `already_used`.
     static func vpisaniRezultat(_ result: String) -> Bool { result == "ok" || result == "already_used" }
 
     /// Takoj po uspesnem vpisu: vrstica pokaze »IN«, se preden pride osvezitev seznama (drugi dotik ne poslje se enega vpisa).
-    mutating func oznaciVpisano(_ id: Int) { vpisani.insert(id) }
+    mutating func oznaciVpisano(_ id: Int) {
+        vpisani.insert(id)
+        napakeVpisa.remove(id)
+    }
 
     /// Kaj sme »Try again« zares narediti: zelena ponovitev velja samo, ce seznam se velja za trenutno iskanje. Sicer (vmes
     /// spremenjeno iskanje, ni vec naslednje strani) pade na prvo stran, da gumb nikoli ni mrtev.
@@ -222,6 +237,7 @@ struct VrataSeznam {
         q = Self.kljuc(iskanje)
         let streznikVpisani = Set(vrstice.filter(\.isUsed).map(\.id))
         vpisani.subtract(streznikVpisani)
+        napakeVpisa.subtract(streznikVpisani)
     }
 
     /// Pripne naslednjo stran. false (nic se ne spremeni), ce je vmes drugo iskanje ali stran ni za trenutni odmik (dvojni dotik).

@@ -720,8 +720,18 @@ struct EventTicketsView: View {
                                     Text(verbatim: t.serialKratek.isEmpty ? t.publicRef : t.serialKratek)
                                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                                         .foregroundColor(.white)
-                                    Text(t.publicRef)
-                                        .font(.caption).foregroundColor(.white.opacity(0.5))
+                                    // Napaka vpisa NA vrstici (vratar jo vidi, kjer koli je seznam): ista vrstica besedila in ista pisava
+                                    // kot koda, zato se visina vrstice ne spremeni.
+                                    if seznam.imaNapakoVpisa(t) {
+                                        Label("Not checked in – tap to retry", systemImage: "exclamationmark.triangle.fill")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundColor(.red)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.7)
+                                    } else {
+                                        Text(t.publicRef)
+                                            .font(.caption).foregroundColor(.white.opacity(0.5))
+                                    }
                                     if t.isVip {
                                         HStack(spacing: 6) {
                                             VipZnacka(kompakten: true)
@@ -763,14 +773,19 @@ struct EventTicketsView: View {
                                     }
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12).padding(.vertical, 7)
-                                    .background(Color.outlyBlue)
+                                    .background(seznam.imaNapakoVpisa(t) ? Color.red : Color.outlyBlue)
                                     .clipShape(Capsule())
                                     .disabled(delujoc != nil)
                                 }
                             }
                             .padding(12)
-                            .background(Color.white.opacity(0.05))
+                            .background(seznam.imaNapakoVpisa(t) ? Color.red.opacity(0.14) : Color.white.opacity(0.05))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .onTapGesture {
+                                // »Tap to retry«: dotik kjer koli na vrstici z napako ponovi vpis.
+                                if seznam.imaNapakoVpisa(t), delujoc == nil { Task { await checkIn(t) } }
+                            }
                         }
 
                         if iskanjeAktivno {
@@ -1179,18 +1194,22 @@ struct EventTicketsView: View {
     private func checkIn(_ t: APITicket) async {
         delujoc = t.id
         defer { delujoc = nil }
+        seznam.pobrisiNapakoVpisa(t.id)
         do {
             let rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr)
             zadnjiRezultat = rezultat
+            // Haptika za vrata (hrup, gneca): uspeh ob `ok`, napaka ob vsakem drugem izidu (ze uporabljena, zavrnjena, neveljavna ...).
+            UINotificationFeedbackGenerator().notificationOccurred(rezultat.result == "ok" ? .success : .error)
             if VrataSeznam.vpisaniRezultat(rezultat.result) { seznam.oznaciVpisano(t.id) }
             osvezitevPoVpisu?.cancel()
             // Vratar je medtem zapustil zaslon: osvezitve ne zacnemo (oznaka »IN« ostane, ko se vrne, nalozi seznam .task).
             if vidno { osvezitevPoVpisu = Task { await load(obdrziNalozene: true) } }
         } catch {
-            errorText = error.userMessage
-            // »Try again« po napaki vpisa ne sme klicati naloziVec (nanasa se na staro napako »Load more«): osvezi seznam, da se vidi,
-            // ali je vpis kljub temu prisel skozi, in obdrzi mesto na seznamu.
-            ponovitev = .osvezitev
+            // Napaka vpisa je NA vrstici te vstopnice (ne pod seznamom: tam je vratar ne vidi), z opozorilno haptiko. Preklic
+            // (zapustitev zaslona) ni napaka vpisa.
+            guard !VrataSeznam.jePreklic(error) else { return }
+            seznam.oznaciNapakoVpisa(t.id)
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
         }
     }
 }

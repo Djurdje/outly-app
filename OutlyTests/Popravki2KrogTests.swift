@@ -58,6 +58,56 @@ final class Popravki2KrogTests: XCTestCase {
         XCTAssertFalse(s.jeVpisana(s.vrstice[0]))
     }
 
+    // MARK: - Napaka vpisa je na vrstici
+
+    func testNapakaVpisaJeSamoNaTejVrstici() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1)
+        XCTAssertTrue(s.imaNapakoVpisa(s.vrstice[0]))
+        XCTAssertFalse(s.imaNapakoVpisa(s.vrstice[1]))
+        XCTAssertFalse(s.jeVpisana(s.vrstice[0]))       // vpis ni uspel: vrstica NI »IN«
+    }
+
+    func testUspesenPonovniVpisPobrisenapako() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1)
+        s.oznaciVpisano(1)
+        XCTAssertFalse(s.imaNapakoVpisa(s.vrstice[0]))
+        XCTAssertTrue(s.napakeVpisa.isEmpty)
+        XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
+    }
+
+    func testNovPoskusPobrisenapakoInNovaNapakaJoVrne() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1)
+        s.pobrisiNapakoVpisa(1)                         // zacetek ponovnega poskusa: vrtavka
+        XCTAssertFalse(s.imaNapakoVpisa(s.vrstice[0]))
+        s.oznaciNapakoVpisa(1)                          // spet padel
+        XCTAssertTrue(s.imaNapakoVpisa(s.vrstice[0]))
+    }
+
+    func testOsvezitevKiVrneValidObdrziNapako() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1)
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#)], iskanje: "")
+        XCTAssertTrue(s.imaNapakoVpisa(s.vrstice[0]))   // vstopnica je se `valid`: vratar mora vedeti, da ni vpisana
+    }
+
+    func testStreznikKiVrneUsedPobrisenapako() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1)
+        // Vpis je kljub napaki (npr. izgubljen odgovor) prisel skozi.
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}], "total": 1}"#)], iskanje: "")
+        XCTAssertFalse(s.imaNapakoVpisa(s.vrstice[0]))
+        XCTAssertTrue(s.napakeVpisa.isEmpty)
+        XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
+    }
+
     // MARK: - Preklic ni napaka (VIP razdelek, nalaganje)
 
     func testPreklicNiNapaka() {
