@@ -5688,6 +5688,28 @@
         }
       }
     },
+    "Checked in at %@ – check the guest": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpisan ob %@ – preveri gosta"
+          }
+        }
+      }
+    },
+    "Checked in – check the guest": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpisan – preveri gosta"
+          }
+        }
+      }
+    },
     "Not enough tickets left.": {
       "extractionState": "manual",
       "localizations": {

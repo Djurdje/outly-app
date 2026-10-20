@@ -147,12 +147,31 @@ enum VrataVrsticaNapaka: Equatable {
     /// Streznik je vpis zavrnil (neveljavna, napacen klub, neplacana, ni danes, razveljavljena, vracilo, odpovedan dogodek, spor pri
     /// banki ...); nosi sporocilo streznika.
     case zavrnjeno(String)
+    /// Po neuspehu (izpad, negotov izid, zavrnitev) je streznik vstopnico vrnil kot `used` - morda jo je vpisal DRUG vratar ali
+    /// kamera s kopijo kode, zato to NI potrditev nasega vpisa: oranzno »Checked in at HH:MM – check the guest«, dokler vratar ne
+    /// tapne vrstice (potrdi, da je gosta preveril). Nosi `used_at` strezniga (nil = ura ni znana).
+    case vpisanaMedNapako(String?)
+
+    var jeVpisanaMedNapako: Bool {
+        if case .vpisanaMedNapako = self { return true }
+        return false
+    }
 
     /// Zavrnitev se z ponovnim dotikom vrstice ne popravi; izpad povezave da.
     var jeZavrnitev: Bool {
         if case .zavrnjeno = self { return true }
         return false
     }
+}
+
+/// Kaj naredi dotik vrstice z napako (EventTicketsView).
+enum VrataDotik: Equatable {
+    /// Izpad povezave / negotov izid: vpis se ponovi (POST).
+    case ponoviVpis
+    /// Vpisana med napako: vratar potrjuje, da je gosta preveril. NIKOLI POST - stanje se samo pocisti.
+    case potrdiPregled
+    /// Zavrnitev streznika: z dotikom se ne spremeni nic (ostane gumb »Check in«).
+    case nic
 }
 
 /// Stevec nalaganj seznama na vratih: odgovor starejsega nalaganja (iskanje, »Try again«, osvezitev po vpisu) ne sme prepisati
@@ -216,7 +235,63 @@ struct VrataSeznam {
     func imaNapakoVpisa(_ t: APITicket) -> Bool { napakaVrstice(t) != nil }
 
     /// Napaka, ki jo pokaze vrstica (nil = ni napake ali je vstopnica ze vpisana).
-    func napakaVrstice(_ t: APITicket) -> VrataVrsticaNapaka? { jeVpisana(t) ? nil : napakeVpisa[t.id] }
+    func napakaVrstice(_ t: APITicket) -> VrataVrsticaNapaka? {
+        if let n = napakeVpisa[t.id], n.jeVpisanaMedNapako { return n }   // »IN« po neuspehu NIKOLI tiho
+        return jeVpisana(t) ? nil : napakeVpisa[t.id]
+    }
+
+    /// Kaj stori dotik vrstice z dano napako.
+    static func dotik(_ n: VrataVrsticaNapaka) -> VrataDotik {
+        switch n {
+        case .neuspelo, .nepotrjeno: return .ponoviVpis
+        case .vpisanaMedNapako: return .potrdiPregled
+        case .zavrnjeno: return .nic
+        }
+    }
+
+    /// Vratar je tapnil vrstico `.vpisanaMedNapako` (preveril je gosta): stanje se pocisti, vrstica ostane navaden »IN«. Brez POST-a.
+    mutating func potrdiPregled(_ id: Int) {
+        if napakeVpisa[id]?.jeVpisanaMedNapako == true { napakeVpisa[id] = nil }
+    }
+
+    /// Vpis je (po neuspehu) ze izvedel nekdo drug: POST te naprave je vrnil `already_used` po negotovem izidu. Vrstica je »IN«,
+    /// a oranzna z opozorilom.
+    mutating func oznaciVpisanoMedNapako(_ id: Int, usedAt: String?) {
+        vpisani.insert(id)
+        napakeVpisa[id] = .vpisanaMedNapako(usedAt)
+        statusPriZavrnitvi[id] = nil
+    }
+
+    /// Id-ji vstopnic, ki jih je zadnja osvezitev pretvorila v `.vpisanaMedNapako` in zanje se ni bilo haptike.
+    private(set) var novaOpozorila: [Int] = []
+
+    /// Pogled enkrat sprozi `haptika(.warning)`, ce je vrnjen seznam neprazen.
+    mutating func prevzemiNovaOpozorila() -> [Int] {
+        defer { novaOpozorila = [] }
+        return novaOpozorila
+    }
+
+    /// Po zamenjavi/pripetju vrstic: vstopnica z napako, ki jo streznik vrne kot `used`, NE postane tiho »IN« (lahko jo je vpisal drug
+    /// vratar ali kamera s kopijo). Postane `.vpisanaMedNapako(used_at)` in ostane, dokler vratar ne tapne vrstice. Vrne nove id-je.
+    @discardableResult
+    private mutating func uskladiNapake() -> [Int] {
+        var nova: [Int] = []
+        for t in vrstice where t.isUsed {
+            guard let n = napakeVpisa[t.id], !n.jeVpisanaMedNapako else { continue }
+            napakeVpisa[t.id] = .vpisanaMedNapako(t.usedAt)
+            statusPriZavrnitvi[t.id] = nil
+            nova.append(t.id)
+        }
+        // Zavrnitev velja za status vstopnice ob zavrnitvi: drug status (npr. valid -> refunded) jo naredi zastarelo.
+        for (id, napaka) in napakeVpisa where napaka.jeZavrnitev {
+            if let prej = statusPriZavrnitvi[id], let zdaj = vrstice.first(where: { $0.id == id })?.status, zdaj != prej {
+                napakeVpisa[id] = nil
+            }
+        }
+        statusPriZavrnitvi = statusPriZavrnitvi.filter { napakeVpisa[$0.key]?.jeZavrnitev == true }
+        novaOpozorila.append(contentsOf: nova)
+        return nova
+    }
 
     /// Vpis te vstopnice ni uspel (izjema pri klicu ali zavrnitev streznika): napaka ostane NA vrstici.
     mutating func oznaciNapakoVpisa(_ id: Int, _ napaka: VrataVrsticaNapaka = .neuspelo) {
@@ -236,7 +311,7 @@ struct VrataSeznam {
         return .neuspelo
     }
 
-    /// Zavrnitev streznika za vrstico; nil, ce je vstopnica po rezultatu vpisana (`ok`, `already_used`).
+    /// Zavrnitev streznika za vrstico; nil samo ob `ok`. Tudi `already_used` je zavrnitev: gosta s ze uporabljeno kodo ne spustimo.
     static func zavrnitev(_ r: ScanResult) -> VrataVrsticaNapaka? {
         vpisaniRezultat(r.result) ? nil : .zavrnjeno(r.message.isEmpty ? r.result : r.message)
     }
@@ -258,8 +333,9 @@ struct VrataSeznam {
         return f.string(from: cas)
     }
 
-    /// Rezultat vpisa (POST /business/tickets/scan), po katerem je vstopnica gotovo vpisana: `ok` ali `already_used`.
-    static func vpisaniRezultat(_ result: String) -> Bool { result == "ok" || result == "already_used" }
+    /// Rezultat vpisa (POST /business/tickets/scan), po katerem je vstopnica vpisana s TEM klicem: samo `ok`. `already_used` ni
+    /// uspeh te naprave (vpisal jo je nekdo drug ali prej).
+    static func vpisaniRezultat(_ result: String) -> Bool { result == "ok" }
 
     /// Takoj po uspesnem vpisu: vrstica pokaze »IN«, se preden pride osvezitev seznama (drugi dotik ne poslje se enega vpisa).
     mutating func oznaciVpisano(_ id: Int) {
@@ -278,13 +354,15 @@ struct VrataSeznam {
     }
 
     /// Prva stran za iskanje (zamenja vse).
-    mutating func zamenjaj(_ stran: SeznamVstopnicDogodka, iskanje: String) {
+    @discardableResult
+    mutating func zamenjaj(_ stran: SeznamVstopnicDogodka, iskanje: String) -> [Int] {
         zamenjajKose([stran], iskanje: iskanje)
     }
 
     /// Osvezitev po vpisu v vec kosih (`kosiOsvezitve`): vrstice zdruzene brez podvojenih, stevci in odmik iz zadnjega kosa.
-    mutating func zamenjajKose(_ strani: [SeznamVstopnicDogodka], iskanje: String) {
-        guard let zadnja = strani.last else { return }
+    @discardableResult
+    mutating func zamenjajKose(_ strani: [SeznamVstopnicDogodka], iskanje: String) -> [Int] {
+        guard let zadnja = strani.last else { return [] }
         var znani = Set<Int>()
         vrstice = strani.flatMap(\.tickets).filter { znani.insert($0.id).inserted }
         stevci = zadnja.counts
@@ -293,14 +371,7 @@ struct VrataSeznam {
         q = Self.kljuc(iskanje)
         let streznikVpisani = Set(vrstice.filter(\.isUsed).map(\.id))
         vpisani.subtract(streznikVpisani)
-        napakeVpisa = napakeVpisa.filter { !streznikVpisani.contains($0.key) }
-        // Zavrnitev velja za status vstopnice ob zavrnitvi: drug status (npr. valid -> refunded) jo naredi zastarelo.
-        for (id, napaka) in napakeVpisa where napaka.jeZavrnitev {
-            if let prej = statusPriZavrnitvi[id], let zdaj = vrstice.first(where: { $0.id == id })?.status, zdaj != prej {
-                napakeVpisa[id] = nil
-            }
-        }
-        statusPriZavrnitvi = statusPriZavrnitvi.filter { napakeVpisa[$0.key] != nil }
+        return uskladiNapake()
     }
 
     /// Pripne naslednjo stran. false (nic se ne spremeni), ce je vmes drugo iskanje ali stran ni za trenutni odmik (dvojni dotik).
@@ -313,6 +384,7 @@ struct VrataSeznam {
         zadetkov = stran.total
         // Odmik se mora premakniti naprej, sicer bi gumb vedno nalozil isto stran.
         if let n = stran.nextOffset, n > odmik { naslednjiOdmik = n } else { naslednjiOdmik = nil }
+        uskladiNapake()
         return true
     }
 

@@ -97,15 +97,62 @@ final class Popravki2KrogTests: XCTestCase {
         XCTAssertTrue(s.imaNapakoVpisa(s.vrstice[0]))   // vstopnica je se `valid`: vratar mora vedeti, da ni vpisana
     }
 
-    func testStreznikKiVrneUsedPobrisenapako() throws {
+    /// KRITICNO: vstopnica z napako, ki jo streznik vrne kot `used`, NE postane tiho (zelen) »IN«: vpisal jo je lahko drug vratar ali
+    /// kamera s kopijo kode. Postane `.vpisanaMedNapako(used_at)` in ostane, dokler vratar ne tapne vrstice.
+    func testStreznikKiVrneUsedPoNapakiJeOpozoriloNeTihiIN() throws {
+        for napaka in [VrataVrsticaNapaka.neuspelo, .nepotrjeno, .zavrnjeno("Wrong club")] {
+            var s = VrataSeznam()
+            s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+            s.oznaciNapakoVpisa(1, napaka)
+            let nova = s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used", "used_at": "2026-10-20T21:07:30.000Z"}], "total": 1}"#)],
+                                      iskanje: "")
+            XCTAssertEqual(nova, [1], "\(napaka)")                                             // pogled sprozi haptika .warning
+            XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .vpisanaMedNapako("2026-10-20T21:07:30.000Z"), "\(napaka)")
+            XCTAssertTrue(s.jeVpisana(s.vrstice[0]))                                            // IN, a z opozorilom
+            XCTAssertEqual(s.prevzemiNovaOpozorila(), [1])
+            XCTAssertTrue(s.prevzemiNovaOpozorila().isEmpty)                                     // enkrat, ne ob vsaki osvezitvi
+            // Naslednja osvezitev opozorila ne ponovi in ga ne pobrise.
+            let ponovno = s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}], "total": 1}"#)], iskanje: "")
+            XCTAssertTrue(ponovno.isEmpty)
+            XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeVpisanaMedNapako == true)
+        }
+    }
+
+    func testTapNaVrsticoVpisanoMedNapakoSamoPocistiBrezPosta() throws {
         var s = VrataSeznam()
         s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
-        s.oznaciNapakoVpisa(1)
-        // Vpis je kljub napaki (npr. izgubljen odgovor) prisel skozi.
+        s.oznaciNapakoVpisa(1, .nepotrjeno)
         s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}], "total": 1}"#)], iskanje: "")
-        XCTAssertFalse(s.imaNapakoVpisa(s.vrstice[0]))
-        XCTAssertTrue(s.napakeVpisa.isEmpty)
+        let n = try XCTUnwrap(s.napakaVrstice(s.vrstice[0]))
+        XCTAssertEqual(VrataSeznam.dotik(n), .potrdiPregled)           // NI .ponoviVpis: POST se ne poslje
+        s.potrdiPregled(1)
+        XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
+        XCTAssertTrue(s.jeVpisana(s.vrstice[0]))                        // zdaj navaden »IN«
+        // Dotik na drugih stanjih.
+        XCTAssertEqual(VrataSeznam.dotik(.neuspelo), .ponoviVpis)
+        XCTAssertEqual(VrataSeznam.dotik(.nepotrjeno), .ponoviVpis)
+        XCTAssertEqual(VrataSeznam.dotik(.zavrnjeno("x")), .nic)
+        // potrdiPregled ne pobrise izpada povezave (samo opozorilo).
+        s.oznaciNapakoVpisa(1, .neuspelo)
+        s.potrdiPregled(1)
+        XCTAssertNotNil(s.napakeVpisa[1])
+    }
+
+    func testUsedPriLoadMoreTudiNeTihoIN() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 2, "has_more": true, "next_offset": 1}"#), iskanje: "")
+        s.oznaciNapakoVpisa(2, .nepotrjeno)            // napaka na vstopnici, ki je vmes izginila s seznama (iskanje, osvezitev)
+        XCTAssertTrue(s.pripni(try stran(#"{"tickets": [{"id": 2, "status": "used"}], "total": 2}"#), iskanje: "", odmik: 1))
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[1])?.jeVpisanaMedNapako == true)
+        XCTAssertEqual(s.prevzemiNovaOpozorila(), [2])
+    }
+
+    func testAlreadyUsedPoNepotrjenemPOSTuJeOranznoIN() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}], "total": 1}"#), iskanje: "")
+        s.oznaciVpisanoMedNapako(1, usedAt: "2026-10-20T21:07:30Z")
         XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
+        XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .vpisanaMedNapako("2026-10-20T21:07:30Z"))
     }
 
     // MARK: - Zavrnitev in negotov izid vpisa na vrstici
@@ -123,7 +170,8 @@ final class Popravki2KrogTests: XCTestCase {
             XCTAssertEqual(VrataSeznam.zavrnitev(ScanResult(result: r, message: "Sporocilo \(r)", usedAt: nil)), .zavrnjeno("Sporocilo \(r)"), r)
         }
         XCTAssertNil(VrataSeznam.zavrnitev(ScanResult(result: "ok", message: "OK", usedAt: nil)))
-        XCTAssertNil(VrataSeznam.zavrnitev(ScanResult(result: "already_used", message: "Used", usedAt: nil)))   // vstopnica je »IN«
+        // `already_used` je zavrnitev (gosta s ze uporabljeno kodo ne spustimo), ne tihi »IN«.
+        XCTAssertEqual(VrataSeznam.zavrnitev(ScanResult(result: "already_used", message: "Used", usedAt: nil)), .zavrnjeno("Used"))
         XCTAssertEqual(VrataSeznam.zavrnitev(ScanResult(result: "void", message: "", usedAt: nil)), .zavrnjeno("void"))
 
         var s = VrataSeznam()
@@ -135,8 +183,9 @@ final class Popravki2KrogTests: XCTestCase {
         // Osvezitev, ki jo vrne kot valid, zavrnitev obdrzi; uspesen vpis ali `used` jo pobrise.
         s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
         XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .zavrnjeno("Wrong club"))
+        // `used` po zavrnitvi: opozorilo (ne tiho), enako kot po izpadu povezave.
         s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
-        XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeVpisanaMedNapako == true)
         s.oznaciNapakoVpisa(2, .nepotrjeno)
         s.oznaciVpisano(2)
         XCTAssertNil(s.napakaVrstice(s.vrstice[1]))
@@ -148,8 +197,7 @@ final class Popravki2KrogTests: XCTestCase {
         let r = ScanResult(result: "already_used", message: "Already used", usedAt: "2026-10-20T21:07:30.000Z")
         XCTAssertTrue(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: .nepotrjeno))
         XCTAssertNotEqual(r.result, "ok")
-        XCTAssertTrue(VrataSeznam.vpisaniRezultat(r.result))      // vrstica je »IN«: streznik pravi used
-        XCTAssertNil(VrataSeznam.zavrnitev(r))                    // ni rdeca zavrnitev na vrstici
+        XCTAssertFalse(VrataSeznam.vpisaniRezultat(r.result))     // ni uspeh te naprave: ne zelen »IN«, ne .success
         // Brez predhodnega negotovega izida ostane obstojec rdec »already used«.
         XCTAssertFalse(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: nil))
         XCTAssertFalse(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: .neuspelo))
@@ -223,7 +271,7 @@ final class Popravki2KrogTests: XCTestCase {
 
     func testKateriRezultatPomeniVpisano() {
         XCTAssertTrue(VrataSeznam.vpisaniRezultat("ok"))
-        XCTAssertTrue(VrataSeznam.vpisaniRezultat("already_used"))
+        XCTAssertFalse(VrataSeznam.vpisaniRezultat("already_used"))   // uspeh te naprave samo ob `ok`
         for r in ["invalid", "unknown", "wrong_club", "unpaid", "void", "refunded", "event_cancelled", "not_today", "payment_disputed"] {
             XCTAssertFalse(VrataSeznam.vpisaniRezultat(r), r)
         }

@@ -760,11 +760,13 @@ struct EventTicketsView: View {
                                 }
                                 Spacer()
                                 if seznam.jeVpisana(t) {
+                                    // Zelen »IN« samo za vstopnico brez napake na tej vrstici; vpisana med napako je ORANZNA (glej vrsticaNapake).
+                                    let medNapako = seznam.napakaVrstice(t)?.jeVpisanaMedNapako == true
                                     Text("IN")
                                         .font(.caption.weight(.bold))
-                                        .foregroundColor(.green)
+                                        .foregroundColor(medNapako ? .orange : .green)
                                         .padding(.horizontal, 10).padding(.vertical, 6)
-                                        .background(Color.green.opacity(0.15))
+                                        .background((medNapako ? Color.orange : Color.green).opacity(0.15))
                                         .clipShape(Capsule())
                                 } else if t.paymentDisputed && t.status == "valid" {
                                     // Spor pri banki: polje `payment_disputed` na tej poti doda locen backend PR (#233); na starem backendu je
@@ -798,9 +800,14 @@ struct EventTicketsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .onTapGesture {
-                                // »Tap to retry«: dotik kjer koli na vrstici z izpadom povezave ponovi vpis (zavrnitev streznika se s
-                                // ponovitvijo ne popravi: tam ostane gumb »Check in«).
-                                if let n = seznam.napakaVrstice(t), !n.jeZavrnitev, delujoc == nil { Task { await checkIn(t) } }
+                                // Izpad povezave: dotik kjer koli na vrstici ponovi vpis. Vpisana med napako: dotik pomeni »gosta sem preveril«
+                                // in samo pocisti stanje (NIKOLI POST). Zavrnitev streznika: nic (ostane gumb »Check in«).
+                                guard let n = seznam.napakaVrstice(t) else { return }
+                                switch VrataSeznam.dotik(n) {
+                                case .ponoviVpis: if delujoc == nil { Task { await checkIn(t) } }
+                                case .potrdiPregled: seznam.potrdiPregled(t.id)
+                                case .nic: break
+                                }
                             }
                         }
 
@@ -1128,11 +1135,13 @@ struct EventTicketsView: View {
                 // Preklicana osvezitev (nov vpis ali zapusceno okno) ne prepise novejsega stanja.
                 guard !Task.isCancelled, nalaganja.jeZadnje(moje), q == iskanje else { return }
                 seznam.zamenjajKose(strani, iskanje: q)
+                opozoriNaVpisaneMedNapako()
             } else {
                 let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, q: q)
                 // Medtem spremenjeno iskanje: odgovor je za star niz, nov klic je ze na poti.
                 guard nalaganja.jeZadnje(moje), q == iskanje else { return }
                 seznam.zamenjaj(stran, iskanje: q)
+                opozoriNaVpisaneMedNapako()
             }
             errorText = nil
             ponovitev = .prvaStran
@@ -1160,6 +1169,7 @@ struct EventTicketsView: View {
             let stran = try await APIClient.shared.fetchEventTicketsStran(token: session.token, eventId: event.id, offset: odmik, q: q)
             // pripni zavrne stran, ce je medtem drugo iskanje ali drug odmik.
             if seznam.pripni(stran, iskanje: iskanje, odmik: odmik) {
+                opozoriNaVpisaneMedNapako()
                 errorText = nil
                 ponovitev = .prvaStran
             }
@@ -1206,7 +1216,18 @@ struct EventTicketsView: View {
     }
 
     /// Barva napake na vrstici: oranzna = vpis je morda uspel (ni potrjeno), rdeca = ni uspel ali ga je streznik zavrnil.
-    private func barvaNapake(_ n: VrataVrsticaNapaka) -> Color { n == .nepotrjeno ? .orange : .red }
+    private func barvaNapake(_ n: VrataVrsticaNapaka) -> Color {
+        switch n {
+        case .nepotrjeno, .vpisanaMedNapako: return .orange
+        case .neuspelo, .zavrnjeno: return .red
+        }
+    }
+
+    /// Osvezitev je vstopnico z napako vrnila kot `used` (morda jo je vpisal drug vratar ali kamera): vrstica je oranzna, napravo enkrat
+    /// opozori haptika .warning.
+    private func opozoriNaVpisaneMedNapako() {
+        if !seznam.prevzemiNovaOpozorila().isEmpty { haptika(.warning) }
+    }
 
     /// Vrstica besedila z napako NA vrstici vstopnice (ena vrstica, ista pisava kot koda vstopnice).
     @ViewBuilder
@@ -1219,6 +1240,12 @@ struct EventTicketsView: View {
                 Label("Not confirmed – tap to retry", systemImage: "questionmark.circle.fill")
             case .zavrnjeno(let sporocilo):
                 Label { Text(verbatim: sporocilo) } icon: { Image(systemName: "xmark.octagon.fill") }
+            case .vpisanaMedNapako(let usedAt):
+                if let ura = VrataSeznam.uraVpisa(usedAt) {
+                    Label("Checked in at \(ura) – check the guest", systemImage: "exclamationmark.triangle.fill")
+                } else {
+                    Label("Checked in – check the guest", systemImage: "exclamationmark.triangle.fill")
+                }
             }
         }
         .font(.caption.weight(.semibold))
@@ -1227,12 +1254,17 @@ struct EventTicketsView: View {
         .minimumScaleFactor(0.7)
     }
 
-    /// Besedilo opozorila v pasu: ura vpisa iz `used_at` v casovnem pasu naprave (ce je znana).
-    private func opozorilo(_ r: ScanResult) -> String {
+    /// Besedilo opozorila v pasu: kratka koda vstopnice (kot na vrstici), da je jasno, za katero gre, in ura vpisa iz `used_at` v
+    /// casovnem pasu naprave (ce je znana).
+    private func opozorilo(_ r: ScanResult, _ t: APITicket) -> String {
+        let koda = t.serialKratek.isEmpty ? t.publicRef : t.serialKratek
+        let sporocilo: String
         if let ura = VrataSeznam.uraVpisa(r.usedAt) {
-            return String(localized: "Already checked in at \(ura) – was this your earlier attempt? Check the guest.")
+            sporocilo = String(localized: "Already checked in at \(ura) – was this your earlier attempt? Check the guest.")
+        } else {
+            sporocilo = String(localized: "Already checked in – was this your earlier attempt? Check the guest.")
         }
-        return String(localized: "Already checked in – was this your earlier attempt? Check the guest.")
+        return koda + " · " + sporocilo
     }
 
     /// Haptika samo, ko je zaslon na ekranu (vpis, ki se konca po odhodu z zaslona, naprave ne trese).
@@ -1244,6 +1276,8 @@ struct EventTicketsView: View {
     /// Rocni vpis. Vrata ne cakajo na osvezitev seznama: `delujoc` se sprosti takoj po odgovoru strezniga, vrstica takoj pokaze »IN«
     /// (`seznam.oznaciVpisano`), osvezitev (stevci, vse nalozene vrstice) tece v ozadju in jo novejsi vpis nadomesti.
     /// Kratek rok (10 s): vrata ne cakajo 30 s. Izid, ki ni »IN«, ostane NA vrstici (`napakeVpisa`), ne samo v pasu na vrhu.
+    /// Pravilo: zelen uspeh in haptika .success SAMO ob `result == "ok"` iz POST-a te naprave; noben prehod iz neuspeha v »IN« ni zelen
+    /// ali brez opozorila.
     private func checkIn(_ t: APITicket) async {
         delujoc = t.id
         defer { delujoc = nil }
@@ -1253,19 +1287,21 @@ struct EventTicketsView: View {
         do {
             let rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr, timeout: 10)
             zadnjiRezultat = rezultat
-            // `already_used` po timeoutu NI potrditev nasega vpisa (vmes je lahko vstopnico vpisal kdo drug): vrstica je »IN«, a pas je
-            // opozorilo z uro in haptika .warning; vratar preveri gosta. Sicer uspeh ob `ok`, napaka ob vsakem drugem izidu.
-            if VrataSeznam.jeOpozoriloPoNepotrjenem(rezultat, prejsnja: prejsnja) {
-                pasOpozorilo = opozorilo(rezultat)
-                haptika(.warning)
-            } else {
+            if rezultat.result == "ok" {
                 pasOpozorilo = nil
-                haptika(rezultat.result == "ok" ? .success : .error)
-            }
-            if VrataSeznam.vpisaniRezultat(rezultat.result) {
+                haptika(.success)
                 seznam.oznaciVpisano(t.id)
-            } else if let zavrnitev = VrataSeznam.zavrnitev(rezultat) {
-                seznam.oznaciNapakoVpisa(t.id, zavrnitev)
+            } else if VrataSeznam.jeOpozoriloPoNepotrjenem(rezultat, prejsnja: prejsnja) {
+                // `already_used` po timeoutu NI potrditev nasega vpisa (vmes je lahko vstopnico vpisal kdo drug): vrstica je »IN« v
+                // oranzni, pas je opozorilo z uro in kodo, haptika .warning; vratar preveri gosta.
+                pasOpozorilo = opozorilo(rezultat, t)
+                haptika(.warning)
+                seznam.oznaciVpisanoMedNapako(t.id, usedAt: rezultat.usedAt)
+            } else {
+                // Vsak drug izid (tudi navaden `already_used`) je zavrnitev NA vrstici; po osvezitvi, ki vrne `used`, postane oranzna.
+                pasOpozorilo = nil
+                haptika(.error)
+                if let zavrnitev = VrataSeznam.zavrnitev(rezultat) { seznam.oznaciNapakoVpisa(t.id, zavrnitev) }
             }
             osvezitevPoVpisu?.cancel()
             // Vratar je medtem zapustil zaslon: osvezitve ne zacnemo (oznaka »IN« ostane, ko se vrne, nalozi seznam .task).
@@ -1274,9 +1310,11 @@ struct EventTicketsView: View {
             // Napaka vpisa je NA vrstici te vstopnice (ne pod seznamom: tam je vratar ne vidi), z opozorilno haptiko. Preklic
             // (zapustitev zaslona) ni napaka vpisa.
             guard !VrataSeznam.jePreklic(error) else { return }
+            pasOpozorilo = nil
             seznam.oznaciNapakoVpisa(t.id, VrataSeznam.napakaIzIzjeme(error))
             haptika(.error)
-            // Strezniku vpis morda je prisel do konca: osvezitev seznama sama pokaze »IN«, ce je vstopnica `used` (brez novega POST-a).
+            // Strezniku vpis morda je prisel do konca: osvezitev seznama sama pokaze vstopnico, ki je `used`, kot ORANZNO vpisano med
+            // napako (opozorilo, ne tihi »IN«), brez novega POST-a.
             osvezitevPoVpisu?.cancel()
             if vidno { osvezitevPoVpisu = Task { await load(obdrziNalozene: true) } }
         }
