@@ -650,6 +650,8 @@ struct EventTicketsView: View {
     @State private var nalaganja = VrataNalaganje()
     /// Zaslon je na ekranu: vpis, ki se konca po odhodu z zaslona, ne zacne nove osvezitve.
     @State private var vidno = false
+    /// Visina vrstice s kodo/napako vstopnice: ista za oba, da se seznam ob napaki nikoli ne premakne (raste z velikostjo pisave).
+    @ScaledMetric(relativeTo: .caption) private var visinaVrsticeBesedila: CGFloat = 16
     /// Prvo nalaganje zaslona gre brez premora (premor je samo med tipkanjem).
     @State private var nalozeno = false
     @State private var isLoading = false
@@ -722,16 +724,15 @@ struct EventTicketsView: View {
                                         .foregroundColor(.white)
                                     // Napaka vpisa NA vrstici (vratar jo vidi, kjer koli je seznam): ista vrstica besedila in ista pisava
                                     // kot koda, zato se visina vrstice ne spremeni.
-                                    if seznam.imaNapakoVpisa(t) {
-                                        Label("Not checked in – tap to retry", systemImage: "exclamationmark.triangle.fill")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundColor(.red)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.7)
-                                    } else {
-                                        Text(t.publicRef)
-                                            .font(.caption).foregroundColor(.white.opacity(0.5))
+                                    Group {
+                                        if let napaka = seznam.napakaVrstice(t) {
+                                            vrsticaNapake(napaka)
+                                        } else {
+                                            Text(t.publicRef)
+                                                .font(.caption).foregroundColor(.white.opacity(0.5))
+                                        }
                                     }
+                                    .frame(height: visinaVrsticeBesedila, alignment: .leading)
                                     if t.isVip {
                                         HStack(spacing: 6) {
                                             VipZnacka(kompakten: true)
@@ -773,18 +774,19 @@ struct EventTicketsView: View {
                                     }
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 12).padding(.vertical, 7)
-                                    .background(seznam.imaNapakoVpisa(t) ? Color.red : Color.outlyBlue)
+                                    .background(seznam.napakaVrstice(t).map(barvaNapake) ?? Color.outlyBlue)
                                     .clipShape(Capsule())
                                     .disabled(delujoc != nil)
                                 }
                             }
                             .padding(12)
-                            .background(seznam.imaNapakoVpisa(t) ? Color.red.opacity(0.14) : Color.white.opacity(0.05))
+                            .background(seznam.napakaVrstice(t).map { barvaNapake($0).opacity(0.14) } ?? Color.white.opacity(0.05))
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .onTapGesture {
-                                // »Tap to retry«: dotik kjer koli na vrstici z napako ponovi vpis.
-                                if seznam.imaNapakoVpisa(t), delujoc == nil { Task { await checkIn(t) } }
+                                // »Tap to retry«: dotik kjer koli na vrstici z izpadom povezave ponovi vpis (zavrnitev streznika se s
+                                // ponovitvijo ne popravi: tam ostane gumb »Check in«).
+                                if let n = seznam.napakaVrstice(t), !n.jeZavrnitev, delujoc == nil { Task { await checkIn(t) } }
                             }
                         }
 
@@ -1189,18 +1191,57 @@ struct EventTicketsView: View {
         }
     }
 
+    /// Barva napake na vrstici: oranzna = vpis je morda uspel (ni potrjeno), rdeca = ni uspel ali ga je streznik zavrnil.
+    private func barvaNapake(_ n: VrataVrsticaNapaka) -> Color { n == .nepotrjeno ? .orange : .red }
+
+    /// Vrstica besedila z napako NA vrstici vstopnice (ena vrstica, ista pisava kot koda vstopnice).
+    @ViewBuilder
+    private func vrsticaNapake(_ n: VrataVrsticaNapaka) -> some View {
+        Group {
+            switch n {
+            case .neuspelo:
+                Label("Not checked in – tap to retry", systemImage: "exclamationmark.triangle.fill")
+            case .nepotrjeno:
+                Label("Not confirmed – tap to retry", systemImage: "questionmark.circle.fill")
+            case .zavrnjeno(let sporocilo):
+                Label { Text(verbatim: sporocilo) } icon: { Image(systemName: "xmark.octagon.fill") }
+            }
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundColor(barvaNapake(n))
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+    }
+
+    /// Haptika samo, ko je zaslon na ekranu (vpis, ki se konca po odhodu z zaslona, naprave ne trese).
+    private func haptika(_ vrsta: UINotificationFeedbackGenerator.FeedbackType) {
+        guard vidno else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(vrsta)
+    }
+
     /// Rocni vpis. Vrata ne cakajo na osvezitev seznama: `delujoc` se sprosti takoj po odgovoru strezniga, vrstica takoj pokaze »IN«
     /// (`seznam.oznaciVpisano`), osvezitev (stevci, vse nalozene vrstice) tece v ozadju in jo novejsi vpis nadomesti.
+    /// Kratek rok (10 s): vrata ne cakajo 30 s. Izid, ki ni »IN«, ostane NA vrstici (`napakeVpisa`), ne samo v pasu na vrhu.
     private func checkIn(_ t: APITicket) async {
         delujoc = t.id
         defer { delujoc = nil }
+        // Kaj je padlo prej: po timeoutu je prvi vpis morda uspel, zato `already_used` pri ponovitvi ni nujno zavrnitev.
+        let prejsnja = seznam.napakeVpisa[t.id]
         seznam.pobrisiNapakoVpisa(t.id)
         do {
-            let rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr)
+            var rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr, timeout: 10)
+            if VrataSeznam.jePotrditevPoNapaki(rezultat, prejsnja: prejsnja) {
+                // Prvi vpis je uspel, odgovor se je izgubil: nevtralen »IN«, ne rdec »already used«.
+                rezultat = ScanResult(result: "ok", message: String(localized: "Checked in"), usedAt: rezultat.usedAt, ticket: rezultat.ticket)
+            }
             zadnjiRezultat = rezultat
             // Haptika za vrata (hrup, gneca): uspeh ob `ok`, napaka ob vsakem drugem izidu (ze uporabljena, zavrnjena, neveljavna ...).
-            UINotificationFeedbackGenerator().notificationOccurred(rezultat.result == "ok" ? .success : .error)
-            if VrataSeznam.vpisaniRezultat(rezultat.result) { seznam.oznaciVpisano(t.id) }
+            haptika(rezultat.result == "ok" ? .success : .error)
+            if VrataSeznam.vpisaniRezultat(rezultat.result) {
+                seznam.oznaciVpisano(t.id)
+            } else if let zavrnitev = VrataSeznam.zavrnitev(rezultat) {
+                seznam.oznaciNapakoVpisa(t.id, zavrnitev)
+            }
             osvezitevPoVpisu?.cancel()
             // Vratar je medtem zapustil zaslon: osvezitve ne zacnemo (oznaka »IN« ostane, ko se vrne, nalozi seznam .task).
             if vidno { osvezitevPoVpisu = Task { await load(obdrziNalozene: true) } }
@@ -1208,8 +1249,8 @@ struct EventTicketsView: View {
             // Napaka vpisa je NA vrstici te vstopnice (ne pod seznamom: tam je vratar ne vidi), z opozorilno haptiko. Preklic
             // (zapustitev zaslona) ni napaka vpisa.
             guard !VrataSeznam.jePreklic(error) else { return }
-            seznam.oznaciNapakoVpisa(t.id)
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            seznam.oznaciNapakoVpisa(t.id, VrataSeznam.napakaIzIzjeme(error))
+            haptika(.error)
         }
     }
 }

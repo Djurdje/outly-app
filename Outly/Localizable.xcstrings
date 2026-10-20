@@ -5655,6 +5655,17 @@
         }
       }
     },
+    "Not confirmed – tap to retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni potrjeno – tapni za ponovitev"
+          }
+        }
+      }
+    },
     "Not enough tickets left.": {
       "extractionState": "manual",
       "localizations": {

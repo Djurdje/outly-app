@@ -108,6 +108,58 @@ final class Popravki2KrogTests: XCTestCase {
         XCTAssertTrue(s.jeVpisana(s.vrstice[0]))
     }
 
+    // MARK: - Zavrnitev in negotov izid vpisa na vrstici
+
+    func testTimeoutInPrekinjenaPovezavaStaNepotrjena() {
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(URLError(.timedOut)), .nepotrjeno)
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(URLError(.networkConnectionLost)), .nepotrjeno)
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(URLError(.notConnectedToInternet)), .neuspelo)   // klic ni sel ven
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(URLError(.cannotConnectToHost)), .neuspelo)
+        XCTAssertEqual(VrataSeznam.napakaIzIzjeme(APIError.requestFailed(500, "")), .neuspelo)
+    }
+
+    func testZavrnitevStreznikaGreNaVrsticoZSporocilom() throws {
+        for r in ["invalid", "unknown", "wrong_club", "unpaid", "not_today", "void", "refunded", "event_cancelled", "payment_disputed"] {
+            XCTAssertEqual(VrataSeznam.zavrnitev(ScanResult(result: r, message: "Sporocilo \(r)", usedAt: nil)), .zavrnjeno("Sporocilo \(r)"), r)
+        }
+        XCTAssertNil(VrataSeznam.zavrnitev(ScanResult(result: "ok", message: "OK", usedAt: nil)))
+        XCTAssertNil(VrataSeznam.zavrnitev(ScanResult(result: "already_used", message: "Used", usedAt: nil)))   // vstopnica je »IN«
+        XCTAssertEqual(VrataSeznam.zavrnitev(ScanResult(result: "void", message: "", usedAt: nil)), .zavrnjeno("void"))
+
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1, .zavrnjeno("Wrong club"))
+        XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .zavrnjeno("Wrong club"))
+        XCTAssertTrue(s.napakaVrstice(s.vrstice[0])?.jeZavrnitev == true)
+        XCTAssertNil(s.napakaVrstice(s.vrstice[1]))
+        // Osvezitev, ki jo vrne kot valid, zavrnitev obdrzi; uspesen vpis ali `used` jo pobrise.
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .zavrnjeno("Wrong club"))
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "used"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
+        s.oznaciNapakoVpisa(2, .nepotrjeno)
+        s.oznaciVpisano(2)
+        XCTAssertNil(s.napakaVrstice(s.vrstice[1]))
+    }
+
+    func testAlreadyUsedPoTimeoutuVZadnjihPetMinutahJePotrditev() {
+        let zdaj = Date(timeIntervalSince1970: 1_800_000_000)
+        func r(_ prej: TimeInterval, _ result: String = "already_used", fraction: Bool = true) -> ScanResult {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = fraction ? [.withInternetDateTime, .withFractionalSeconds] : [.withInternetDateTime]
+            return ScanResult(result: result, message: "Already used", usedAt: f.string(from: zdaj.addingTimeInterval(-prej)))
+        }
+        XCTAssertTrue(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: .nepotrjeno, zdaj: zdaj))
+        XCTAssertTrue(VrataSeznam.jePotrditevPoNapaki(r(299, fraction: false), prejsnja: .nepotrjeno, zdaj: zdaj))
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(301), prejsnja: .nepotrjeno, zdaj: zdaj))          // prestaro: vpis koga drugega
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: .neuspelo, zdaj: zdaj))             // klic ni prisel do streznika
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: nil, zdaj: zdaj))                   // prvi poskus: navadna zavrnitev
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: .zavrnjeno("x"), zdaj: zdaj))
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8, "invalid"), prejsnja: .nepotrjeno, zdaj: zdaj))
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(ScanResult(result: "already_used", message: "", usedAt: nil), prejsnja: .nepotrjeno, zdaj: zdaj))
+        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(ScanResult(result: "already_used", message: "", usedAt: "ni datum"), prejsnja: .nepotrjeno, zdaj: zdaj))
+    }
+
     // MARK: - Preklic ni napaka (VIP razdelek, nalaganje)
 
     func testPreklicNiNapaka() {
