@@ -449,10 +449,17 @@ struct EventDetailView: View {
     // MARK: - Vrstica z vstopnicami: temna kartica, cena levo, bel gumb desno (Martin: modra tu ne pase)
     private enum TicketState { case buy, free, external, door, fewLeft(Int), soldOut, ended }
 
+    /// Cena ene vstopnice, kot jo kupec vidi na zaslonu: po 409 »The ticket price has changed.« sveza cena iz nakupnega lista
+    /// (`cenaPo409`), sicer iz dogodka. Dogodek brez cene na Outlyju (zunanja prodaja, vrata) ostane brez cene.
+    private var veljavnaCenaCents: Int? { event.veljavnaCenaCents(cenaCents: cenaPo409) }
+
+    /// Napis cene za vrstico z vstopnicami (isti format kot `APIEvent.displayPrice`, a s svezo ceno po 409).
+    private var prikazanaCena: String? { event.napisCene(cenaCents: cenaPo409) }
+
     private var ticketState: TicketState {
         if event.isPast { return .ended }
         if event.isSoldOut { return .soldOut }
-        if let cents = event.ticketPriceCents {
+        if let cents = veljavnaCenaCents {
             if event.isFewLeft, let n = event.ticketsLeft { return .fewLeft(n) }
             return cents == 0 ? .free : .buy
         }
@@ -462,7 +469,7 @@ struct EventDetailView: View {
 
     private var ticketBar: some View {
         let state = ticketState
-        let price = event.displayPrice ?? String(localized: "Tickets")
+        let price = prikazanaCena ?? String(localized: "Tickets")
 
         let (top, sub): (String, String) = {
             switch state {
@@ -562,7 +569,7 @@ struct EventDetailView: View {
     /// "€26.00" -> ("€26", ".00"); nil, ce napis ni cena z decimalkami (npr. "Tickets", "FREE").
     /// displayPrice vedno uporabi piko (String(format: "%.2f")), zato je pika zanesljivo locilo.
     private func razdeljenaCena(_ napis: String) -> (glavni: String, decimalke: String)? {
-        guard napis == event.displayPrice, let pika = napis.lastIndex(of: ".") else { return nil }
+        guard napis == prikazanaCena, let pika = napis.lastIndex(of: ".") else { return nil }
         let glavni = String(napis[..<pika])
         let decimalke = String(napis[pika...])
         guard !glavni.isEmpty, decimalke.count > 1 else { return nil }

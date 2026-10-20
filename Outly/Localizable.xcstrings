@@ -9024,17 +9024,6 @@
         }
       }
     },
-    "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.\n\nIf the club cancels an event, you are entitled to a refund from the club, to your original payment method.\n\nFor anything else, contact the club or write to luka@outly.si with your ticket number.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vstopnice prodaja klub; Outly je tržnica. Ker je vstopnica vezana na določen datum, po nakupu ni 14-dnevne pravice do odstopa.\n\nČe klub odpove dogodek, imaš pravico do vračila denarja s strani kluba na izvirni način plačila.\n\nZa vse ostalo se obrni na klub ali piši na luka@outly.si s številko svoje vstopnice."
-          }
-        }
-      }
-    },
     "Tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.": {
       "extractionState": "manual",
       "localizations": {
@@ -15072,28 +15061,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kako delujejo vračila za vstopnice in odpovedane dogodke."
-          }
-        }
-      }
-    },
-    "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vstopnice prodaja klub; Outly je tržnica. Ker je vstopnica vezana na določen datum, po nakupu ni 14-dnevne pravice do odstopa."
-          }
-        }
-      }
-    },
-    "If the club cancels an event, you are entitled to a refund from the club, to your original payment method.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Če klub odpove dogodek, imaš pravico do vračila denarja s strani kluba na izvirni način plačila."
           }
         }
       }

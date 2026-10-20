@@ -128,6 +128,16 @@ extension APIClient {
     }
 }
 
+/// Kaj naredi »Try again« po napaki na seznamu vstopnic na vratih (EventTicketsView).
+enum VrataPonovitev: Equatable {
+    /// Prva stran za trenutno iskanje (napaka pri prvem nalaganju ali sprememba iskanja).
+    case prvaStran
+    /// Naslednja stran (napaka pri »Load more«).
+    case naslednjaStran
+    /// Osvezitev vseh ze nalozenih vrstic (napaka po »Check in«): vratar ne izgubi mesta na seznamu.
+    case osvezitev
+}
+
 /// Stanje seznama vstopnic na vratih (EventTicketsView), cista logika za strani in iskanje (testi: Racun18InVrataTests).
 /// Vrstice in `naslednjiOdmik` veljajo za iskanje `q`, za katero so bile nalozene: ko uporabnik tipka (premor pred novim
 /// nalaganjem), »Load more« ne sme vzeti NOVEGA `q` s STARIM odmikom.
@@ -140,12 +150,34 @@ struct VrataSeznam {
     private(set) var naslednjiOdmik: Int?
     /// Ocisceno iskanje, za katero veljajo vrstice in odmik; nil = nic nalozeno.
     private(set) var q: String?
+    /// Vstopnice, vpisane na tem telefonu, preden je osvezitev seznama prisla (vrata ne cakajo na seznam). Prazni se z vsako
+    /// osvezitvijo (`zamenjajKose`): strezniski seznam je takrat merodajen.
+    private(set) var vpisani = Set<Int>()
 
     static func kljuc(_ iskanje: String) -> String { APIClient.ocistiIskanjeVstopnic(iskanje) }
 
     /// Odmik za »Load more«, samo ce seznam velja za trenutno iskanje (sicer nil: gumba ni, klic se ne poslje).
     func odmikNaprej(iskanje: String) -> Int? {
         q == Self.kljuc(iskanje) ? naslednjiOdmik : nil
+    }
+
+    /// Je vstopnica vpisana: po streznikovem seznamu (`status == "used"`) ali po vpisu na tem telefonu.
+    func jeVpisana(_ t: APITicket) -> Bool { t.isUsed || vpisani.contains(t.id) }
+
+    /// Rezultat vpisa (POST /business/tickets/scan), po katerem je vstopnica gotovo vpisana: `ok` ali `already_used`.
+    static func vpisaniRezultat(_ result: String) -> Bool { result == "ok" || result == "already_used" }
+
+    /// Takoj po uspesnem vpisu: vrstica pokaze »IN«, se preden pride osvezitev seznama (drugi dotik ne poslje se enega vpisa).
+    mutating func oznaciVpisano(_ id: Int) { vpisani.insert(id) }
+
+    /// Kaj sme »Try again« zares narediti: zelena ponovitev velja samo, ce seznam se velja za trenutno iskanje. Sicer (vmes
+    /// spremenjeno iskanje, ni vec naslednje strani) pade na prvo stran, da gumb nikoli ni mrtev.
+    func ponovitev(_ zelena: VrataPonovitev, iskanje: String) -> VrataPonovitev {
+        switch zelena {
+        case .prvaStran: return .prvaStran
+        case .naslednjaStran: return odmikNaprej(iskanje: iskanje) != nil ? .naslednjaStran : .prvaStran
+        case .osvezitev: return q == Self.kljuc(iskanje) ? .osvezitev : .prvaStran
+        }
     }
 
     /// Prva stran za iskanje (zamenja vse).
@@ -162,6 +194,7 @@ struct VrataSeznam {
         zadetkov = zadnja.total
         naslednjiOdmik = zadnja.nextOffset
         q = Self.kljuc(iskanje)
+        vpisani = []
     }
 
     /// Pripne naslednjo stran. false (nic se ne spremeni), ce je vmes drugo iskanje ali stran ni za trenutni odmik (dvojni dotik).

@@ -288,8 +288,17 @@ extension APIEvent {
         return false
     }
 
-    var displayPrice: String? {
-        guard let cents = ticketPriceCents else { return nil }
+    var displayPrice: String? { napisCene(cenaCents: nil) }
+
+    /// Cena ene vstopnice: `cenaCents` (sveza cena po 409) nadomesti `ticketPriceCents`; dogodek brez cene ostane brez cene.
+    func veljavnaCenaCents(cenaCents: Int?) -> Int? {
+        ticketPriceCents == nil ? nil : (cenaCents ?? ticketPriceCents)
+    }
+
+    /// Napis cene za dogodek, ki ima ceno na Outlyju. `cenaCents` (npr. sveza cena po 409 »The ticket price has changed.«)
+    /// nadomesti `ticketPriceCents`; dogodek brez cene (zunanja prodaja, vrata) tudi z njo ostane brez cene.
+    func napisCene(cenaCents: Int?) -> String? {
+        guard let cents = veljavnaCenaCents(cenaCents: cenaCents) else { return nil }
         let amount = Double(cents) / 100.0
 
         let code = (currency ?? "EUR").uppercased()
