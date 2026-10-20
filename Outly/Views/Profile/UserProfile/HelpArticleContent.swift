@@ -23,7 +23,7 @@ extension HelpArticle {
             ],
             notes: [
                 String(localized: "Your date of birth is used only to check age limits on events."),
-                String(localized: "You must be at least 15 to use Outly."),
+                String(localized: "You must be at least 18 to create an Outly account. You can browse events without an account."),
             ],
             destination: nil,
             related: ["age", "profile", "password"]
@@ -249,7 +249,7 @@ extension HelpArticle {
                 String(localized: "The bottle is included in the table price."),
                 String(localized: "If you pay through Stripe, the table is held for you until you finish paying."),
                 String(localized: "Tickets you don't send stay under Tickets."),
-                String(localized: "Like tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club; Outly is the intermediary."),
+                String(localized: "Like tickets, a VIP table for a dated event cannot be returned after purchase. The seller is the club or event organiser; for Outly's own events the seller is the operator of Outly."),
             ],
             destination: nil,
             related: ["buy", "transfer", "refund"]
@@ -259,7 +259,7 @@ extension HelpArticle {
             group: String(localized: "Events & clubs"),
             topic: String(localized: "Events  >  Age limits"),
             title: String(localized: "Age limits"),
-            summary: String(localized: "Outly is for people aged 15 and over, and some events have a higher age limit."),
+            summary: String(localized: "An Outly account is for people aged 18 and over, and some events have a higher age limit."),
             path: [
                 String(localized: "Profile"),
                 String(localized: "My Account"),
@@ -270,7 +270,7 @@ extension HelpArticle {
                 String(localized: "Tap Edit and enter your date of birth."),
             ],
             notes: [
-                String(localized: "You must be 15 or older to use Outly. Some events are 18+ — this is shown on the event and you need a date of birth in your profile to buy tickets for them."),
+                String(localized: "You must be 18 or older to create an Outly account. Some events have a higher age limit — this is shown on the event and you need a date of birth in your profile to buy tickets for them."),
                 String(localized: "The club may ask for an ID at the door."),
             ],
             destination: .personalInfo,
@@ -409,9 +409,9 @@ extension HelpArticle {
             path: [],
             steps: [],
             notes: [
-                String(localized: "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase."),
-                String(localized: "If the club cancels an event, you are entitled to a refund from the club, to your original payment method."),
-                String(localized: "For anything else, contact the club or write to luka@outly.si with your ticket number."),
+                String(localized: "Tickets are sold by the club or event organiser, with Outly as the intermediary; for Outly's own events the seller is the operator of Outly. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase."),
+                String(localized: "If an event is cancelled, you are entitled to a refund from the seller, to your original payment method."),
+                String(localized: "For anything else, contact the seller or write to luka@outly.si with your ticket number."),
             ],
             destination: nil,
             related: ["buy", "transfer", "my-tickets"]

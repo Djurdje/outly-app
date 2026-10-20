@@ -172,7 +172,9 @@ struct HelpArticleView: View {
                         stepsSection
                     }
 
-                    if let destination = article.destination {
+                    // Vsi cilji (vstopnice, prijatelji, osebni podatki, geslo, izbris racuna ...) rabijo racun: gost gumba ne vidi
+                    // (brez zetona bi zasloni klicali PATCH /me, DELETE /me ali odjavo s praznim zetonom).
+                    if let destination = article.destination, session.isLoggedIn {
                         // Ena poudarjena stvar na zaslonu: edini modri gumb.
                         NavigationLink { destination.view } label: {
                             OutlyPrimaryButtonLabel(title: "Take me there")

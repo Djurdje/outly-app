@@ -605,10 +605,13 @@ extension APIClient {
     /// POST /events/:id/orders — nakup vstopnic. V testnem nacinu takoj "placano".
     /// `idempotencyKey` (NakupniKljuc): ponovitev istega nakupa z istim kljucem vrne isto narocilo (201 z istim telesom).
     /// `locale`: jezik Stripe Checkouta (`"sl"` | `"en"`), privzeto jezik APLIKACIJE; star backend polje spregleda.
-    func buyTickets(token: String, eventId: Int, quantity: Int, idempotencyKey: String? = nil,
+    /// `expectedPriceCents` (#277 N2): cena ENE vstopnice v centih, kot jo je kupec videl (ne quantity x cena); ob drugacni ceni
+    /// backend vrne 409 »The ticket price has changed.« (narocila ni). nil = brez preverbe (kot doslej).
+    func buyTickets(token: String, eventId: Int, quantity: Int, expectedPriceCents: Int? = nil, idempotencyKey: String? = nil,
                     locale: String = Jezik.shared.stripeLocale) async throws -> PurchaseResponse {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
-                                  json: APIClient.telesoNakupaVstopnic(quantity: quantity, locale: locale),
+                                  json: APIClient.telesoNakupaVstopnic(quantity: quantity, locale: locale,
+                                                                       expectedPriceCents: expectedPriceCents),
                                   idempotencyKey: idempotencyKey,
                                   dodatneGlave: APIClient.nakupneGlave)
         return try decode(PurchaseResponse.self, from: data)
@@ -617,8 +620,12 @@ extension APIClient {
     /// Telo POST /events/:id/orders: `quantity` + `locale` (jezik Stripe Checkouta, glej `Jezik.stripeLocale`) + `terms_version`
     /// (razlicica pogojev, ki jo je kupec videl ob gumbu za placilo; backend jo shrani na narocilo, #215; star backend polje spregleda
     /// in ga ne steje v vsebino za idempotenco).
-    static func telesoNakupaVstopnic(quantity: Int, locale: String, termsVersion: String = LegalLinks.termsVersion) -> [String: Any] {
-        ["quantity": quantity, "locale": locale, "terms_version": termsVersion]
+    /// `expected_price_cents` samo, ce je podan (0 = brezplacno je veljavna vrednost in NI isto kot brez polja).
+    static func telesoNakupaVstopnic(quantity: Int, locale: String, termsVersion: String = LegalLinks.termsVersion,
+                                     expectedPriceCents: Int? = nil) -> [String: Any] {
+        var telo: [String: Any] = ["quantity": quantity, "locale": locale, "terms_version": termsVersion]
+        if let expectedPriceCents { telo["expected_price_cents"] = expectedPriceCents }
+        return telo
     }
 
     /// POST /tickets/:id/transfer — posljem vstopnico prijatelju po e-naslovu.

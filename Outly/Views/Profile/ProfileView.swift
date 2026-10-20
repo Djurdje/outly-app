@@ -16,6 +16,8 @@ struct ProfileView: View {
     @State private var user: Me?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    /// Prijava iz povabila gosta (GostProfilView); list zivi na tem nivoju, glej body.
+    @State private var prijava: PrijavaZahteva?
 
     private var userAvatarURL: URL? {
         guard let s = user?.avatarUrl, !s.isEmpty else { return nil }
@@ -28,15 +30,25 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            if jeLastnik, let trenutni {
+            if !session.isLoggedIn {
+                // Brskanje brez racuna (19. 10. 2026): povabilo k prijavi namesto profila. List s prijavo je pripet SPODAJ
+                // (na NavigationStack, ki ostane), ne na GostProfilView: ob setSession se ta zamenja z osebnim profilom in list
+                // bi se zaprl pred nalaganjem /me in dokoncanjem racuna.
+                GostProfilView(prijava: $prijava)
+            } else if jeLastnik, let trenutni {
                 OwnerProfileView(me: trenutni)
             } else {
                 osebni
             }
         }
+        .prijavaPoZahtevi($prijava)
         // Samo onAppear (prej se .task -> vsak prikaz 2x GET /me).
         .onAppear {
             Task { await loadProfile() }
+        }
+        // Prijava iz povabila na tem zavihku: profil se nalozi takoj (zavihek je ze na zaslonu, onAppear se ne ponovi).
+        .onChange(of: session.isLoggedIn) { _, prijavljen in
+            if prijavljen { Task { await loadProfile() } } else { user = nil }
         }
         .preferredColorScheme(.dark)
     }

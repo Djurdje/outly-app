@@ -45,6 +45,9 @@ struct VipTablesView: View {
     /// prepisal edini zapis in izgubil pot nazaj na to narocilo); gumb nadaljuje placilo z ISTIM kljucem in paketom iz narocila.
     /// Pocisti jo uspeh, 409 `order_not_active` / zavrnjen kljuc in opuscen nakup (v `rezerviraj` in `preveriPlacilo`).
     @State private var zadrzana: NakupniKljuc.Vsebina?
+    /// Brskanje brez racuna: tloris, mize in paketi so javni (GET /events/:id/vip), »Reserve table« pa zahteva racun.
+    /// Po prijavi se tloris prebere znova (izbira mize in paketa ostane), kupec pritisne gumb sam (ceno in starost vidi pred placilom).
+    @State private var prijava: PrijavaZahteva?
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -127,6 +130,7 @@ struct VipTablesView: View {
             if uspel { PushObvestila.deljen.predlagajDovoljenje() }
         }
         .task { await naloziVip() }
+        .prijavaPoZahtevi($prijava)
         // Stripova gostovana stran v ASWebAuthenticationSession: po placilu jo outly://placilo zapre sama in takoj preberemo narocilo
         // (uspeh: vec samodejnih branj, webhook zakasni); izrecni preklic: ostanemo na listu, narocilo preverimo tiho enkrat;
         // zaprtje seje ali napaka: narocilo preberemo enkrat, pending ostane na kartici »Checking your payment«.
@@ -262,7 +266,11 @@ struct VipTablesView: View {
                         }
                         OutlyPogojiNakupa()
                         // Slog kot v BuyTicketsView; besedilo navaja tudi mizo in paket (ZVPot-1 130/1-10, 135/12): miza je vedno za dogodek z datumom.
-                        Text("VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary.")
+                        // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni. Dokler prodajalca
+                // ne poznamo (nalaganje, napaka, star backend), stavka o posredniku tudi ne kazemo.
+                        Text(LocalizedStringKey(prodajalec == nil || prodajalec?.isPlatform == true
+                             ? "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12)."
+                             : "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary."))
                             .font(.system(size: 11))
                             .foregroundColor(.white.opacity(0.40))
                             .fixedSize(horizontal: false, vertical: true)
@@ -495,7 +503,11 @@ struct VipTablesView: View {
 
     private func gumbRezerviraj(_ m: VipTable) -> some View {
         OutlyAkcijskiGumb(naslov: naslovGumba(m), stanje: $stanje) {
-            Task { await rezerviraj(m) }
+            if session.isLoggedIn {
+                Task { await rezerviraj(m) }
+            } else {
+                prijava = PrijavaZahteva(nadaljuj: { Task { await naloziVip() } })
+            }
         }
         .disabled(!paketIzbran || naval || stripe.preverjanje || prodajaNedosegljiva)
         .opacity(paketIzbran && !naval && !stripe.preverjanje && !prodajaNedosegljiva ? 1 : 0.45)
@@ -636,7 +648,9 @@ struct VipTablesView: View {
             izberiPredizpolnjeno(v, novo)
             return
         }
-        guard let narocila = try? await APIClient.shared.fetchMyOrders(token: session.token) else { return }
+        // Gost nima narocil (GET /me/orders zahteva zeton): brez klica, da ni 401.
+        guard session.isLoggedIn,
+              let narocila = try? await APIClient.shared.fetchMyOrders(token: session.token) else { return }
         // Branje lahko traja (strezniku za potekla narocila kliče Stripe): kupec je medtem lahko izbral drugo mizo ali pritisnil Reserve,
         // zapis kljuca pa pripada ze drugi vsebini. Takrat NE naredimo nicesar (zlasti ne zavrzemo kljuca nove izbire).
         // `!Task.isCancelled`: odgovor, ki je prisel po zaprtju lista, ne sme klicati poNapaki/poUspehu.

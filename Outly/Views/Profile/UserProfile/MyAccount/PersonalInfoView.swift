@@ -137,7 +137,7 @@ struct PersonalInfoView: View {
         case .phone: editText = user?.phone ?? ""
         case .birthDate:
             editDate = user?.dateOfBirth.flatMap(Self.parse)
-                ?? Calendar.current.date(byAdding: .year, value: -20, to: Date()) ?? Date()
+                ?? StarostRacuna.gregorijanski().date(byAdding: .year, value: -20, to: Date()) ?? Date()
         case .country: editCountry = user?.country ?? (Locale.current.region?.identifier ?? "SI")
         }
         activeEdit = field
@@ -160,8 +160,9 @@ struct PersonalInfoView: View {
                     Text("Leave empty to remove the number.")
                         .font(.caption).foregroundColor(.gray)
                 case .birthDate:
+                    // Zgornja meja: danes - 18 let (StarostRacuna); ze vpisan datum (racun 15-17 let) ostane izbirljiv.
                     DatePicker("", selection: $editDate,
-                               in: (Calendar.current.date(byAdding: .year, value: -120, to: Date()) ?? .distantPast)...Date(),
+                               in: StarostRacuna.obsegIzbirnika(obstojec: user?.dateOfBirth.flatMap(Self.parse)),
                                displayedComponents: .date)
                         .datePickerStyle(.wheel)
                         .labelsHidden()
@@ -220,9 +221,15 @@ struct PersonalInfoView: View {
                 update.phone = .some("+" + digits)
             }
         case .birthDate:
-            let years = Calendar.current.dateComponents([.year], from: editDate, to: Date()).year ?? 0
-            guard years >= 15 else { editError = String(localized: "You must be at least 15 years old to use Outly."); return }
-            update.dateOfBirth = Self.format(editDate)
+            // Meja 18 let velja samo ob spremembi (backend #301): isti datum, kot je ze v racunu, ni sprememba in se ne poslje
+            // (obstojec racun 15-17 let ostane urejljiv). Druga polja se shranjujejo vsako zase in datuma ne posiljajo.
+            let izbran = Self.format(editDate)
+            if let shranjen = user?.dateOfBirth, shranjen == izbran { activeEdit = nil; return }
+            guard StarostRacuna.smeShraniti(izbran: izbran, shranjen: user?.dateOfBirth, danes: StarostRacuna.dan(Date())) else {
+                editError = String(localized: "You must be at least 18 years old to use Outly.")
+                return
+            }
+            update.dateOfBirth = izbran
         case .country:
             update.country = editCountry
         }

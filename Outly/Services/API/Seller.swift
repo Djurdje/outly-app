@@ -1,7 +1,8 @@
 import Foundation
 
 /// Podatki prodajalca (kluba) pred nakupom in na potrdilu (outly-backend#94 / #101; ZVPot-1 18/1-2, 130/1-1).
-/// Prodajalec je VEDNO klub `events.club_id` (pri gostovanem dogodku organizator, ne prizorisce); Outly je posrednik.
+/// Prodajalec je klub `events.club_id` (pri gostovanem dogodku organizator, ne prizorisce); Outly je posrednik. Izjema: uradni
+/// profil Outly (`isPlatform`, backend I50) - prodaja NEXT DIMENSIONS sama, brez posrednika.
 /// Backend ga vrne v `seller` pri GET /events/:id, GET /events/:id/vip in GET /clubs/:id (ne v seznamih).
 /// Star backend objekta nima -> `seller == nil` in zaslon se obnasa kot doslej.
 /// Vsa polja imajo privzeto vrednost (trdo pravilo 2): manjkajoc ali napacen kljuc ne podre dekodiranja.
@@ -18,16 +19,20 @@ struct Seller: Codable, Equatable {
     var email: String
     /// Backend: firma, sedez, maticna, davcna, DDV status in (telefon ali e-naslov) so izpolnjeni.
     var complete: Bool
+    /// Prodajalec je platforma sama (uradni profil Outly, NEXT DIMENSIONS; backend I50, PR #302): polje `is_platform: true` pride
+    /// SAMO takrat, pri navadnem klubu ga ni (-> false). Takrat Outly NI posrednik in zaslon tega ne sme pisati.
+    var isPlatform: Bool
 
     enum CodingKeys: String, CodingKey {
         case name, address, phone, email, complete
         case registrationNumber = "registration_number"
         case taxNumber = "tax_number"
         case vatPayer = "vat_payer"
+        case isPlatform = "is_platform"
     }
 
     init(name: String = "", address: String = "", registrationNumber: String = "", taxNumber: String = "",
-         vatPayer: Bool? = nil, phone: String = "", email: String = "", complete: Bool = false) {
+         vatPayer: Bool? = nil, phone: String = "", email: String = "", complete: Bool = false, isPlatform: Bool = false) {
         self.name = name
         self.address = address
         self.registrationNumber = registrationNumber
@@ -36,6 +41,7 @@ struct Seller: Codable, Equatable {
         self.phone = phone
         self.email = email
         self.complete = complete
+        self.isPlatform = isPlatform
     }
 
     init(from decoder: Decoder) throws {
@@ -48,6 +54,7 @@ struct Seller: Codable, Equatable {
         phone              = (try? c.decodeIfPresent(String.self, forKey: .phone)) ?? ""
         email              = (try? c.decodeIfPresent(String.self, forKey: .email)) ?? ""
         complete           = (try? c.decodeIfPresent(Bool.self, forKey: .complete)) ?? false
+        isPlatform         = (try? c.decodeIfPresent(Bool.self, forKey: .isPlatform)) ?? false
     }
 
     // MARK: - Besedila za prikaz
