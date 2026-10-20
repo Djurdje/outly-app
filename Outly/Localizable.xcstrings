@@ -5666,6 +5666,28 @@
         }
       }
     },
+    "Already checked in at %@ – was this your earlier attempt? Check the guest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že vpisan ob %@ – je bil to tvoj prejšnji poskus? Preveri gosta."
+          }
+        }
+      }
+    },
+    "Already checked in – was this your earlier attempt? Check the guest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že vpisan – je bil to tvoj prejšnji poskus? Preveri gosta."
+          }
+        }
+      }
+    },
     "Not enough tickets left.": {
       "extractionState": "manual",
       "localizations": {

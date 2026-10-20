@@ -142,22 +142,47 @@ final class Popravki2KrogTests: XCTestCase {
         XCTAssertNil(s.napakaVrstice(s.vrstice[1]))
     }
 
-    func testAlreadyUsedPoTimeoutuVZadnjihPetMinutahJePotrditev() {
-        let zdaj = Date(timeIntervalSince1970: 1_800_000_000)
-        func r(_ prej: TimeInterval, _ result: String = "already_used", fraction: Bool = true) -> ScanResult {
-            let f = ISO8601DateFormatter()
-            f.formatOptions = fraction ? [.withInternetDateTime, .withFractionalSeconds] : [.withInternetDateTime]
-            return ScanResult(result: result, message: "Already used", usedAt: f.string(from: zdaj.addingTimeInterval(-prej)))
+    /// KRITICNO: timeout ne pomeni, da je prvi POST prisel do streznika. `already_used` po timeoutu NI potrditev nasega vpisa
+    /// (vmes je lahko vstopnico vpisal drug vratar ali kamera s kopijo kode): ni uspeh (`ok`), temveč opozorilo.
+    func testAlreadyUsedPoTimeoutuNiUspehTemvecOpozorilo() {
+        let r = ScanResult(result: "already_used", message: "Already used", usedAt: "2026-10-20T21:07:30.000Z")
+        XCTAssertTrue(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: .nepotrjeno))
+        XCTAssertNotEqual(r.result, "ok")
+        XCTAssertTrue(VrataSeznam.vpisaniRezultat(r.result))      // vrstica je »IN«: streznik pravi used
+        XCTAssertNil(VrataSeznam.zavrnitev(r))                    // ni rdeca zavrnitev na vrstici
+        // Brez predhodnega negotovega izida ostane obstojec rdec »already used«.
+        XCTAssertFalse(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: nil))
+        XCTAssertFalse(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: .neuspelo))
+        XCTAssertFalse(VrataSeznam.jeOpozoriloPoNepotrjenem(r, prejsnja: .zavrnjeno("x")))
+        // Drug rezultat po timeoutu ni opozorilo (ok je ok, zavrnitev je zavrnitev).
+        for drug in ["ok", "invalid", "wrong_club", "void"] {
+            XCTAssertFalse(VrataSeznam.jeOpozoriloPoNepotrjenem(ScanResult(result: drug, message: "", usedAt: nil), prejsnja: .nepotrjeno), drug)
         }
-        XCTAssertTrue(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: .nepotrjeno, zdaj: zdaj))
-        XCTAssertTrue(VrataSeznam.jePotrditevPoNapaki(r(299, fraction: false), prejsnja: .nepotrjeno, zdaj: zdaj))
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(301), prejsnja: .nepotrjeno, zdaj: zdaj))          // prestaro: vpis koga drugega
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: .neuspelo, zdaj: zdaj))             // klic ni prisel do streznika
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: nil, zdaj: zdaj))                   // prvi poskus: navadna zavrnitev
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8), prejsnja: .zavrnjeno("x"), zdaj: zdaj))
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(r(8, "invalid"), prejsnja: .nepotrjeno, zdaj: zdaj))
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(ScanResult(result: "already_used", message: "", usedAt: nil), prejsnja: .nepotrjeno, zdaj: zdaj))
-        XCTAssertFalse(VrataSeznam.jePotrditevPoNapaki(ScanResult(result: "already_used", message: "", usedAt: "ni datum"), prejsnja: .nepotrjeno, zdaj: zdaj))
+    }
+
+    func testUraVpisaVLokalnemPasu() throws {
+        let ljubljana = try XCTUnwrap(TimeZone(identifier: "Europe/Ljubljana"))
+        let utc = try XCTUnwrap(TimeZone(identifier: "UTC"))
+        XCTAssertEqual(VrataSeznam.uraVpisa("2026-10-20T21:07:30.123Z", casovniPas: ljubljana), "23:07")     // poletni cas do 25. 10.
+        XCTAssertEqual(VrataSeznam.uraVpisa("2026-10-20T21:07:30Z", casovniPas: utc), "21:07")
+        XCTAssertEqual(VrataSeznam.uraVpisa("2026-12-01T21:07:30Z", casovniPas: ljubljana), "22:07")         // zimski cas
+        XCTAssertNil(VrataSeznam.uraVpisa(nil, casovniPas: utc))
+        XCTAssertNil(VrataSeznam.uraVpisa("ni datum", casovniPas: utc))
+    }
+
+    func testZavrnitevZastaraKoOsvezitevPokazeDrugStatus() throws {
+        var s = VrataSeznam()
+        s.zamenjaj(try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#), iskanje: "")
+        s.oznaciNapakoVpisa(1, .zavrnjeno("Not valid today"))
+        s.oznaciNapakoVpisa(2, .neuspelo)
+        // Isti status: zavrnitev ostane.
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "valid"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertEqual(s.napakaVrstice(s.vrstice[0]), .zavrnjeno("Not valid today"))
+        // Drug status (vracilo): zavrnitev zastara in se pobrise; izpad povezave (.neuspelo) ostane, dokler vratar ne ponovi.
+        s.zamenjajKose([try stran(#"{"tickets": [{"id": 1, "status": "refunded"}, {"id": 2, "status": "valid"}], "total": 2}"#)], iskanje: "")
+        XCTAssertNil(s.napakaVrstice(s.vrstice[0]))
+        XCTAssertEqual(s.napakaVrstice(s.vrstice[1]), .neuspelo)
+        XCTAssertEqual(Set(s.napakeVpisa.keys), [2])
     }
 
     // MARK: - Preklic ni napaka (VIP razdelek, nalaganje)

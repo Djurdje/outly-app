@@ -657,6 +657,8 @@ struct EventTicketsView: View {
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var zadnjiRezultat: ScanResult?
+    /// Opozorilo v pasu (oranzno) namesto rezultata: `already_used` po vpisu z negotovim izidom (glej `jeOpozoriloPoNepotrjenem`).
+    @State private var pasOpozorilo: String?
     @State private var delujoc: Int?
     /// VIP rezervacije (backend 025). nil = se ni naloženo ali star streznik brez poti -> razdelka ni.
     @State private var vip: BusinessEventVip?
@@ -685,7 +687,19 @@ struct EventTicketsView: View {
                     stevilka(stevci.map { "\($0.expected)" } ?? "–", "expected")
                 }
 
-                if let r = zadnjiRezultat {
+                if let opozorilo = pasOpozorilo {
+                    HStack(spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text(opozorilo)
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(12)
+                    .background(Color.orange.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                } else if let r = zadnjiRezultat {
                     HStack(spacing: 10) {
                         Image(systemName: r.result == "ok" ? "checkmark.circle.fill" : "xmark.octagon.fill")
                             .foregroundColor(r.result == "ok" ? .green : .red)
@@ -1213,6 +1227,14 @@ struct EventTicketsView: View {
         .minimumScaleFactor(0.7)
     }
 
+    /// Besedilo opozorila v pasu: ura vpisa iz `used_at` v casovnem pasu naprave (ce je znana).
+    private func opozorilo(_ r: ScanResult) -> String {
+        if let ura = VrataSeznam.uraVpisa(r.usedAt) {
+            return String(localized: "Already checked in at \(ura) – was this your earlier attempt? Check the guest.")
+        }
+        return String(localized: "Already checked in – was this your earlier attempt? Check the guest.")
+    }
+
     /// Haptika samo, ko je zaslon na ekranu (vpis, ki se konca po odhodu z zaslona, naprave ne trese).
     private func haptika(_ vrsta: UINotificationFeedbackGenerator.FeedbackType) {
         guard vidno else { return }
@@ -1225,18 +1247,21 @@ struct EventTicketsView: View {
     private func checkIn(_ t: APITicket) async {
         delujoc = t.id
         defer { delujoc = nil }
-        // Kaj je padlo prej: po timeoutu je prvi vpis morda uspel, zato `already_used` pri ponovitvi ni nujno zavrnitev.
+        // Kaj je padlo prej: po timeoutu je prvi vpis morda uspel, zato `already_used` pri ponovitvi dobi opozorilo z uro (ne uspeh).
         let prejsnja = seznam.napakeVpisa[t.id]
         seznam.pobrisiNapakoVpisa(t.id)
         do {
-            var rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr, timeout: 10)
-            if VrataSeznam.jePotrditevPoNapaki(rezultat, prejsnja: prejsnja) {
-                // Prvi vpis je uspel, odgovor se je izgubil: nevtralen »IN«, ne rdec »already used«.
-                rezultat = ScanResult(result: "ok", message: String(localized: "Checked in"), usedAt: rezultat.usedAt, ticket: rezultat.ticket)
-            }
+            let rezultat = try await APIClient.shared.scanTicket(token: session.token, qr: t.qr, timeout: 10)
             zadnjiRezultat = rezultat
-            // Haptika za vrata (hrup, gneca): uspeh ob `ok`, napaka ob vsakem drugem izidu (ze uporabljena, zavrnjena, neveljavna ...).
-            haptika(rezultat.result == "ok" ? .success : .error)
+            // `already_used` po timeoutu NI potrditev nasega vpisa (vmes je lahko vstopnico vpisal kdo drug): vrstica je »IN«, a pas je
+            // opozorilo z uro in haptika .warning; vratar preveri gosta. Sicer uspeh ob `ok`, napaka ob vsakem drugem izidu.
+            if VrataSeznam.jeOpozoriloPoNepotrjenem(rezultat, prejsnja: prejsnja) {
+                pasOpozorilo = opozorilo(rezultat)
+                haptika(.warning)
+            } else {
+                pasOpozorilo = nil
+                haptika(rezultat.result == "ok" ? .success : .error)
+            }
             if VrataSeznam.vpisaniRezultat(rezultat.result) {
                 seznam.oznaciVpisano(t.id)
             } else if let zavrnitev = VrataSeznam.zavrnitev(rezultat) {
@@ -1251,6 +1276,9 @@ struct EventTicketsView: View {
             guard !VrataSeznam.jePreklic(error) else { return }
             seznam.oznaciNapakoVpisa(t.id, VrataSeznam.napakaIzIzjeme(error))
             haptika(.error)
+            // Strezniku vpis morda je prisel do konca: osvezitev seznama sama pokaze »IN«, ce je vstopnica `used` (brez novega POST-a).
+            osvezitevPoVpisu?.cancel()
+            if vidno { osvezitevPoVpisu = Task { await load(obdrziNalozene: true) } }
         }
     }
 }

@@ -187,6 +187,8 @@ struct VrataSeznam {
     /// Vstopnice, pri katerih rocni vpis ni uspel (omrezje, streznik): vrstica sama pokaze »Not checked in – tap to retry«,
     /// ne glede na to, kje je seznam zdrsnjen. Pobrise ga uspesen (ponovni) vpis ali streznik, ki vstopnico vrne kot `used`.
     private(set) var napakeVpisa: [Int: VrataVrsticaNapaka] = [:]
+    /// Status vstopnice (`status`) ob zavrnitvi: ko osvezitev pokaze drug status, je zavrnitev zastarela in se pobrise.
+    private var statusPriZavrnitvi: [Int: String] = [:]
 
     static func kljuc(_ iskanje: String) -> String { APIClient.ocistiIskanjeVstopnic(iskanje) }
 
@@ -217,10 +219,16 @@ struct VrataSeznam {
     func napakaVrstice(_ t: APITicket) -> VrataVrsticaNapaka? { jeVpisana(t) ? nil : napakeVpisa[t.id] }
 
     /// Vpis te vstopnice ni uspel (izjema pri klicu ali zavrnitev streznika): napaka ostane NA vrstici.
-    mutating func oznaciNapakoVpisa(_ id: Int, _ napaka: VrataVrsticaNapaka = .neuspelo) { napakeVpisa[id] = napaka }
+    mutating func oznaciNapakoVpisa(_ id: Int, _ napaka: VrataVrsticaNapaka = .neuspelo) {
+        napakeVpisa[id] = napaka
+        statusPriZavrnitvi[id] = napaka.jeZavrnitev ? vrstice.first(where: { $0.id == id })?.status : nil
+    }
 
     /// Nov poskus vpisa se zacne: vrstica je spet nevtralna (vrtavka), ob novi napaki spet rdeca.
-    mutating func pobrisiNapakoVpisa(_ id: Int) { napakeVpisa[id] = nil }
+    mutating func pobrisiNapakoVpisa(_ id: Int) {
+        napakeVpisa[id] = nil
+        statusPriZavrnitvi[id] = nil
+    }
 
     /// Kaj pokaze vrstica po izjemi pri vpisu: timeout in prekinjena povezava = vpis je morda uspel, vse ostalo = ni uspel.
     static func napakaIzIzjeme(_ napaka: Error) -> VrataVrsticaNapaka {
@@ -233,16 +241,21 @@ struct VrataSeznam {
         vpisaniRezultat(r.result) ? nil : .zavrnjeno(r.message.isEmpty ? r.result : r.message)
     }
 
-    /// Okno, v katerem `already_used` po napaki z negotovim izidom steje kot potrditev lastnega vpisa (sekunde).
-    static let oknoPotrditve: TimeInterval = 300
+    /// `already_used` po napaki z negotovim izidom (timeout): strezniku ne moremo verjeti, da je to NAS prejsnji poskus (vmes je
+    /// lahko vstopnico vpisal drug vratar ali kamera s kopijo kode). Vrstica je »IN« (streznik pravi used), pas je opozorilo z uro
+    /// in ne uspeh; vratar preveri gosta. Brez predhodnega `.nepotrjeno` ostane navaden rdec »already used«.
+    static func jeOpozoriloPoNepotrjenem(_ r: ScanResult, prejsnja: VrataVrsticaNapaka?) -> Bool {
+        prejsnja == .nepotrjeno && r.result == "already_used"
+    }
 
-    /// Ponovni vpis po timeoutu: `already_used` z `used_at` v zadnjih ~5 min je potrditev, da je prvi vpis uspel (ne zavrnitev).
-    /// Samo po napaki z negotovim izidom: po `.neuspelo` (klic ni prisel do streznika) je `already_used` vpis koga drugega.
-    static func jePotrditevPoNapaki(_ r: ScanResult, prejsnja: VrataVrsticaNapaka?, zdaj: Date = Date()) -> Bool {
-        guard prejsnja == .nepotrjeno, r.result == "already_used",
-              let niz = r.usedAt,
-              let cas = DateParsing.isoFrac.date(from: niz) ?? DateParsing.iso.date(from: niz) else { return false }
-        return abs(zdaj.timeIntervalSince(cas)) <= oknoPotrditve
+    /// Ura vpisa (HH:mm) iz `used_at` strezniga v casovnem pasu naprave; nil, ce casa ni ali ni veljaven.
+    static func uraVpisa(_ usedAt: String?, casovniPas: TimeZone = .current) -> String? {
+        guard let niz = usedAt, let cas = DateParsing.isoFrac.date(from: niz) ?? DateParsing.iso.date(from: niz) else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = casovniPas
+        f.dateFormat = "HH:mm"
+        return f.string(from: cas)
     }
 
     /// Rezultat vpisa (POST /business/tickets/scan), po katerem je vstopnica gotovo vpisana: `ok` ali `already_used`.
@@ -251,7 +264,7 @@ struct VrataSeznam {
     /// Takoj po uspesnem vpisu: vrstica pokaze »IN«, se preden pride osvezitev seznama (drugi dotik ne poslje se enega vpisa).
     mutating func oznaciVpisano(_ id: Int) {
         vpisani.insert(id)
-        napakeVpisa[id] = nil
+        pobrisiNapakoVpisa(id)
     }
 
     /// Kaj sme »Try again« zares narediti: zelena ponovitev velja samo, ce seznam se velja za trenutno iskanje. Sicer (vmes
@@ -281,6 +294,13 @@ struct VrataSeznam {
         let streznikVpisani = Set(vrstice.filter(\.isUsed).map(\.id))
         vpisani.subtract(streznikVpisani)
         napakeVpisa = napakeVpisa.filter { !streznikVpisani.contains($0.key) }
+        // Zavrnitev velja za status vstopnice ob zavrnitvi: drug status (npr. valid -> refunded) jo naredi zastarelo.
+        for (id, napaka) in napakeVpisa where napaka.jeZavrnitev {
+            if let prej = statusPriZavrnitvi[id], let zdaj = vrstice.first(where: { $0.id == id })?.status, zdaj != prej {
+                napakeVpisa[id] = nil
+            }
+        }
+        statusPriZavrnitvi = statusPriZavrnitvi.filter { napakeVpisa[$0.key] != nil }
     }
 
     /// Pripne naslednjo stran. false (nic se ne spremeni), ce je vmes drugo iskanje ali stran ni za trenutni odmik (dvojni dotik).
