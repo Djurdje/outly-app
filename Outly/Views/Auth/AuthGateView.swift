@@ -66,9 +66,13 @@ struct AuthGateView: View {
                 odjavaMedTokom = true
             } else {
                 odjav += 1
+                // Gost nima »zadnjega uporabnika«: sicer bi ga poznejsa odjava v listu (uporabnikPredOdjavo) primerjala s starim racunom.
+                zadnjiUporabnik = nil
             }
         }
         .onChange(of: nadzor.jeKajOdprto) { _, odprto in
+            // Ponoven poskus odprtja korenskega toka ob zaprtju lista sprozi onChange(of: tokManjka) (`tokManjka` vsebuje
+            // `!nadzor.jeKajOdprto`, zato ob zaprtju lista preide v true): tu ga ne podvajamo.
             if !odprto { poZaprtjuTokov() }
         }
         .onChange(of: session.sessionExpiredNotice) { _, obvestilo in
@@ -96,6 +100,7 @@ struct AuthGateView: View {
         odjavaMedTokom = false
         if !session.isLoggedIn || session.me?.id != uporabnikPredOdjavo { odjav += 1 }
         uporabnikPredOdjavo = nil
+        if !session.isLoggedIn { zadnjiUporabnik = nil }
     }
 
     /// Koren odpre svoj tok prijave z zamikom (drug list se morda se zapira; SwiftUI dveh hkrati ne pokaze). Ce se list v 1,5 s

@@ -5644,6 +5644,83 @@
         }
       }
     },
+    "Not checked in – tap to retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni vpisan – tapni za ponovitev"
+          }
+        }
+      }
+    },
+    "Not confirmed – tap to retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni potrjeno – tapni za ponovitev"
+          }
+        }
+      }
+    },
+    "Already checked in at %@ – was this your earlier attempt? Check the guest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že vpisan ob %@ – je bil to tvoj prejšnji poskus? Preveri gosta."
+          }
+        }
+      }
+    },
+    "Already checked in – was this your earlier attempt? Check the guest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Že vpisan – je bil to tvoj prejšnji poskus? Preveri gosta."
+          }
+        }
+      }
+    },
+    "Checked in at %@ – check the guest": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpisan ob %@ – preveri gosta"
+          }
+        }
+      }
+    },
+    "Checked in – check the guest": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpisan – preveri gosta"
+          }
+        }
+      }
+    },
+    "Checked guest": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preveril sem"
+          }
+        }
+      }
+    },
     "Not enough tickets left.": {
       "extractionState": "manual",
       "localizations": {
@@ -9020,17 +9097,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vstopnice plačaš ob nakupu. Plačila obdeluje Stripe; Outly nikoli ne vidi in ne shranjuje podatkov tvoje kartice, aplikacija pa ne vodi stanja.\n\nTo lahko kadar koli prebereš pod Profil > Plačilo. O vračilih glej Vračila in odpovedani dogodki."
-          }
-        }
-      }
-    },
-    "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.\n\nIf the club cancels an event, you are entitled to a refund from the club, to your original payment method.\n\nFor anything else, contact the club or write to luka@outly.si with your ticket number.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vstopnice prodaja klub; Outly je tržnica. Ker je vstopnica vezana na določen datum, po nakupu ni 14-dnevne pravice do odstopa.\n\nČe klub odpove dogodek, imaš pravico do vračila denarja s strani kluba na izvirni način plačila.\n\nZa vse ostalo se obrni na klub ali piši na luka@outly.si s številko svoje vstopnice."
           }
         }
       }
@@ -15072,39 +15138,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kako delujejo vračila za vstopnice in odpovedane dogodke."
-          }
-        }
-      }
-    },
-    "Tickets are sold by the club; Outly is the marketplace. Because a ticket is for a specific date, there is no 14-day right of withdrawal after purchase.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vstopnice prodaja klub; Outly je tržnica. Ker je vstopnica vezana na določen datum, po nakupu ni 14-dnevne pravice do odstopa."
-          }
-        }
-      }
-    },
-    "If the club cancels an event, you are entitled to a refund from the club, to your original payment method.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Če klub odpove dogodek, imaš pravico do vračila denarja s strani kluba na izvirni način plačila."
-          }
-        }
-      }
-    },
-    "For anything else, contact the club or write to luka@outly.si with your ticket number.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Za vse ostalo se obrni na klub ali piši na luka@outly.si s številko svoje vstopnice."
           }
         }
       }
