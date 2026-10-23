@@ -379,6 +379,14 @@ struct MyClubDetailView: View {
                             }
                             .buttonStyle(.plain)
 
+                            // Kdo je rezerviral katero VIP mizo (owner, manager; vratar rezervacije vidi v seznamu vstopnic dogodka).
+                            NavigationLink {
+                                RezervacijeDogodkiView()
+                            } label: {
+                                OutlyMenuRowButton(icon: "table.furniture", title: "Reservations")
+                            }
+                            .buttonStyle(.plain)
+
                             // Ekipo (migracija 009) ureja lastnik in manager, isto kot canManage.
                             NavigationLink {
                                 TeamView(clubName: club?.name)

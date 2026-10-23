@@ -90,6 +90,13 @@ struct APIEvent: Identifiable, Decodable {
     let salesOpenAt: String?
     let salesCloseAt: String?
 
+    /// Kako se placa VIP miza (backend 23. 10. 2026; GET /events/:id): "app" (privzeto, tudi star backend) | "door" = gost mizo
+    /// v aplikaciji samo rezervira in placa z gotovino na VIP vratih. Natancnejsi podatek je `EventVip.vipPayment` (GET /events/:id/vip).
+    let vipPayment: String
+    /// Samo v GET /business/events: stevilo zasedenih miz na dogodku (placane + rezervacije po telefonu + rezervacije v aplikaciji).
+    /// Star backend polja nima -> 0.
+    let vipReservations: Int
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -130,6 +137,8 @@ struct APIEvent: Identifiable, Decodable {
         case onSale = "on_sale"
         case salesOpenAt = "sales_open_at"
         case salesCloseAt = "sales_close_at"
+        case vipPayment = "vip_payment"
+        case vipReservations = "vip_reservations"
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -177,6 +186,8 @@ struct APIEvent: Identifiable, Decodable {
         onSale           = (try? c.decodeIfPresent(Bool.self, forKey: .onSale)) ?? true
         salesOpenAt      = (try? c.decodeIfPresent(String.self, forKey: .salesOpenAt)) ?? nil
         salesCloseAt     = (try? c.decodeIfPresent(String.self, forKey: .salesCloseAt)) ?? nil
+        vipPayment       = VipPlacilo.normaliziraj((try? c.decodeIfPresent(String.self, forKey: .vipPayment)) ?? nil)
+        vipReservations  = max(0, (try? c.decodeIfPresent(Int.self, forKey: .vipReservations)) ?? 0)
     }
 }
 

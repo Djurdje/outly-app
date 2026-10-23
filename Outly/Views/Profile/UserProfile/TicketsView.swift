@@ -54,6 +54,9 @@ struct TicketsView: View {
                         }
                     }
 
+                    // Rezervacije miz za placilo na VIP vratih (GET /me/table-reservations). Prazno = razdelka ni.
+                    RezervacijeMizSekcija()
+
                     if isLoading && tickets.isEmpty {
                         HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.top, 40)
                     } else if let errorText {
