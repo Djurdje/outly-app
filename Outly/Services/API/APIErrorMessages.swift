@@ -150,6 +150,10 @@ extension APIError {
         if t.contains("auth service unavailable")       { return String(localized: "Sign-in service is temporarily unavailable. Please try again.") }
         if t.contains("identity provider")              { return String(localized: "Please sign out and sign in again, then retry.") }
         if t.contains("could not delete the account")   { return String(localized: "Could not delete the account right now. Please try again.") }
+        // »Skip for later« brez datuma rojstva (PATCH /me { complete_onboarding: true }, 23. 10. 2026): 400
+        // `{ "error": "date_of_birth_required", "message": "Date of birth is required." }`. Po KODI, PRED blokom »date of birth« spodaj
+        // (sporocilo ga vsebuje in bi postalo »Enter a valid date of birth.«).
+        if t.contains("date_of_birth_required")         { return String(localized: "Date of birth is required.") }
         // Najnizja starost racuna (PATCH /me z datumom rojstva): od 19. 10. 2026 »You must be at least 18 years old.« (backend #301),
         // star backend »… at least 15 years old.«. PRED »date of birth« in »you must be at least« (meja nakupa) spodaj.
         if t.contains("at least 18 years")              { return String(localized: "You must be at least 18 years old to use Outly.") }

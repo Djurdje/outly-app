@@ -5,6 +5,7 @@ import SwiftUI
 /// racuna sploh ne nalozi. Vsebina kartice je enaka Figmi.
 ///
 /// Poslje PATCH /me { phone?, dateOfBirth, country } in nadaljuje na izbiro zanrov.
+/// Datum rojstva je obvezen; drzava, telefon in zanri so neobvezni: »Skip for later« poslje samo datum rojstva (ista preverba 18+).
 @MainActor
 struct CompleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
@@ -15,6 +16,7 @@ struct CompleteAccountView: View {
     @State private var birthDate: Date = CompleteAccountView.defaultBirthDate
     @State private var message: String?
     @State private var isLoading = false
+    @State private var isSkipping = false
     @State private var goToGenres = false
 
     private static var defaultBirthDate: Date {
@@ -115,7 +117,7 @@ struct CompleteAccountView: View {
 
             // --- drzava ---
             VStack(alignment: .leading, spacing: 6) {
-                Text("Country")
+                Text("Country (optional)")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.outlyMuted)
                 Menu {
@@ -149,8 +151,25 @@ struct CompleteAccountView: View {
             OutlyPrimaryButton(title: isLoading ? "Saving..." : "Continue", isLoading: isLoading) {
                 Task { await save() }
             }
-            .disabled(isLoading)
+            .disabled(isLoading || isSkipping)
             .padding(.top, 10)
+
+            // Sekundarno dejanje: navadno besedilo, ne modro (modra samo na glavnem gumbu).
+            Button {
+                Task { await save(preskoci: true) }
+            } label: {
+                HStack(spacing: 8) {
+                    if isSkipping { ProgressView().tint(Color.outlyMuted) }
+                    Text("Skip for later")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.outlyMuted)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading || isSkipping)
         }
         .padding(22)
         .background(Color.outlyCard)
@@ -197,7 +216,8 @@ struct CompleteAccountView: View {
         return f.string(from: d)
     }
 
-    private func save() async {
+    /// `preskoci`: »Skip for later« — preverba datuma rojstva ostane, drzava in telefon se ne posljeta.
+    private func save(preskoci: Bool = false) async {
         message = nil
 
         // Najnizja starost racuna 18 let (Martin 19. 10. 2026; backend #301, po ljubljanskem koledarju). Datum, ki je ze v racunu,
@@ -208,27 +228,30 @@ struct CompleteAccountView: View {
             message = String(localized: "You must be at least 18 years old to use Outly.")
             return
         }
-        guard Countries.name(for: countryCode) != nil else {
-            message = String(localized: "Choose your country.")
-            return
-        }
 
         var update = APIClient.MeUpdate()
         update.dateOfBirth = izbran
-        update.country = countryCode
 
-        let digits = phoneNumber.filter { $0.isNumber }
-        if !digits.isEmpty {
-            let dial = dialCode.filter { $0.isNumber }
-            guard !dial.isEmpty else {
-                message = String(localized: "Choose the country code for your phone number.")
+        if !preskoci {
+            guard Countries.name(for: countryCode) != nil else {
+                message = String(localized: "Choose your country.")
                 return
             }
-            update.phone = .some("+" + dial + digits)
+            update.country = countryCode
+
+            let digits = phoneNumber.filter { $0.isNumber }
+            if !digits.isEmpty {
+                let dial = dialCode.filter { $0.isNumber }
+                guard !dial.isEmpty else {
+                    message = String(localized: "Choose the country code for your phone number.")
+                    return
+                }
+                update.phone = .some("+" + dial + digits)
+            }
         }
 
-        isLoading = true
-        defer { isLoading = false }
+        if preskoci { isSkipping = true } else { isLoading = true }
+        defer { isLoading = false; isSkipping = false }
         do {
             let me = try await APIClient.shared.updateMe(token: session.token, update)
             session.me = me

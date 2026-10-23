@@ -3,6 +3,8 @@ import SwiftUI
 /// Figma: "complete acc 2" (424:1433). Cipi v treh stolpcih, izbrani so modri.
 /// Seznam pride iz GET /genres (21 zanrov); ob "Complete" gre PATCH /me { genres }.
 /// Streznik nato nastavi onboarded_at in AuthGateView spusti uporabnika v aplikacijo.
+/// Zanri so neobvezni: »Skip for later« poslje { complete_onboarding: true } (in zanre, ce jih je uporabnik ze izbral);
+/// »Complete« poslje zanre in complete_onboarding: true. Pri urejanju (isEditing) se complete_onboarding ne posilja in »Skip for later« ni prikazan.
 @MainActor
 struct SelectGenresView: View {
     /// true = urejanje iz "Personal info": po shranjevanju se zaslon zapre.
@@ -15,6 +17,7 @@ struct SelectGenresView: View {
     @State private var selected: Set<String> = []
     @State private var isLoadingList = true
     @State private var isSaving = false
+    @State private var isSkipping = false
     @State private var message: String?
 
     private let columns = [GridItem(.flexible(), spacing: 12),
@@ -67,9 +70,28 @@ struct SelectGenresView: View {
                         OutlyPrimaryButton(title: isSaving ? "Saving..." : (isEditing ? "Save" : "Complete"), isLoading: isSaving) {
                             Task { await save() }
                         }
-                        .disabled(isSaving || selected.isEmpty || genres.isEmpty)
+                        .disabled(isSaving || isSkipping || selected.isEmpty || genres.isEmpty)
                         .opacity(selected.isEmpty ? 0.6 : 1)
                         .padding(.top, 30)
+
+                        if !isEditing {
+                            // Sekundarno dejanje: navadno besedilo, ne modro (modra samo na glavnem gumbu).
+                            Button {
+                                Task { await save(preskoci: true) }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    if isSkipping { ProgressView().tint(Color.outlyMuted) }
+                                    Text("Skip for later")
+                                        .font(.system(size: 15, weight: .semibold))
+                                }
+                                .foregroundColor(.outlyMuted)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 40)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isSaving || isSkipping)
+                        }
                     }
                     .padding(22)
                     .background(Color.outlyCard)
@@ -101,20 +123,27 @@ struct SelectGenresView: View {
         }
     }
 
-    private func save() async {
+    /// `preskoci`: »Skip for later« — brez zahteve po vsaj enem zanru (ze izbrani se posljejo); streznik z complete_onboarding nastavi onboarded_at.
+    private func save(preskoci: Bool = false) async {
         message = nil
-        guard !selected.isEmpty else { message = String(localized: "Select at least one genre."); return }
-        isSaving = true
-        defer { isSaving = false }
+        if !preskoci {
+            guard !selected.isEmpty else { message = String(localized: "Select at least one genre."); return }
+        }
+        if preskoci { isSkipping = true } else { isSaving = true }
+        defer { isSaving = false; isSkipping = false }
         do {
             var update = APIClient.MeUpdate()
-            update.genres = genres.filter { selected.contains($0) }  // ohrani vrstni red streznika
+            // Ze izbrani zanri se pri »Skip for later« ne zavrzejo; prazna izbira zanrov ne posilja.
+            if !selected.isEmpty {
+                update.genres = genres.filter { selected.contains($0) }  // ohrani vrstni red streznika
+            }
+            if !isEditing { update.completeOnboarding = true }
             let me = try await APIClient.shared.updateMe(token: session.token, update)
             session.me = me
             if isEditing { dismiss(); return }
             if !me.isOnboarded {
-                // Streznik zahteva datum rojstva + vsaj en zanr. Ce se vedno ni dokoncano,
-                // manjka datum rojstva (uporabnik je prisel sem po drugi poti).
+                // Z complete_onboarding streznik zahteva samo datum rojstva (zanri so neobvezni). Ce se vedno ni dokoncano
+                // (npr. star backend, ki polja ne pozna), manjka datum rojstva (uporabnik je prisel sem po drugi poti).
                 message = String(localized: "Please fill in your date of birth on the previous step.")
             }
             // Ce je isOnboarded, AuthGateView sam preklopi na MainTabView.

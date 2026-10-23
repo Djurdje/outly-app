@@ -193,6 +193,9 @@ extension APIClient {
         var genres: [String]? = nil
         /// Prijatelji vidijo moje nacrte (migracija 016).
         var sharePlansWithFriends: Bool? = nil
+        /// Dokoncanje racuna brez drzave, telefona in zanrov (»Skip for later«). Streznik nastavi onboarded_at, ce je datum rojstva
+        /// vpisan, sicer 400 `date_of_birth_required`. nil = polja ne posljemo (vsi drugi klici updateMe).
+        var completeOnboarding: Bool? = nil
 
         var json: [String: Any] {
             var j: [String: Any] = [:]
@@ -204,6 +207,7 @@ extension APIClient {
             if let country { j["country"] = country }
             if let genres { j["genres"] = genres }
             if let sharePlansWithFriends { j["share_plans_with_friends"] = sharePlansWithFriends }
+            if let completeOnboarding { j["complete_onboarding"] = completeOnboarding }
             return j
         }
     }
