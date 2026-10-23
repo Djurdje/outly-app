@@ -79,6 +79,17 @@ struct APIEvent: Identifiable, Decodable {
     /// seznami in star backend ga nimajo -> nil (zaslon vzame prodajalca iz kluba, glej `Seller`).
     let seller: Seller?
 
+    /// Pavza prodaje (backend 055, I53, 21. 10. 2026): admin ali klub je prodajo zacasno ustavil (cena ostane).
+    /// Star backend polja nima -> false.
+    let salesPaused: Bool
+    /// Nakup je ta trenutek odprt po stanju, pavzi, zacetku in oknu prodaje (backend 055/#327). Ne pove cene ne zaloge
+    /// (to sta `ticketPriceCents` in `availability`). Star backend polja nima -> true (vedenje kot doslej).
+    let onSale: Bool
+    /// Okno prodaje (#327): ISO cas ali nil (brez omejitve). Javni odgovor ju (23. 10. 2026) se ne vraca -> nil;
+    /// ce ju backend doda, vrstica z vstopnicami pokaze »prodaja se odpre …« / »prodaja zaprta« namesto splosnega besedila.
+    let salesOpenAt: String?
+    let salesCloseAt: String?
+
     enum CodingKeys: String, CodingKey {
         case id
         case clubId = "club_id"
@@ -115,6 +126,10 @@ struct APIEvent: Identifiable, Decodable {
         case paymentMode = "payment_mode"
         case isDemo = "is_demo"
         case seller
+        case salesPaused = "sales_paused"
+        case onSale = "on_sale"
+        case salesOpenAt = "sales_open_at"
+        case salesCloseAt = "sales_close_at"
     }
 
     /// Obrambno dekodiranje (glej APIClub): NULL ali manjkajoc kljuc v eni vrstici
@@ -158,12 +173,44 @@ struct APIEvent: Identifiable, Decodable {
         paymentMode      = (try? c.decodeIfPresent(String.self, forKey: .paymentMode)) ?? nil
         isDemo           = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false
         seller           = (try? c.decodeIfPresent(Seller.self, forKey: .seller)) ?? nil
+        salesPaused      = (try? c.decodeIfPresent(Bool.self, forKey: .salesPaused)) ?? false
+        onSale           = (try? c.decodeIfPresent(Bool.self, forKey: .onSale)) ?? true
+        salesOpenAt      = (try? c.decodeIfPresent(String.self, forKey: .salesOpenAt)) ?? nil
+        salesCloseAt     = (try? c.decodeIfPresent(String.self, forKey: .salesCloseAt)) ?? nil
     }
 }
 
 extension APIEvent {
     /// Nacin placila za nakupni list (vstopnice); nil iz starega backenda -> `.neznan`.
     var nacinPlacila: NacinPlacila { NacinPlacila(paymentMode) }
+}
+
+// MARK: - Stanje prodaje (pavza in okno prodaje, backend 055 / #327)
+extension APIEvent {
+    /// Zakaj nakup ni odprt, ceprav ima dogodek ceno na Outlyju. nil = prodaja odprta (ali star backend brez `on_sale`).
+    enum ZaprtaProdaja: Equatable {
+        /// `sales_paused`: prodaja je zacasno ustavljena.
+        case ustavljena
+        /// Okno prodaje se ni odprto (cas odprtja, ce ga backend poslje).
+        case odpreSe(Date)
+        /// Okno prodaje je zaprto.
+        case zaprta
+        /// `on_sale == false` brez znanega razloga (javni odgovor okna ne vraca).
+        case niOdprta
+    }
+
+    var openSalesDate: Date? { salesOpenAt.flatMap { DateParsing.parseBackendDate($0) } }
+    var closeSalesDate: Date? { salesCloseAt.flatMap { DateParsing.parseBackendDate($0) } }
+
+    /// Razlog, da prodaja ni odprta; odloca streznik (`on_sale`), aplikacija samo izbere besedilo.
+    var zaprtaProdaja: ZaprtaProdaja? {
+        if salesPaused { return .ustavljena }
+        guard !onSale else { return nil }
+        let zdaj = Date()
+        if let odpre = openSalesDate, odpre > zdaj { return .odpreSe(odpre) }
+        if let zapre = closeSalesDate, zapre < zdaj { return .zaprta }
+        return .niOdprta
+    }
 }
 
 // MARK: - Date helpers (UI)

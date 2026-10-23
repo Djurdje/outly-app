@@ -83,10 +83,23 @@ struct EventFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Event") {
+                Section {
                     TextField("Title", text: $title)
+                        // Najvec 200 znakov (#339): daljsega vnosa ni; star daljsi naslov se lahko samo krajsa.
+                        .onChange(of: title) { stari, novi in
+                            let omejen = NaslovDogodka.omejiVnos(novi: novi, stari: stari, shranjen: existing?.title)
+                            if omejen != novi { title = omejen }
+                        }
                     TextField("Description", text: $description, axis: .vertical)
                         .lineLimit(3...6)
+                } header: {
+                    Text("Event")
+                } footer: {
+                    let n = NaslovDogodka.dolzina(title)
+                    if n > NaslovDogodka.najvec - 20 {
+                        Text(verbatim: "\(n)/\(NaslovDogodka.najvec)")
+                            .foregroundStyle(n > NaslovDogodka.najvec ? Color.red : Color.secondary)
+                    }
                 }
 
                 Section("When") {
@@ -410,6 +423,11 @@ struct EventFormView: View {
         message = nil
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { message = String(localized: "Enter a title."); return }
+        // Isto pravilo kot streznik (#339): nespremenjen star daljsi naslov gre skozi, nov ali spremenjen najvec 200 znakov.
+        if NaslovDogodka.predolg(cleanTitle, shranjen: existing?.title) {
+            message = String(localized: "The title is too long. Use at most 200 characters.")
+            return
+        }
         guard let centsOpt = Self.cents(from: priceText) else {
             message = String(localized: "Enter the price as a number, e.g. 12.50.")
             return
@@ -559,5 +577,44 @@ struct EventFormView: View {
         } catch {
             message = error.userMessage
         }
+    }
+}
+
+/// Naslov dogodka najvec 200 znakov (backend #339, ARCHITECTURE »Naslov dogodka«, 23. 10. 2026). Streznik steje znake Unicode
+/// (kodne tocke, `[...s].length` v JS) po `trim()`: emoji = 1, ne 2 enoti UTF-16. Swift `count` steje grafeme (zastava = 1),
+/// zato tu stejemo `unicodeScalars`, da aplikacija ne dovoli naslova, ki ga streznik zavrne.
+enum NaslovDogodka {
+    static let najvec = 200
+
+    /// Dolzina, kot jo steje streznik (po obrezu presledkov).
+    static func dolzina(_ naslov: String) -> Int {
+        naslov.trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars.count
+    }
+
+    /// Ali bi streznik naslov zavrnil. Nespremenjen shranjen naslov (po obrezu) se ne preverja (star daljsi naslov ostane).
+    static func predolg(_ naslov: String, shranjen: String?) -> Bool {
+        let cist = naslov.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let shranjen, cist == shranjen.trimmingCharacters(in: .whitespacesAndNewlines) { return false }
+        return cist.unicodeScalars.count > najvec
+    }
+
+    /// Omejitev med tipkanjem: vnos do 200 znakov ostane; star daljsi naslov se sme krajsati, ne daljsati;
+    /// prilepljeno besedilo se odreze na 200 znakov (po celih grafemih, da se emoji/zastava ne razreze).
+    /// `shranjen` = naslov s streznika: ob prvem izpolnjevanju obrazca (prefill) ga ne odrezemo.
+    static func omejiVnos(novi: String, stari: String, shranjen: String?) -> String {
+        let n = novi.unicodeScalars.count
+        if n <= najvec || novi == shranjen { return novi }
+        let s = stari.unicodeScalars.count
+        if n <= s { return novi }
+        if s > najvec { return stari }
+        var stevec = 0
+        var konec = novi.startIndex
+        for i in novi.indices {
+            let k = novi[i].unicodeScalars.count
+            if stevec + k > najvec { break }
+            stevec += k
+            konec = novi.index(after: i)
+        }
+        return String(novi[..<konec])
     }
 }
