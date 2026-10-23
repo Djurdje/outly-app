@@ -3,8 +3,8 @@ import SwiftUI
 /// Figma: "complete acc 2" (424:1433). Cipi v treh stolpcih, izbrani so modri.
 /// Seznam pride iz GET /genres (21 zanrov); ob "Complete" gre PATCH /me { genres }.
 /// Streznik nato nastavi onboarded_at in AuthGateView spusti uporabnika v aplikacijo.
-/// Zanri so neobvezni: »Skip for later« poslje samo { complete_onboarding: true } (brez zanrov); »Complete« poslje zanre
-/// in complete_onboarding: true. Pri urejanju (isEditing) se complete_onboarding ne posilja in »Skip for later« ni prikazan.
+/// Zanri so neobvezni: »Skip for later« poslje { complete_onboarding: true } (in zanre, ce jih je uporabnik ze izbral);
+/// »Complete« poslje zanre in complete_onboarding: true. Pri urejanju (isEditing) se complete_onboarding ne posilja in »Skip for later« ni prikazan.
 @MainActor
 struct SelectGenresView: View {
     /// true = urejanje iz "Personal info": po shranjevanju se zaslon zapre.
@@ -123,7 +123,7 @@ struct SelectGenresView: View {
         }
     }
 
-    /// `preskoci`: »Skip for later« — brez zanrov in brez zahteve po vsaj enem; streznik z complete_onboarding nastavi onboarded_at.
+    /// `preskoci`: »Skip for later« — brez zahteve po vsaj enem zanru (ze izbrani se posljejo); streznik z complete_onboarding nastavi onboarded_at.
     private func save(preskoci: Bool = false) async {
         message = nil
         if !preskoci {
@@ -133,7 +133,8 @@ struct SelectGenresView: View {
         defer { isSaving = false; isSkipping = false }
         do {
             var update = APIClient.MeUpdate()
-            if !preskoci {
+            // Ze izbrani zanri se pri »Skip for later« ne zavrzejo; prazna izbira zanrov ne posilja.
+            if !selected.isEmpty {
                 update.genres = genres.filter { selected.contains($0) }  // ohrani vrstni red streznika
             }
             if !isEditing { update.completeOnboarding = true }
