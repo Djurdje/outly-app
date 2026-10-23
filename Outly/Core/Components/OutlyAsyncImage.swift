@@ -72,20 +72,60 @@ enum SlikovniPredpomnilnik {
         return c
     }()
 
+    /// Drobne sliccice (najvec ~48 px) za zamegljeno ozadje plakata (PlakatDogodka). Nastanejo ob prenosu,
+    /// skupaj s polno sliko, zato ne zahtevajo dodatnega klica na omrezje (in ne Cloudinary transformacije).
+    private static let drobne: NSCache<NSURL, UIImage> = {
+        let c = NSCache<NSURL, UIImage>()
+        c.countLimit = 400
+        return c
+    }()
+
+    /// Najdaljsa stranica zamegljenega ozadja v pikslih. Razteg ~10x z mehkim vzorcenjem da gladko zameglitev.
+    nonisolated static let najvecPikslovOzadja: CGFloat = 48
+
     static func iz(_ url: URL) -> UIImage? {
         predpomnilnik.object(forKey: url as NSURL)
+    }
+
+    /// Drobna razlicica za zamegljeno ozadje. Ce je (zaradi izpisa iz pomnilnika) ni, jo naredi iz
+    /// ze dekodirane slike; nil samo, ce slika se ni nalozena.
+    static func ozadje(_ url: URL) -> UIImage? {
+        if let m = drobne.object(forKey: url as NSURL) { return m }
+        guard let polna = predpomnilnik.object(forKey: url as NSURL) else { return nil }
+        let m = zmanjsaj(polna, najvec: najvecPikslovOzadja)
+        drobne.setObject(m, forKey: url as NSURL)
+        return m
+    }
+
+    /// Pomanjsa ze dekodirano sliko (UIGraphicsImageRenderer); za drobne razlicice je to nekaj mikrosekund.
+    nonisolated static func zmanjsaj(_ slika: UIImage, najvec: CGFloat) -> UIImage {
+        let velikost = slika.size
+        let daljsa = max(velikost.width, velikost.height)
+        guard daljsa > najvec, daljsa > 0 else { return slika }
+        let faktor = najvec / daljsa
+        let nova = CGSize(width: max(1, (velikost.width * faktor).rounded()),
+                          height: max(1, (velikost.height * faktor).rounded()))
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: nova, format: format).image { _ in
+            slika.draw(in: CGRect(origin: .zero, size: nova))
+        }
     }
 
     /// Prenos (skozi URLCache.shared, disk), pomanjsava in dekodiranje v ozadju, nato v pomnilnik.
     static func nalozi(_ url: URL) async throws -> UIImage {
         let (podatki, _) = try await URLSession.shared.data(from: url)
         let meja = najvecPikslov
-        let slika = await Task.detached(priority: .userInitiated) {
-            SlikovniPredpomnilnik.pomanjsaj(podatki, najvec: meja)
+        let ozadjeMeja = najvecPikslovOzadja
+        let (slika, drobna) = await Task.detached(priority: .userInitiated) {
+            (SlikovniPredpomnilnik.pomanjsaj(podatki, najvec: meja),
+             SlikovniPredpomnilnik.pomanjsaj(podatki, najvec: ozadjeMeja))
         }.value
         guard let slika else { throw URLError(.cannotDecodeContentData) }
         let cena = Int(slika.size.width * slika.scale * slika.size.height * slika.scale * 4)
         predpomnilnik.setObject(slika, forKey: url as NSURL, cost: cena)
+        if let drobna { drobne.setObject(drobna, forKey: url as NSURL) }
         return slika
     }
 

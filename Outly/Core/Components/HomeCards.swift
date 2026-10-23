@@ -85,7 +85,7 @@ struct HitCard: View {
             }
             .padding(14)
 
-            OmejenaSlika(urlString: event.posterUrl)
+            PlakatDogodka(urlString: event.posterUrl)
                 .frame(width: 130)
         }
         .frame(height: 150)
@@ -109,7 +109,7 @@ struct HeroEventCard: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            OmejenaSlika(urlString: event.posterUrl)
+            PlakatDogodka(urlString: event.posterUrl)
 
             LinearGradient(colors: [.black.opacity(0.75), .clear, .clear, .black.opacity(0.9)],
                            startPoint: .top, endPoint: .bottom)

@@ -32,11 +32,8 @@ struct GuestListKartica: View {
     @ViewBuilder
     private var plakat: some View {
         if !lista.event.posterUrl.isEmpty, let url = URL(string: lista.event.posterUrl) {
-            Color.clear
+            PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .frame(width: 70, height: 70)
-                .overlay(
-                    OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
-                )
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         } else {
@@ -166,12 +163,9 @@ struct GuestListDetailView: View {
                 .foregroundColor(.white)
 
             if !lista.event.posterUrl.isEmpty, let url = URL(string: lista.event.posterUrl) {
-                Color.clear
+                PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                     .frame(height: 160)
                     .frame(maxWidth: .infinity)
-                    .overlay(
-                        OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
-                    )
                     .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             }

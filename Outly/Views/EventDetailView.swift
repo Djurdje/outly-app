@@ -128,7 +128,11 @@ struct EventDetailView: View {
                 // da uporabnik vidi, kako je bilo. Prenese se sele ob dotiku (OutlyRecapVideo).
                 if let recap = event.recapVideoURL {
                     OutlyRecapVideo(url: recap, posterUrl: headerImageUrl, playSize: 64)
+                } else if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
+                    // Cel plakat (fit) na zamegljenem ozadju; velikost glave ostane (heroHeight).
+                    PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 } else if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
+                    // Brez plakata: slika kluba kot doslej (fotografija, ne plakat).
                     OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: {

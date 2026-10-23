@@ -196,7 +196,7 @@ struct EventFormView: View {
                 Section("Poster") {
                     HStack(spacing: 12) {
                         if let url = URL(string: posterUrl), !posterUrl.isEmpty {
-                            OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.08) }
+                            PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                                 .frame(width: 64, height: 64)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }

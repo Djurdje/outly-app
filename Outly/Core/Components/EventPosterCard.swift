@@ -107,25 +107,8 @@ struct EventPosterCard: View {
 
     @ViewBuilder
     private var poster: some View {
-        if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
-            OutlyAsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let img):
-                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-                        .transition(.opacity)
-                default:
-                    SkeletonBlock()
-                }
-            }
-        } else {
-            // Brez plakata: samo modra v temno (pravilo: brez vijolicnih prelivov).
-            ZStack {
-                LinearGradient(colors: [Color.outlyBlue.opacity(0.55), Color.outlyBackground], startPoint: .topLeading, endPoint: .bottomTrailing)
-                Image(systemName: "music.note")
-                    .font(.system(size: 34, weight: .bold))
-                    .foregroundColor(.white.opacity(0.85))
-            }
-        }
+        // Cel plakat (fit) na zamegljenem ozadju; okvir kartice ostane enak (PlakatDogodka).
+        PlakatDogodka(urlString: event.posterUrl)
     }
 }
 
