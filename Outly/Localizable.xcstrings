@@ -810,6 +810,17 @@
         }
       }
     },
+    "Promo code (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Promo koda (neobvezno)"
+          }
+        }
+      }
+    },
     "Push notifications": {
       "extractionState": "manual",
       "localizations": {
@@ -11921,6 +11932,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dotakni se proste mize, da jo rezerviraš."
+          }
+        }
+      }
+    },
+    "This promo code is not valid for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta promo koda za ta dogodek ne velja."
           }
         }
       }

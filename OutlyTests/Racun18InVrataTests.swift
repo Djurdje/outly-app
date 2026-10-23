@@ -297,6 +297,21 @@ final class Racun18InVrataTests: XCTestCase {
         XCTAssertNil(APIClient.telesoNakupaVstopnic(quantity: 1, locale: "en")["expected_price_cents"])
     }
 
+    // MARK: - Promo koda (samo statistika)
+
+    func testTeloNakupaPromoKodaSamoCeNeprazna() {
+        XCTAssertEqual(APIClient.telesoNakupaVstopnic(quantity: 1, locale: "en", promoCode: "  max12 ")["promo_code"] as? String, "max12")
+        XCTAssertNil(APIClient.telesoNakupaVstopnic(quantity: 1, locale: "en", promoCode: "   ")["promo_code"])
+        XCTAssertNil(APIClient.telesoNakupaVstopnic(quantity: 1, locale: "en", promoCode: nil)["promo_code"])
+    }
+
+    func testPromoKodaNeveljavnaKljucOstane() {
+        let napaka = APIError.requestFailed(400, #"{"error":"promo_code_invalid","message":"This promo code is not valid for this event."}"#)
+        XCTAssertTrue(napaka.jePromoKodaNeveljavna)
+        XCTAssertEqual(napaka.nakupniIzid, .navadna)
+        XCTAssertEqual(napaka.nakupUserMessage, String(localized: "This promo code is not valid for this event."))
+    }
+
     // MARK: - Pogoji 1.1.4
 
     func testRazlicicaPogojev() {

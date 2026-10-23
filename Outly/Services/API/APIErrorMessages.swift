@@ -85,6 +85,8 @@ extension APIError {
         // 400 { error: "invalid_url", field, message } (backend url_polja.js, #269 / #293, I48): sporocilo po polju. Prvo, ker
         // `message` (»website must be a web link …«) ne sme pasti v druge podnize spodaj.
         if t.contains("invalid_url") { return napacnaPovezava(polje: APIError.poljeNapake(raw)) }
+        // Promo koda pri nakupu navadnih vstopnic (samo statistika): 400 `{ "error": "promo_code_invalid", "message": … }`. Po KODI, prvo.
+        if t.contains("promo_code_invalid") { return String(localized: "This promo code is not valid for this event.") }
         // Seznam vstopnic za vrata (#277 N1): 503 search_timeout = poskusi znova; 400 invalid_q = predolgo iskanje.
         if t.contains("search_timeout") { return String(localized: "The ticket list is busy. Try again in a few seconds.") }
         if t.contains("invalid_q") { return String(localized: "Search text is too long or contains characters that aren't allowed.") }
@@ -277,6 +279,13 @@ extension Error {
         guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 503 else { return false }
         let t = raw.lowercased()
         return t.contains("too many purchases") || t.contains("server busy") || t.contains("service temporarily unavailable")
+    }
+
+    /// 400 `promo_code_invalid`: neznana, neaktivna ali za ta dogodek neveljavna promo koda; narocila ni, kupec kodo popravi ali izbrise.
+    /// `nakupniIzid` = `.navadna`, torej idempotentni kljuc ostane (narocilo ni nastalo, ni nic vezanega nanj).
+    var jePromoKodaNeveljavna: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 400 else { return false }
+        return raw.lowercased().contains("promo_code_invalid")
     }
 
     /// 409 `free_limit` (backend#203): oseba bi presegla mejo brezplacnih vstopnic za dogodek (cena 0 EUR).
