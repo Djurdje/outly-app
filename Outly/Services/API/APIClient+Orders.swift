@@ -607,11 +607,14 @@ extension APIClient {
     /// `locale`: jezik Stripe Checkouta (`"sl"` | `"en"`), privzeto jezik APLIKACIJE; star backend polje spregleda.
     /// `expectedPriceCents` (#277 N2): cena ENE vstopnice v centih, kot jo je kupec videl (ne quantity x cena); ob drugacni ceni
     /// backend vrne 409 »The ticket price has changed.« (narocila ni). nil = brez preverbe (kot doslej).
+    /// `promoCode` (neobvezno, SAMO statistika: cena in placilo se ne spremenita): prazno po trim = polja ne posljemo.
+    /// Neveljavna koda -> 400 `promo_code_invalid` (narocila ni, kljuc ostane), glej `Error.jePromoKodaNeveljavna`.
     func buyTickets(token: String, eventId: Int, quantity: Int, expectedPriceCents: Int? = nil, idempotencyKey: String? = nil,
-                    locale: String = Jezik.shared.stripeLocale) async throws -> PurchaseResponse {
+                    locale: String = Jezik.shared.stripeLocale, promoCode: String? = nil) async throws -> PurchaseResponse {
         let data = try await send(path: "events/\(eventId)/orders", method: "POST", token: token,
                                   json: APIClient.telesoNakupaVstopnic(quantity: quantity, locale: locale,
-                                                                       expectedPriceCents: expectedPriceCents),
+                                                                       expectedPriceCents: expectedPriceCents,
+                                                                       promoCode: promoCode),
                                   idempotencyKey: idempotencyKey,
                                   dodatneGlave: APIClient.nakupneGlave)
         return try decode(PurchaseResponse.self, from: data)
@@ -621,10 +624,12 @@ extension APIClient {
     /// (razlicica pogojev, ki jo je kupec videl ob gumbu za placilo; backend jo shrani na narocilo, #215; star backend polje spregleda
     /// in ga ne steje v vsebino za idempotenco).
     /// `expected_price_cents` samo, ce je podan (0 = brezplacno je veljavna vrednost in NI isto kot brez polja).
+    /// `promo_code` samo, ce je po trim neprazen (velike crke in veljavnost odloca streznik; koda cene ne spremeni).
     static func telesoNakupaVstopnic(quantity: Int, locale: String, termsVersion: String = LegalLinks.termsVersion,
-                                     expectedPriceCents: Int? = nil) -> [String: Any] {
+                                     expectedPriceCents: Int? = nil, promoCode: String? = nil) -> [String: Any] {
         var telo: [String: Any] = ["quantity": quantity, "locale": locale, "terms_version": termsVersion]
         if let expectedPriceCents { telo["expected_price_cents"] = expectedPriceCents }
+        if let koda = promoCode?.trimmingCharacters(in: .whitespacesAndNewlines), !koda.isEmpty { telo["promo_code"] = koda }
         return telo
     }
 

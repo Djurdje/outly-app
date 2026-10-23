@@ -42,6 +42,10 @@ struct BuyTicketsView: View {
     /// Cena po 409 »The ticket price has changed.« (GET /events/:id); nil = cena iz `event`. Kupec jo vidi na kartici in gumbu
     /// in jo potrdi z novim pritiskom na Pay (nakup se ne ponovi sam).
     @State private var svezaCenaCents: Int?
+    /// Neobvezna promo koda (samo statistika, cene ne spremeni). Prazno po trim = `promo_code` se ne poslje.
+    @State private var promoKoda = ""
+    /// Streznik je kodo zavrnil (400 `promo_code_invalid`): polje dobi rdec obris, dokler kupec kode ne spremeni.
+    @State private var promoNeveljavna = false
 
     private var prodajalec: Seller? { seller ?? event.seller ?? nalozenProdajalec }
 
@@ -152,6 +156,10 @@ struct BuyTicketsView: View {
                 }
 
                 karticaNakupa
+
+                if !demoBrezNakupa, !prodajaNedosegljiva, stripe.caka == nil {
+                    poljePromoKode
+                }
 
                 // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
                 // `payment_mode == "test"` (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
@@ -327,6 +335,28 @@ struct BuyTicketsView: View {
                 .stroke(Color.white.opacity(0.10), lineWidth: 1)
         )
         .shadow(color: Color.outlyBlue.opacity(0.18), radius: 22, y: 8)
+    }
+
+    /// Neobvezno polje »Promo code« (samo besedilo, brez gumba Apply in brez popusta: koda se poslje ob nakupu).
+    private var poljePromoKode: some View {
+        TextField("Promo code (optional)", text: $promoKoda)
+            .textInputAutocapitalization(.characters)
+            .autocorrectionDisabled()
+            .submitLabel(.done)
+            .font(.system(size: 15))
+            .foregroundColor(.white)
+            .padding(14)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.red.opacity(promoNeveljavna ? 0.7 : 0), lineWidth: 1)
+            )
+            .disabled(stanje == .nalaga)
+            .onChange(of: promoKoda) { _, _ in
+                // Kupec kodo popravlja: stara zavrnitev ne velja vec.
+                if promoNeveljavna { promoNeveljavna = false; errorMessage = nil }
+            }
     }
 
     private var izbiraKolicine: some View {
@@ -676,7 +706,8 @@ struct BuyTicketsView: View {
             // `expected_price_cents` = cena ENE vstopnice, ki jo kupec vidi (#277 N2); brez cene na dogodku polja ne posljemo.
             let videnaCena: Int? = (svezaCenaCents ?? znanaCenaCents ?? event.ticketPriceCents) == nil ? nil : unitCents
             let p = try await APIClient.shared.buyTickets(token: session.token, eventId: event.id, quantity: quantity,
-                                                          expectedPriceCents: videnaCena, idempotencyKey: kljucNakupa)
+                                                          expectedPriceCents: videnaCena, idempotencyKey: kljucNakupa,
+                                                          promoCode: promoKoda)
             if p.cakaPlacilo {
                 // Stripe: vstopnic se ni (nastanejo po webhooku), zato NE »You're in!«. Kljuc se NE pozabi: ponovni pritisk Pay,
                 // dokler je narocilo pending, vrne isto narocilo in isti checkout_url. Pozabi ga StripeNakup, ko je placano.
@@ -699,6 +730,7 @@ struct BuyTicketsView: View {
             // Haptika .error pride iz OutlyAkcijskiGumb (onChange stanja).
             NakupniKljucShramba.deljena.poNapaki(uporabnik: uporabnik, dogodekId: event.id, vrsta: .vstopnice, izid: error.nakupniIzid)
             errorMessage = error.nakupUserMessage
+            promoNeveljavna = error.jePromoKodaNeveljavna
             stanje = .napaka
             // 409 »The ticket price has changed.«: narocila ni; preberemo dogodek znova in pokazemo novo ceno (kupec potrdi z Pay).
             if error.jeSpremenjenaCenaVstopnice {
