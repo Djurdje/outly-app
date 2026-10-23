@@ -105,6 +105,14 @@ extension APIError {
         // pravili po vsebini spodaj (sporocilo vsebuje »club« in »tickets«).
         if t.contains("demo_club")                      { return DemoKlub.sporocilo }
 
+        // Odpoved ali premik datuma minilega dogodka (#255, I42): 409 `{ error: "event_finished", message }`. Po KODI, PRED
+        // »already started« spodaj (sporocilo ga vsebuje): vracila za tak dogodek uredi Outly.
+        if t.contains("event_finished") {
+            return t.contains("date")
+                ? String(localized: "This event has already taken place, so its date can't be changed. Contact Outly.")
+                : String(localized: "This event has already taken place, so it can't be cancelled. Outly will handle refunds.")
+        }
+
         // Prenos vstopnice prijatelju brez racuna (JSON `{ error, message }`): kode PRED vsem ostalim, ker je telo celoten JSON.
         if t.contains("age_confirmation_required")      { return String(localized: "Confirm that your friend is old enough for this event.") }
         if t.contains("guest_transfer_disabled")        { return String(localized: "Sending tickets to people without an Outly account is not available yet.") }
@@ -146,6 +154,9 @@ extension APIError {
         // star backend »… at least 15 years old.«. PRED »date of birth« in »you must be at least« (meja nakupa) spodaj.
         if t.contains("at least 18 years")              { return String(localized: "You must be at least 18 years old to use Outly.") }
         if t.contains("at least 15 years")              { return String(localized: "You must be at least 15 years old to use Outly.") }
+        // Naslov dogodka najvec 200 znakov (#339, 23. 10. 2026): 400 »Title is too long (max 200 characters).« / »Title must be a string.«
+        if t.contains("title is too long")              { return String(localized: "The title is too long. Use at most 200 characters.") }
+        if t.contains("title must be a string")         { return String(localized: "Enter a title.") }
         if t.contains("title is required")              { return String(localized: "Enter a title.") }
         if t.contains("need a venue")                   { return String(localized: "Choose the venue for this event.") }
         if t.contains("startat must be")                { return String(localized: "Enter a valid start date.") }
@@ -211,6 +222,8 @@ extension APIError {
         if t.contains("price has changed")              { return String(localized: "The table price has changed. Check the new price and try again.") }
         if t.contains("choose a bottle package") || t.contains("package does not belong") { return String(localized: "Choose a bottle for your table.") }
         if t.contains("table not found")                { return String(localized: "This table is not available anymore.") }
+        // Pavza prodaje (055, I53): »Ticket sales are paused. This event is not on sale right now.« PRED splosnim »not on sale«.
+        if t.contains("sales are paused")               { return String(localized: "Ticket sales for this event are paused right now.") }
         if t.contains("not on sale")                    { return String(localized: "This event is not on sale.") }
         if t.contains("no tickets on outly")            { return String(localized: "Tickets for this event are not sold on Outly.") }
         if t.contains("already started")                { return String(localized: "This event has already started.") }

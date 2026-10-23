@@ -181,7 +181,7 @@ struct EventDetailView: View {
         guard DemoKlub.brezNakupa(isDemo: event.isDemo, jeAdmin: jeAdmin) else { return false }
         switch ticketState {
         case .buy, .free, .fewLeft: return true
-        case .external, .door, .soldOut, .ended: return false
+        case .external, .door, .soldOut, .ended, .prodajaZaprta: return false
         }
     }
 
@@ -447,7 +447,7 @@ struct EventDetailView: View {
     }
 
     // MARK: - Vrstica z vstopnicami: temna kartica, cena levo, bel gumb desno (Martin: modra tu ne pase)
-    private enum TicketState { case buy, free, external, door, fewLeft(Int), soldOut, ended }
+    private enum TicketState { case buy, free, external, door, fewLeft(Int), soldOut, ended, prodajaZaprta(APIEvent.ZaprtaProdaja) }
 
     /// Cena ene vstopnice, kot jo kupec vidi na zaslonu: po 409 »The ticket price has changed.« sveza cena iz nakupnega lista
     /// (`cenaPo409`), sicer iz dogodka. Dogodek brez cene na Outlyju (zunanja prodaja, vrata) ostane brez cene.
@@ -460,6 +460,8 @@ struct EventDetailView: View {
         if event.isPast { return .ended }
         if event.isSoldOut { return .soldOut }
         if let cents = veljavnaCenaCents {
+            // Pavza ali okno prodaje (backend 055 / #327): namesto nakupa razlog; star backend (`on_sale` manjka) -> kot doslej.
+            if let razlog = event.zaprtaProdaja { return .prodajaZaprta(razlog) }
             if event.isFewLeft, let n = event.ticketsLeft { return .fewLeft(n) }
             return cents == 0 ? .free : .buy
         }
@@ -480,6 +482,16 @@ struct EventDetailView: View {
             case .door:         return (String(localized: "Tickets"), String(localized: "at the door"))
             case .soldOut:      return (price, String(localized: "sold out"))
             case .ended:        return (String(localized: "Ended"), String(localized: "event is over"))
+            case .prodajaZaprta(let razlog):
+                let cena = veljavnaCenaCents == 0 ? String(localized: "FREE") : price
+                switch razlog {
+                case .ustavljena:       return (cena, String(localized: "ticket sales paused"))
+                case .odpreSe(let d):
+                    let kdaj = DateParsing.oblikovalnik("EEE d MMM · HH:mm").string(from: d)
+                    return (cena, String(localized: "sales open \(kdaj)"))
+                case .zaprta:           return (cena, String(localized: "ticket sales closed"))
+                case .niOdprta:         return (cena, String(localized: "not on sale right now"))
+                }
             }
         }()
 

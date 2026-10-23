@@ -17165,6 +17165,94 @@
           }
         }
       }
+    },
+    "ticket sales paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prodaja ustavljena"
+          }
+        }
+      }
+    },
+    "sales open %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prodaja se odpre %@"
+          }
+        }
+      }
+    },
+    "ticket sales closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prodaja zaprta"
+          }
+        }
+      }
+    },
+    "not on sale right now": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prodaja trenutno ni odprta"
+          }
+        }
+      }
+    },
+    "The title is too long. Use at most 200 characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naslov je predolg. Uporabi največ 200 znakov."
+          }
+        }
+      }
+    },
+    "This event has already taken place, so its date can't be changed. Contact Outly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek je že minil, zato datuma ni mogoče spremeniti. Obrni se na Outly."
+          }
+        }
+      }
+    },
+    "This event has already taken place, so it can't be cancelled. Outly will handle refunds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dogodek je že minil, zato ga ni mogoče odpovedati. Vračila uredi Outly."
+          }
+        }
+      }
+    },
+    "Ticket sales for this event are paused right now.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja vstopnic za ta dogodek je trenutno ustavljena."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
