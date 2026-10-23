@@ -141,8 +141,8 @@ struct SelectGenresView: View {
             session.me = me
             if isEditing { dismiss(); return }
             if !me.isOnboarded {
-                // Streznik zahteva datum rojstva + vsaj en zanr. Ce se vedno ni dokoncano,
-                // manjka datum rojstva (uporabnik je prisel sem po drugi poti).
+                // Z complete_onboarding streznik zahteva samo datum rojstva (zanri so neobvezni). Ce se vedno ni dokoncano
+                // (npr. star backend, ki polja ne pozna), manjka datum rojstva (uporabnik je prisel sem po drugi poti).
                 message = String(localized: "Please fill in your date of birth on the previous step.")
             }
             // Ce je isOnboarded, AuthGateView sam preklopi na MainTabView.
