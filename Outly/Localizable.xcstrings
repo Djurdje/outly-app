@@ -2935,6 +2935,17 @@
         }
       }
     },
+    "Country (optional)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Država (neobvezno)"
+          }
+        }
+      }
+    },
     "Create": {
       "extractionState": "manual",
       "localizations": {
@@ -3052,6 +3063,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datum rojstva ne more biti v prihodnosti."
+          }
+        }
+      }
+    },
+    "Date of birth is required.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum rojstva je obvezen."
           }
         }
       }
@@ -12995,6 +13017,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preskoči"
+          }
+        }
+      }
+    },
+    "Skip for later": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preskoči za zdaj"
           }
         }
       }
