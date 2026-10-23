@@ -618,7 +618,8 @@ struct VipTablesView: View {
             try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { rezervacija = r }
         } catch {
-            errorMessage = error.nakupUserMessage
+            // `userMessage`, ne `nakupUserMessage`: ta govori o placilu/nakupu, rezervacija pa nima placila ne kljuca.
+            errorMessage = error.userMessage
             stanje = .napaka
             // 409: miza zasedena, cena ali nacin placila spremenjen -> osvezi tloris, izbira izgine. `reservation_limit`: miza je prosta, izbira ostane.
             if error.osveziTlorisPoRezervaciji {

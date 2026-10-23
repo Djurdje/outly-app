@@ -189,9 +189,12 @@ struct VipBooking: Decodable {
     let guests: Int
     let checkedIn: Int
     let createdAt: String
+    /// Placan znesek narocila v centih (backend 23. 10. 2026); nil = star backend.
+    let totalCents: Int?
 
     enum CodingKeys: String, CodingKey {
         case guests
+        case totalCents = "total_cents"
         case orderId = "order_id"
         case publicRef = "public_ref"
         case buyerUsername = "buyer_username"
@@ -211,6 +214,7 @@ struct VipBooking: Decodable {
         guests = try c.decodeIfPresent(Int.self, forKey: .guests) ?? 0
         checkedIn = try c.decodeIfPresent(Int.self, forKey: .checkedIn) ?? 0
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+        totalCents = (try? c.decodeIfPresent(Int.self, forKey: .totalCents)) ?? nil
     }
 }
 

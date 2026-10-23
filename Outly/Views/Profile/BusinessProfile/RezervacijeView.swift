@@ -10,6 +10,9 @@ import SwiftUI
 
 @MainActor
 struct RezervacijeDogodkiView: View {
+    /// Vloga v IZBRANEM klubu (vstopna tocka): lastnik ali manager. Samo ta sme sprostiti rezervacijo; streznik vseeno uveljavi vlogo.
+    let smeSprostiti: Bool
+
     @EnvironmentObject private var session: SessionStore
 
     @State private var dogodki: [APIEvent] = []
@@ -55,7 +58,7 @@ struct RezervacijeDogodkiView: View {
                     VStack(spacing: 10) {
                         ForEach(dogodki) { e in
                             NavigationLink {
-                                RezervacijeDogodkaView(event: e)
+                                RezervacijeDogodkaView(event: e, smeSprostiti: smeSprostiti)
                             } label: {
                                 vrstica(e)
                             }
@@ -159,6 +162,8 @@ struct RezervacijeDogodkiView: View {
 @MainActor
 struct RezervacijeDogodkaView: View {
     let event: APIEvent
+    /// Lastnik/manager v izbranem klubu (ne globalni `session.me`, ki pri vec klubih ne pove vloge v tem klubu).
+    let smeSprostiti: Bool
 
     @EnvironmentObject private var session: SessionStore
 
@@ -169,9 +174,6 @@ struct RezervacijeDogodkaView: View {
     @State private var sprostiMizo: VipBusinessTable?
     @State private var delujocaMiza: Int?
     @State private var dejanjeNapaka: String?
-
-    /// Sprostitev sme lastnik in manager (vratar vidi seznam, ne spreminja).
-    private var smeSprostiti: Bool { session.me?.canManageClub ?? false }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -280,7 +282,14 @@ struct RezervacijeDogodkaView: View {
                 vrsticaKdo(Text(verbatim: "@" + b.buyerUsername), dodatno: nil)
                 paket(ime: b.packageName, opis: b.packageDescription)
                 HStack {
-                    cas(b.createdAt)
+                    VStack(alignment: .leading, spacing: 3) {
+                        if let c = b.totalCents, c > 0 {
+                            Text(verbatim: Denar.evri(c, koda: vip?.currency ?? "EUR"))
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        cas(b.createdAt)
+                    }
                     Spacer(minLength: 8)
                     VStack(alignment: .trailing, spacing: 1) {
                         Text(verbatim: "\(b.checkedIn)/\(b.guests)")

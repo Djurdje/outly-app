@@ -46,6 +46,12 @@ final class VipVrataTests: XCTestCase {
         XCTAssertEqual(app.priceCents, 25000)
     }
 
+    func testBookingTotalCents() throws {
+        let b = try decode(VipBooking.self, #"{"order_id": 1, "buyer_username": "ana", "total_cents": 30000}"#)
+        XCTAssertEqual(b.totalCents, 30000)
+        XCTAssertNil(try decode(VipBooking.self, #"{"order_id": 1}"#).totalCents)   // star backend
+    }
+
     func testRezervacijaKupcaDekodira() throws {
         let r = try decode(TableReservation.self, """
         {"id": 12, "event_id": 35, "event_title": "QUICKIE", "event_start_at": "2999-01-01T20:00:00.000Z", "club_id": 6,

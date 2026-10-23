@@ -3,12 +3,15 @@ import SwiftUI
 /// Razdelek »Table reservations« v Profile -> Tickets: moje rezervacije VIP miz za placilo z gotovino na VIP vratih
 /// (GET /me/table-reservations; backend 23. 10. 2026). Vsaka kartica ima dogodek, datum, mizo, paket, »Pay X at the door« in
 /// »Cancel« (DELETE do zacetka dogodka). Prazen seznam, star backend (404) ali napaka branja = razdelka ni (vstopnice delujejo brez njega).
-/// Brez lastnega NavigationStack; vstavljen v ScrollView zaslona Tickets.
+/// Brez lastnega NavigationStack; vstavljen v ScrollView zaslona Tickets. Seznam nalaga in osvezuje TicketsView (`load()`: ob prikazu,
+/// vrnitvi na zaslon in pull-to-refresh); sekcija ga dobi kot `rezervacije`, po preklicu pa pokliče `osvezi`.
 @MainActor
 struct RezervacijeMizSekcija: View {
     @EnvironmentObject private var session: SessionStore
 
-    @State private var rezervacije: [TableReservation] = []
+    let rezervacije: [TableReservation]
+    /// Ponovno branje seznama (TicketsView); poklice se po preklicu ali 404.
+    let osvezi: () async -> Void
     /// Rezervacija, za katero se caka potrditev preklica.
     @State private var zaPreklic: TableReservation?
     @State private var preklicujemId: Int?
@@ -32,7 +35,6 @@ struct RezervacijeMizSekcija: View {
                 }
             }
         }
-        .task { await nalozi() }
         .confirmationDialog("Cancel this reservation?",
                             isPresented: Binding(get: { zaPreklic != nil }, set: { if !$0 { zaPreklic = nil } }),
                             titleVisibility: .visible) {
@@ -110,29 +112,21 @@ struct RezervacijeMizSekcija: View {
         return "\(DateParsing.shortDate.string(from: d)) \(DateParsing.shortTime.string(from: d))"
     }
 
-    /// Tiho: razdelek je dodatek, napaka branja (brez signala, 5xx) ostane pri tem, kar je ze prikazano.
-    private func nalozi() async {
-        guard session.isLoggedIn else { return }
-        if let sveze = try? await APIClient.shared.fetchMyTableReservations(token: session.token) {
-            rezervacije = sveze
-        }
-    }
-
     private func preklici(_ r: TableReservation) async {
         napaka = nil
         preklicujemId = r.id
         defer { preklicujemId = nil }
         do {
             try await APIClient.shared.cancelVipReservation(eventId: r.eventId, tableId: r.tableId, token: session.token)
-            rezervacije.removeAll { $0.id == r.id }
+            await osvezi()
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api {
                 if code == 401 { session.logout(); return }
                 // 404: rezervacije ni vec (ze preklicana ali pospravljena): seznam se osvezi.
-                if code == 404 { await nalozi(); return }
+                if code == 404 { await osvezi(); return }
             }
             napaka = api.userMessage
-            await nalozi()
+            await osvezi()
         } catch {
             napaka = error.userMessage
         }

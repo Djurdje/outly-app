@@ -98,7 +98,8 @@ enum SlikovniPredpomnilnik {
     }
 
     /// Pomanjsa ze dekodirano sliko (UIGraphicsImageRenderer); za drobne razlicice je to nekaj mikrosekund.
-    nonisolated static func zmanjsaj(_ slika: UIImage, najvec: CGFloat) -> UIImage {
+    /// Klice jo samo `ozadje(_:)` (glavna nit), zato brez `nonisolated` (v detached nalogi tece `pomanjsaj(Data)`).
+    static func zmanjsaj(_ slika: UIImage, najvec: CGFloat) -> UIImage {
         let velikost = slika.size
         let daljsa = max(velikost.width, velikost.height)
         guard daljsa > najvec, daljsa > 0 else { return slika }

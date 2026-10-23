@@ -118,7 +118,7 @@ struct OwnerProfileView: View {
             NavigationLink { BusinessEventsView(clubId: club?.id, clubName: club?.name) } label: {
                 OutlyMenuRowButton(icon: "calendar", title: "Events")
             }
-            NavigationLink { RezervacijeDogodkiView() } label: {
+            NavigationLink { RezervacijeDogodkiView(smeSprostiti: true) } label: {
                 OutlyMenuRowButton(icon: "table.furniture", title: "Reservations")
             }
             NavigationLink { TeamView(clubName: club?.name) } label: {

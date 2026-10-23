@@ -381,7 +381,7 @@ struct MyClubDetailView: View {
 
                             // Kdo je rezerviral katero VIP mizo (owner, manager; vratar rezervacije vidi v seznamu vstopnic dogodka).
                             NavigationLink {
-                                RezervacijeDogodkiView()
+                                RezervacijeDogodkiView(smeSprostiti: canManage)
                             } label: {
                                 OutlyMenuRowButton(icon: "table.furniture", title: "Reservations")
                             }
