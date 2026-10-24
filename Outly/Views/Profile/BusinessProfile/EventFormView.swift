@@ -193,10 +193,13 @@ struct EventFormView: View {
                     VipRazporedOddelek(clubId: clubId, eventId: existing?.id, neshranjeno: imaNeshranjeneSpremembe)
                 }
 
+                // Vklop VIP miz in nacin placila (aplikacija | gotovina na VIP vratih) za vse klube; samo shranjen dogodek.
+                VipNacinPlacilaOddelek(clubId: clubId, eventId: existing?.id, brezNamigaZaNovDogodek: isOrganizer)
+
                 Section("Poster") {
                     HStack(spacing: 12) {
                         if let url = URL(string: posterUrl), !posterUrl.isEmpty {
-                            OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.08) }
+                            PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                                 .frame(width: 64, height: 64)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }

@@ -77,7 +77,7 @@ struct SearchView: View {
                                         Task { await open(eventId: e.id) }
                                     } label: {
                                         row(icon: "calendar", title: e.title,
-                                            subtitle: eventSubtitle(e), imageUrl: e.posterUrl,
+                                            subtitle: eventSubtitle(e), imageUrl: e.posterUrl, jePlakat: true,
                                             busy: openingEventId == e.id, demo: e.isDemo)
                                     }
                                     .buttonStyle(.plain)
@@ -209,12 +209,19 @@ struct SearchView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func row(icon: String, title: String, subtitle: String, imageUrl: String, busy: Bool = false, demo: Bool = false) -> some View {
+    private func row(icon: String, title: String, subtitle: String, imageUrl: String, jePlakat: Bool = false, busy: Bool = false, demo: Bool = false) -> some View {
         HStack(spacing: 12) {
             if let url = URL(string: imageUrl), !imageUrl.isEmpty {
-                OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                Group {
+                    if jePlakat {
+                        // Plakat dogodka: cel (fit) na zamegljenem ozadju.
+                        PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
+                    } else {
+                        OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }
+                    }
+                }
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 Image(systemName: icon)
                     .foregroundColor(.gray)

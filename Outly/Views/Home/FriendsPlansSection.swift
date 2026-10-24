@@ -448,11 +448,7 @@ private struct FriendsPlanCard: View {
     @ViewBuilder
     private var plakat: some View {
         if !plan.event.posterUrl.isEmpty, let u = URL(string: plan.event.posterUrl) {
-            OutlyAsyncImage(url: u) { img in
-                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-            } placeholder: {
-                Rectangle().fill(Color.white.opacity(0.1))
-            }
+            PlakatDogodkaSlika(url: u, mirenPlaceholder: true)
         } else {
             Rectangle().fill(Color.outlyBlue.opacity(0.25))
                 .overlay(Image(systemName: "music.note").foregroundColor(.white.opacity(0.7)))

@@ -21,6 +21,8 @@ struct TicketsView: View {
     /// Guest liste, kjer sem gostitelj (GET /me/guest-lists, 8. 10. 2026). Prazno = razdelek skrit (tudi ob 404 starega backenda
     /// in ob napaki: razdelek je dodatek, vstopnice delujejo brez njega).
     @State private var guestListe: [GuestList] = []
+    /// Rezervacije miz za placilo na VIP vratih (GET /me/table-reservations). Prazno = razdelek skrit (tudi ob 404 in napaki branja).
+    @State private var rezervacijeMiz: [TableReservation] = []
     // VIP miza = eno narocilo z vec vstopnicami; razprte skupine ("razdelek-order_id", ker je ista miza lahko
     // deloma v Upcoming in deloma v Used). Privzeto zaprte (Martin, 4. 10. 2026).
     @State private var odprteMize: Set<String> = []
@@ -53,6 +55,9 @@ struct TicketsView: View {
                                 .buttonStyle(.plain)
                         }
                     }
+
+                    // Rezervacije miz za placilo na VIP vratih (GET /me/table-reservations). Prazno = razdelka ni.
+                    RezervacijeMizSekcija(rezervacije: rezervacijeMiz, osvezi: { await naloziRezervacijeMiz() })
 
                     if isLoading && tickets.isEmpty {
                         HStack { Spacer(); ProgressView().tint(.white); Spacer() }.padding(.top, 40)
@@ -112,6 +117,15 @@ struct TicketsView: View {
         .onAppear {
             Task { await load() }
             Task { await naloziGuestListe() }
+            Task { await naloziRezervacijeMiz() }
+        }
+        .refreshable {
+            // Samostojna naloga: SwiftUI sicer prekine osvezitev ob spremembi stanja (glej HomeView).
+            await Task {
+                await load()
+                await naloziGuestListe()
+                await naloziRezervacijeMiz()
+            }.value
         }
     }
 
@@ -196,7 +210,7 @@ struct TicketsView: View {
     private func vrstica(_ t: APITicket, stevilo: Int? = nil, odprta: Bool = false) -> some View {
         HStack(spacing: 12) {
             if !t.posterUrl.isEmpty, let url = URL(string: t.posterUrl) {
-                OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Rectangle().opacity(0.12) }
+                PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                     .frame(width: 70, height: 70)
                     .clipped()
                     .cornerRadius(12)
@@ -269,6 +283,14 @@ struct TicketsView: View {
         guard session.isLoggedIn else { return }
         if let sveze = try? await APIClient.shared.fetchMyGuestLists(token: session.token) {
             guestListe = sveze
+        }
+    }
+
+    /// Razdelek »Table reservations«: tiho, ob napaki (brez signala, 5xx) ostane prikazano, kar je ze; 404 starega backenda = prazno.
+    private func naloziRezervacijeMiz() async {
+        guard session.isLoggedIn else { return }
+        if let sveze = try? await APIClient.shared.fetchMyTableReservations(token: session.token) {
+            rezervacijeMiz = sveze
         }
     }
 
@@ -427,9 +449,7 @@ struct WalletTicketCard: View {
         ZStack(alignment: .bottomLeading) {
             Group {
                 if !ticket.posterUrl.isEmpty, let url = URL(string: ticket.posterUrl) {
-                    OutlyAsyncImage(url: url) { img in
-                        Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-                    } placeholder: { SkeletonBlock() }
+                    PlakatDogodkaSlika(url: url)
                 } else {
                     // Brez plakata: barva vstopnice v temno (brez vijolicnih prelivov), kot EventPosterCard.
                     LinearGradient(colors: [barva.opacity(0.55), Color.outlyBackground], startPoint: .topLeading, endPoint: .bottomTrailing)

@@ -5,6 +5,9 @@ import UIKit
 /// izbira bottle paketa (vstet v ceno) -> "Reserve table". Placilo je do Stripa v TESTNEM nacinu
 /// (narocilo je takoj placano, denar se ne premakne) - zaslon to pove enako kot pri vstopnicah.
 /// Prijava, starost in omejitve uveljavi streznik (isto kot pri nakupu vstopnic): napaka gre v `userMessage`.
+/// Dogodek z `vip_payment == "door"` (backend 23. 10. 2026): gumb je »Reserve table« z napisom »Pay X in cash at the VIP door«, izbira paketa ostane,
+/// neobvezno ime za rezervacijo, POST /events/:id/tables/:tableId/reservations; brez Stripa, vstopnic in razdelitve prijateljem.
+/// Potrdilo (`VipRezervacijaUspeh`) ima »Cancel reservation«; rezervacije so tudi v Profile -> Tickets -> Table reservations.
 /// Po uspehu ima kupec N VIP vstopnic (vsaka svoja QR koda) v Profile -> Tickets. Uspesni zaslon (tudi po vrnitvi s Stripa) takoj
 /// ponudi izbiro prijateljev (najvec N-1, `VipRazdelitevBlok`); kar kupec ne poslje, ostane v Tickets in gre od tam z navadnim prenosom.
 @MainActor
@@ -48,6 +51,9 @@ struct VipTablesView: View {
     /// Brskanje brez racuna: tloris, mize in paketi so javni (GET /events/:id/vip), »Reserve table« pa zahteva racun.
     /// Po prijavi se tloris prebere znova (izbira mize in paketa ostane), kupec pritisne gumb sam (ceno in starost vidi pred placilom).
     @State private var prijava: PrijavaZahteva?
+    /// Rezervacija za placilo na vratih (vip_payment == "door"): neobvezno ime, ki ga vidi klub, in uspesna rezervacija.
+    @State private var imeRezervacije = ""
+    @State private var rezervacija: TableReservation?
 
     private let ozadje = Color(white: 0.06)
     private let kartica = Color(white: 0.11)
@@ -93,10 +99,18 @@ struct VipTablesView: View {
 
     private var jeStripe: Bool { nacin == .stripe }
 
+    /// Dogodek se placa z gotovino na VIP vratih: odgovor tlorisa (sveze), sicer dogodek; star backend -> false.
+    private var naVratih: Bool { vip?.placiloNaVratih ?? (event.vipPayment == VipPlacilo.vrata) }
+
+    /// Uspesen izid (nakup ali rezervacija): naslov in gumb »Done«.
+    private var jeUspeh: Bool { purchase != nil || rezervacija != nil }
+
     var body: some View {
         NavigationStack {
             Group {
-                if let purchase {
+                if let rezervacija {
+                    VipRezervacijaUspeh(rezervacija: rezervacija) { dismiss() }
+                } else if let purchase {
                     uspeh(purchase)
                 } else {
                     vsebina
@@ -105,7 +119,7 @@ struct VipTablesView: View {
             .background(ozadje.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(LocalizedStringKey(purchase == nil ? "VIP tables" : "Your VIP table is booked"))
+                    Text(LocalizedStringKey(rezervacija != nil ? "Your table is reserved" : (purchase == nil ? "VIP tables" : "Your VIP table is booked")))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                 }
@@ -113,7 +127,7 @@ struct VipTablesView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Text(LocalizedStringKey(purchase == nil ? "Cancel" : "Done"))
+                        Text(LocalizedStringKey(jeUspeh ? "Done" : "Cancel"))
                     }
                     .foregroundColor(.white.opacity(0.85))
                     .disabled(stanje == .nalaga || razdeljuje)
@@ -220,7 +234,10 @@ struct VipTablesView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             karticaMize(m, vip: vip)
                             // Prodajalec + DDV PRED placilom (backend#94, #101); tu ni drugega stavka o posredniku.
-                            if let prodajalec {
+                            // Pri rezervaciji za placilo na vratih v aplikaciji ni placila, zato bloka ni.
+                            if naVratih {
+                                EmptyView()
+                            } else if let prodajalec {
                                 OutlyProdajalecBlok(seller: prodajalec, kazeDdv: true, kazePosrednika: true)
                             } else {
                                 // Star backend brez `seller`: samo DDV vrstica `null` (pogodba backend#94/#101).
@@ -261,21 +278,32 @@ struct VipTablesView: View {
                                 Spacer(minLength: 0)
                             }
                             NapotekKartica(besedilo: DemoKlub.sporocilo)
+                        } else if naVratih {
+                            gumbRezervirajNaVratih(m)
                         } else {
                             gumbRezerviraj(m)
                         }
-                        OutlyPogojiNakupa()
-                        // Slog kot v BuyTicketsView; besedilo navaja tudi mizo in paket (ZVPot-1 130/1-10, 135/12): miza je vedno za dogodek z datumom.
-                        // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni. Dokler prodajalca
-                        // ne poznamo (nalaganje, napaka, star backend), stavka o posredniku tudi ne kazemo.
-                        Text(LocalizedStringKey(prodajalec == nil || prodajalec?.isPlatform == true
-                             ? "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12)."
-                             : "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary."))
-                            .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.40))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
+                        if naVratih {
+                            Text("Nothing is charged in the app. You pay in cash at the VIP door, and you can cancel the reservation until the event starts.")
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.40))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 4)
+                        } else {
+                            OutlyPogojiNakupa()
+                            // Slog kot v BuyTicketsView; besedilo navaja tudi mizo in paket (ZVPot-1 130/1-10, 135/12): miza je vedno za dogodek z datumom.
+                            // Prodajalec platforma (uradni profil Outly, backend I50 `is_platform`): ni posrednika, stavka o klubu ni. Dokler prodajalca
+                            // ne poznamo (nalaganje, napaka, star backend), stavka o posredniku tudi ne kazemo.
+                            Text(LocalizedStringKey(prodajalec == nil || prodajalec?.isPlatform == true
+                                 ? "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12)."
+                                 : "VIP tables (including any package) and tickets for a dated event cannot be returned after purchase (ZVPot-1, 135/12). The seller is the club; Outly is the intermediary."))
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.40))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 4)
+                        }
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 10)
@@ -373,7 +401,10 @@ struct VipTablesView: View {
 
             // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
             // `payment_mode == "test"` in ceni > 0 (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
-            if stripe.caka == nil, !demoBrezNakupa {
+            if naVratih, !demoBrezNakupa {
+                vrsticaNaVratih(m)
+                poljeImeRezervacije
+            } else if stripe.caka == nil, !demoBrezNakupa {
                 if prodajaNedosegljiva {
                     NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
                 } else if nacin.kazeTestniNapis(brezplacno: m.priceCents <= 0) {
@@ -512,6 +543,94 @@ struct VipTablesView: View {
         .disabled(!paketIzbran || naval || stripe.preverjanje || prodajaNedosegljiva)
         .opacity(paketIzbran && !naval && !stripe.preverjanje && !prodajaNedosegljiva ? 1 : 0.45)
         .outlySij(moc: 1.0, aktiven: paketIzbran && !naval && !stripe.preverjanje && !prodajaNedosegljiva)
+    }
+
+    // MARK: - Rezervacija za placilo na vratih
+
+    /// Kartica »Payment«: znesek in da se placa z gotovino na VIP vratih (v aplikaciji se nic ne zaracuna).
+    private func vrsticaNaVratih(_ m: VipTable) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "banknote")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 40, height: 40)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Payment")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                Text(verbatim: m.priceCents > 0
+                     ? String(localized: "Pay \(Denar.evri(m.priceCents, koda: koda)) in cash at the VIP door")
+                     : String(localized: "No payment needed"))
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var poljeImeRezervacije: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Name for the reservation")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white.opacity(0.7))
+            OutlyTextField(placeholder: "Optional", text: $imeRezervacije)
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+                .onChange(of: imeRezervacije) { _, novo in
+                    if novo.count > TableReservation.najvecImena { imeRezervacije = String(novo.prefix(TableReservation.najvecImena)) }
+                }
+            Text("The club sees this name. Leave it empty to use your username.")
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.5))
+        }
+    }
+
+    private func gumbRezervirajNaVratih(_ m: VipTable) -> some View {
+        // Brez `prodajaNedosegljiva`: rezervacija za placilo na vratih ne rabi Stripa ali podatkov prodajalca.
+        let vklopljen = paketIzbran && !naval
+        return OutlyAkcijskiGumb(naslov: String(localized: "Reserve table"), stanje: $stanje) {
+            if session.isLoggedIn {
+                Task { await rezervirajNaVratih(m) }
+            } else {
+                prijava = PrijavaZahteva(nadaljuj: { Task { await naloziVip() } })
+            }
+        }
+        .disabled(!vklopljen)
+        .opacity(vklopljen ? 1 : 0.45)
+        .outlySij(moc: 1.0, aktiven: vklopljen)
+    }
+
+    private func rezervirajNaVratih(_ m: VipTable) async {
+        errorMessage = nil
+        stanje = .nalaga
+        do {
+            let r = try await APIClient.shared.reserveVipTable(eventId: event.id, tableId: m.id, packageId: izbraniPaketId,
+                                                               guestName: imeRezervacije, expectedPriceCents: m.priceCents,
+                                                               token: session.token)
+            stanje = .uspeh
+            try? await Task.sleep(nanoseconds: manjGibanja ? 100_000_000 : 450_000_000)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { rezervacija = r }
+        } catch {
+            // `userMessage`, ne `nakupUserMessage`: ta govori o placilu/nakupu, rezervacija pa nima placila ne kljuca.
+            errorMessage = error.userMessage
+            stanje = .napaka
+            // 409: miza zasedena, cena ali nacin placila spremenjen -> osvezi tloris, izbira izgine. `reservation_limit`: miza je prosta, izbira ostane.
+            if error.osveziTlorisPoRezervaciji {
+                await naloziVip(obdrziMojo: false)
+            }
+            if let premor = error.nakupPremorNanosekund {
+                naval = true
+                try? await Task.sleep(nanoseconds: premor)
+                naval = false
+            }
+        }
     }
 
     // MARK: - Uspeh

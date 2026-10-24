@@ -17308,6 +17308,391 @@
           }
         }
       }
+    },
+    "VIP table sales": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodaja VIP miz"
+          }
+        }
+      }
+    },
+    "Save the event first, then turn on VIP tables.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najprej shrani dogodek, nato vklopi VIP mize."
+          }
+        }
+      }
+    },
+    "Sell VIP tables": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prodajaj VIP mize"
+          }
+        }
+      }
+    },
+    "Pay in the app": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo v aplikaciji"
+          }
+        }
+      }
+    },
+    "Cash at the VIP door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gotovina na VIP vratih"
+          }
+        }
+      }
+    },
+    "Guests reserve a table in the app and pay in cash at the VIP door. Nothing is charged in the app and no tickets are issued.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostje mizo rezervirajo v aplikaciji in plačajo z gotovino na VIP vratih. V aplikaciji se nič ne zaračuna, vstopnice se ne izdajo."
+          }
+        }
+      }
+    },
+    "Guests pay for the table in the app and get VIP tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gostje mizo plačajo v aplikaciji in dobijo VIP vstopnice."
+          }
+        }
+      }
+    },
+    "Changing this does not affect tables that are already bought or reserved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprememba ne vpliva na mize, ki so že kupljene ali rezervirane."
+          }
+        }
+      }
+    },
+    "Your table is reserved": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miza je rezervirana"
+          }
+        }
+      }
+    },
+    "Pay %@ in cash at the VIP door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo %@ z gotovino na VIP vratih"
+          }
+        }
+      }
+    },
+    "No payment needed": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo ni potrebno"
+          }
+        }
+      }
+    },
+    "Name for the reservation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ime za rezervacijo"
+          }
+        }
+      }
+    },
+    "Optional": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neobvezno"
+          }
+        }
+      }
+    },
+    "The club sees this name. Leave it empty to use your username.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klub vidi to ime. Če ga pustiš prazno, se uporabi tvoje uporabniško ime."
+          }
+        }
+      }
+    },
+    "Nothing is charged in the app. You pay in cash at the VIP door, and you can cancel the reservation until the event starts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V aplikaciji se nič ne zaračuna. Plačaš z gotovino na VIP vratih, rezervacijo pa lahko prekličeš do začetka dogodka."
+          }
+        }
+      }
+    },
+    "Reserved for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervirano za %@"
+          }
+        }
+      }
+    },
+    "Nothing was charged in the app. Show your name at the VIP door. You can find this reservation in Profile > Tickets.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V aplikaciji se ni zaračunalo nič. Na VIP vratih povej svoje ime. Rezervacijo najdeš v Profil > Vstopnice."
+          }
+        }
+      }
+    },
+    "Cancel reservation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prekliči rezervacijo"
+          }
+        }
+      }
+    },
+    "Cancel this reservation?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Želiš preklicati rezervacijo?"
+          }
+        }
+      }
+    },
+    "The table becomes available to other guests again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miza bo spet na voljo drugim gostom."
+          }
+        }
+      }
+    },
+    "Table reservations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervacije miz"
+          }
+        }
+      }
+    },
+    "Pay %@ at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo %@ na vratih"
+          }
+        }
+      }
+    },
+    "Pay in cash at the VIP door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo z gotovino na VIP vratih"
+          }
+        }
+      }
+    },
+    "Reservations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervacije"
+          }
+        }
+      }
+    },
+    "Choose an event to see who reserved which VIP table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi dogodek in poglej, kdo je rezerviral katero VIP mizo."
+          }
+        }
+      }
+    },
+    "%lld reserved": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervirano: %lld"
+          }
+        }
+      }
+    },
+    "No reservations": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni rezervacij"
+          }
+        }
+      }
+    },
+    "Tables are reserved in the app and paid in cash at the VIP door.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mize se rezervirajo v aplikaciji in plačajo z gotovino na VIP vratih."
+          }
+        }
+      }
+    },
+    "Tables are bought and paid in the app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mize se kupijo in plačajo v aplikaciji."
+          }
+        }
+      }
+    },
+    "Paid in app": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačano v aplikaciji"
+          }
+        }
+      }
+    },
+    "Pay at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plačilo na vratih"
+          }
+        }
+      }
+    },
+    "Reserved in the app, pays at the door": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervirano v aplikaciji, plača na vratih"
+          }
+        }
+      }
+    },
+    "You already have a table reserved for this event.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za ta dogodek že imaš rezervirano mizo."
+          }
+        }
+      }
+    },
+    "Tables for this event are paid in the app. Reload and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mize za ta dogodek se plačajo v aplikaciji. Osveži in poskusi znova."
+          }
+        }
+      }
+    },
+    "Tables for this event are paid in cash at the door. Reload and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mize za ta dogodek se plačajo z gotovino na vratih. Osveži in poskusi znova."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

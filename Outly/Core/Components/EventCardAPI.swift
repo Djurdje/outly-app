@@ -197,13 +197,8 @@ struct EventCardAPI: View {
             !event.posterUrl.isEmpty,
             let url = URL(string: event.posterUrl)
         {
-            OutlyAsyncImage(url: url) { img in
-                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-            } placeholder: {
-                RoundedRectangle(cornerRadius: 14)
-                    .opacity(0.12)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
         } else {
             RoundedRectangle(cornerRadius: 14)
                 .opacity(0.12)
@@ -274,11 +269,7 @@ struct EventCardAPI: View {
     @ViewBuilder
     private var heroPoster: some View {
         if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
-            OutlyAsyncImage(url: url) { img in
-                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-            } placeholder: {
-                Rectangle().opacity(0.12)
-            }
+            PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
         } else {
             RoundedRectangle(cornerRadius: 24)
                 .opacity(0.12)

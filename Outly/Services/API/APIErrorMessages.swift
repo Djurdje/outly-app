@@ -107,6 +107,14 @@ extension APIError {
         // pravili po vsebini spodaj (sporocilo vsebuje »club« in »tickets«).
         if t.contains("demo_club")                      { return DemoKlub.sporocilo }
 
+        // Rezervacija VIP mize za placilo na vratih (backend 23. 10. 2026): 409 `{ "error": "reservation_limit" | "vip_pay_in_app" |
+        // "vip_pay_at_door" | "event_started", "message": … }`. Po KODI, PRED splosnim 409 in pred pravili po vsebini spodaj
+        // (»already started« / »already booked« bi sicer ujela drugo besedilo).
+        if t.contains("reservation_limit")              { return String(localized: "You already have a table reserved for this event.") }
+        if t.contains("vip_pay_in_app")                 { return String(localized: "Tables for this event are paid in the app. Reload and try again.") }
+        if t.contains("vip_pay_at_door")                { return String(localized: "Tables for this event are paid in cash at the door. Reload and try again.") }
+        if t.contains("event_started")                  { return String(localized: "This event has already started.") }
+
         // Odpoved ali premik datuma minilega dogodka (#255, I42): 409 `{ error: "event_finished", message }`. Po KODI, PRED
         // »already started« spodaj (sporocilo ga vsebuje): vracila za tak dogodek uredi Outly.
         if t.contains("event_finished") {

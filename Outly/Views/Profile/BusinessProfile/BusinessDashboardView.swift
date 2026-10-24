@@ -511,11 +511,7 @@ struct BusinessDashboardView: View {
     private func vrsticaDogodka(_ e: BusinessSales.EventSales) -> some View {
         HStack(spacing: 12) {
             if !e.posterUrl.isEmpty, let url = URL(string: e.posterUrl) {
-                OutlyAsyncImage(url: url) { img in
-                    Color.clear.overlay(img.resizable().scaledToFill()).clipped()
-                } placeholder: {
-                    Rectangle().fill(Color.white.opacity(0.1))
-                }
+                PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .frame(width: 54, height: 54)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             } else {
@@ -1012,7 +1008,7 @@ struct EventTicketsView: View {
     private func vrsticaTelefon(_ m: VipBusinessTable) -> some View {
         if let h = m.hold {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "phone.fill")
+                Image(systemName: h.jeIzAplikacije ? "banknote" : "phone.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.vipZlata)
                     .frame(width: 24, height: 24)
@@ -1021,12 +1017,18 @@ struct EventTicketsView: View {
                     Text(verbatim: VipOznaka.miza(m.label))
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
-                    Text("Reserved by phone")
+                    // Rezervacija v aplikaciji (backend 23. 10. 2026): gost placa z gotovino na VIP vratih.
+                    Text(LocalizedStringKey(h.jeIzAplikacije ? "Reserved in the app, pays at the door" : "Reserved by phone"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.vipZlata)
-                    Text(verbatim: h.guestName)
+                    Text(verbatim: h.guestName + (h.prikazanoUporabniskoIme.map { " (\($0))" } ?? ""))
                         .font(.system(size: 13))
                         .foregroundColor(.white.opacity(0.75))
+                    if !h.packageName.isEmpty {
+                        Text(verbatim: h.packageName)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
                     if let opomba = h.prikazanaOpomba {
                         Text(verbatim: opomba)
                             .font(.system(size: 12))

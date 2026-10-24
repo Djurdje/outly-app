@@ -128,7 +128,11 @@ struct EventDetailView: View {
                 // da uporabnik vidi, kako je bilo. Prenese se sele ob dotiku (OutlyRecapVideo).
                 if let recap = event.recapVideoURL {
                     OutlyRecapVideo(url: recap, posterUrl: headerImageUrl, playSize: 64)
+                } else if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
+                    // Cel plakat (fit) na zamegljenem ozadju; velikost glave ostane (heroHeight).
+                    PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 } else if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
+                    // Brez plakata: slika kluba kot doslej (fotografija, ne plakat).
                     OutlyAsyncImage(url: url) { img in
                         Color.clear.overlay(img.resizable().scaledToFill()).clipped()
                     } placeholder: {
@@ -835,6 +839,12 @@ struct EventDetailView: View {
                             Text("from \(Denar.evri(od, koda: event.currency ?? "EUR"))")
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundStyle(Color.vipZlata)
+                        }
+                        if event.vipEnabled, event.vipPayment == VipPlacilo.vrata {
+                            // Rezervacija v aplikaciji, placilo z gotovino na VIP vratih (backend 23. 10. 2026).
+                            Text("Pay in cash at the VIP door")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.85))
                         }
                         Text("Bottle service and private tables for your group.")
                             .font(.system(size: 13, weight: .medium))

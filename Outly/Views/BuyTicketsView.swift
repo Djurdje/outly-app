@@ -632,14 +632,7 @@ struct BuyTicketsView: View {
     private func plakat(width: CGFloat?, height: CGFloat, radius: CGFloat) -> some View {
         Group {
             if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
-                Color.clear
-                    .overlay(
-                        OutlyAsyncImage(url: url) { img in
-                            img.resizable().scaledToFill()
-                        } placeholder: {
-                            Rectangle().fill(Color.white.opacity(0.08))
-                        }
-                    )
+                PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
             } else {
                 Color(white: 0.14).overlay(Image(systemName: "music.note").font(.system(size: 22)).foregroundColor(.white.opacity(0.3)))
             }
