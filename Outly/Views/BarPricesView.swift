@@ -170,6 +170,7 @@ struct BarPricesEditorView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(Text("Delete item"))
+                            .accessibilityValue(Text(verbatim: v.name))
                         }
                     }
                     .padding(12)

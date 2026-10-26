@@ -178,6 +178,11 @@ struct ClubInfoView: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text("Change logo"))
                     .accessibilityAddTraits(.isButton)
+                    .accessibilityAction {
+                        // VoiceOver dvojni dotik ne sprozi zanesljivo onTapGesture na zdruzenem elementu
+                        guard !isUploadingLogo, !authToken.isEmpty else { return }
+                        showLogoPicker = true
+                    }
 
                     Text("Add a profile photo so people can\nrecognise you")
                         .multilineTextAlignment(.center)
@@ -301,6 +306,7 @@ struct ClubInfoView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(Text("Remove photo"))
+                                .accessibilityValue(Text(verbatim: "\(i + 1)"))
                             }
                         }
                     }

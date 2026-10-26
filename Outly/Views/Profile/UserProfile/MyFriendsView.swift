@@ -320,7 +320,7 @@ struct AddFriendsSheet: View {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 16))
                             .foregroundColor(.white.opacity(0.5))
-                            .contentShape(Rectangle().inset(by: -14))
+                            .contentShape(Rectangle().inset(by: -10))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("Clear search"))
