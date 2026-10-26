@@ -16,9 +16,10 @@ Postopek za vsako nalogo:
    (`one`/`two`/`few`/`other` za sl). Stavkov ne sestavljaj iz delov (`Text(a) + Text(b)`), ker se besedni red v sl razlikuje.
 5. Dostopnost pri **novi ali spremenjeni** kodi (obstoječega videza ne predeluj brez Martina):
    - gumb ali povezava samo z ikono dobi `.accessibilityLabel(Text("…"))` z namenom (»Cancel invitation«, ne »xmark«), ključ v katalogu;
-   - tarča dotika vsaj 44 pt brez spremembe videza: `.contentShape(...)` ali `.frame(minWidth: 44, minHeight: 44)` okoli ikone;
-   - novo besedilo s semantičnim slogom, ki je pri privzeti velikosti enak Figmi (17 `.body`/`.headline`, 15 `.subheadline`,
-     13 `.footnote`, 12 `.caption`, 11 `.caption2`); krhko postavitev omeji z `.dynamicTypeSize(...DynamicTypeSize.accessibility1)`;
+   - tarča dotika vsaj 44 pt brez spremembe videza: `.contentShape(...)` (vzorec `ClubView.swift`), ne `.frame`, ki premakne postavitev;
+   - nov **samostojen** zaslon ali komponenta s semantičnim slogom, ki je pri privzeti velikosti enak Figmi (17 `.body`/`.headline`,
+     15 `.subheadline`, 13 `.footnote`, 12 `.caption`, 11 `.caption2`), krhko postavitev omeji z `.dynamicTypeSize(...DynamicTypeSize.accessibility1)`;
+     besedilo ob obstoječem s fiksno velikostjo (`.system(size:)`) dobi slog okolice, sicer bi ob večji pisavi raslo samo novo — zapiši v PR;
    - berljivo besedilo ne svetleje od `white.opacity(0.5)` ali `Color.outlyMuted` (0.45 in manj na `outlyCard` je pod 4,5:1);
    - nova animacija ali samodejno premikanje upošteva `@Environment(\.accessibilityReduceMotion)` (vzorec `MainTabView.swift`);
    - vstopnica in skener: QR ima oznako in stanje (Valid / Already used …), rezultat skena se poleg haptike napove z
@@ -26,10 +27,11 @@ Postopek za vsako nalogo:
 6. Zasebnost: v Sentry nič ročno z osebnimi podatki (`SentrySDK.capture`, `addBreadcrumb`, `setTag`, `setContext` brez e-naslova,
    uporabniškega imena, žetona, URL-ja z identifikatorjem). Nov API iz skupine »required reason« (`UserDefaults`/`@AppStorage`,
    datum spremembe datoteke, `systemUptime`, prost prostor na disku) ali novo dovoljenje → `PrivacyInfo.xcprivacy` /
-   `INFOPLIST_KEY_*` v obeh konfiguracijah + `InfoPlist.xcstrings` (sl). Obe datoteki sta pod oznako `odobril-martin`.
+   `INFOPLIST_KEY_*` v obeh konfiguracijah + `InfoPlist.xcstrings` (sl). `PrivacyInfo.xcprivacy` in `project.pbxproj` sta pod oznako `odobril-martin`.
 7. Preveri: `swiftc -parse` vsake spremenjene datoteke + neodvisen pregled tipov (subagent `type-checker`) s podpisi obstoječih tipov.
    Sprememba, ki se dotika `UIImage`, posnetkov zaslona, `GeometryReader` ali merjenja velikosti, gre še v Appetize na iOS 17
-   (najnižja podprta; #118 »scale must be > 0« je padel samo tam).
+   (najnižja podprta; #118 »scale must be > 0« je padel samo tam). Če Appetize agentu ni dosegljiv: v PR »na iOS 17 NI preverjeno«
+   in prošnja Martinu, da ga preveri pred merge-om.
 8. Commit brez šumnikov z »Preverjeno: …«; veja + PR. Mergaš, ko sta zelena **oba** checka (`Gradnja iOS`, vključno z
    `Release prevod (PR)`, in `Zascita`) in `type-checker` nima blokirajočih najdb (squash prek GitHub MCP orodja `merge_pull_request`
    (gh CLI v oblaku ni) in pobriši vejo). Rdeč `Zascita` = ne mergaj, povej Martinu. V PR napiši, kaj naj Martin preveri na
