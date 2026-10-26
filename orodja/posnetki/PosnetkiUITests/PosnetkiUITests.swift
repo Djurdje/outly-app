@@ -58,7 +58,9 @@ final class PosnetkiUITests: XCTestCase {
     func testPosnetki() throws {
         continueAfterFailure = true
         app = XCUIApplication(bundleIdentifier: "si.outly.app")
-        app.launch()
+        // Aplikacijo zazene workflow (simctl launch); launch() iz testa je na runnerju potekel (Timed out attempting to launch app).
+        app.activate()
+        _ = app.wait(for: .runningForeground, timeout: 60)
         sleep(4)
         zapriOpozorila()
         sleep(12)            // zivi podatki z backenda in plakati

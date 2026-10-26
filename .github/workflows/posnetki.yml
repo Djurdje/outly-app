@@ -61,6 +61,9 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/posnetki"
+          xcrun simctl launch "$UDID" si.outly.app
+          sleep 20
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/posnetki/0-zagon.png" || true
           cd orodja/posnetki
           TEST_RUNNER_POSNETKI_DIR="$RUNNER_TEMP/posnetki" xcodebuild test \
             -project Posnetki.xcodeproj -scheme Posnetki \
