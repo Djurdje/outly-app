@@ -1,0 +1,90 @@
+# Posnetki zaslona za App Store (6,9": iPhone Pro Max simulator, 1320x2868).
+# Tece samo ob potisku na veje claude/posnetki-*; aplikacije, TestFlighta in master ne spreminja.
+# Vzame simulatorsko .app zadnje zelene gradnje na master (ista koda kot zadnji TestFlight build),
+# jo namesti v simulator, UI test (orodja/posnetki) jo zazene kot gost in posname zaslone.
+name: Posnetki App Store
+
+on:
+  push:
+    branches: ["claude/posnetki-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  posnetki:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulatorska .app zadnje gradnje na master
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow gradnja.yml --branch master --status success -L 1 --json databaseId,number -q '.[0].databaseId')
+          NUM=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow gradnja.yml --branch master --status success -L 1 --json number -q '.[0].number')
+          echo "Gradnja master: run $RUN (build $NUM)"
+          mkdir -p art
+          gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n Outly-simulator-app -D art
+          cd art && unzip -q Outly-simulator.zip && ls -la Outly.app | head -5
+
+      - name: Simulator iPhone Pro Max
+        run: |
+          set -e
+          xcodebuild -version
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          c=[(rt,x) for rt,l in d.items() if "iOS" in rt for x in l if "Pro Max" in x["name"]]
+          c.sort(key=lambda t:(t[0],t[1]["name"]))
+          rt,x=c[-1]; print(x["udid"]); print(x["name"],rt,file=sys.stderr)')
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl status_bar "$UDID" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+          xcrun simctl install "$UDID" art/Outly.app
+          xcrun simctl location "$UDID" set 46.0514,14.5060 || true
+          xcrun simctl privacy "$UDID" grant location si.outly.app || true
+          xcrun simctl privacy "$UDID" grant location-always si.outly.app || true
+
+      - name: XcodeGen
+        run: |
+          brew install xcodegen
+          cd orodja/posnetki && xcodegen generate
+
+      - name: Posnemi zaslone (UI test)
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/posnetki"
+          cd orodja/posnetki
+          TEST_RUNNER_POSNETKI_DIR="$RUNNER_TEMP/posnetki" xcodebuild test \
+            -project Posnetki.xcodeproj -scheme Posnetki \
+            -destination "id=$UDID" \
+            -resultBundlePath "$RUNNER_TEMP/Posnetki.xcresult" \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO \
+            | tee "$RUNNER_TEMP/test.log" | grep -E "error:|Test Case|\*\* TEST" || true
+          ls -la "$RUNNER_TEMP/posnetki" || true
+
+      - name: Rezervna pot (priloge iz xcresult in simctl posnetek)
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/priloge"
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/Posnetki.xcresult" --output-path "$RUNNER_TEMP/priloge" || true
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/priloge/zadnji-zaslon.png" || true
+          ls -la "$RUNNER_TEMP/priloge" || true
+
+      - name: Prilozi posnetke
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: posnetki-app-store
+          path: |
+            ${{ runner.temp }}/posnetki
+            ${{ runner.temp }}/priloge
+            ${{ runner.temp }}/test.log
+          retention-days: 7
