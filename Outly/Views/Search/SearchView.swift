@@ -32,7 +32,9 @@ struct SearchView: View {
                     if !query.isEmpty {
                         Button { query = "" } label: {
                             Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                                .contentShape(Rectangle().inset(by: -14))
                         }
+                        .accessibilityLabel(Text("Clear search"))
                     }
                 }
                 .padding()

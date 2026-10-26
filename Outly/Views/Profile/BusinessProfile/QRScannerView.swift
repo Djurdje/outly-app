@@ -89,8 +89,10 @@ struct QRScannerView: View {
                             titleVisibility: .visible) {
             Button("Let in") {
                 if let qr = zaPotrditev {
-                    prikaz = seja.spustiRocno(qr: qr)
+                    let p = seja.spustiRocno(qr: qr)
+                    prikaz = p
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    napovejRezultat(p)
                 }
                 zaPotrditev = nil
             }
@@ -485,7 +487,15 @@ struct QRScannerView: View {
             case .rdece: g.notificationOccurred(.error)
             case .rumeno: g.notificationOccurred(.warning)
             }
+            napovejRezultat(p)
         }
+    }
+
+    /// Bralnik zaslona rezultat sken napove (haptika slepemu vratarju ne pove, ali je gost veljaven).
+    /// Besedila so ista kot na kartici rezultata; vrstni red: naslov, podnaslov, opomba, VIP, guest list.
+    private func napovejRezultat(_ p: SkenPrikaz) {
+        let deli = [p.naslov, p.podnaslov, p.opomba ?? "", p.vip ?? "", p.guestList ?? ""].filter { !$0.isEmpty }
+        AccessibilityNotification.Announcement(deli.joined(separator: ". ")).post()
     }
 }
 

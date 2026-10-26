@@ -623,8 +623,10 @@ struct HomeView: View {
                 HStack {
                     Button(action: odpriProfil) {
                         OutlyAvatarView(avatarUrlString: me?.avatarUrl, size: 36)
+                            .contentShape(Circle().inset(by: -4))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Profile"))
                     // Okvir avatarja v okenskih koordinatah — izvor kroga za rast/krcitev Profila.
                     .background(
                         GeometryReader { g in
