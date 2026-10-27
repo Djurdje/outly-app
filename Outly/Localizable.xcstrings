@@ -117,6 +117,28 @@
     "%@ · %lld × %@": {
       "extractionState": "manual"
     },
+    "1 friend going": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 prijatelj gre"
+          }
+        }
+      }
+    },
+    "1 interested": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 ga zanima"
+          }
+        }
+      }
+    },
     "A label can have at most 30 characters.": {
       "extractionState": "manual",
       "localizations": {
@@ -227,6 +249,39 @@
         }
       }
     },
+    "Change logo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spremeni logotip"
+          }
+        }
+      }
+    },
+    "Clear search": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počisti iskanje"
+          }
+        }
+      }
+    },
+    "Club logo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logotip kluba"
+          }
+        }
+      }
+    },
     "Columns": {
       "extractionState": "manual",
       "localizations": {
@@ -282,6 +337,28 @@
         }
       }
     },
+    "Create club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari klub"
+          }
+        }
+      }
+    },
+    "Date": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum"
+          }
+        }
+      }
+    },
     "Decides which VAT line buyers see under the total.": {
       "extractionState": "manual",
       "localizations": {
@@ -300,6 +377,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Izbriši"
+          }
+        }
+      }
+    },
+    "Delete item": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izbriši postavko"
           }
         }
       }
@@ -414,6 +502,28 @@
         }
       }
     },
+    "e.g. Klub K4": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "npr. Klub K4"
+          }
+        }
+      }
+    },
+    "e.g. Ljubljana": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "npr. Ljubljana"
+          }
+        }
+      }
+    },
     "Edit tables and layout": {
       "extractionState": "manual",
       "localizations": {
@@ -454,6 +564,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vse, kar je na strani dogodka"
+          }
+        }
+      }
+    },
+    "Fewer tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manj vstopnic"
+          }
+        }
+      }
+    },
+    "Friends can see which events you're going to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijatelji vidijo, na katere dogodke greš."
+          }
+        }
+      }
+    },
+    "Gross": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruto"
           }
         }
       }
@@ -557,6 +700,17 @@
         }
       }
     },
+    "Just the basics to put your club on Outly. You can add photos, prices and more later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Samo osnove, da tvoj klub pride na Outly. Fotografije, cene in drugo lahko dodaš pozneje."
+          }
+        }
+      }
+    },
     "Keep editing": {
       "extractionState": "manual",
       "localizations": {
@@ -652,6 +806,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Več možnosti"
+          }
+        }
+      }
+    },
+    "More tickets": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Več vstopnic"
           }
         }
       }
@@ -876,6 +1041,28 @@
         }
       }
     },
+    "Remove from team": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani iz ekipe"
+          }
+        }
+      }
+    },
+    "Remove photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani fotografijo"
+          }
+        }
+      }
+    },
     "Remove VIP tables": {
       "extractionState": "manual",
       "localizations": {
@@ -927,6 +1114,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prijavi ali blokiraj"
+          }
+        }
+      }
+    },
+    "Requested · tap to cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslano · tapni za preklic"
           }
         }
       }
@@ -1092,10 +1290,52 @@
     "%lld followers": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld follower"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld followers"
+                }
+              }
+            }
+          }
+        },
         "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld sledilcev"
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sledilci"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sledilec"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sledilcev"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sledilca"
+                }
+              }
+            }
           }
         }
       }
@@ -1103,10 +1343,52 @@
     "%lld friends going": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld friend going"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld friends going"
+                }
+              }
+            }
+          }
+        },
         "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld prijateljev gre"
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prijatelji gredo"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prijatelj gre"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prijateljev gre"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prijatelja gresta"
+                }
+              }
+            }
           }
         }
       }
@@ -1200,10 +1482,52 @@
     "%lld items": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld item"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld items"
+                }
+              }
+            }
+          }
+        },
         "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld postavk"
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld postavke"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld postavka"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld postavk"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld postavki"
+                }
+              }
+            }
           }
         }
       }
@@ -1255,10 +1579,52 @@
     "%lld sold": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sold"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sold"
+                }
+              }
+            }
+          }
+        },
         "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld prodanih"
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prodane"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prodana"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prodanih"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld prodani"
+                }
+              }
+            }
           }
         }
       }
@@ -5248,6 +5614,94 @@
         }
       }
     },
+    "See where your friends are going.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poglej, kam gredo prijatelji."
+          }
+        }
+      }
+    },
+    "Set up your club": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavi svoj klub"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavitve"
+          }
+        }
+      }
+    },
+    "Square image works best. Optional.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najbolje deluje kvadratna slika. Neobvezno."
+          }
+        }
+      }
+    },
+    "Street and number": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ulica in hišna številka"
+          }
+        }
+      }
+    },
+    "Switch to club account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preklopi na klubski račun"
+          }
+        }
+      }
+    },
+    "Switch to personal account": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preklopi na osebni račun"
+          }
+        }
+      }
+    },
+    "Tap Add friends and search by username.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapni Dodaj prijatelje in išči po uporabniškem imenu."
+          }
+        }
+      }
+    },
     "The event keeps its current genres.": {
       "extractionState": "manual",
       "localizations": {
@@ -8152,6 +8606,28 @@
         }
       }
     },
+    "Ticket QR code": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR koda vstopnice"
+          }
+        }
+      }
+    },
+    "Type at least 2 letters of a username.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vpiši vsaj 2 črki uporabniškega imena."
+          }
+        }
+      }
+    },
     "VAT according to the seller's VAT status": {
       "extractionState": "manual",
       "localizations": {
@@ -10571,6 +11047,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tvoje izplačilo"
+          }
+        }
+      }
+    },
+    "Your personal account has tickets, friends and preferences. You can switch back any time in My Account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj osebni račun ima vstopnice, prijatelje in nastavitve. Kadar koli se lahko vrneš v razdelku Moj račun."
           }
         }
       }

@@ -294,8 +294,10 @@ struct AddFriendsSheet: View {
                         .foregroundColor(.white.opacity(0.8))
                         .frame(width: 32, height: 32)
                         .background(Circle().fill(Color.white.opacity(0.1)))
+                        .contentShape(Circle().inset(by: -6))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("Close"))
             }
             .padding(.top, 18)
 
@@ -318,8 +320,10 @@ struct AddFriendsSheet: View {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 16))
                             .foregroundColor(.white.opacity(0.5))
+                            .contentShape(Rectangle().inset(by: -10))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Clear search"))
                 }
             }
             .padding(.horizontal, 16)

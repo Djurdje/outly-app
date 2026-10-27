@@ -175,6 +175,14 @@ struct ClubInfoView: View {
                         guard !isUploadingLogo, !authToken.isEmpty else { return }
                         showLogoPicker = true
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("Change logo"))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction {
+                        // VoiceOver dvojni dotik ne sprozi zanesljivo onTapGesture na zdruzenem elementu
+                        guard !isUploadingLogo, !authToken.isEmpty else { return }
+                        showLogoPicker = true
+                    }
 
                     Text("Add a profile photo so people can\nrecognise you")
                         .multilineTextAlignment(.center)
@@ -294,8 +302,11 @@ struct ClubInfoView: View {
                                         .font(.system(size: 18))
                                         .foregroundStyle(.white, Color.black.opacity(0.6))
                                         .padding(4)
+                                        .contentShape(Rectangle().inset(by: -9))
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(Text("Remove photo"))
+                                .accessibilityValue(Text(verbatim: "\(i + 1)"))
                             }
                         }
                     }

@@ -236,8 +236,10 @@ struct MyClubsView: View {
                     .foregroundColor(.white.opacity(0.7))
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(Color.white.opacity(0.08)))
+                    .contentShape(Circle().inset(by: -8))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("Close"))
             .padding(10)
         }
     }

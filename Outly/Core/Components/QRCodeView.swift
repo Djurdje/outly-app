@@ -6,6 +6,8 @@ import CoreImage.CIFilterBuiltins
 struct QRCodeView: View {
     let content: String
     var size: CGFloat = 220
+    /// Ze preveden opis stanja vstopnice (npr. `APITicket.statusLabel`) za bralnik zaslona; nil = stanje ni znano.
+    var stanje: String? = nil
 
     var body: some View {
         Group {
@@ -23,6 +25,9 @@ struct QRCodeView: View {
         .padding(12)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Ticket QR code"))
+        .accessibilityValue(Text(verbatim: stanje ?? ""))
     }
 
     private static func slika(_ s: String) -> UIImage? {

@@ -66,9 +66,11 @@ struct ReportSheet: View {
                     .foregroundColor(.white.opacity(0.8))
                     .frame(width: 32, height: 32)
                     .background(Circle().fill(Color.white.opacity(0.1)))
+                    .contentShape(Circle().inset(by: -6))
             }
             .buttonStyle(.plain)
             .disabled(sending)
+            .accessibilityLabel(Text("Close"))
         }
         .padding(.top, 18)
     }

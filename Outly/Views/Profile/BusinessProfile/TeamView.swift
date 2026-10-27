@@ -165,9 +165,11 @@ struct TeamView: View {
                     }
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(Color.white.opacity(0.08)))
+                    .contentShape(Circle().inset(by: -7))
                 }
                 .buttonStyle(.plain)
                 .disabled(busyUserId != nil)
+                .accessibilityLabel(Text("Cancel invitation"))
             }
         }
         .padding(14)
@@ -219,9 +221,11 @@ struct TeamView: View {
                     }
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(Color.white.opacity(0.08)))
+                    .contentShape(Circle().inset(by: -7))
                 }
                 .buttonStyle(.plain)
                 .disabled(busyUserId != nil)
+                .accessibilityLabel(Text("Remove from team"))
             }
         }
         .padding(14)

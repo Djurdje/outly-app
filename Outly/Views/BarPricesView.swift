@@ -166,8 +166,11 @@ struct BarPricesEditorView: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(Color(red: 1, green: 0.35, blue: 0.35))
                                     .frame(width: 32, height: 32)
+                                    .contentShape(Rectangle().inset(by: -6))
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(Text("Delete item"))
+                            .accessibilityValue(Text(verbatim: v.name))
                         }
                     }
                     .padding(12)

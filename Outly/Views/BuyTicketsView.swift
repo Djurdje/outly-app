@@ -361,7 +361,7 @@ struct BuyTicketsView: View {
 
     private var izbiraKolicine: some View {
         HStack(spacing: 14) {
-            krogGumb("minus", enabled: quantity > 1 && stanje == .miruje) {
+            krogGumb("minus", oznaka: "Fewer tickets", enabled: quantity > 1 && stanje == .miruje) {
                 quantity -= 1
             }
             Text("\(quantity)")
@@ -370,13 +370,13 @@ struct BuyTicketsView: View {
                 .frame(minWidth: 34)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: quantity)
-            krogGumb("plus", enabled: quantity < maxQuantity && stanje == .miruje) {
+            krogGumb("plus", oznaka: "More tickets", enabled: quantity < maxQuantity && stanje == .miruje) {
                 quantity += 1
             }
         }
     }
 
-    private func krogGumb(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func krogGumb(_ symbol: String, oznaka: LocalizedStringKey, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             action()
@@ -387,9 +387,11 @@ struct BuyTicketsView: View {
                 .frame(width: 40, height: 40)
                 .background(Color.white.opacity(enabled ? 0.12 : 0.05))
                 .clipShape(Circle())
+                .contentShape(Circle().inset(by: -2))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .accessibilityLabel(Text(oznaka))
     }
 
     private var perforacija: some View {
@@ -600,7 +602,7 @@ struct BuyTicketsView: View {
                         .foregroundColor(.white.opacity(0.7))
                         .frame(maxWidth: .infinity, minHeight: 60)
                 } else {
-                    QRCodeView(content: t.qr, size: 180)
+                    QRCodeView(content: t.qr, size: 180, stanje: t.statusLabel)
                         .padding(.top, 4)
                 }
             }

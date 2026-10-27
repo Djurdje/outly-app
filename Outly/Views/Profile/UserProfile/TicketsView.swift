@@ -532,7 +532,7 @@ struct WalletTicketCard: View {
 
             ZStack {
                 // Placilo v sporu: QR ne sme izgledati veljaven (skener ga tako ali tako zavrne), zato je skoraj izbrisan.
-                QRCodeView(content: ticket.qr, size: 200)
+                QRCodeView(content: ticket.qr, size: 200, stanje: ticket.statusLabel)
                     .opacity(ticket.jeVSporu ? 0.12 : 1)
                 if ticket.isUsed {
                     Text("ALREADY USED")
