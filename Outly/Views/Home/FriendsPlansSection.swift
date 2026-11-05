@@ -302,7 +302,6 @@ private struct FriendsPlanCard: View {
     /// Cena na Outlyju obstaja in dogodek se ni razprodan/koncan -> "Join them" ima kaj prodati.
     private var mozenNakup: Bool {
         plan.event.ticketPriceCents != nil && !plan.event.isSoldOut && !plan.event.hasEnded
-            && !DemoKlub.brezNakupa(isDemo: plan.event.isDemo, jeAdmin: session.me?.isAdmin == true)   // demo klub (backend#243): brez nakupa
     }
 
     /// Going in interested skupaj, brez podvajanja osebe, going najprej.
@@ -319,9 +318,6 @@ private struct FriendsPlanCard: View {
                     .font(.system(size: 13, weight: .bold))
                     .tracking(0.6)
                     .foregroundColor(.white)
-                if plan.event.isDemo {
-                    DemoZnacka(kompakten: true)
-                }
             }
 
             avatarji

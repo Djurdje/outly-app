@@ -2,8 +2,7 @@ import SwiftUI
 import UIKit
 
 /// VIP mize dogodka (sheet iz EventDetailView, kot BuyTicketsView): tloris kluba -> dotik proste mize ->
-/// izbira bottle paketa (vstet v ceno) -> "Reserve table". Placilo je do Stripa v TESTNEM nacinu
-/// (narocilo je takoj placano, denar se ne premakne) - zaslon to pove enako kot pri vstopnicah.
+/// izbira bottle paketa (vstet v ceno) -> "Reserve table". Placilo prek Stripa kot pri vstopnicah.
 /// Prijava, starost in omejitve uveljavi streznik (isto kot pri nakupu vstopnic): napaka gre v `userMessage`.
 /// Dogodek z `vip_payment == "door"` (backend 23. 10. 2026): gumb je »Reserve table« z napisom »Pay X in cash at the VIP door«, izbira paketa ostane,
 /// neobvezno ime za rezervacijo, POST /events/:id/tables/:tableId/reservations; brez Stripa, vstopnic in razdelitve prijateljem.
@@ -66,14 +65,8 @@ struct VipTablesView: View {
     /// Nacin placila kluba (backend `payment_mode`): iz odgovora tlorisa, sicer iz dogodka; nil iz starega backenda = `.neznan`.
     private var nacin: NacinPlacila { NacinPlacila(vip?.paymentMode ?? event.paymentMode) }
 
-    /// Demo klub (backend#243): odgovor tloris (`is_demo`), sicer dogodek. Namesto gumba Reserve besedilo; admin vidi gumb kot doslej
-    /// (streznik ga spusti). Demo ugotovimo iz `isDemo`, ne iz `payment_mode`.
-    private var jeDemo: Bool { (vip?.isDemo ?? false) || event.isDemo }
-    private var demoBrezNakupa: Bool { DemoKlub.brezNakupa(isDemo: jeDemo, jeAdmin: session.me?.isAdmin == true) }
-    /// Gumb Reserve onemogocen, ker prodaje ni (`payment_mode == "unavailable"`); adminu pri demo klubu ni (streznik odloca).
-    private var prodajaNedosegljiva: Bool {
-        DemoKlub.prodajaNedosegljiva(isDemo: jeDemo, jeAdmin: session.me?.isAdmin == true, nacin: nacin)
-    }
+    /// Gumb Reserve onemogocen, ker prodaje ni (`payment_mode == "unavailable"`; streznik odloca).
+    private var prodajaNedosegljiva: Bool { nacin.prodajaNedosegljiva }
 
     /// Napotek ob ponovnem odprtju po nejasnem izidu, izpeljan iz trenutne izbire: »tap the button again« samo pri isti mizi
     /// in istem paketu (isti kljuc) in ce je prodaja odprta (gumb Reserve); sicer »Check Profile -> Tickets« (miza »Booked«,
@@ -271,14 +264,7 @@ struct VipTablesView: View {
             .safeAreaInset(edge: .bottom) {
                 if vip.onSale, let m = izbranaMiza {
                     VStack(spacing: 8) {
-                        if demoBrezNakupa {
-                            // Namesto gumba Reserve (backend#243): demo klub miz ne prodaja.
-                            HStack(spacing: 8) {
-                                DemoZnacka()
-                                Spacer(minLength: 0)
-                            }
-                            NapotekKartica(besedilo: DemoKlub.sporocilo)
-                        } else if naVratih {
+                        if naVratih {
                             gumbRezervirajNaVratih(m)
                         } else {
                             gumbRezerviraj(m)
@@ -399,17 +385,12 @@ struct VipTablesView: View {
                 }
             }
 
-            // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
-            // `payment_mode == "test"` in ceni > 0 (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
-            if naVratih, !demoBrezNakupa {
+            // `unavailable` = pojasnilo namesto nakupa (sicer 409).
+            if naVratih {
                 vrsticaNaVratih(m)
                 poljeImeRezervacije
-            } else if stripe.caka == nil, !demoBrezNakupa {
-                if prodajaNedosegljiva {
-                    NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
-                } else if nacin.kazeTestniNapis(brezplacno: m.priceCents <= 0) {
-                    vrsticaPlacila
-                }
+            } else if stripe.caka == nil, prodajaNedosegljiva {
+                NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
             }
 
             // Miza s paketom pijace: starost je vsaj package_min_age (18), pri strozji meji dogodka ta (enako kot kljukica pri prenosu).
@@ -488,34 +469,6 @@ struct VipTablesView: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(izbran ? .isSelected : [])
-    }
-
-    /// Isto sporocilo kot pri vstopnicah: dokler ni Stripa, se nic ne zaracuna.
-    private var vrsticaPlacila: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "creditcard")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 40, height: 40)
-                .background(Color.white.opacity(0.08))
-                .clipShape(Circle())
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Payment")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                HStack(spacing: 6) {
-                    Circle().fill(Color.orange).frame(width: 6, height: 6)
-                    Text("Test mode — nothing is charged")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.6))
-                }
-            }
-            Spacer()
-        }
-        .padding(12)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: - Gumb
@@ -669,18 +622,6 @@ struct VipTablesView: View {
                         .foregroundColor(.white.opacity(0.5))
                 }
 
-                if p.mode == "test" {
-                    HStack(spacing: 6) {
-                        Circle().fill(Color.orange).frame(width: 6, height: 6)
-                        Text("Test purchase — nothing was charged")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Color.orange.opacity(0.12))
-                    .clipShape(Capsule())
-                }
-
                 // Izbira prijateljev (najvec N-1); »Skip« in »Done« zapreta list, neposlane vstopnice ostanejo v Tickets.
                 VipRazdelitevBlok(vstopnice: p.tickets, minAge: event.minAge,
                                   imaPaket: !(p.order.packageName ?? "").isEmpty,
@@ -817,7 +758,7 @@ struct VipTablesView: View {
     }
 
     /// Po vrnitvi s Stripove strani (samodejno: uspeh vec poskusov, sicer 1 poskus; tiho samo po preklicu) ali na »Check again« (1 poskus): ce je narocilo placano in ima
-    /// vstopnice, pokaze obstojeci uspesni zaslon (brez oznake TEST, ker `mode != "test"`); sicer ostane na listu.
+    /// vstopnice, pokaze obstojeci uspesni zaslon; sicer ostane na listu.
     private func preveriPlacilo(poskusov: Int, tiho: Bool = false) async {
         errorMessage = nil
         if let p = await stripe.preveri(token: session.token, poskusov: poskusov, tiho: tiho) {

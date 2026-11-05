@@ -392,17 +392,6 @@
         }
       }
     },
-    "Demo": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demo"
-          }
-        }
-      }
-    },
     "Discard changes": {
       "extractionState": "manual",
       "localizations": {
@@ -1550,17 +1539,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld naročil · %lld kupcev"
-          }
-        }
-      }
-    },
-    "Orders: %lld · not real money, not included above": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Naročila: %lld · ni pravi denar, ni vključeno zgoraj"
           }
         }
       }
@@ -6549,17 +6527,6 @@
         }
       }
     },
-    "Open Dashboard. Sales shows revenue for a period — choose By year, By month or By week. Below are Total revenue, Tickets sold, Outly fee and Your payout (after fee and refunds).\n\nCheck activity shows clicks on your profile and events and your Followers; Staff activity shows what your team scanned; Event performance lists your events — tap one for Door check-in and VIP reservations, or View all for the full list. While payments are in test mode, a TEST label shows and no money moves.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odpri Pregled. Prodaja prikaže prihodek za obdobje — izberi Po letu, Po mesecu ali Po tednu. Spodaj so Skupni prihodek, Prodane vstopnice, Provizija Outly in Tvoje izplačilo (po proviziji in vračilih).\n\nPreveri aktivnost prikaže klike na tvoj profil in dogodke ter Sledilce; Aktivnost ekipe prikaže, kaj je skenirala tvoja ekipa; Uspešnost dogodkov našteje tvoje dogodke — tapni enega za Vstop pri vratih in VIP rezervacije ali Prikaži vse za celoten seznam. Dokler so plačila v testnem načinu, je prikazana oznaka TEST in denar se ne premika."
-          }
-        }
-      }
-    },
     "Open Events and tap Add event (managers: Profile > My Clubs > your club > Create event). Fill in Title and Description, When (Starts, and Has end time if the event has an end), Who (Minimum age and music genres) and Tickets: Price in EUR (leave it empty if tickets are not sold on Outly, 0 means free entry), Capacity and an optional external ticket link. Choose a poster, switch on Published (visible to everyone) and tap Save.\n\nTap an event in the list to edit it. To remove one, tap Cancel or delete event. If tickets were already sold, the event is cancelled instead of deleted, so buyers keep proof of purchase.\n\nPast events can get an Event video that guests see on your club page — only your three most popular past events qualify.": {
       "extractionState": "manual",
       "localizations": {
@@ -8595,17 +8562,6 @@
         }
       }
     },
-    "This is a demo club. Tickets can't be bought.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "To je demo klub. Vstopnic ni mogoče kupiti."
-          }
-        }
-      }
-    },
     "Ticket QR code": {
       "extractionState": "manual",
       "localizations": {
@@ -8848,9 +8804,6 @@
         }
       }
     },
-    "TEST": {
-      "extractionState": "manual"
-    },
     "TICKET": {
       "extractionState": "manual",
       "localizations": {
@@ -8990,50 +8943,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pogoji uporabe"
-          }
-        }
-      }
-    },
-    "Test mode — nothing is charged": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testni način — nič se ne zaračuna"
-          }
-        }
-      }
-    },
-    "Test mode: purchases are simulated, no money moves. They are counted under Test purchases, not in the totals.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testni način: nakupi so simulirani, denar se ne premika. Šteti so pod Testni nakupi, ne v zneskih."
-          }
-        }
-      }
-    },
-    "Test purchase — nothing was charged": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testni nakup — nič ni bilo zaračunano"
-          }
-        }
-      }
-    },
-    "Test purchases": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testni nakupi"
           }
         }
       }
@@ -16828,17 +16737,6 @@
         }
       }
     },
-    "While payments are in test mode, a TEST label shows and no money moves.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokler so plačila v testnem načinu, je prikazana oznaka TEST in denar se ne premika."
-          }
-        }
-      }
-    },
     "Scan guests' QR codes with the camera and let them in.": {
       "extractionState": "manual",
       "localizations": {
@@ -17407,28 +17305,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Osebje dobi tudi obvestilo, ko je miza pripravljena za strežbo."
-          }
-        }
-      }
-    },
-    "Test mode": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testni način"
-          }
-        }
-      }
-    },
-    "Shows what test mode means": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokaže, kaj pomeni testni način"
           }
         }
       }

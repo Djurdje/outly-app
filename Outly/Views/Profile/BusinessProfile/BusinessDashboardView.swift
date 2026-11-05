@@ -20,7 +20,6 @@ struct BusinessDashboardView: View {
     @State private var isChartLoading = false
     @State private var errorText: String?
     @State private var range: SalesRange = .month
-    @State private var showTestInfo = false
 
     /// Opozorilo, ko kupci ne morejo kupovati. Pri nepopolnih podatkih prodajalca (samo lastnik jih lahko izpolni, backend#94)
     /// kartica vodi v Club info, kjer je razdelek »Seller details«; sicer samo besedilo.
@@ -80,45 +79,20 @@ struct BusinessDashboardView: View {
         .onAppear { Task { await load() } }
     }
 
-    // MARK: - Glava: logo in ime kluba na sredini, TEST kot gumb desno zgoraj
+    // MARK: - Glava: logo in ime kluba na sredini
 
     private var glava: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(spacing: 12) {
-                klubLogo
-                if let clubName, !clubName.isEmpty {
-                    Text(clubName)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-            }
-            .frame(maxWidth: .infinity)
-
-            if let sales, sales.jeTestni {
-                Button { showTestInfo = true } label: {
-                    Text("TEST")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Color.orange.opacity(0.15))
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Test mode")
-                .accessibilityHint("Shows what test mode means")
-                .popover(isPresented: $showTestInfo) {
-                    Text("Test mode: purchases are simulated, no money moves. They are counted under Test purchases, not in the totals.")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(16)
-                        .frame(width: 260)
-                        .presentationCompactAdaptation(.popover)
-                }
+        VStack(spacing: 12) {
+            klubLogo
+            if let clubName, !clubName.isEmpty {
+                Text(clubName)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(.top, 6)
     }
 
@@ -330,10 +304,6 @@ struct BusinessDashboardView: View {
                 summaryCard("Tickets sold", stevilka(s.summary.ticketsSold), "\(s.summary.orders) orders · \(s.summary.buyers) buyers")
                 summaryCard("Outly fee", Denar.evri(s.summary.feeCents), "\(Int(s.feePercent)) % of gross")
                 summaryCard("Your payout", Denar.evri(s.summary.netCents), "after fee and refunds", modra: true)
-            }
-            // Testni promet (backend#236): ni v zneskih zgoraj; ista kartica, cez celo sirino, ne modra.
-            if let t = s.testSummary, t.orders > 0 {
-                summaryCard("Test purchases", Denar.evri(t.grossCents), "Orders: \(t.orders) · not real money, not included above")
             }
         }
     }

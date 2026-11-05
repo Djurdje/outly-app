@@ -5,8 +5,7 @@ import UIKit
 /// Videz: temna "wallet" kartica s perforacijo (kot WalletTicketCard v Tickets),
 /// plakat dogodka v glavi, gumb Pay z zneskom.
 /// Kartica se NE vnasa v aplikaciji (PCI DSS): ko pride Stripe, tu vstopi Stripov
-/// obrazec. Do takrat backend dela v TESTNEM nacinu — denar se ne premakne, kar
-/// zaslon pove v vrstici "Payment".
+/// obrazec.
 @MainActor
 struct BuyTicketsView: View {
     let event: APIEvent
@@ -57,13 +56,8 @@ struct BuyTicketsView: View {
     private var isFree: Bool { unitCents == 0 }
     /// Nacin placila kluba (backend `payment_mode`); nil iz starega backenda = `.neznan` (danasnje vedenje).
     private var nacin: NacinPlacila { event.nacinPlacila }
-    /// Demo klub (backend#243): namesto gumba Pay besedilo; admin vidi gumb kot doslej (streznik ga spusti). Demo ugotovimo iz
-    /// `isDemo`, ne iz `payment_mode`.
-    private var demoBrezNakupa: Bool { DemoKlub.brezNakupa(isDemo: event.isDemo, jeAdmin: session.me?.isAdmin == true) }
-    /// Gumb Pay onemogocen, ker prodaje ni (`payment_mode == "unavailable"`); adminu pri demo klubu ni (streznik odloca).
-    private var prodajaNedosegljiva: Bool {
-        DemoKlub.prodajaNedosegljiva(isDemo: event.isDemo, jeAdmin: session.me?.isAdmin == true, nacin: nacin)
-    }
+    /// Gumb Pay onemogocen, ker prodaje ni (`payment_mode == "unavailable"`; streznik odloca).
+    private var prodajaNedosegljiva: Bool { nacin.prodajaNedosegljiva }
 
     /// Koliko jih je se na voljo (nil = neomejeno / neznano).
     private var remaining: Int? {
@@ -157,18 +151,13 @@ struct BuyTicketsView: View {
 
                 karticaNakupa
 
-                if !demoBrezNakupa, !prodajaNedosegljiva, stripe.caka == nil {
+                if !prodajaNedosegljiva, stripe.caka == nil {
                     poljePromoKode
                 }
 
-                // Ko je placilo ze v teku pri Stripu, vrstica »Test mode« ne sme ostati (ni res). Napis se kaze samo pri
-                // `payment_mode == "test"` (star backend: kot doslej); »unavailable« = pojasnilo namesto nakupa (sicer 409).
-                if stripe.caka == nil, !demoBrezNakupa {
-                    if prodajaNedosegljiva {
-                        NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
-                    } else if nacin.kazeTestniNapis(brezplacno: isFree) {
-                        vrsticaPlacila
-                    }
+                // `unavailable` = pojasnilo namesto nakupa (sicer 409).
+                if stripe.caka == nil, prodajaNedosegljiva {
+                    NapotekKartica(besedilo: String(localized: "Tickets aren't on sale in the app yet."))
                 }
 
                 // Prodajalec PRED placilom (backend#94). DDV vrstica je v kartici pod zneskom, stavek o posredniku spodaj.
@@ -190,17 +179,8 @@ struct BuyTicketsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
 
-                if demoBrezNakupa {
-                    // Namesto gumba Pay (backend#243): demo klub vstopnic ne prodaja.
-                    VStack(alignment: .leading, spacing: 8) {
-                        DemoZnacka()
-                        NapotekKartica(besedilo: DemoKlub.sporocilo)
-                    }
+                gumbPlacaj
                     .padding(.top, 4)
-                } else {
-                    gumbPlacaj
-                        .padding(.top, 4)
-                }
 
                 OutlyPogojiNakupa()
 
@@ -412,33 +392,6 @@ struct BuyTicketsView: View {
         .frame(height: 22)
     }
 
-    private var vrsticaPlacila: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "creditcard")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 40, height: 40)
-                .background(Color.white.opacity(0.08))
-                .clipShape(Circle())
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Payment")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                HStack(spacing: 6) {
-                    Circle().fill(Color.orange).frame(width: 6, height: 6)
-                    Text("Test mode — nothing is charged")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.6))
-                }
-            }
-            Spacer()
-        }
-        .padding(14)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
     private var gumbPlacaj: some View {
         // Krog + kljukica prek skupnega OutlyAkcijskiGumb (Buy ne dobi naslovUspeha - po
         // kljukici se cel zaslon "razpre" v uspeh(purchase), glej kupi()).
@@ -496,19 +449,6 @@ struct BuyTicketsView: View {
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
                     .transition(zabrisZZamikom)
-
-                if p.mode == "test" {
-                    HStack(spacing: 6) {
-                        Circle().fill(Color.orange).frame(width: 6, height: 6)
-                        Text("Test purchase — nothing was charged")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Color.orange.opacity(0.12))
-                    .clipShape(Capsule())
-                    .transition(zabrisZZamikom)
-                }
 
                 ForEach(Array(p.tickets.enumerated()), id: \.element.id) { i, t in
                     karticaVstopnice(t, index: i + 1, count: p.tickets.count)
@@ -676,7 +616,7 @@ struct BuyTicketsView: View {
     }
 
     /// Po vrnitvi s Stripove strani (samodejno: uspeh vec poskusov, sicer 1 poskus; tiho samo po preklicu) ali na »Check again« (1 poskus): ce je narocilo placano in ima
-    /// vstopnice, pokaze obstojeci uspesni zaslon (brez oznake TEST, ker `mode != "test"`); sicer ostane na nakupnem listu.
+    /// vstopnice, pokaze obstojeci uspesni zaslon; sicer ostane na nakupnem listu.
     private func preveriPlacilo(poskusov: Int, tiho: Bool = false) async {
         errorMessage = nil
         if let p = await stripe.preveri(token: session.token, poskusov: poskusov, tiho: tiho) {

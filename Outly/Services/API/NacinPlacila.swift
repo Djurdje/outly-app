@@ -3,12 +3,10 @@ import Foundation
 /// Nacin placila prodajalca (backend `payment_mode`, outly-backend#203 / #149): polje je odvisno od KLUBA, ne od uporabnika.
 /// Pride v dogodkih (seznam, podrobnosti), v odgovoru VIP tlorisa (`GET /events/:id/vip`) in v `GET /business/sales`.
 ///
-///  – `test`: nic se ne zaracuna (testni sistem ali klub brez dokoncanega Stripa) -> vrstica »Test mode — nothing is charged«;
-///  – `stripe`: pravo placilo prek Stripe Checkouta -> BREZ napisa o testnem nacinu;
+///  – `test`: klub brez dokoncanega Stripa (zivi backend ga ne vrne; prikazuje se kot navaden nakup, brez napisa);
+///  – `stripe`: pravo placilo prek Stripe Checkouta;
 ///  – `unavailable`: nakup bi bil zavrnjen (409 »club does not accept online payments yet« / 503) -> gumb onemogocen s pojasnilom;
-///  – `neznan`: star backend polja ne poslje (nil) -> DANASNJE vedenje (vrstica se kaze kot doslej, nakup ni blokiran),
-///    da stara kombinacija ne pokvari nicesar. Neznana vrednost v prihodnosti se obravnava kot `stripe` (napisa o brezplacnem
-///    nakupu NIKOLI ne kazemo, ce ni gotovo, da je res).
+///  – `neznan`: star backend polja ne poslje (nil) -> nakup ni blokiran. Neznana vrednost v prihodnosti se obravnava kot `stripe`.
 enum NacinPlacila: Equatable {
     case test
     case stripe
@@ -24,24 +22,8 @@ enum NacinPlacila: Equatable {
         }
     }
 
-    /// Ali naj nakupni list pokaze vrstico »Test mode — nothing is charged«. Cena 0 = placila ni, zato napisa ni
-    /// (kjer je nacin znan); star backend (`neznan`) ohrani danasnje vedenje.
-    func kazeTestniNapis(brezplacno: Bool) -> Bool {
-        switch self {
-        case .neznan: return true
-        case .test: return !brezplacno
-        case .stripe, .nedosegljivo: return false
-        }
-    }
-
     /// Nakup bi bil zavrnjen: gumb onemogocen, pokazi pojasnilo namesto klica, ki konca z 409.
     var prodajaNedosegljiva: Bool { self == .nedosegljivo }
-
-    /// Napis v dashboardu lastnika: `payment_mode` kluba, sicer (star backend) globalni `mode == "test"` kot doslej.
-    static func dashboardTestni(paymentMode: String?, mode: String) -> Bool {
-        guard let paymentMode else { return mode == "test" }
-        return paymentMode == "test"
-    }
 }
 
 /// Razlog, zakaj je `payment_mode == "unavailable"` (backend#221, `payment_unavailable_reason` v `GET /business/sales`).
@@ -52,8 +34,6 @@ enum RazlogNedosegljivosti: Equatable {
     case prodajalecNepopoln
     /// "payments_not_configured": na streznik manjka nastavitev placil (lastnik ne more nicesar storiti).
     case placilaNenastavljena
-    /// "demo_club" (backend#243): klub je demo, vstopnic ne prodaja (nastavi samo admin).
-    case demoKlub
     /// "stripe_not_ready", nil ali neznano: klub nima dokoncanega Stripa (obstojece besedilo).
     case stripeNiPripravljen
 
@@ -61,7 +41,6 @@ enum RazlogNedosegljivosti: Equatable {
         switch niz {
         case "seller_incomplete"?: self = .prodajalecNepopoln
         case "payments_not_configured"?: self = .placilaNenastavljena
-        case "demo_club"?: self = .demoKlub
         default: self = .stripeNiPripravljen
         }
     }
@@ -75,7 +54,6 @@ enum RazlogNedosegljivosti: Equatable {
                 ? String(localized: "Buyers can't purchase yet: complete your seller details in Club info.")
                 : String(localized: "Buyers can't purchase yet: the club owner needs to complete the seller details in Club info.")
         case .placilaNenastavljena: return String(localized: "Payments aren't set up yet. Contact Outly.")
-        case .demoKlub: return DemoKlub.sporocilo
         case .stripeNiPripravljen: return String(localized: "Buyers can't purchase yet — connect Stripe at outly.si/app.")
         }
     }

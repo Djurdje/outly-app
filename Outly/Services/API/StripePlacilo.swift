@@ -129,7 +129,7 @@ enum StripePlacilo {
         }
     }
 
-    /// Nakup, sestavljen iz placanega narocila (za obstojeci uspesni zaslon z vstopnicami; brez oznake TEST, ker `mode != "test"`).
+    /// Nakup, sestavljen iz placanega narocila (za obstojeci uspesni zaslon z vstopnicami).
     static func odgovorPoPlacilu(_ narocilo: APIOrder) -> PurchaseResponse {
         PurchaseResponse(mode: "stripe", order: narocilo, tickets: narocilo.tickets, checkoutUrl: nil)
     }

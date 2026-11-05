@@ -50,7 +50,7 @@ struct APIClub: Identifiable, Decodable {
     /// v razdelku "Organized by Outly". Star backend -> false.
     let isOfficial: Bool
     /// Demo klub (backend#243, 13. 10. 2026): izmisljen klub za predstavitev; vstopnic ne prodaja (nakup = 409 `demo_club`).
-    /// Prikaz: znacka »Demo« (`DemoZnacka`). Star backend polja ne poslje -> false.
+    /// Ni prikazano (od 5. 11. 2026 brez demo oznak); polje ostane zaradi dekodiranja. Star backend polja ne poslje -> false.
     let isDemo: Bool
 
     /// Prodajalec za javni prikaz (GET /clubs/:id, backend#94). Seznami in star backend ga nimajo -> nil.

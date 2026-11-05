@@ -70,9 +70,8 @@ struct APIEvent: Identifiable, Decodable {
     /// Ni v favoritih/nacrtih (tam ni nakupa) -> nil.
     let paymentMode: String?
 
-    /// Prodajalec dogodka (klub `club_id`) je demo klub (backend#243, 13. 10. 2026): znacka »Demo«, brez nakupa
-    /// (409 `demo_club`; admin sme). Star backend polja ne poslje -> false. Ne zanasaj se samo na `payment_mode`:
-    /// `unavailable` je lahko tudi `seller_incomplete` / `stripe_not_ready`.
+    /// Prodajalec dogodka (klub `club_id`) je demo klub (backend#243): v aplikaciji se ne prikazuje, polje se samo dekodira.
+    /// Star backend polja ne poslje -> false.
     let isDemo: Bool
 
     /// Prodajalec (klub `club_id`) za vrstico »Sold by« in blok pred placilom (backend#94). Pride samo pri GET /events/:id;

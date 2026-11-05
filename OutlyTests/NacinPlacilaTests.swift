@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 @testable import Outly
 
-/// `payment_mode` (backend#203): dekodiranje (star backend polja ne poslje), razvrstitev in kdaj se kaze napis »Test mode«.
+/// `payment_mode` (backend#203): dekodiranje (star backend polja ne poslje), razvrstitev in blokada prodaje pri `unavailable`.
 @MainActor
 final class NacinPlacilaTests: XCTestCase {
 
@@ -16,18 +16,6 @@ final class NacinPlacilaTests: XCTestCase {
         XCTAssertEqual(NacinPlacila("stripe"), .stripe)
         XCTAssertEqual(NacinPlacila("unavailable"), .nedosegljivo)
         XCTAssertEqual(NacinPlacila("kaj-novega"), .stripe)   // neznana vrednost: napisa o brezplacnem nakupu ne kazemo
-    }
-
-    func testTestniNapis() {
-        // star backend: kot doslej
-        XCTAssertTrue(NacinPlacila.neznan.kazeTestniNapis(brezplacno: false))
-        XCTAssertTrue(NacinPlacila.neznan.kazeTestniNapis(brezplacno: true))
-        // test: samo pri ceni > 0
-        XCTAssertTrue(NacinPlacila.test.kazeTestniNapis(brezplacno: false))
-        XCTAssertFalse(NacinPlacila.test.kazeTestniNapis(brezplacno: true))
-        // stripe, unavailable: nikoli
-        XCTAssertFalse(NacinPlacila.stripe.kazeTestniNapis(brezplacno: false))
-        XCTAssertFalse(NacinPlacila.nedosegljivo.kazeTestniNapis(brezplacno: false))
     }
 
     func testSamoNedosegljivoBlokiraProdajo() {
@@ -49,20 +37,6 @@ final class NacinPlacilaTests: XCTestCase {
         let v = try decode(EventVip.self, #"{"event_id": 1, "enabled": true, "on_sale": true, "currency": "EUR", "payment_mode": "unavailable"}"#)
         XCTAssertEqual(v.paymentMode, "unavailable")
         XCTAssertNil(try decode(EventVip.self, #"{"event_id": 1}"#).paymentMode)
-    }
-
-    func testDashboardNapisTemeljiNaPaymentModeSicerNaMode() throws {
-        let osnova = #""summary": {"gross_cents": 0, "fee_cents": 0, "net_cents": 0, "tickets_sold": 0, "orders": 0, "buyers": 0, "gross_7d_cents": 0, "tickets_7d": 0}"#
-        // novi backend: payment_mode odloca (globalni mode je lahko "test", klub pa ima Stripe)
-        let stripe = try decode(BusinessSales.self, #"{"mode": "test", "payment_mode": "stripe", \#(osnova)}"#)
-        XCTAssertFalse(stripe.jeTestni)
-        let test = try decode(BusinessSales.self, #"{"mode": "stripe", "payment_mode": "test", \#(osnova)}"#)
-        XCTAssertTrue(test.jeTestni)
-        let nedosegljivo = try decode(BusinessSales.self, #"{"mode": "stripe", "payment_mode": "unavailable", \#(osnova)}"#)
-        XCTAssertFalse(nedosegljivo.jeTestni)
-        // star backend: kot doslej po `mode`
-        XCTAssertTrue(try decode(BusinessSales.self, #"{"mode": "test", \#(osnova)}"#).jeTestni)
-        XCTAssertFalse(try decode(BusinessSales.self, #"{"mode": "stripe", \#(osnova)}"#).jeTestni)
     }
 
     func testDashboardOpozoriloSamoPriUnavailable() throws {

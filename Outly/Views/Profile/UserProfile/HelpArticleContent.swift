@@ -776,7 +776,6 @@ extension HelpArticle {
             notes: [
                 String(localized: "Sales shows revenue for the period you choose. Your payout is what is left after fee and refunds."),
                 String(localized: "Staff activity shows what your team scanned."),
-                String(localized: "While payments are in test mode, a TEST label shows and no money moves."),
             ],
             destination: nil,
             related: ["club-events", "club-scanner", "club-team"]

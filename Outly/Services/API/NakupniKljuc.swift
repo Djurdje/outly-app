@@ -131,3 +131,12 @@ extension NavalNakupa {
     /// `Retry-After` iz glave `send()` ne vrne; backend ob `request_in_progress` privzeto pove 2 s.
     static let premorVObdelaviNanosekund: UInt64 = 2_000_000_000
 }
+
+extension Error {
+    /// 409 `demo_club`: dogodek je demo kluba, narocilo NI nastalo (brez stranskih ucinkov). Ni povezano s tlorisom (miza je prosta)
+    /// in ni nerazresen izid kljuca (`nakupniIzid` = `.navadna`).
+    var jeDemoKlub: Bool {
+        guard let api = self as? APIError, case .requestFailed(let code, let raw) = api, code == 409 else { return false }
+        return raw.lowercased().contains("demo_club")
+    }
+}
