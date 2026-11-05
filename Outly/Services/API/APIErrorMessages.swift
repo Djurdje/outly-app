@@ -102,10 +102,9 @@ extension APIError {
         // na POST /events/:id/orders in /events/:id/tables/:tableId/orders. PRED splosnim 409 in pred pravili po vsebini spodaj.
         if t.contains("seller_incomplete")              { return String(localized: "Purchases aren't available yet: the organizer hasn't completed their seller details.") }
 
-        // Nakup pri demo klubu (backend#243): 409 `{ "error": "demo_club", "message": "This is a demo club. Tickets can't be bought." }`
-        // na POST /events/:id/orders in /events/:id/tables/:tableId/orders. Po KODI (ne po sporocilu), PRED splosnim 409 in pred
-        // pravili po vsebini spodaj (sporocilo vsebuje »club« in »tickets«).
-        if t.contains("demo_club")                      { return DemoKlub.sporocilo }
+        // 409 `demo_club` (backend#243; demo klubov v produkciji ni vec, migracija 066): nevtralno besedilo, sicer bi padlo na
+        // splosni 409 »This is already in use.«. Po KODI, PRED splosnim 409.
+        if t.contains("demo_club")                      { return String(localized: "Tickets aren't on sale in the app yet.") }
 
         // Rezervacija VIP mize za placilo na vratih (backend 23. 10. 2026): 409 `{ "error": "reservation_limit" | "vip_pay_in_app" |
         // "vip_pay_at_door" | "event_started", "message": … }`. Po KODI, PRED splosnim 409 in pred pravili po vsebini spodaj

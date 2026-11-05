@@ -65,7 +65,7 @@ struct SearchView: View {
                                         ClubDetailView(clubId: club.id)
                                     } label: {
                                         row(icon: "building.2", title: club.name,
-                                            subtitle: club.city, imageUrl: club.logoUrl, demo: club.isDemo)
+                                            subtitle: club.city, imageUrl: club.logoUrl)
                                     }
                                     .buttonStyle(.plain)
                                     Divider().background(Color.gray.opacity(0.3))
@@ -80,7 +80,7 @@ struct SearchView: View {
                                     } label: {
                                         row(icon: "calendar", title: e.title,
                                             subtitle: eventSubtitle(e), imageUrl: e.posterUrl, jePlakat: true,
-                                            busy: openingEventId == e.id, demo: e.isDemo)
+                                            busy: openingEventId == e.id)
                                     }
                                     .buttonStyle(.plain)
                                     Divider().background(Color.gray.opacity(0.3))
@@ -166,7 +166,7 @@ struct SearchView: View {
                         ClubDetailView(clubId: club.id)
                     } label: {
                         row(icon: "building.2", title: club.name,
-                            subtitle: clubSubtitle(club), imageUrl: club.logoUrl, demo: club.isDemo)
+                            subtitle: clubSubtitle(club), imageUrl: club.logoUrl)
                     }
                     .buttonStyle(.plain)
                     Divider().background(Color.gray.opacity(0.3))
@@ -211,7 +211,7 @@ struct SearchView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func row(icon: String, title: String, subtitle: String, imageUrl: String, jePlakat: Bool = false, busy: Bool = false, demo: Bool = false) -> some View {
+    private func row(icon: String, title: String, subtitle: String, imageUrl: String, jePlakat: Bool = false, busy: Bool = false) -> some View {
         HStack(spacing: 12) {
             if let url = URL(string: imageUrl), !imageUrl.isEmpty {
                 Group {
@@ -236,9 +236,6 @@ struct SearchView: View {
                 }
             }
             Spacer()
-            if demo {
-                DemoZnacka(kompakten: true)
-            }
             if busy {
                 ProgressView()
             } else {

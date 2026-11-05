@@ -163,47 +163,11 @@ struct EventDetailView: View {
             .frame(height: heroHeight)
             .clipped()
 
-            Group {
-                if demoNamestoNakupa {
-                    demoVrstica
-                } else {
-                    ticketBar
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 18)
+            ticketBar
+                .padding(.horizontal, 16)
+                .padding(.bottom, 18)
         }
         .frame(height: heroHeight)
-    }
-
-    // MARK: - Demo klub (backend#243): namesto vrstice z vstopnicami besedilo; admin vidi vrstico kot doslej
-    private var jeAdmin: Bool { session.me?.isAdmin == true }
-
-    /// Vrstica z vstopnicami bi sicer prodajala na Outlyju (buy / free / few left), a je prodajalec demo klub in uporabnik ni admin.
-    /// Tuja prodaja (`external`), na vratih, razprodano in koncano ostanejo kot doslej (tam nakupa v aplikaciji ni).
-    private var demoNamestoNakupa: Bool {
-        guard DemoKlub.brezNakupa(isDemo: event.isDemo, jeAdmin: jeAdmin) else { return false }
-        switch ticketState {
-        case .buy, .free, .fewLeft: return true
-        case .external, .door, .soldOut, .ended, .prodajaZaprta: return false
-        }
-    }
-
-    private var demoVrstica: some View {
-        VStack(spacing: 8) {
-            DemoZnacka()
-            Text(DemoKlub.sporocilo)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.black.opacity(0.62)))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1.5))
-        .accessibilityElement(children: .combine)
     }
 
     /// Plakat cez priblizno polovico zaslona (na iPhonu 14 Pro ~470 pt).
@@ -332,9 +296,6 @@ struct EventDetailView: View {
 
                 Spacer()
 
-                if event.isDemo {
-                    DemoZnacka()
-                }
                 if event.minAge > 0 {
                     Text("\(event.minAge)+")
                         .font(.system(size: 11, weight: .bold))
@@ -552,7 +513,7 @@ struct EventDetailView: View {
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .onTapGesture {
                 guard active else { return }
-                // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView, testni nacin do Stripa).
+                // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView).
                 // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
                 if event.ticketPriceCents != nil {
                     // Nakup zahteva racun (iOS nima nakupa brez racuna): gost najprej prijava, nato se odpre nakup.

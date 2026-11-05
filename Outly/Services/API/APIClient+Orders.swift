@@ -4,9 +4,8 @@ import Foundation
 // POST /events/:id/orders, GET /me/orders, GET /me/tickets, GET /business/sales,
 // GET /business/events/:id/tickets, POST /business/tickets/scan.
 //
-// NACIN: dokler Stripe Connect ni vkljucen, backend dela v TESTNEM nacinu —
-// narocilo je takoj "placano", denar se ne premakne, odgovor nosi mode:"test".
-// Aplikacija to pokaze (oznaka TEST), da nihce ne misli, da je placal.
+// NACIN: odgovor nosi mode ("stripe" | "test"); aplikacija ga uporablja samo za logiko nakupa (pending, nadaljevanje placila),
+// testnih oznak v uporabniskem vmesniku ni.
 
 // MARK: - Modeli
 
@@ -498,9 +497,6 @@ struct BusinessSales: Decodable {
         // try?: nenavadno polje testnega prometa ne sme podreti dekodiranja cele prodaje.
         testSummary = (try? c.decodeIfPresent(TestSummary.self, forKey: .testSummary)) ?? nil
     }
-
-    /// Dashboard kaze TEST samo, ko je placilo TEGA kluba testno (`payment_mode`); star backend: globalni `mode`.
-    var jeTestni: Bool { NacinPlacila.dashboardTestni(paymentMode: paymentMode, mode: mode) }
 
     /// Nacin placila tega kluba; nil iz starega backenda -> `.neznan` (opozorila ni).
     var nacinPlacila: NacinPlacila { NacinPlacila(paymentMode) }

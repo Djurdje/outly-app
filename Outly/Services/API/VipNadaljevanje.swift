@@ -50,7 +50,7 @@ enum VipNadaljevanje: Equatable {
         return Izid(stanje: .placano, narocilo: n)
     }
 
-    /// Odgovor za obstojeci uspesni zaslon iz placanega narocila (`mode` "test" ohrani oznako TEST pri testnih narocilih).
+    /// Odgovor za obstojeci uspesni zaslon iz placanega narocila (`mode` "test" pri testnih narocilih se ohrani zaradi logike nadaljevanja).
     static func odgovor(_ narocilo: APIOrder) -> PurchaseResponse {
         PurchaseResponse(mode: narocilo.isTest ? "test" : "stripe", order: narocilo, tickets: narocilo.tickets, checkoutUrl: nil)
     }

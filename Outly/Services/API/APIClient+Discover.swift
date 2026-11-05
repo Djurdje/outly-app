@@ -12,7 +12,7 @@ struct MapClub: Identifiable, Decodable {
     let city: String
     let minAge: Int
     let genres: [String]
-    /// Demo klub (backend#243): kartica ob izbiri pina kaze »Demo«. Star backend -> false.
+    /// Demo klub (backend#243): ni prikazano (dekodira se zaradi stare kode). Star backend -> false.
     let isDemo: Bool
 
     enum CodingKeys: String, CodingKey {

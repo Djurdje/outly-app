@@ -248,10 +248,6 @@ struct ClubDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                if club?.isDemo == true {
-                    DemoZnacka()
-                }
-
                 Text(cityCountryText)
                     .foregroundStyle(.secondary)
 
