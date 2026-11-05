@@ -58,6 +58,14 @@ final class DemoKlubTests: XCTestCase {
         XCTAssertTrue(APIError.requestFailed(409, "Already booked").osveziTlorisPoNapaki)
     }
 
+    func testSporociloJeNevtralnoNeSplosni409() {
+        // Brez lastne vrstice bi 409 demo_club padel na splosni »This is already in use.« (pregled tipov 5. 11. 2026).
+        let pricakovano = String(localized: "Tickets aren't on sale in the app yet.")
+        XCTAssertEqual(napaka.userMessage, pricakovano)
+        XCTAssertEqual(napaka.nakupUserMessage, pricakovano)
+        XCTAssertNotEqual(napaka.userMessage, String(localized: "This is already in use."))
+    }
+
     // MARK: - Dashboard lastnika
 
     func testRazlogDemoKlubaPadeNaObstojeceBesedilo() {
