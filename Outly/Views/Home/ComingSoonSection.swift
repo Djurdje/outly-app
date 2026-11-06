@@ -5,7 +5,7 @@ import SwiftUI
 struct ComingSoonZnacka: View {
     var body: some View {
         Text("Coming soon (badge)")
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 12, weight: .semibold))
             .foregroundColor(.white)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -114,4 +114,9 @@ struct ComingSoonVrsta: View {
             .padding(.vertical, 4)
         }
     }
+}
+
+/// Stevec zahtev za osvezitev razdelka (referenca v @State na HomeView; sprememba polja ne sprozi izrisa).
+final class KmaluZahteva {
+    var stevec = 0
 }

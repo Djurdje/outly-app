@@ -29,6 +29,8 @@ struct HomeView: View {
     @State private var clubsById: [Int: APIClub] = [:]
     /// »Coming soon« (6. 11. 2026): klubi s podpisano pogodbo, GET /coming-soon. Napaka / 404 / prazno -> razdelek skrit.
     @State private var kmaluKlubi: [ComingSoonClub] = []
+    /// Referenca (nikoli ni ponovno dodeljena -> ne sprozi izrisa): stevec zahtev za osveziKmalu().
+    @State private var kmaluZahteva = KmaluZahteva()
     @State private var suggestedOrder: [Int] = []
     /// "In your area": klub, ki je po prvem dotiku zatemnjen in kaze razdaljo (drugi dotik odpre klub).
     @State private var areaSelected: Int?
@@ -479,14 +481,18 @@ struct HomeView: View {
         }
     }
 
-    /// Javna pot; kakrsnakoli napaka (404 na starem backendu, omrezje, 5xx) razdelek tiho skrije. Prekinitev ne brise stanja.
+    /// Javna pot. Razdelek izgine samo ob uspesnem praznem odgovoru in ob 404 (star backend brez poti);
+    /// ob drugih napakah (omrezje, 5xx) ostane prejsnje stanje. Stevec zahtev: starejsi odgovor ne povozi novejsega.
     private func osveziKmalu() async {
+        kmaluZahteva.stevec += 1
+        let moja = kmaluZahteva.stevec
         do {
-            kmaluKlubi = try await APIClient.shared.fetchComingSoon()
-        } catch is CancellationError {
-        } catch let url as URLError where url.code == .cancelled {
+            let seznam = try await APIClient.shared.fetchComingSoon()
+            if moja == kmaluZahteva.stevec { kmaluKlubi = seznam }
+        } catch APIError.requestFailed(404, _) {
+            if moja == kmaluZahteva.stevec { kmaluKlubi = [] }
         } catch {
-            kmaluKlubi = []
+            // Prekinitev, omrezje, 5xx: obdrzi prejsnje.
         }
     }
 
