@@ -27,6 +27,10 @@ struct HomeView: View {
     @State private var upcomingEvents: [APIEvent] = []
     @State private var popularEvents: [APIEvent] = []
     @State private var clubsById: [Int: APIClub] = [:]
+    /// »Coming soon« (6. 11. 2026): klubi s podpisano pogodbo, GET /coming-soon. Napaka / 404 / prazno -> razdelek skrit.
+    @State private var kmaluKlubi: [ComingSoonClub] = []
+    /// Referenca (nikoli ni ponovno dodeljena -> ne sprozi izrisa): stevec zahtev za osveziKmalu().
+    @State private var kmaluZahteva = KmaluZahteva()
     @State private var suggestedOrder: [Int] = []
     /// "In your area": klub, ki je po prvem dotiku zatemnjen in kaze razdaljo (drugi dotik odpre klub).
     @State private var areaSelected: Int?
@@ -260,9 +264,15 @@ struct HomeView: View {
                     if isLoading && upcomingEvents.isEmpty && clubs.isEmpty {
                         skeleton
                     } else {
+                        // »Coming soon« takoj pod prvo sekcijo dogodkov (Organized by Outly, sicer Tonight / This week);
+                        // brez dogodkov na vrhu vsebine.
+                        let kmaluMesto = self.kmaluMesto
+                        if kmaluMesto == .vrh { kmaluSection }
+
                         // 0. Organized by Outly (9. 10. 2026): prihajajoci dogodki uradnega profila Outly.
                         // Naslov samo v anglescini; razdelek ni viden, ce dogodkov ni.
                         outlySection
+                        if kmaluMesto == .poOutly { kmaluSection }
 
                         // 1. Suggestions (Figma 37:139) — siroke pasice klubov po zanrih
                         if !suggestedClubs.isEmpty {
@@ -281,6 +291,8 @@ struct HomeView: View {
                                 HorizontalEventsScroll(events: thisWeek, clubsById: clubsById)
                             }
                         }
+
+                        if kmaluMesto == .poTonight { kmaluSection }
 
                         // 2b. Interested events (Martin, 25. 9.): dogodki, kjer sem rekel "I'm in",
                         // brez tistih z vstopnico (ti so pod Tickets). Viden samo, ko je kaj v njem.
@@ -448,6 +460,39 @@ struct HomeView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Coming soon (loceno zaradi tipnega preverjevalnika)
+    private enum KmaluMesto { case vrh, poOutly, poTonight }
+
+    private var kmaluMesto: KmaluMesto {
+        if !outlyDogodki.isEmpty { return .poOutly }
+        if !tonight.isEmpty || !thisWeek.isEmpty { return .poTonight }
+        return .vrh
+    }
+
+    @ViewBuilder
+    private var kmaluSection: some View {
+        if !kmaluKlubi.isEmpty {
+            sekcija("Coming soon", podnaslov: "New clubs joining Outly") {
+                ComingSoonVrsta(klubi: kmaluKlubi)
+            }
+        }
+    }
+
+    /// Javna pot. Razdelek izgine samo ob uspesnem praznem odgovoru in ob 404 (star backend brez poti);
+    /// ob drugih napakah (omrezje, 5xx) ostane prejsnje stanje. Stevec zahtev: starejsi odgovor ne povozi novejsega.
+    private func osveziKmalu() async {
+        kmaluZahteva.stevec += 1
+        let moja = kmaluZahteva.stevec
+        do {
+            let seznam = try await APIClient.shared.fetchComingSoon()
+            if moja == kmaluZahteva.stevec { kmaluKlubi = seznam }
+        } catch APIError.requestFailed(404, _) {
+            if moja == kmaluZahteva.stevec { kmaluKlubi = [] }
+        } catch {
+            // Prekinitev, omrezje, 5xx: obdrzi prejsnje.
         }
     }
 
@@ -713,6 +758,8 @@ struct HomeView: View {
     private func loadAll() async {
         isLoading = true
         errorText = nil
+        // Neodvisno od ostalega: napaka tu ne sme vplivati na zaslon (razdelek se samo skrije).
+        Task { await osveziKmalu() }
         do {
             async let c = APIClient.shared.fetchClubs()
             async let up = APIClient.shared.fetchEvents(upcoming: true)

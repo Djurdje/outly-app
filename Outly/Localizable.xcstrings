@@ -67,6 +67,23 @@
         }
       }
     },
+    "%@ is coming to Outly soon. Events and tickets will be available here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is coming to Outly soon. Events and tickets will be available here."
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kmalu prihaja na Outly. Tu bodo na voljo dogodki in vstopnice."
+          }
+        }
+      }
+    },
     "%@ is going": {
       "extractionState": "manual",
       "localizations": {
@@ -116,6 +133,23 @@
     },
     "%@ · %lld × %@": {
       "extractionState": "manual"
+    },
+    "%@, coming soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, coming soon"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, kmalu"
+          }
+        }
+      }
     },
     "1 friend going": {
       "extractionState": "manual",
@@ -289,6 +323,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stolpci"
+          }
+        }
+      }
+    },
+    "Coming soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming soon"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kmalu na Outly"
+          }
+        }
+      }
+    },
+    "Coming soon (badge)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming soon"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kmalu"
           }
         }
       }
