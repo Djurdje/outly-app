@@ -60,7 +60,9 @@ jobs:
           [ -n "$KON" ] && DATUM=$(date -u -d "$KON" +%F 2>/dev/null)
           [[ "$DATUM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::Iz certifikata ni mogoce prebrati datuma poteka."; exit 1; }
 
-          DNI=$(( ($(date -u -d "$DATUM" +%s) - $(date -u +%s)) / 86400 ))
+          SEK=$(( $(date -u -d "$DATUM" +%s) - $(date -u +%s) ))
+          # Zaokrozevanje: potekel pred < 24 h bi dal 0 dni; vsak pretekli rok je najmanj -1 dan (»potekel«).
+          if [ "$SEK" -lt 0 ]; then DNI=$(( -((-SEK + 86399) / 86400) )); else DNI=$(( SEK / 86400 )); fi
           echo "Certifikat poteče: $DATUM (čez $DNI dni)"
           if [ "$DNI" -ge 45 ]; then echo "OK  prag 45 dni ni dosezen."; exit 0; fi
 
