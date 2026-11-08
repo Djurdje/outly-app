@@ -23,6 +23,8 @@ struct EventFormView: View {
     @State private var capacityText = ""
     @State private var ticketUrl = ""
     @State private var posterUrl = ""
+    /// Majhen banner 3:4; "" = ni (kartica pokaze sredino velikega).
+    @State private var posterCardUrl = ""
     @State private var isPublished = true
 
     // Prizorisce (backend 037): obvezno, ce klub organizira dogodke brez lastnega prizorisca
@@ -42,6 +44,10 @@ struct EventFormView: View {
 
     @State private var pickedPoster: PhotosPickerItem?
     @State private var isUploadingPoster = false
+    @State private var pickedCard: PhotosPickerItem?
+    @State private var isUploadingCard = false
+    /// Izbrana slika, ki caka na izrez; nalaganje se zacne sele po »Use«.
+    @State private var izrezNalog: BannerIzrezNalog?
 
     // Posnetek koncanega dogodka (backend migracija 019): video NAMESTO plakata na strani
     // kluba. Streznik ga sprejme samo na koncanem dogodku, ki je med TREMI najbolj
@@ -69,7 +75,7 @@ struct EventFormView: View {
         if Set(selectedGenres) != Set(e.genres) { return true }
         if priceText != (e.ticketPriceCents.map { Self.euros(fromCents: $0) } ?? "") { return true }
         if capacityText != (e.capacity.map { String($0) } ?? "") { return true }
-        if ticketUrl != (e.ticketUrl ?? "") || posterUrl != e.posterUrl { return true }
+        if ticketUrl != (e.ticketUrl ?? "") || posterUrl != e.posterUrl || posterCardUrl != e.posterCardUrl { return true }
         if e.status != "cancelled", isPublished != (e.status == "published") { return true }
         if isOrganizer {
             let novoId: Int? = nacinPrizorisca == .outly ? venueClubId : nil
@@ -196,20 +202,52 @@ struct EventFormView: View {
                 // Vklop VIP miz in nacin placila (aplikacija | gotovina na VIP vratih) za vse klube; samo shranjen dogodek.
                 VipNacinPlacilaOddelek(clubId: clubId, eventId: existing?.id, brezNamigaZaNovDogodek: isOrganizer)
 
-                Section("Poster") {
+                Section("Main banner") {
                     HStack(spacing: 12) {
                         if let url = URL(string: posterUrl), !posterUrl.isEmpty {
                             PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
-                                .frame(width: 64, height: 64)
+                                .frame(width: 64, height: 80)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                         PhotosPicker(selection: $pickedPoster, matching: .images) {
                             HStack(spacing: 8) {
                                 if isUploadingPoster { ProgressView() }
-                                Text(LocalizedStringKey(posterUrl.isEmpty ? "Choose poster" : "Change poster"))
+                                Text(LocalizedStringKey(posterUrl.isEmpty ? "Choose banner" : "Change banner"))
                             }
                         }
                         .disabled(isUploadingPoster)
+                    }
+                    Text("Recommended 1080 × 1350 px (4:5)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Section("Card banner") {
+                    HStack(spacing: 12) {
+                        // Brez majhnega bannerja kartica pokaze sredino velikega (isto kot povsod v aplikaciji).
+                        if let url = URL(string: posterCardUrl.isEmpty ? posterUrl : posterCardUrl),
+                           !(posterCardUrl.isEmpty && posterUrl.isEmpty) {
+                            PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
+                                .frame(width: 60, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        PhotosPicker(selection: $pickedCard, matching: .images) {
+                            HStack(spacing: 8) {
+                                if isUploadingCard { ProgressView() }
+                                Text(LocalizedStringKey(posterCardUrl.isEmpty ? "Choose card banner" : "Change card banner"))
+                            }
+                        }
+                        .disabled(isUploadingCard)
+                    }
+                    Text("Recommended 1080 × 1440 px (3:4)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("Optional. Without it, the card shows the middle of the main banner.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    if !posterCardUrl.isEmpty {
+                        Button("Remove card banner", role: .destructive) { posterCardUrl = "" }
+                            .disabled(isUploadingCard)
                     }
                 }
 
@@ -276,7 +314,7 @@ struct EventFormView: View {
                     } label: {
                         Text(LocalizedStringKey(isSaving ? "Saving..." : "Save"))
                     }
-                    .disabled(isSaving || isUploadingPoster || title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(isSaving || isUploadingPoster || isUploadingCard || title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("Remove this event?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
@@ -286,7 +324,27 @@ struct EventFormView: View {
                 Text("If tickets were already sold, the event will be cancelled instead of deleted so buyers keep proof of purchase.")
             }
             .onChange(of: pickedPoster) { _, item in
-                if let item { Task { await uploadPoster(item) } }
+                if let item {
+                    pickedPoster = nil
+                    Task { await pripraviIzrez(item, vrsta: .velik) }
+                }
+            }
+            .onChange(of: pickedCard) { _, item in
+                if let item {
+                    pickedCard = nil
+                    Task { await pripraviIzrez(item, vrsta: .majhen) }
+                }
+            }
+            .fullScreenCover(item: $izrezNalog) { nalog in
+                BannerIzrezView(
+                    slika: nalog.slika,
+                    vrsta: nalog.vrsta,
+                    onUse: { data in
+                        izrezNalog = nil
+                        Task { await uploadBanner(data, vrsta: nalog.vrsta) }
+                    },
+                    onCancel: { izrezNalog = nil }
+                )
             }
             .onChange(of: pickedRecap) { _, item in
                 if let item { Task { await uploadRecap(item) } }
@@ -378,6 +436,7 @@ struct EventFormView: View {
         if let cap = e.capacity { capacityText = String(cap) }
         ticketUrl = e.ticketUrl ?? ""
         posterUrl = e.posterUrl
+        posterCardUrl = e.posterCardUrl
         recapVideoUrl = e.recapVideoUrl
         isPublished = (e.status == "published")
         if let vid = e.venueClubId {
@@ -477,6 +536,7 @@ struct EventFormView: View {
             ticketPriceCents: centsOpt,
             ticketUrl: url,
             posterUrl: posterUrl,
+            posterCardUrl: posterCardUrl,
             status: existing?.status == "cancelled" ? "cancelled" : (isPublished ? "published" : "draft")
         )
         draft.capacity = capacity
@@ -568,15 +628,49 @@ struct EventFormView: View {
         }
     }
 
-    private func uploadPoster(_ item: PhotosPickerItem) async {
+    /// Izbrano sliko samo prebere in odpre izrez; NIC se ne nalozi (outly-backend#400).
+    private func pripraviIzrez(_ item: PhotosPickerItem, vrsta: VrstaBannerja) async {
         message = nil
-        isUploadingPoster = true
-        defer { isUploadingPoster = false }
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            // Dekodiranje v ozadju, EXIF orientacija uposteva; do 3072 px zadosca za izrez 1080 px pri povecavi 2x.
+            let slika = await Task.detached(priority: .userInitiated) {
+                SlikovniPredpomnilnik.pomanjsaj(data, najvec: 3072)
+            }.value
+            guard let slika else {
+                message = String(localized: "Failed to read selected image data.")
+                return
+            }
+            izrezNalog = BannerIzrezNalog(slika: slika, vrsta: vrsta)
+        } catch {
+            message = error.userMessage
+        }
+    }
+
+    /// Po »Use«: izrezan JPEG (4:5 ali 3:4, najvec 1080 px) po obstojeci poti nalaganja (brez EXIF/GPS).
+    private func uploadBanner(_ data: Data, vrsta: VrstaBannerja) async {
+        message = nil
+        switch vrsta {
+        case .velik: isUploadingPoster = true
+        case .majhen: isUploadingCard = true
+        }
+        defer {
+            switch vrsta {
+            case .velik: isUploadingPoster = false
+            case .majhen: isUploadingCard = false
+            }
+        }
+        do {
             let sig = try await APIClient.shared.fetchCloudinarySignature(token: session.token)
-            let url = try await APIClient.shared.uploadImageToCloudinary(imageData: data, fileName: "poster.jpg", signature: sig)
-            posterUrl = url
+            let url = try await APIClient.shared.uploadImageToCloudinary(
+                imageData: data,
+                fileName: vrsta == .velik ? "poster.jpg" : "poster_card.jpg",
+                signature: sig
+            )
+            switch vrsta {
+            case .velik: posterUrl = url
+            case .majhen: posterCardUrl = url
+            }
         } catch {
             message = error.userMessage
         }

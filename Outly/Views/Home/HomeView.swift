@@ -208,7 +208,7 @@ struct HomeView: View {
         let razvrsceni = sortedUpcoming  // enkrat, ne za vsak zanr posebej
         return urejeni.map { g in
             let evs = razvrsceni.filter { $0.genres.contains { $0.caseInsensitiveCompare(g) == .orderedSame } }
-            return (g, evs.first?.posterUrl ?? "", evs.count)
+            return (g, evs.first?.posterSmallUrl ?? "", evs.count)
         }
     }
 

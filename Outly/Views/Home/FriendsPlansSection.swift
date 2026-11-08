@@ -443,7 +443,7 @@ private struct FriendsPlanCard: View {
 
     @ViewBuilder
     private var plakat: some View {
-        if !plan.event.posterUrl.isEmpty, let u = URL(string: plan.event.posterUrl) {
+        if !plan.event.posterSmallUrl.isEmpty, let u = URL(string: plan.event.posterSmallUrl) {
             PlakatDogodkaSlika(url: u, mirenPlaceholder: true)
         } else {
             Rectangle().fill(Color.outlyBlue.opacity(0.25))

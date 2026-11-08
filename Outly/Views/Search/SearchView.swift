@@ -79,7 +79,7 @@ struct SearchView: View {
                                         Task { await open(eventId: e.id) }
                                     } label: {
                                         row(icon: "calendar", title: e.title,
-                                            subtitle: eventSubtitle(e), imageUrl: e.posterUrl, jePlakat: true,
+                                            subtitle: eventSubtitle(e), imageUrl: e.posterSmallUrl, jePlakat: true,
                                             busy: openingEventId == e.id)
                                     }
                                     .buttonStyle(.plain)
@@ -216,7 +216,7 @@ struct SearchView: View {
             if let url = URL(string: imageUrl), !imageUrl.isEmpty {
                 Group {
                     if jePlakat {
-                        // Plakat dogodka: cel (fit) na zamegljenem ozadju.
+                        // Plakat dogodka: fill (majhen banner), brez zamegljenega roba.
                         PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                     } else {
                         OutlyAsyncImage(url: url) { img in img.resizable().scaledToFill() } placeholder: { Color.white.opacity(0.1) }

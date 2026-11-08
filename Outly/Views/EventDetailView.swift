@@ -122,6 +122,13 @@ struct EventDetailView: View {
     }
 
     private var hero: some View {
+        // Velik banner 4:5 (sirina x 5/4), slika zapolni cel okvir (outly-backend#400); okvir je od vrha zaslona.
+        Color.clear
+            .aspectRatio(4.0 / 5.0, contentMode: .fit)
+            .overlay { heroVsebina }
+    }
+
+    private var heroVsebina: some View {
         ZStack(alignment: .bottom) {
             ZStack {
                 // Koncan dogodek s posnetkom (backend 019): video stopi NA MESTO plakata,
@@ -129,7 +136,7 @@ struct EventDetailView: View {
                 if let recap = event.recapVideoURL {
                     OutlyRecapVideo(url: recap, posterUrl: headerImageUrl, playSize: 64)
                 } else if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
-                    // Cel plakat (fit) na zamegljenem ozadju; velikost glave ostane (heroHeight).
+                    // Velik banner: fill brez zamegljenega roba (okvir 4:5 doloca `hero`).
                     PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 } else if !headerImageUrl.isEmpty, let url = URL(string: headerImageUrl) {
                     // Brez plakata: slika kluba kot doslej (fotografija, ne plakat).
@@ -160,19 +167,12 @@ struct EventDetailView: View {
             // Obrezuje se samo slika/video (scaledToFill gre cez rob), NE gumb za vstopnice:
             // gumb je 18 pt od dna, njegov moder sij pa sega dlje — z obrezovanjem cele pasice
             // bi bil sij spodaj odrezan v ravno crto.
-            .frame(height: heroHeight)
             .clipped()
 
             ticketBar
                 .padding(.horizontal, 16)
                 .padding(.bottom, 18)
         }
-        .frame(height: heroHeight)
-    }
-
-    /// Plakat cez priblizno polovico zaslona (na iPhonu 14 Pro ~470 pt).
-    private var heroHeight: CGFloat {
-        max(400, min(540, UIScreen.main.bounds.height * 0.55))
     }
 
     // MARK: - Naslov + pil "I'm in" (pod sliko)

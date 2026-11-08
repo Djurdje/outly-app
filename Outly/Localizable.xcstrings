@@ -283,6 +283,74 @@
         }
       }
     },
+    "Card": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kartica"
+          }
+        }
+      }
+    },
+    "Card banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banner za kartico"
+          }
+        }
+      }
+    },
+    "Change banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjaj banner"
+          }
+        }
+      }
+    },
+    "Change card banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change card banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamenjaj banner za kartico"
+          }
+        }
+      }
+    },
     "Change logo": {
       "extractionState": "manual",
       "localizations": {
@@ -290,6 +358,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spremeni logotip"
+          }
+        }
+      }
+    },
+    "Choose banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi banner"
+          }
+        }
+      }
+    },
+    "Choose card banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose card banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izberi banner za kartico"
           }
         }
       }
@@ -394,6 +496,23 @@
         }
       }
     },
+    "Could not crop this image.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not crop this image."
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slike ni bilo mogoče obrezati."
+          }
+        }
+      }
+    },
     "Couldn't block this user": {
       "extractionState": "manual",
       "localizations": {
@@ -412,6 +531,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ustvari klub"
+          }
+        }
+      }
+    },
+    "Crop area": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop area"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Območje izreza"
+          }
+        }
+      }
+    },
+    "Crop card banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop card banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obreži banner za kartico"
+          }
+        }
+      }
+    },
+    "Crop main banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop main banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obreži glavni banner"
           }
         }
       }
@@ -559,6 +729,23 @@
         }
       }
     },
+    "Drag to move, pinch to zoom.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to move, pinch to zoom."
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povleci za premik, povečaj s prsti."
+          }
+        }
+      }
+    },
     "e.g. Klub K4": {
       "extractionState": "manual",
       "localizations": {
@@ -599,6 +786,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ceno mize vnesi kot število, npr. 120 ali 120,50."
+          }
+        }
+      }
+    },
+    "Event page": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Event page"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stran dogodka"
           }
         }
       }
@@ -856,6 +1060,23 @@
         }
       }
     },
+    "Main banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glavni banner"
+          }
+        }
+      }
+    },
     "More options": {
       "extractionState": "manual",
       "localizations": {
@@ -988,6 +1209,23 @@
         }
       }
     },
+    "Optional. Without it, the card shows the middle of the main banner.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional. Without it, the card shows the middle of the main banner."
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neobvezno. Brez njega kartica pokaže sredino glavnega bannerja."
+          }
+        }
+      }
+    },
     "Outly is the intermediary.": {
       "extractionState": "manual",
       "localizations": {
@@ -1054,6 +1292,40 @@
         }
       }
     },
+    "Recommended 1080 × 1350 px (4:5)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended 1080 × 1350 px (4:5)"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priporočeno 1080 × 1350 px (4:5)"
+          }
+        }
+      }
+    },
+    "Recommended 1080 × 1440 px (3:4)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended 1080 × 1440 px (3:4)"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priporočeno 1080 × 1440 px (3:4)"
+          }
+        }
+      }
+    },
     "Rectangle": {
       "extractionState": "manual",
       "localizations": {
@@ -1094,6 +1366,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Matična številka"
+          }
+        }
+      }
+    },
+    "Remove card banner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove card banner"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odstrani banner za kartico"
           }
         }
       }
@@ -5715,6 +6004,23 @@
         }
       }
     },
+    "Swipe up or down to zoom.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down to zoom."
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podrsaj gor ali dol za povečavo."
+          }
+        }
+      }
+    },
     "Switch to club account": {
       "extractionState": "manual",
       "localizations": {
@@ -8648,6 +8954,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vpiši vsaj 2 črki uporabniškega imena."
+          }
+        }
+      }
+    },
+    "Use": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use"
+          }
+        },
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uporabi"
           }
         }
       }

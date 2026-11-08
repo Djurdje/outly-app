@@ -31,7 +31,7 @@ struct GuestListKartica: View {
 
     @ViewBuilder
     private var plakat: some View {
-        if !lista.event.posterUrl.isEmpty, let url = URL(string: lista.event.posterUrl) {
+        if !lista.event.posterSmallUrl.isEmpty, let url = URL(string: lista.event.posterSmallUrl) {
             PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .frame(width: 70, height: 70)
                 .clipped()
@@ -162,7 +162,7 @@ struct GuestListDetailView: View {
                 .font(.system(size: 30, weight: .bold))
                 .foregroundColor(.white)
 
-            if !lista.event.posterUrl.isEmpty, let url = URL(string: lista.event.posterUrl) {
+            if !lista.event.posterSmallUrl.isEmpty, let url = URL(string: lista.event.posterSmallUrl) {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                     .frame(height: 160)
                     .frame(maxWidth: .infinity)

@@ -573,7 +573,7 @@ struct BuyTicketsView: View {
     // Plakat dogodka; brez slike modri preliv. Vedno v okvirju (past 12).
     private func plakat(width: CGFloat?, height: CGFloat, radius: CGFloat) -> some View {
         Group {
-            if !event.posterUrl.isEmpty, let url = URL(string: event.posterUrl) {
+            if !event.posterSmallUrl.isEmpty, let url = URL(string: event.posterSmallUrl) {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
             } else {
                 Color(white: 0.14).overlay(Image(systemName: "music.note").font(.system(size: 22)).foregroundColor(.white.opacity(0.3)))
