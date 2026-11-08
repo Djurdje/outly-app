@@ -3067,3 +3067,80 @@ final class SkenZasedenostSeznamaTests: XCTestCase {
         XCTAssertFalse(imena.contains(SkenDisk.imeMeta(klub: 1, dogodek: 42)))
     }
 }
+
+// MARK: - Priprava skenerja v ozadju (outly-backend#406): isti klici in ista shramba kot skener
+
+@MainActor
+final class SkenPredpripravaDiskTests: XCTestCase {
+    private var mapa: URL!
+    private let kljuc = Curve25519.Signing.PrivateKey()
+
+    override func setUp() async throws { mapa = Pomoc.zacasnaMapa() }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: mapa) }
+
+    private func api(_ s1: String) -> LazniApi {
+        LazniApi(kljuc: Pomoc.scanKey(kljuc), seznam: ScanList(eventId: 42, generatedAt: "2026-10-01T20:00:00Z", kid: "kid1",
+                                                                  tickets: [ScanListTicket(serial: s1, holderUsername: "ana")]))
+    }
+
+    private func brezPovezave() -> LazniApi {
+        let a = api(Pomoc.serial())
+        a.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
+        a.seznamOdgovor = .failure(URLError(.notConnectedToInternet))
+        a.dogodkiOdgovor = .failure(URLError(.notConnectedToInternet))
+        a.paketOdgovor = { _ in .failure(URLError(.notConnectedToInternet)) }
+        return a
+    }
+
+    /// Merilo 1 in 3: priprava prenese kljuc, dogodke in seznam v shrambo skenerja; skener, odprt brez omrezja, je takoj pripravljen
+    /// in vstopnica s seznama je zelena z imenom imetnika (seznam je na disku, ne samo kljuc), drugi sken iste kode je rdec.
+    func testPripravaNaDiskOmogociSkenBrezPovezave() async {
+        let s1 = Pomoc.serial()
+        let a = api(s1)
+        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: a, disk: SkenDisk(mapa: mapa))
+        XCTAssertEqual(a.kljucKlici, 1)
+        XCTAssertEqual(a.dogodkiKlici, 1)
+        XCTAssertEqual(a.seznamDogodki, [42])
+        XCTAssertEqual(a.klubIdji.compactMap { $0 }, [1, 1, 1])   // klub je izrecen v vsakem klicu (glava X-Outly-Club)
+
+        let disk = SkenDisk(mapa: mapa)
+        let b = brezPovezave()
+        let s = SkenSeja(klubId: 1, uporabnikId: 7, api: b, disk: disk, deviceId: "naprava-1", vrsta: SkenVrsta(disk: disk),
+                         rokStreznika: 1, rokSpletni: 1, kljucOdmik: 0)
+        s.zeton = { "zeton" }
+        await s.naloziDogodke()
+        XCTAssertEqual(s.priprava, .pripravljen)
+        let zelena = await s.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(zelena.barva, .zeleno)
+        XCTAssertEqual(zelena.podnaslov, "ana")
+        let drugic = await s.skeniraj(Pomoc.koda(kljuc, serial: s1, event: 42))
+        XCTAssertEqual(drugic.barva, .rdece)
+    }
+
+    /// Merilo 2: neuspela priprava (backend nedosegljiv) ne pokvari ze shranjenih podatkov.
+    func testNeuspelaPripravaNePokvariShranjenih() async {
+        let s1 = Pomoc.serial()
+        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: api(s1), disk: SkenDisk(mapa: mapa))
+        let disk = SkenDisk(mapa: mapa)
+        let prej = disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42))
+        XCTAssertNotNil(prej)
+
+        let b = brezPovezave()
+        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: b, disk: disk)
+        let c = api(Pomoc.serial())
+        c.seznamOdgovor = .success(Data("{ pokvarjeno".utf8))
+        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: c, disk: disk)
+        XCTAssertEqual(disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42)), prej)
+        XCTAssertNotNil(disk.preberi(SkenKljucShramba.self, SkenDisk.imeKljuca))
+    }
+
+    /// Merilo 4: odjava pobrise pripravljene podatke (kot pri skenerju).
+    func testOdjavaPobrisePripravljenePodatke() async {
+        let disk = SkenDisk(mapa: mapa)
+        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: api(Pomoc.serial()), disk: disk)
+        XCTAssertTrue(disk.imena().contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        SkenOdjava.pocisti(disk: disk, predpomnilniki: [])
+        XCTAssertFalse(disk.imena().contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        XCTAssertFalse(disk.imena().contains(SkenDisk.imeKljuca))
+    }
+}
