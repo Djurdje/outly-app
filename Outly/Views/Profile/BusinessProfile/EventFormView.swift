@@ -48,6 +48,8 @@ struct EventFormView: View {
     @State private var isUploadingCard = false
     /// Izbrana slika, ki caka na izrez; nalaganje se zacne sele po »Use«.
     @State private var izrezNalog: BannerIzrezNalog?
+    /// Branje in dekodiranje izbrane slike tece (vrsta bannerja); do konca ni druge izbire ne shranjevanja.
+    @State private var beremVrsto: VrstaBannerja?
 
     // Posnetek koncanega dogodka (backend migracija 019): video NAMESTO plakata na strani
     // kluba. Streznik ga sprejme samo na koncanem dogodku, ki je med TREMI najbolj
@@ -211,11 +213,11 @@ struct EventFormView: View {
                         }
                         PhotosPicker(selection: $pickedPoster, matching: .images) {
                             HStack(spacing: 8) {
-                                if isUploadingPoster { ProgressView() }
+                                if isUploadingPoster || beremVrsto == .velik { ProgressView() }
                                 Text(LocalizedStringKey(posterUrl.isEmpty ? "Choose banner" : "Change banner"))
                             }
                         }
-                        .disabled(isUploadingPoster)
+                        .disabled(isUploadingPoster || beremVrsto != nil || izrezNalog != nil)
                     }
                     Text("Recommended 1080 × 1350 px (4:5)")
                         .font(.caption)
@@ -233,11 +235,11 @@ struct EventFormView: View {
                         }
                         PhotosPicker(selection: $pickedCard, matching: .images) {
                             HStack(spacing: 8) {
-                                if isUploadingCard { ProgressView() }
+                                if isUploadingCard || beremVrsto == .majhen { ProgressView() }
                                 Text(LocalizedStringKey(posterCardUrl.isEmpty ? "Choose card banner" : "Change card banner"))
                             }
                         }
-                        .disabled(isUploadingCard)
+                        .disabled(isUploadingCard || beremVrsto != nil || izrezNalog != nil)
                     }
                     Text("Recommended 1080 × 1440 px (3:4)")
                         .font(.caption)
@@ -314,7 +316,7 @@ struct EventFormView: View {
                     } label: {
                         Text(LocalizedStringKey(isSaving ? "Saving..." : "Save"))
                     }
-                    .disabled(isSaving || isUploadingPoster || isUploadingCard || title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(isSaving || isUploadingPoster || isUploadingCard || beremVrsto != nil || izrezNalog != nil || title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("Remove this event?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
@@ -630,12 +632,17 @@ struct EventFormView: View {
 
     /// Izbrano sliko samo prebere in odpre izrez; NIC se ne nalozi (outly-backend#400).
     private func pripraviIzrez(_ item: PhotosPickerItem, vrsta: VrstaBannerja) async {
+        // Druga izbira med branjem ali ob odprtem izrezu ne sme zamenjati izreza.
+        guard beremVrsto == nil, izrezNalog == nil else { return }
         message = nil
+        beremVrsto = vrsta
+        defer { beremVrsto = nil }
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else { return }
-            // Dekodiranje v ozadju, EXIF orientacija uposteva; do 3072 px zadosca za izrez 1080 px pri povecavi 2x.
+            // Dekodiranje v ozadju, EXIF orientacija uposteva. Meja: krajsa stranica ~2160 px, kadar jo izvirnik ima
+            // (izhod 1080 px tudi pri povecavi 2x), najvec 6144 px, izvirnik se ne povecuje (BannerIzrez.mejaDekodiranja).
             let slika = await Task.detached(priority: .userInitiated) {
-                SlikovniPredpomnilnik.pomanjsaj(data, najvec: 3072)
+                SlikovniPredpomnilnik.pomanjsaj(data, najvec: BannerIzrez.mejaDekodiranja(podatki: data))
             }.value
             guard let slika else {
                 message = String(localized: "Failed to read selected image data.")
@@ -649,6 +656,11 @@ struct EventFormView: View {
 
     /// Po »Use«: izrezan JPEG (4:5 ali 3:4, najvec 1080 px) po obstojeci poti nalaganja (brez EXIF/GPS).
     private func uploadBanner(_ data: Data, vrsta: VrstaBannerja) async {
+        // Nalaganje istega tipa ne sme teci dvakrat: defer druge naloge bi odklenil Save med prvo.
+        switch vrsta {
+        case .velik: guard !isUploadingPoster else { return }
+        case .majhen: guard !isUploadingCard else { return }
+        }
         message = nil
         switch vrsta {
         case .velik: isUploadingPoster = true

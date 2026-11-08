@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import ImageIO
 
 // Izrez bannerja dogodka pred nalaganjem (outly-backend#400, Luka 8. 11. 2026).
 // Dva bannerja: velik 4:5 (glava dogodka, »Big events coming up«) in majhen 3:4 (kartice).
@@ -69,6 +70,25 @@ nonisolated enum BannerIzrez {
         return (k * vrsta.sirinaDel, k * vrsta.visinaDel)
     }
 
+    /// Meja dekodiranja izvirnika za izrez (najdaljsa stranica v pikslih): krajsa stranica naj ima, kadar jo izvirnik ima,
+    /// vsaj ~2160 px (izhod 1080 px tudi pri povecavi 2x pri podolgovatih slikah), zgoraj 6144 px (pomnilnik), spodaj 3072 px;
+    /// nikoli vec od izvirnika (manjse slike se ne povecujejo).
+    static func mejaDekodiranja(sirina: CGFloat, visina: CGFloat) -> CGFloat {
+        let daljsa = max(sirina, visina)
+        let krajsa = min(sirina, visina)
+        guard daljsa > 0, krajsa > 0 else { return 3072 }
+        return min(daljsa, min(6144, max(3072, daljsa * 2160 / krajsa)))
+    }
+
+    /// Kot zgoraj, iz glave datoteke (ImageIO, brez dekodiranja). Brez podatkov o velikosti: 3072.
+    static func mejaDekodiranja(podatki: Data) -> CGFloat {
+        guard let vir = CGImageSourceCreateWithData(podatki as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+              let lastnosti = CGImageSourceCopyPropertiesAtIndex(vir, 0, nil) as? [CFString: Any],
+              let sirina = lastnosti[kCGImagePropertyPixelWidth] as? CGFloat,
+              let visina = lastnosti[kCGImagePropertyPixelHeight] as? CGFloat else { return 3072 }
+        return mejaDekodiranja(sirina: sirina, visina: visina)
+    }
+
     /// JPEG izreza (brez EXIF; `SlikaZaNalaganje` ga ob nalaganju vseeno ponovno kodira).
     /// `slika` mora biti ze pravilno obrnjena (`SlikovniPredpomnilnik.pomanjsaj` uposteva EXIF).
     static func izrezi(_ slika: UIImage, vrsta: VrstaBannerja, stanje: IzrezStanje) -> Data? {
@@ -112,6 +132,8 @@ struct BannerIzrezView: View {
     @State private var osnovaZoom: CGFloat = 1
     @State private var osnovaOdmik: CGSize = .zero
     @State private var napaka = false
+    /// Izrez + kodiranje tece; zaščita pred dvojnim »Use« in preklicem med obdelavo.
+    @State private var obdelava = false
 
     /// Velikost v pikslih (slika iz `SlikovniPredpomnilnik.pomanjsaj` ima scale 1, a ne zanasamo se na to).
     private var pikslov: CGSize {
@@ -153,9 +175,15 @@ struct BannerIzrezView: View {
 
     private var zgornjaVrstica: some View {
         HStack {
-            Button("Cancel") { onCancel() }
-                .foregroundColor(.white)
-                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+            Button {
+                onCancel()
+            } label: {
+                Text("Cancel")
+                    .foregroundColor(.white)
+                    .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .disabled(obdelava)
             Spacer()
             Text(naslov)
                 .font(.headline)
@@ -164,24 +192,38 @@ struct BannerIzrezView: View {
             Button {
                 uporabi()
             } label: {
-                Text("Use")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
-                    .background(Color.outlyBlue)
-                    .clipShape(Capsule())
+                Group {
+                    if obdelava {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text("Use")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 8)
+                .background(Color.outlyBlue)
+                .clipShape(Capsule())
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
-            .frame(minHeight: 44)
+            .disabled(obdelava)
         }
         .padding(.horizontal, 16)
     }
 
     private func uporabi() {
-        if let data = BannerIzrez.izrezi(slika, vrsta: vrsta, stanje: stanje) {
-            onUse(data)
-        } else {
-            napaka = true
+        guard !obdelava else { return }
+        obdelava = true
+        let slika = slika, vrsta = vrsta, stanje = stanje
+        Task {
+            // CGContext + JPEG izven glavne niti.
+            let data = await Task.detached(priority: .userInitiated) {
+                BannerIzrez.izrezi(slika, vrsta: vrsta, stanje: stanje)
+            }.value
+            obdelava = false
+            if let data { onUse(data) } else { napaka = true }
         }
     }
 
@@ -205,7 +247,7 @@ struct BannerIzrezView: View {
             .gesture(premik(f).simultaneously(with: povecava))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("Crop area"))
-            .accessibilityValue("\(Int((stanje.zoom * 100).rounded()))%")
+            .accessibilityValue(Text(verbatim: "\(Int((stanje.zoom * 100).rounded()))%"))
             .accessibilityHint(Text("Swipe up or down to zoom."))
             .accessibilityAdjustableAction { smer in
                 let korak: CGFloat = 0.25
