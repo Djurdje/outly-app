@@ -161,6 +161,7 @@ final class SessionStore: ObservableObject {
         // logout() jih prej poskusi poslati (SkenOdjava.poslji).
         shranjenMe = nil
         MeShramba.pobrisi()
+        SkenPredpriprava.deljena.preklici()   // PRED brisanjem diska: priprava v ozadju po odjavi ne sme znova ustvariti podatkov
         SkenOdjava.pocisti()
         refreshTask?.cancel()
         refreshTask = nil
@@ -223,6 +224,7 @@ final class SessionStore: ObservableObject {
             // vsakem prikazu, torej sredi animacije preklopa zavihka.
             if me != fetched { me = fetched }   // didSet shrani Me za hladen zagon brez povezave (K1)
             if meLoadError != nil { meLoadError = nil }
+            pripraviSken()
             return true
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 {
@@ -233,6 +235,12 @@ final class SessionStore: ObservableObject {
         } catch {
             return uporabiShranjenMe(ob: error)
         }
+    }
+
+    /// Sken brez povezave v ozadju (outly-backend#406): kljuc, dogodki in seznami vstopnic za klube, v katerih smem skenirati.
+    /// Klicejo ga refreshMe (prijava) in vrnitev v ospredje (OutlyApp). Ne blokira; napake so tihe; najvec 1x na 10 min na klub.
+    func pripraviSken() {
+        SkenPredpriprava.deljena.sprozi(me: me, zeton: { [weak self] in self?.token ?? "" })
     }
 
     /// K1: GET /me ni uspel zaradi izpada povezave ali streznika (ne zaradi 401/403): aplikacija nadaljuje z zadnjim shranjenim Me,
