@@ -84,9 +84,9 @@ nonisolated enum BannerIzrez {
     static func mejaDekodiranja(podatki: Data) -> CGFloat {
         guard let vir = CGImageSourceCreateWithData(podatki as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
               let lastnosti = CGImageSourceCopyPropertiesAtIndex(vir, 0, nil) as? [CFString: Any],
-              let sirina = lastnosti[kCGImagePropertyPixelWidth] as? CGFloat,
-              let visina = lastnosti[kCGImagePropertyPixelHeight] as? CGFloat else { return 3072 }
-        return mejaDekodiranja(sirina: sirina, visina: visina)
+              let sirina = (lastnosti[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+              let visina = (lastnosti[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue else { return 3072 }
+        return mejaDekodiranja(sirina: CGFloat(sirina), visina: CGFloat(visina))
     }
 
     /// JPEG izreza (brez EXIF; `SlikaZaNalaganje` ga ob nalaganju vseeno ponovno kodira).
@@ -182,6 +182,7 @@ struct BannerIzrezView: View {
                     .foregroundColor(.white)
                     .frame(minWidth: 44, minHeight: 44, alignment: .leading)
                     .contentShape(Rectangle())
+                    .opacity(obdelava ? 0.4 : 1)
             }
             .disabled(obdelava)
             Spacer()
@@ -207,6 +208,7 @@ struct BannerIzrezView: View {
                 .clipShape(Capsule())
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
+                .accessibilityLabel(Text("Use"))
             }
             .disabled(obdelava)
         }
@@ -245,6 +247,7 @@ struct BannerIzrezView: View {
             .overlay(Rectangle().stroke(Color.white.opacity(0.6), lineWidth: 1))
             .contentShape(Rectangle())
             .gesture(premik(f).simultaneously(with: povecava))
+            .allowsHitTesting(!obdelava)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("Crop area"))
             .accessibilityValue(Text(verbatim: "\(Int((stanje.zoom * 100).rounded()))%"))

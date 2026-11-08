@@ -1,5 +1,6 @@
 import XCTest
 import Foundation
+import UIKit
 @testable import Outly
 
 /// Geometrija izreza bannerja dogodka in izhodne velikosti (outly-backend#400): velik 4:5 -> 1080 x 1350,
@@ -134,6 +135,26 @@ final class BannerIzrezTests: XCTestCase {
         XCTAssertEqual(BannerIzrez.mejaDekodiranja(sirina: 300, visina: 200), 300)
         // Neveljavno: privzeto.
         XCTAssertEqual(BannerIzrez.mejaDekodiranja(sirina: 0, visina: 0), 3072)
+    }
+}
+
+/// Meja dekodiranja iz glave datoteke (ImageIO vrne NSNumber). UIKit za izdelavo PNG -> glavna nit.
+@MainActor
+final class MejaDekodiranjaPodatkiTests: XCTestCase {
+    func testMajhenPng1x2Px() throws {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let slika = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 2), format: format).image { ctx in
+            UIColor.red.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: 1, height: 2))
+        }
+        let png = try XCTUnwrap(slika.pngData())
+        // Daljsa stranica 2 px, brez povecevanja.
+        XCTAssertEqual(BannerIzrez.mejaDekodiranja(podatki: png), 2)
+    }
+
+    func testNeberljivPodatkiDajoPrivzeto() {
+        XCTAssertEqual(BannerIzrez.mejaDekodiranja(podatki: Data([0, 1, 2, 3])), 3072)
     }
 }
 
