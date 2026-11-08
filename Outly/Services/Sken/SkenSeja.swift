@@ -287,6 +287,7 @@ final class SkenSeja: ObservableObject {
     /// Zazene 1-sekundni tik (posiljanje vrste, osvezevanje seznama). Idempotentno.
     func zacni() {
         guard zanka == nil else { return }
+        SkenPredpriprava.deljena.skenerOdprt(klubId)   // priprava v ozadju za ta klub miruje, dokler je skener odprt
         zanka = Task { [weak self] in
             while !Task.isCancelled {
                 guard let s = self else { return }
@@ -297,6 +298,7 @@ final class SkenSeja: ObservableObject {
     }
 
     func ustavi() {
+        if zanka != nil { SkenPredpriprava.deljena.skenerZaprt(klubId) }
         zanka?.cancel()
         zanka = nil
     }

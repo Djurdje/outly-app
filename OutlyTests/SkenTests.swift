@@ -3083,6 +3083,12 @@ final class SkenPredpripravaDiskTests: XCTestCase {
                                                                   tickets: [ScanListTicket(serial: s1, holderUsername: "ana")]))
     }
 
+    private func pocakaj(_ pogoj: () -> Bool, rok: Double = 30) async -> Bool {
+        let konec = Date().addingTimeInterval(rok)
+        while !pogoj() && Date() < konec { try? await Task.sleep(nanoseconds: 2_000_000) }
+        return pogoj()
+    }
+
     private func brezPovezave() -> LazniApi {
         let a = api(Pomoc.serial())
         a.kljucOdgovor = .failure(URLError(.notConnectedToInternet))
@@ -3097,11 +3103,11 @@ final class SkenPredpripravaDiskTests: XCTestCase {
     func testPripravaNaDiskOmogociSkenBrezPovezave() async {
         let s1 = Pomoc.serial()
         let a = api(s1)
-        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: a, disk: SkenDisk(mapa: mapa))
+        _ = await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: a, disk: SkenDisk(mapa: mapa))
         XCTAssertEqual(a.kljucKlici, 1)
         XCTAssertEqual(a.dogodkiKlici, 1)
         XCTAssertEqual(a.seznamDogodki, [42])
-        XCTAssertEqual(a.klubIdji.compactMap { $0 }, [1, 1, 1])   // klub je izrecen v vsakem klicu (glava X-Outly-Club)
+        XCTAssertEqual(a.klubIdji, [1, 1, 1])   // klub je izrecen v vsakem klicu (glava X-Outly-Club)
 
         let disk = SkenDisk(mapa: mapa)
         let b = brezPovezave()
@@ -3117,30 +3123,92 @@ final class SkenPredpripravaDiskTests: XCTestCase {
         XCTAssertEqual(drugic.barva, .rdece)
     }
 
-    /// Merilo 2: neuspela priprava (backend nedosegljiv) ne pokvari ze shranjenih podatkov.
+    /// Merilo 2: neuspela priprava (backend nedosegljiv, pokvarjen odgovor) ne pokvari ze shranjenih podatkov.
     func testNeuspelaPripravaNePokvariShranjenih() async {
         let s1 = Pomoc.serial()
-        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: api(s1), disk: SkenDisk(mapa: mapa))
+        _ = await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: api(s1), disk: SkenDisk(mapa: mapa))
         let disk = SkenDisk(mapa: mapa)
         let prej = disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42))
         XCTAssertNotNil(prej)
 
-        let b = brezPovezave()
-        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: b, disk: disk)
+        let omrezno = await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: brezPovezave(), disk: disk)
+        XCTAssertFalse(omrezno)   // brez omrezja ne porabi 10-minutnega okna
         let c = api(Pomoc.serial())
         c.seznamOdgovor = .success(Data("{ pokvarjeno".utf8))
-        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: c, disk: disk)
+        _ = await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: c, disk: disk)
         XCTAssertEqual(disk.surovo(SkenDisk.imeSeznama(klub: 1, dogodek: 42)), prej)
         XCTAssertNotNil(disk.preberi(SkenKljucShramba.self, SkenDisk.imeKljuca))
     }
 
-    /// Merilo 4: odjava pobrise pripravljene podatke (kot pri skenerju).
-    func testOdjavaPobrisePripravljenePodatke() async {
+    /// Uspel prenos porabi okno.
+    func testUspehPorabiOkno() async {
+        let uspeh = await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: api(Pomoc.serial()), disk: SkenDisk(mapa: mapa))
+        XCTAssertTrue(uspeh)
+    }
+
+    /// N6 (b): priprava ne poslje vrste skenov (to dela skener); vnos ostane na disku.
+    func testPripravaNePosiljaVrste() async {
+        let id = UUID().uuidString.lowercased()
+        let json = #"{"clientScanId":"\#(id)","qr":"o2.x.y","serial":"\#(Pomoc.serial())","eventId":42,"klubId":1,"uporabnikId":7,"scannedAt":780000000}"#
+        SkenDisk(mapa: mapa).podmapa(SkenVrsta.mapaVnosov).zapisiSurovo(Data(json.utf8), id + ".json")
+        let a = api(Pomoc.serial())
+        _ = await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: a, disk: SkenDisk(mapa: mapa))
+        XCTAssertTrue(a.paketi.isEmpty)
+        XCTAssertEqual(SkenVrsta(disk: SkenDisk(mapa: mapa)).vnosi.map { $0.clientScanId }, [id])
+    }
+
+    /// S1: odjava med prenosom seznama; zeton je NEPRAZEN (drug uporabnik se je takoj prijavil). Ko se zahtevek konca, se seznam
+    /// z imeni imetnikov ne sme znajti na disku.
+    func testPreklicMedPrenosomPobrisePodatkeTudiCeJeZetonNeprazen() async throws {
+        let a = api(Pomoc.serial())
+        let vrata = Vrata()
+        a.vrataSeznama = vrata
         let disk = SkenDisk(mapa: mapa)
-        await SkenPredpriprava.pripraviKlub(klubId: 1, uporabnikId: 7, zeton: { "zeton" }, api: api(Pomoc.serial()), disk: disk)
-        XCTAssertTrue(disk.imena().contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
-        SkenOdjava.pocisti(disk: disk, predpomnilniki: [])
+        let p = SkenPredpriprava(pripravi: { klub, uporabnik, zeton in
+            await SkenPredpriprava.pripraviKlub(klubId: klub, uporabnikId: uporabnik, zeton: zeton, api: a, disk: disk)
+        }, pocisti: { klub in disk.pocistiKlub(klub) }, ociStare: {})
+        let json = #"{"id":7,"email":"a@b.si","username":"ana","role":"user","clubs":[{"club_id":1,"club_name":"K","club_logo_url":"","role":"doorman"}]}"#
+        let me = try JSONDecoder().decode(Me.self, from: Data(json.utf8))
+        let naloga = p.sprozi(me: me, zeton: { "zeton-drugega" })
+        XCTAssertNotNil(naloga)
+        let prispel = await pocakaj({ a.seznamKlici >= 1 })
+        XCTAssertTrue(prispel)                        // zahtevek za seznam visi na vratih
+        p.preklici()                                  // odjava
+        vrata.odpri()                                 // zahtevek se vseeno konca in seznam bi se zapisal
+        await naloga?.value
+        let imena = Set(disk.imena())
+        XCTAssertFalse(imena.contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
+        XCTAssertFalse(imena.contains(SkenDisk.imeMeta(klub: 1, dogodek: 42)))
+        XCTAssertFalse(imena.contains(SkenDisk.imeDogodkov(klub: 1)))
+    }
+
+    /// P3: seznami starejsi od 3 dni se pobrisejo, tudi ce skenerja nihce ne odpre; sveziji in vrsta neposlanih ostanejo.
+    func testStariSeznamiSePobrisejoPoTrehDneh() {
+        let disk = SkenDisk(mapa: mapa)
+        let zdaj = Date()
+        let podatki = Data("{}".utf8)
+        disk.zapisiSurovo(podatki, SkenDisk.imeSeznama(klub: 1, dogodek: 42))
+        disk.zapisi(SkenSeznamMeta(hash: "h", prenesenoOb: zdaj), SkenDisk.imeMeta(klub: 1, dogodek: 42))
+        disk.zapisiSurovo(podatki, SkenDisk.imeSeznama(klub: 1, dogodek: 43))
+        disk.zapisi(SkenSeznamMeta(hash: "h", prenesenoOb: zdaj.addingTimeInterval(-2 * 86400)), SkenDisk.imeMeta(klub: 1, dogodek: 43))
+        disk.zapisiSurovo(podatki, SkenDisk.imeSeznama(klub: 1, dogodek: 50))
+        disk.zapisi(SkenSeznamMeta(hash: "h", prenesenoOb: zdaj.addingTimeInterval(-2 * 86400)), SkenDisk.imeMeta(klub: 1, dogodek: 50))
+        // dogodek 50 je bil prenesen pred 2 dnevi, v +4 dneh od zdaj je star 6 dni; 42 in 43 tudi
+        disk.zapisiSurovo(podatki, SkenDisk.imeLokalnih(klub: 1, dogodek: 42))
+        let id = UUID().uuidString.lowercased()
+        let vnos = #"{"clientScanId":"\#(id)","qr":"o2.x.y","serial":"s","eventId":42,"klubId":1,"uporabnikId":7,"scannedAt":780000000}"#
+        disk.podmapa(SkenVrsta.mapaVnosov).zapisiSurovo(Data(vnos.utf8), id + ".json")
+
+        disk.pocistiStare(zdaj: zdaj)   // vse sveze (<= 2 dni): nic se ne zgodi
+        XCTAssertTrue(disk.imena().contains(SkenDisk.imeSeznama(klub: 1, dogodek: 43)))
+        XCTAssertTrue(disk.imena().contains(SkenDisk.imeLokalnih(klub: 1, dogodek: 42)))
+
+        disk.pocistiStare(zdaj: zdaj.addingTimeInterval(4 * 86400))   // ura +4 dni
         XCTAssertFalse(disk.imena().contains(SkenDisk.imeSeznama(klub: 1, dogodek: 42)))
-        XCTAssertFalse(disk.imena().contains(SkenDisk.imeKljuca))
+        XCTAssertFalse(disk.imena().contains(SkenDisk.imeMeta(klub: 1, dogodek: 42)))
+        XCTAssertFalse(disk.imena().contains(SkenDisk.imeSeznama(klub: 1, dogodek: 43)))
+        XCTAssertFalse(disk.imena().contains(SkenDisk.imeMeta(klub: 1, dogodek: 50)))
+        XCTAssertFalse(disk.imena().contains(SkenDisk.imeLokalnih(klub: 1, dogodek: 42)))
+        XCTAssertEqual(SkenVrsta(disk: SkenDisk(mapa: mapa)).vnosi.map { $0.clientScanId }, [id])   // neposlano ostane
     }
 }
