@@ -184,6 +184,8 @@ final class SkenSeja: ObservableObject {
     var zeton: @MainActor () -> String = { "" }
     /// Ura telefona. Testi jo podtaknejo (okno, vstop/izstop dogodka, osvezitve brez cakanja na pravi cas).
     var ura: @MainActor () -> Date = { Date() }
+    /// Priprava v ozadju, ki ji zacni()/ustavi() javita odprt skener (testi podtaknejo svojo).
+    var predpriprava: SkenPredpriprava = .deljena
 
     private let api: SkenApi
     private let disk: SkenDisk
@@ -287,7 +289,7 @@ final class SkenSeja: ObservableObject {
     /// Zazene 1-sekundni tik (posiljanje vrste, osvezevanje seznama). Idempotentno.
     func zacni() {
         guard zanka == nil else { return }
-        SkenPredpriprava.deljena.skenerOdprt(klubId)   // priprava v ozadju za ta klub miruje, dokler je skener odprt
+        predpriprava.skenerOdprt(klubId, seja: self)   // priprava v ozadju za ta klub miruje, dokler je skener odprt
         zanka = Task { [weak self] in
             while !Task.isCancelled {
                 guard let s = self else { return }
@@ -298,7 +300,7 @@ final class SkenSeja: ObservableObject {
     }
 
     func ustavi() {
-        if zanka != nil { SkenPredpriprava.deljena.skenerZaprt(klubId) }
+        predpriprava.skenerZaprt(seja: self)
         zanka?.cancel()
         zanka = nil
     }
@@ -600,7 +602,10 @@ final class SkenSeja: ObservableObject {
                 stanja[id]?.zadnjiPrenos = zdaj
                 stanja[id]?.neuspehiPrenosa = 0
                 osveziPovzetek()
-                if cakajociZapisi[id] != nil {
+                if disk.spremenjeno(SkenDisk.imeSeznama(klub: klubId, dogodek: id)) == nil {
+                    // Datoteke seznama ni (npr. pobrisana po 3 dneh): zapisemo CEL seznam iz pomnilnika, ne samo mete.
+                    zapisiSeznamNaDisk(id, podatki, meta: SkenSeznamMeta(hash: hash, prenesenoOb: zdaj))
+                } else if cakajociZapisi[id] != nil {
                     cakajociZapisi[id]?.meta = SkenSeznamMeta(hash: hash, prenesenoOb: zdaj)   // seznam caka na zapis: meta gre za njim
                 } else if zapisSeznamovTece != nil {
                     // Zapis seznama z istim hashem ze tece in zapise tudi meta: sinhrona meta bi ob ubitju pustila nov hash ob starem seznamu.

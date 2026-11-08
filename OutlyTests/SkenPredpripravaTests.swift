@@ -29,6 +29,7 @@ final class SkenPredpripravaTests: XCTestCase {
     /// Sibka referenca na pripravo za closure, ki jo mora poklicati med njenim lastnim tekom (Swift 6: brez `var` zajetja).
     private final class Drzalo {
         weak var priprava: SkenPredpriprava?
+        let skener = NSObject()
     }
 
     private func naredi(_ d: Dnevnik, ura: TestnaUraPriprave, med: (@MainActor (Int) -> Void)? = nil) -> SkenPredpriprava {
@@ -136,40 +137,17 @@ final class SkenPredpripravaTests: XCTestCase {
         XCTAssertEqual(d.pociscenih, [1])   // klub, ki ga je priprava ze zacela, se pobrise (ne glede na zeton)
     }
 
-    /// Stara (preklicana) priprava ne zadrzuje nove za drugega uporabnika.
-    func testPoPreklicuDrugUporabnikLahkoTakojSprozi() async throws {
-        let d = Dnevnik()
-        let p = naredi(d, ura: TestnaUraPriprave())
-        let stara = p.sprozi(me: try me(clubs: [(1, "owner")], id: 7), zeton: { "a" })
-        XCTAssertNotNil(stara)
-        p.preklici()
-        let nova = p.sprozi(me: try me(clubs: [(2, "owner")], id: 8), zeton: { "b" })
-        XCTAssertNotNil(nova)
-        await stara?.value
-        await nova?.value
-        XCTAssertEqual(d.klubi, [2])   // stara se ni zacela (preklicana pred prvim klubom), nova je tekla
-        XCTAssertEqual(d.uporabniki, [8])
-    }
-
-    /// Brisanje seznamov starejsih od 3 dni tece ob vsakem sprozilcu, tudi za uporabnika brez klubov in brez seje.
-    func testSprozilVednoPocistiStareSezname() async throws {
-        let d = Dnevnik()
-        let p = naredi(d, ura: TestnaUraPriprave())
-        XCTAssertNil(p.sprozi(me: nil, zeton: { "" }))
-        XCTAssertNil(p.sprozi(me: try me(clubs: []), zeton: { "z" }))
-        XCTAssertEqual(d.ociscenj, 2)
-    }
-
     // MARK: Skener odprt
 
     func testZaKlubZOdprtimSkenerjemPripravaMiruje() async throws {
         let d = Dnevnik()
         let p = naredi(d, ura: TestnaUraPriprave())
         let m = try me(clubs: [(1, "owner"), (2, "doorman")])
-        p.skenerOdprt(1)
+        let skener = NSObject()
+        p.skenerOdprt(1, seja: skener)
         await p.sprozi(me: m, zeton: { "z" })?.value
         XCTAssertEqual(d.klubi, [2])
-        p.skenerZaprt(1)
+        p.skenerZaprt(seja: skener)
         await p.sprozi(me: m, zeton: { "z" })?.value   // klub 1 okna ni porabil
         XCTAssertEqual(d.klubi, [2, 1])
     }
@@ -177,20 +155,21 @@ final class SkenPredpripravaTests: XCTestCase {
     func testSkenerOdprtMedPripravoPreskociNaslednjiKlub() async throws {
         let d = Dnevnik()
         let drzalo = Drzalo()
-        let p = naredi(d, ura: TestnaUraPriprave(), med: { klub in if klub == 1 { drzalo.priprava?.skenerOdprt(2) } })
+        let p = naredi(d, ura: TestnaUraPriprave(), med: { klub in if klub == 1 { drzalo.priprava?.skenerOdprt(2, seja: drzalo.skener) } })
         drzalo.priprava = p
         await p.sprozi(me: try me(clubs: [(1, "owner"), (2, "owner")]), zeton: { "z" })?.value
         XCTAssertEqual(d.klubi, [1])
     }
 
-    func testStevecOdprtijSkenerja() {
+    func testRegistracijaOdprtegaSkenerjaJePoSeji() {
         let p = naredi(Dnevnik(), ura: TestnaUraPriprave())
-        p.skenerOdprt(1); p.skenerOdprt(1)
-        p.skenerZaprt(1)
-        XCTAssertTrue(p.jeSkenerOdprt(1))
-        p.skenerZaprt(1)
-        XCTAssertFalse(p.jeSkenerOdprt(1))
-        p.skenerZaprt(1)   // odvec: ne sme ustvariti negativnega stanja
+        let a = NSObject(), b = NSObject()
+        p.skenerZaprt(seja: a)                      // brez odprtja: nic
+        p.skenerOdprt(1, seja: a); p.skenerOdprt(1, seja: a)   // dvakrat isti = ena registracija
+        p.skenerOdprt(1, seja: b)
+        p.skenerZaprt(seja: a)
+        XCTAssertTrue(p.jeSkenerOdprt(1))           // b je se odprt
+        p.skenerZaprt(seja: b)
         XCTAssertFalse(p.jeSkenerOdprt(1))
     }
 

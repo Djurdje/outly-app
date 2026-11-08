@@ -25,8 +25,8 @@ final class SkenPredpriprava {
     /// Vloge v klubu, ki smejo skenirati (backend: vse vloge v klubu razen natakarja).
     nonisolated static let skenirajoceVloge: Set<String> = ["owner", "manager", "doorman"]
 
-    /// Pripravi en klub (klubId, uporabnikId, zeton). Vrne true, ce je poskus porabil okno (streznik je odgovoril), false, ce je bil
-    /// prekinjen ali brez omrezja. Privzeto prava priprava; testi podtaknejo svojo.
+    /// Pripravi en klub (klubId, uporabnikId, zeton). Vrne true, ce je poskus porabil okno (vsak izid razen preklica in izpada
+    /// omrezja), false, ce je bil prekinjen ali brez omrezja. Privzeto prava priprava; testi podtaknejo svojo.
     typealias Pripravi = @MainActor (Int, Int?, @escaping @MainActor () -> String) async -> Bool
     /// Pobrise podatke kluba z diska (seznami z imeni imetnikov, lokalni skeni) in predpomnilnik odgovorov. Neposlani vnosi ostanejo.
     typealias Pocisti = @MainActor (Int) -> Void
@@ -42,14 +42,15 @@ final class SkenPredpriprava {
     private var tek: Task<Void, Never>?
     /// Zadnja preklicana priprava, ki se morda se konca: nova pocaka nanjo (njeno ciscenje ne sme pobrisati zapisov nove).
     private var preklicana: Task<Void, Never>?
-    /// Klubi, za katere je odprt skener (stevec odprtij).
-    private var odprti: [Int: Int] = [:]
+    /// Odprti skenerji: seja -> klub. Sibka referenca: seja, ki izgine brez ustavi(), ne more ostati zapisana (priprava zanjo ne sme za vedno mirovati).
+    private struct OdprtSkener { weak var seja: AnyObject?; let klub: Int }
+    private var odprti: [ObjectIdentifier: OdprtSkener] = [:]
     /// Povecuje se ob vsakem preklicu: priprava, ki se je zacela pred njim, ne sme vec zapisati ali nadaljevati.
     private var generacija = 0
 
     init(pripravi: @escaping Pripravi = SkenPredpriprava.privzetaPriprava,
          pocisti: @escaping Pocisti = SkenPredpriprava.privzetoCiscenje,
-         ociStare: @escaping @MainActor () -> Void = { SkenDisk().pocistiStare() }) {
+         ociStare: @escaping @MainActor () -> Void = SkenPredpriprava.privzetoCiscenjeStarih) {
         self.pripravi = pripravi
         self.pocisti = pocisti
         self.ociStare = ociStare
@@ -57,16 +58,18 @@ final class SkenPredpriprava {
 
     // MARK: - Skener odprt
 
-    /// SkenSeja.zacni(): skener tega kluba je odprt, priprava zanj ne teece (skener sam prenasa).
-    func skenerOdprt(_ klub: Int) { odprti[klub, default: 0] += 1 }
+    /// SkenSeja.zacni(): skener tega kluba je odprt, priprava zanj ne teece (skener sam prenasa). Idempotentno po seji.
+    /// ZNANA OMEJITEV: skener, odprt MED pripravo istega kluba, povzroci en dodaten scan-list (tekoci zahtevek priprave se ne prekine);
+    /// priprave ne prekinjamo s ciscenjem, ker bi pobrisala skenerjeve podatke.
+    func skenerOdprt(_ klub: Int, seja: AnyObject) { odprti[ObjectIdentifier(seja)] = OdprtSkener(seja: seja, klub: klub) }
 
-    /// SkenSeja.ustavi().
-    func skenerZaprt(_ klub: Int) {
-        guard let n = odprti[klub] else { return }
-        if n <= 1 { odprti.removeValue(forKey: klub) } else { odprti[klub] = n - 1 }
+    /// SkenSeja.ustavi(). Brez prejsnjega odprtja ne naredi nicesar.
+    func skenerZaprt(seja: AnyObject) { odprti.removeValue(forKey: ObjectIdentifier(seja)) }
+
+    func jeSkenerOdprt(_ klub: Int) -> Bool {
+        for (id, o) in odprti where o.seja == nil { odprti.removeValue(forKey: id) }   // seja je izginila brez ustavi()
+        return odprti.values.contains { $0.klub == klub }
     }
-
-    func jeSkenerOdprt(_ klub: Int) -> Bool { odprti[klub] != nil }
 
     // MARK: - Izbira klubov (cista logika)
 
@@ -113,7 +116,9 @@ final class SkenPredpriprava {
                 guard !self.jeSkenerOdprt(klub) else { continue }   // skener se je odprl med pripravo drugega kluba
                 let porabljeno = await self.pripravi(klub, uporabnikId, zeton)
                 if self.generacija != moja {
-                    self.pocisti(klub)   // odjava med pripravo: zapis seznama preklica ne doseze, ne glede na zeton
+                    // odjava med pripravo: zapis seznama preklica ne doseze, ne glede na zeton. Ce je medtem odprt skener tega kluba,
+                    // je podatke prenesel skener sam (uporabnik je isti, ki ga je odprl): ne brisemo.
+                    if !self.jeSkenerOdprt(klub) { self.pocisti(klub) }
                     break
                 }
                 if porabljeno, !Task.isCancelled { self.zadnje[klub] = self.ura() }
@@ -140,14 +145,16 @@ final class SkenPredpriprava {
     // MARK: - Prava priprava
 
     /// Ista pot kot skener: SkenSeja za klub, naloziDogodke() prenese dogodke, kljuc in sezname aktivnih dogodkov ter jih shrani.
-    /// Vrne true, ce poskus porabi okno: streznik je odgovoril (ali je poskus napravil napako, ki ni izpad). false: preklic ali
-    /// brez omrezja (`povezava` pade ob omrezni napaki, roku in 5xx).
+    /// Vrne true, ce poskus porabi 10-minutno okno: VSAK izid (uspeh, 4xx/5xx, 429/503, rok) razen preklica in izpada omrezja
+    /// (`URLError.notConnectedToInternet`, `.networkConnectionLost`, `.cancelled`). Razvrstitev gleda napake dejanskih klicev
+    /// (ovoj nad SkenApi), ne `SkenSeja.povezava` (ta pade tudi ob 5xx in 408, backend v tezavah pa ne sme dobiti klicev ob vsakem refreshMe).
     static func pripraviKlub(klubId: Int, uporabnikId: Int?, zeton: @escaping @MainActor () -> String,
                              api: SkenApi = SkenApiZivi(), disk: SkenDisk = SkenDisk()) async -> Bool {
-        let seja = SkenSeja(klubId: klubId, uporabnikId: uporabnikId, api: api, disk: disk)
+        let zapis = ZapisovalecNapak(api)
+        let seja = SkenSeja(klubId: klubId, uporabnikId: uporabnikId, api: zapis, disk: disk)
         seja.zeton = zeton
         await seja.naloziDogodke()
-        return seja.povezava && !Task.isCancelled
+        return !Task.isCancelled && !zapis.bilPrekinjen
     }
 
     static func privzetaPriprava(_ klubId: Int, _ uporabnikId: Int?, _ zeton: @escaping @MainActor () -> String) async -> Bool {
@@ -157,5 +164,117 @@ final class SkenPredpriprava {
     static func privzetoCiscenje(_ klubId: Int) {
         SkenDisk().pocistiKlub(klubId)
         SkenOdjava.pocistiPredpomnilnik()
+    }
+
+    /// Napaka, zaradi katere poskus ne porabi okna: preklic ali izpad omrezja (ne odgovor strezniga, ne rok).
+    nonisolated static func jePrekinitev(_ napaka: Error) -> Bool {
+        if napaka is CancellationError { return true }
+        guard let u = napaka as? URLError else { return false }
+        return u.code == .cancelled || u.code == .notConnectedToInternet || u.code == .networkConnectionLost
+    }
+
+    // MARK: - Zasebnost: seznami starejsi od 3 dni
+
+    /// Politika zasebnosti: seznami z imeni imetnikov ne ostanejo na napravi dlje kot 3 dni od zadnjega prenosa. VRATA IMAJO PREDNOST
+    /// (dvojni vstop): brez seznama in lokalnih skenov bi ista vstopnica brez povezave spet postala zelena.
+    ///  - Seznam, meta in lokalni skeni dogodka se brisejo SAMO, ce je dogodek po zadnjem znanem seznamu dogodkov kluba ZAPRT
+    ///    (`SkenOkno.odprtoDo` < zdaj) IN je zadnji prenos starejsi od 3 dni.
+    ///  - Dogodka ni v seznamu (ali seznama dogodkov ni): brisemo samo, ce je prenos starejsi od 3 dni IN je datoteka dogodkov (brez nje
+    ///    sama datoteka seznama/skenov) starejsa od 3 dni + 18 h. 18 h = najdaljsa doba, ki jo skener dogodka sploh lahko pokriva, ce za
+    ///    dogodek nimamo podatkov (12 h pred zacetkom + 6 h po koncu, SkenOkno); starejsi seznam dogodkov bi lahko izpustil dogodek, ki se tece.
+    ///  - Lokalni skeni se brisejo PO ZAPISIH (kot splet, shramba.js `pocistiStareSkene`): samo tisti, starejsi od 3 dni, ki nimajo
+    ///    neposlanega vnosa v vrsti. Vrsta neposlanih in konflikti se ne dotakneta.
+    static let najvecjaStarostSekunde: Double = 3 * 86400
+    static let najdaljseOknoSkenaSekunde: Double = 18 * 3600
+
+    static func privzetoCiscenjeStarih() {
+        let disk = SkenDisk()
+        pocistiStare(disk: disk, neposlani: SkenVrsta.deljena(disk).vnosi)
+    }
+
+    private struct KljucDogodka: Hashable { let klub: Int; let dogodek: Int }
+
+    static func pocistiStare(disk: SkenDisk, neposlani: [SkenVnos], zdaj: Date = Date()) {
+        let meja = zdaj.addingTimeInterval(-najvecjaStarostSekunde)
+        let mejaBrezDogodka = zdaj.addingTimeInterval(-(najvecjaStarostSekunde + najdaljseOknoSkenaSekunde))
+        let vsa = disk.imena().filter { $0.hasSuffix(".json") }
+        var kljuci = Set<KljucDogodka>()
+        for ime in vsa {
+            for predpona in ["seznam-", "meta-", "lokalni-"] where ime.hasPrefix(predpona) {
+                let deli = ime.dropFirst(predpona.count).dropLast(5).split(separator: "-")
+                if deli.count == 2, let k = Int(deli[0]), let e = Int(deli[1]) { kljuci.insert(KljucDogodka(klub: k, dogodek: e)) }
+            }
+        }
+        var dogodkiKlubov: [Int: [SkenDogodek]?] = [:]
+        func dogodki(_ klub: Int) -> [SkenDogodek]? {
+            if let v = dogodkiKlubov[klub] { return v }
+            let v = disk.preberi([SkenDogodek].self, SkenDisk.imeDogodkov(klub: klub))
+            dogodkiKlubov[klub] = .some(v)
+            return v
+        }
+        /// Sme dogodek v brisanje glede na dogodke? `zasilni`: cas datoteke, ki velja, ce datoteke dogodkov ni.
+        func smeBrisati(_ k: KljucDogodka, zasilni: Date?) -> Bool {
+            if let d = dogodki(k.klub)?.first(where: { $0.id == k.dogodek }), let konec = SkenOkno.odprtoDo(d) { return konec < zdaj }
+            let referenca = disk.spremenjeno(SkenDisk.imeDogodkov(klub: k.klub)) ?? zasilni ?? .distantPast
+            return referenca < mejaBrezDogodka
+        }
+        for k in kljuci {
+            let imeSeznama = SkenDisk.imeSeznama(klub: k.klub, dogodek: k.dogodek)
+            let imeMeta = SkenDisk.imeMeta(klub: k.klub, dogodek: k.dogodek)
+            let imeLokalnih = SkenDisk.imeLokalnih(klub: k.klub, dogodek: k.dogodek)
+            if let mtimeSeznama = disk.spremenjeno(imeSeznama) {
+                let prenos = disk.preberi(SkenSeznamMeta.self, imeMeta)?.prenesenoOb ?? mtimeSeznama
+                if prenos < meja, smeBrisati(k, zasilni: mtimeSeznama) { disk.izbrisi(imeSeznama); disk.izbrisi(imeMeta) }
+            } else if let meta = disk.preberi(SkenSeznamMeta.self, imeMeta) {
+                // meta brez seznama: ostanek, brez imen; pobrisemo po istem pravilu
+                if meta.prenesenoOb < meja, smeBrisati(k, zasilni: disk.spremenjeno(imeMeta)) { disk.izbrisi(imeMeta) }
+            }
+            if let mtimeLokalnih = disk.spremenjeno(imeLokalnih), smeBrisati(k, zasilni: mtimeLokalnih),
+               var lokalni = disk.preberi(SkenLokalniSkeni.self, imeLokalnih) {
+                let cakajoci = Set(neposlani.filter { $0.klubId == k.klub && $0.eventId == k.dogodek }.compactMap { $0.serial?.lowercased() })
+                let prej = lokalni.casi.count
+                lokalni.casi = lokalni.casi.filter { $0.value >= meja || cakajoci.contains($0.key.lowercased()) }
+                if lokalni.casi.isEmpty { disk.izbrisi(imeLokalnih) }
+                else if lokalni.casi.count != prej { disk.zapisi(lokalni, imeLokalnih) }
+            }
+        }
+    }
+}
+
+/// Ovoj nad SkenApi: beleži, ali je kateri klic padel zaradi preklica ali izpada omrezja (poskus tedaj ne porabi okna).
+final class ZapisovalecNapak: SkenApi, @unchecked Sendable {
+    private let api: SkenApi
+    private let zapah = NSLock()
+    private var prekinjen = false
+
+    init(_ api: SkenApi) { self.api = api }
+
+    var bilPrekinjen: Bool {
+        zapah.lock()
+        defer { zapah.unlock() }
+        return prekinjen
+    }
+
+    private func zabelezi(_ napaka: Error) {
+        guard SkenPredpriprava.jePrekinitev(napaka) else { return }
+        zapah.lock()
+        prekinjen = true
+        zapah.unlock()
+    }
+
+    private func preveri<T>(_ delo: () async throws -> T) async throws -> T {
+        do { return try await delo() } catch { zabelezi(error); throw error }
+    }
+
+    func dogodki(token: String, klubId: Int?) async throws -> [SkenDogodek] { try await preveri { try await api.dogodki(token: token, klubId: klubId) } }
+    func kljuc(token: String, klubId: Int?) async throws -> ScanKey { try await preveri { try await api.kljuc(token: token, klubId: klubId) } }
+    func seznam(token: String, klubId: Int?, dogodekId: Int, sveze: Bool) async throws -> Data {
+        try await preveri { try await api.seznam(token: token, klubId: klubId, dogodekId: dogodekId, sveze: sveze) }
+    }
+    func paket(token: String, klubId: Int?, vnosi: [SkenVnos], deviceId: String) async throws -> [ScanBatchResult] {
+        try await preveri { try await api.paket(token: token, klubId: klubId, vnosi: vnosi, deviceId: deviceId) }
+    }
+    func spletniSken(token: String, klubId: Int?, qr: String, rok: Double) async throws -> ScanResult {
+        try await preveri { try await api.spletniSken(token: token, klubId: klubId, qr: qr, rok: rok) }
     }
 }

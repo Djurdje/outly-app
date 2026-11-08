@@ -467,31 +467,6 @@ extension SkenDisk {
         }
     }
 
-    /// Zasebnost: seznami vstopnic (z imeni imetnikov) in lokalni skeni ne ostanejo na napravi dlje kot 3 dni od zadnjega prenosa
-    /// (politika zasebnosti). Med aktivnim dogodkom se seznam osvezuje na ~2 min, zato to zadene samo pozabljene sezname.
-    /// Starost seznama = `prenesenoOb` iz meta datoteke (brez nje: cas spremembe datoteke); lokalnih skenov: cas spremembe.
-    /// Vrsta neposlanih vnosov in konfliktov se NE dotakne.
-    static let najvecjaStarostSekunde: Double = 3 * 86400
-
-    func pocistiStare(zdaj: Date = Date(), najvec: Double = SkenDisk.najvecjaStarostSekunde) {
-        let meja = zdaj.addingTimeInterval(-najvec)
-        func staro(_ kdaj: Date?) -> Bool { (kdaj ?? .distantPast) < meja }
-        let vsa = imena().filter { $0.hasSuffix(".json") }
-        var obdelani = Set<String>()
-        for ime in vsa where ime.hasPrefix("meta-") {
-            let id = String(ime.dropFirst("meta-".count))
-            obdelani.insert(id)
-            let prenos = preberi(SkenSeznamMeta.self, ime)?.prenesenoOb ?? spremenjeno("seznam-" + id)
-            if staro(prenos) { izbrisi(ime); izbrisi("seznam-" + id) }
-        }
-        for ime in vsa where ime.hasPrefix("seznam-") && !obdelani.contains(String(ime.dropFirst("seznam-".count))) {
-            if staro(spremenjeno(ime)) { izbrisi(ime) }
-        }
-        for ime in vsa where ime.hasPrefix("lokalni-") {
-            if staro(spremenjeno(ime)) { izbrisi(ime) }
-        }
-    }
-
     /// Pobrise vse, kar je vezano na klub (seznami, lokalni skeni, dogodki). Vrsta neposlanih vnosov ostane.
     func pocistiKlub(_ klub: Int) {
         pocisti(klub: klub, obdrzi: [])
