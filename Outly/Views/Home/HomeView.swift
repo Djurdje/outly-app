@@ -36,10 +36,10 @@ struct HomeView: View {
     @State private var areaSelected: Int?
     /// Filtri (desni del "Where to?"); privzeti = brez omejitev.
     @State private var filters: EventFilters = .privzeti
-    @State private var showFilters = false
-    /// Zamegljen posnetek domacega zaslona za zaslon Filtri (isto kot Search/Profile,
-    /// Martin 22. 9.). Nastane ob dotiku na ikono filtra, torej kaze tocno to, kar je bilo.
-    @State private var posnetekZaFiltre: UIImage?
+    /// Zaslon Filtri: element nosi zamegljen posnetek domacega zaslona (isto kot Search/Profile,
+    /// Martin 22. 9.). Posnetek nastane ob dotiku na ikono filtra, torej kaze tocno to, kar je bilo.
+    /// `fullScreenCover(item:)` ga preda vsebini ob prvem prikazu (prej: isPresented + dva @State).
+    @State private var filtriPredstavitev: FiltriPredstavitev?
     /// Spustni meni obvestil pod zvoncem (od 20. 9.; prej je zvonec vodil na My Clubs).
     @State private var showNotifications = false
     @State private var invites: [MyInvite] = []
@@ -180,16 +180,11 @@ struct HomeView: View {
         return sortedUpcoming.filter { !jeOutlyjev($0) }.max { kljuc($0) < kljuc($1) }
     }
 
-    /// Hit tedna: pretekli dogodek z najvec prodanimi; ce ga ni, najbolje prodajan prihajajoci.
+    /// Hit tedna: dogodek z najvec prodanimi, ki se je ze zacel v zadnjih 7 dneh; sicer razdelka ni
+    /// (prihajajoci dogodek ni "hit prejsnjega tedna", zato brez nadomestka).
     private var hitTedna: (event: APIEvent, label: String)? {
-        // Samo pretekli dogodki zadnjih 7 dni — sicer bi bil "hit tedna" lahko star mesece.
-        let teden = Date().addingTimeInterval(-7 * 24 * 3600)
-        if let p = popularEvents.filter({ $0.soldCount > 0 && ($0.startDate ?? .distantPast) >= teden })
-            .max(by: { $0.soldCount < $1.soldCount }) {
-            return (p, String(localized: "Last week's biggest hit"))
-        }
-        if let t = trending.first { return (t, String(localized: "Trending right now")) }
-        return nil
+        guard let p = HitTedna.izberi(iz: popularEvents) else { return nil }
+        return (p, String(localized: "Last week's biggest hit"))
     }
 
     /// "In your area": po razdalji, ce imamo lokacijo; sicer vsi klubi (da razdelek ni prazen).
@@ -241,8 +236,7 @@ struct HomeView: View {
 
                     WhereToField(onSearch: odpriIskanje,
                                  onFilter: {
-                                     posnetekZaFiltre = UIApplication.shared.posnetekZaslona()
-                                     showFilters = true
+                                     filtriPredstavitev = FiltriPredstavitev(posnetek: UIApplication.shared.posnetekZaslona())
                                  },
                                  filterActive: filters.jeAktiven)
                         // Okvir polja "Where to?" v okenskih koordinatah — izvor pravokotnika za
@@ -400,11 +394,11 @@ struct HomeView: View {
             // fullScreenCover, ne sheet: filtri lezijo cez cel zaslon nad zamegljenim
             // zamrznjenim domacim zaslonom, tako kot Search in Profile. Kot list bi bili
             // kartica s sistemskim ozadjem in posnetek bi bil odrezan.
-            .fullScreenCover(isPresented: $showFilters) {
+            .fullScreenCover(item: $filtriPredstavitev) { predstavitev in
                 FiltersView(filters: $filters, cities: cities,
                             events: upcomingEvents, clubsById: clubsById,
                             distanceKm: { distanceKm(to: $0) })
-                    .environment(\.posnetekDoma, posnetekZaFiltre)
+                    .environment(\.posnetekDoma, predstavitev.posnetek)
             }
             // Osvezitev tece v samostojni nalogi: SwiftUI prekine nalogo .refreshable, ce se
             // stanje pogleda spremeni pred koncem klicev (isLoading, me, lokacija), in

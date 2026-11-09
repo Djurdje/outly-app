@@ -189,7 +189,7 @@ extension UIApplication {
 
     /// Posnetek trenutnega zaslona, ze zamegljen (CIGaussianBlur) — klice se PRED preklopom
     /// zavihka, da kaze domaci zaslon tam, kjer je uporabnik ostal. Ostaja kot ovoj za FiltersView
-    /// (posnetekZaFiltre v HomeView), ki ga rabi sinhrono, preden se zaslon Filtri odpre.
+    /// (filtriPredstavitev v HomeView), ki ga rabi sinhrono, preden se zaslon Filtri odpre.
     func posnetekZaslona() -> UIImage? {
         // Posnetek se zajame v CETRTINI locljivosti (Martin, 22. 9.: "filter ozadje dolgo nalaga").
         // Zajem in zameglitev sta bila prej na polni locljivosti in sta se zgodila SINHRONO,
