@@ -66,6 +66,10 @@ struct SearchResults: Decodable {
         let clubId: Int
         let title: String
         let posterUrl: String
+        /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+        let posterCardUrl: String
+        /// Slika za majhne prikaze: majhen banner, sicer velik.
+        var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
         let startAt: String
         let clubName: String
         /// Prodajalec dogodka je demo klub (backend#243). Star backend -> false.
@@ -75,6 +79,7 @@ struct SearchResults: Decodable {
             case id, title
             case clubId = "club_id"
             case posterUrl = "poster_url"
+            case posterCardUrl = "poster_card_url"
             case startAt = "start_at"
             case clubName = "club_name"
             case isDemo = "is_demo"
@@ -85,6 +90,7 @@ struct SearchResults: Decodable {
             clubId    = try c.decodeIfPresent(Int.self, forKey: .clubId) ?? 0
             title     = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
             posterUrl = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+            posterCardUrl = try c.decodeIfPresent(String.self, forKey: .posterCardUrl) ?? ""
             startAt   = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
             clubName  = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
             isDemo    = (try? c.decodeIfPresent(Bool.self, forKey: .isDemo)) ?? false

@@ -32,7 +32,10 @@ extension APIClient {
         var genres: [String]?
         var ticketPriceCents: Int?
         var ticketUrl: String
+        /// Velik banner 4:5 (`poster_url`).
         var posterUrl: String
+        /// Majhen banner 3:4 (`poster_card_url`); "" = ni majhnega bannerja (outly-backend#400).
+        var posterCardUrl: String = ""
         var status: String   // "draft" | "published" | "cancelled"
         /// Zaloga (Figma "Create event": Capacity). nil = brez omejitve.
         var capacity: Int? = nil
@@ -64,6 +67,7 @@ extension APIClient {
                 "currency": "EUR",
                 "ticketUrl": ticketUrl,
                 "posterUrl": posterUrl,
+                "posterCardUrl": posterCardUrl,
             ]
             if let genres { j["genres"] = genres }
             if let endAt { j["endAt"] = Self.isoOut.string(from: endAt) } else { j["endAt"] = NSNull() }

@@ -34,6 +34,10 @@ struct ClubEventNotification: Decodable, Identifiable {
     let eventTitle: String
     let startAt: String
     let posterUrl: String
+    /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+    let posterCardUrl: String
+    /// Slika za majhne prikaze: majhen banner, sicer velik.
+    var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
     let clubId: Int
     let clubName: String
     let clubLogoUrl: String
@@ -44,6 +48,7 @@ struct ClubEventNotification: Decodable, Identifiable {
         case eventTitle = "event_title"
         case startAt = "start_at"
         case posterUrl = "poster_url"
+        case posterCardUrl = "poster_card_url"
         case clubId = "club_id"
         case clubName = "club_name"
         case clubLogoUrl = "club_logo_url"
@@ -56,6 +61,7 @@ struct ClubEventNotification: Decodable, Identifiable {
         eventTitle  = (try? c.decodeIfPresent(String.self, forKey: .eventTitle)) ?? ""
         startAt     = (try? c.decodeIfPresent(String.self, forKey: .startAt)) ?? ""
         posterUrl   = (try? c.decodeIfPresent(String.self, forKey: .posterUrl)) ?? ""
+        posterCardUrl = (try? c.decodeIfPresent(String.self, forKey: .posterCardUrl)) ?? ""
         clubId      = (try? c.decodeIfPresent(Int.self, forKey: .clubId)) ?? 0
         clubName    = (try? c.decodeIfPresent(String.self, forKey: .clubName)) ?? ""
         clubLogoUrl = (try? c.decodeIfPresent(String.self, forKey: .clubLogoUrl)) ?? ""

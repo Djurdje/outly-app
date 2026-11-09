@@ -101,8 +101,8 @@ struct EventPosterCard: View {
 
     @ViewBuilder
     private var poster: some View {
-        // Cel plakat (fit) na zamegljenem ozadju; okvir kartice ostane enak (PlakatDogodka).
-        PlakatDogodka(urlString: event.posterUrl)
+        // Majhen banner 3:4 (ali velik, ce majhnega ni), fill brez zamegljenega roba (PlakatDogodka).
+        PlakatDogodka(urlString: event.posterSmallUrl)
     }
 }
 

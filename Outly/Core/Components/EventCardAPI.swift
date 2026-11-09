@@ -186,8 +186,8 @@ struct EventCardAPI: View {
     @ViewBuilder
     private var eventPosterSmall: some View {
         if
-            !event.posterUrl.isEmpty,
-            let url = URL(string: event.posterUrl)
+            !event.posterSmallUrl.isEmpty,
+            let url = URL(string: event.posterSmallUrl)
         {
             PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .clipShape(RoundedRectangle(cornerRadius: 14))

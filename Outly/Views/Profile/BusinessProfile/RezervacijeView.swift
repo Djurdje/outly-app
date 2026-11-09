@@ -80,7 +80,7 @@ struct RezervacijeDogodkiView: View {
     /// Vrstica dogodka: isti slog kot »Event performance« v Dashboardu (plakat, naslov, datum), desno stevilo rezerviranih miz.
     private func vrstica(_ e: APIEvent) -> some View {
         HStack(spacing: 12) {
-            if !e.posterUrl.isEmpty, let url = URL(string: e.posterUrl) {
+            if !e.posterSmallUrl.isEmpty, let url = URL(string: e.posterSmallUrl) {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                     .frame(width: 54, height: 54)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// Plakat dogodka v okvirju, ki ga doloci klicatelj (23. 10. 2026, Martin: plakat naj bo povsod tak,
-/// kot ga je organizator nalozil, okvirji kartic pa ostanejo enaki).
+/// Banner dogodka v okvirju, ki ga doloci klicatelj (8. 11. 2026, Luka, outly-backend#400: slika vedno zapolni cel
+/// okvir, brez zamegljenega roba; nadomesti odlocitev 23. 10. 2026 »cel plakat + zamegljen rob«).
 ///
-/// - Plakat je CEL (aspect fit, nic odrezanega), razmerje stranic ostane tako, kot je bilo naloženo.
-/// - Prazen prostor ob straneh/zgoraj/spodaj zapolni zamegljena in zatemnjena kopija istega plakata.
-/// - Zamegljeno ozadje je drobna sliccica (~48 px, nastane ob prenosu v `SlikovniPredpomnilnik`),
-///   raztegnjena na okvir z mehkim vzorcenjem: brez `.blur` na sliki polne locljivosti
-///   (pravilo 3, outly-app #33) in brez dodatnih omrezij klicev.
+/// - Slika je FILL (`scaledToFill`, sredina), obrezana na okvir. Prazen rob ne obstaja.
+/// - Velik banner (4:5): glava dogodka in »Big events coming up« podata `posterUrl`; majhne prikaze klicatelji
+///   napolnijo s `posterSmallUrl` (majhen banner 3:4, sicer velik).
 /// - Pravilo slik: okvir vedno doloci `Color.clear.overlay(...).clipped()`, slika sama okvirja ne siri.
 ///
 /// Velikost okvirja doloci klicatelj (`.frame`, `.aspectRatio`, ...); gradnik zapolni ponujeni prostor.
@@ -43,11 +41,7 @@ struct PlakatDogodkaSlika: View {
         OutlyAsyncImage(url: url) { phase in
             switch phase {
             case .success(let img):
-                ZStack {
-                    zamegljenoOzadje
-                    // Cel plakat: fit znotraj okvirja, nic odrezanega.
-                    Color.clear.overlay(img.resizable().scaledToFit()).clipped()
-                }
+                Color.clear.overlay(img.resizable().scaledToFill()).clipped()
             default:
                 if mirenPlaceholder {
                     Rectangle().fill(Color.white.opacity(0.08))
@@ -55,23 +49,6 @@ struct PlakatDogodkaSlika: View {
                     SkeletonBlock()
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private var zamegljenoOzadje: some View {
-        ZStack {
-            if let drobna = SlikovniPredpomnilnik.ozadje(url) {
-                Color.clear.overlay(
-                    Image(uiImage: drobna)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFill()
-                ).clipped()
-            } else {
-                Color(white: 0.08)
-            }
-            Color.black.opacity(0.38)
         }
     }
 }

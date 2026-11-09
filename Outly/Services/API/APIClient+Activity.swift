@@ -84,12 +84,17 @@ struct StaffScans: Decodable {
         let title: String
         let startAt: String
         let posterUrl: String
+        /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+        let posterCardUrl: String
+        /// Slika za majhne prikaze: majhen banner, sicer velik.
+        var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
         let scans: Int
 
         enum CodingKeys: String, CodingKey {
             case id, title, scans
             case startAt = "start_at"
             case posterUrl = "poster_url"
+            case posterCardUrl = "poster_card_url"
         }
 
         init(from decoder: Decoder) throws {
@@ -98,6 +103,7 @@ struct StaffScans: Decodable {
             title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
             startAt = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
             posterUrl = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+            posterCardUrl = try c.decodeIfPresent(String.self, forKey: .posterCardUrl) ?? ""
             scans = try c.decodeIfPresent(Int.self, forKey: .scans) ?? 0
         }
 

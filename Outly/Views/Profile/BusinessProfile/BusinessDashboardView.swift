@@ -480,7 +480,7 @@ struct BusinessDashboardView: View {
 
     private func vrsticaDogodka(_ e: BusinessSales.EventSales) -> some View {
         HStack(spacing: 12) {
-            if !e.posterUrl.isEmpty, let url = URL(string: e.posterUrl) {
+            if !e.posterSmallUrl.isEmpty, let url = URL(string: e.posterSmallUrl) {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .frame(width: 54, height: 54)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

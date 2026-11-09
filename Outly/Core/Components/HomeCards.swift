@@ -82,7 +82,7 @@ struct HitCard: View {
             }
             .padding(14)
 
-            PlakatDogodka(urlString: event.posterUrl)
+            PlakatDogodka(urlString: event.posterSmallUrl)
                 .frame(width: 130)
         }
         .frame(height: 150)
@@ -105,6 +105,16 @@ struct HeroEventCard: View {
     var oznaka: String? = nil
 
     var body: some View {
+        // Velik banner 4:5 (sirina x 5/4), fill brez zamegljenega roba (outly-backend#400).
+        Color.clear
+            .aspectRatio(4.0 / 5.0, contentMode: .fit)
+            .overlay { vsebina }
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 1))
+            .contentShape(Rectangle())
+    }
+
+    private var vsebina: some View {
         ZStack(alignment: .top) {
             PlakatDogodka(urlString: event.posterUrl)
 
@@ -168,10 +178,6 @@ struct HeroEventCard: View {
             }
             .padding(16)
         }
-        .frame(height: 380)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 1))
-        .contentShape(Rectangle())
     }
 
     /// Besedilo modrega znacka spodaj desno; loceno od View-ja, ker je bila gnezdena

@@ -7,6 +7,10 @@ struct APIEvent: Identifiable, Decodable {
     let title: String
     let description: String
     let posterUrl: String
+    /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+    let posterCardUrl: String
+    /// Slika za majhne prikaze: majhen banner, sicer velik.
+    var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
 
     let startAt: String
     let endAt: String?
@@ -101,6 +105,7 @@ struct APIEvent: Identifiable, Decodable {
         case clubId = "club_id"
         case title, description
         case posterUrl = "poster_url"
+        case posterCardUrl = "poster_card_url"
         case startAt = "start_at"
         case endAt = "end_at"
         case minAge = "min_age"
@@ -149,6 +154,7 @@ struct APIEvent: Identifiable, Decodable {
         title            = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
         description      = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
         posterUrl        = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+        posterCardUrl      = try c.decodeIfPresent(String.self, forKey: .posterCardUrl) ?? ""
         startAt          = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
         endAt            = try c.decodeIfPresent(String.self, forKey: .endAt)
         minAge           = try c.decodeIfPresent(Int.self, forKey: .minAge) ?? 18

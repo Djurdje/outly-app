@@ -29,6 +29,10 @@ struct APITicket: Codable, Identifiable {
     let startAt: String
     let endAt: String?
     let posterUrl: String
+    /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+    let posterCardUrl: String
+    /// Slika za majhne prikaze: majhen banner, sicer velik.
+    var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
     let minAge: Int
     let clubId: Int
     let clubName: String
@@ -84,6 +88,7 @@ struct APITicket: Codable, Identifiable {
         case startAt = "start_at"
         case endAt = "end_at"
         case posterUrl = "poster_url"
+        case posterCardUrl = "poster_card_url"
         case minAge = "min_age"
         case clubId = "club_id"
         case clubName = "club_name"
@@ -105,6 +110,7 @@ struct APITicket: Codable, Identifiable {
         startAt = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
         endAt = try c.decodeIfPresent(String.self, forKey: .endAt)
         posterUrl = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+        posterCardUrl = try c.decodeIfPresent(String.self, forKey: .posterCardUrl) ?? ""
         minAge = try c.decodeIfPresent(Int.self, forKey: .minAge) ?? 18
         clubId = try c.decodeIfPresent(Int.self, forKey: .clubId) ?? 0
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
@@ -189,6 +195,10 @@ struct APIOrder: Decodable, Identifiable {
     let eventTitle: String
     let startAt: String
     let posterUrl: String
+    /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+    let posterCardUrl: String
+    /// Slika za majhne prikaze: majhen banner, sicer velik.
+    var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
     let clubName: String
     let buyerUsername: String
     let tickets: [APITicket]
@@ -231,6 +241,7 @@ struct APIOrder: Decodable, Identifiable {
         case eventTitle = "event_title"
         case startAt = "start_at"
         case posterUrl = "poster_url"
+        case posterCardUrl = "poster_card_url"
         case clubName = "club_name"
         case buyerUsername = "buyer_username"
         case checkoutUrl = "checkout_url"
@@ -257,6 +268,7 @@ struct APIOrder: Decodable, Identifiable {
         eventTitle = try c.decodeIfPresent(String.self, forKey: .eventTitle) ?? ""
         startAt = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
         posterUrl = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+        posterCardUrl = try c.decodeIfPresent(String.self, forKey: .posterCardUrl) ?? ""
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
         buyerUsername = try c.decodeIfPresent(String.self, forKey: .buyerUsername) ?? ""
         tickets = try c.decodeIfPresent([APITicket].self, forKey: .tickets) ?? []
@@ -363,6 +375,10 @@ struct BusinessSales: Decodable {
         let title: String
         let startAt: String
         let posterUrl: String
+        /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+        let posterCardUrl: String
+        /// Slika za majhne prikaze: majhen banner, sicer velik.
+        var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
         let status: String
         let ticketPriceCents: Int?
         let capacity: Int?
@@ -377,6 +393,7 @@ struct BusinessSales: Decodable {
             case id, title, status, capacity
             case startAt = "start_at"
             case posterUrl = "poster_url"
+            case posterCardUrl = "poster_card_url"
             case ticketPriceCents = "ticket_price_cents"
             case soldCount = "sold_count"
             case grossCents = "gross_cents"
@@ -391,6 +408,7 @@ struct BusinessSales: Decodable {
             title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
             startAt = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
             posterUrl = try c.decodeIfPresent(String.self, forKey: .posterUrl) ?? ""
+            posterCardUrl = try c.decodeIfPresent(String.self, forKey: .posterCardUrl) ?? ""
             status = try c.decodeIfPresent(String.self, forKey: .status) ?? "published"
             ticketPriceCents = try c.decodeIfPresent(Int.self, forKey: .ticketPriceCents)
             capacity = try c.decodeIfPresent(Int.self, forKey: .capacity)

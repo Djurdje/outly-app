@@ -209,7 +209,7 @@ struct TicketsView: View {
     /// `stevilo` != nil: glava VIP mize (stevilo vstopnic in puscica dol/gor namesto desne).
     private func vrstica(_ t: APITicket, stevilo: Int? = nil, odprta: Bool = false) -> some View {
         HStack(spacing: 12) {
-            if !t.posterUrl.isEmpty, let url = URL(string: t.posterUrl) {
+            if !t.posterSmallUrl.isEmpty, let url = URL(string: t.posterSmallUrl) {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                     .frame(width: 70, height: 70)
                     .clipped()
@@ -448,7 +448,7 @@ struct WalletTicketCard: View {
     private var zgornjiDel: some View {
         ZStack(alignment: .bottomLeading) {
             Group {
-                if !ticket.posterUrl.isEmpty, let url = URL(string: ticket.posterUrl) {
+                if !ticket.posterSmallUrl.isEmpty, let url = URL(string: ticket.posterSmallUrl) {
                     PlakatDogodkaSlika(url: url)
                 } else {
                     // Brez plakata: barva vstopnice v temno (brez vijolicnih prelivov), kot EventPosterCard.

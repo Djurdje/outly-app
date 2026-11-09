@@ -149,7 +149,7 @@ private struct BusinessEventRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            if let url = URL(string: event.posterUrl), !event.posterUrl.isEmpty {
+            if let url = URL(string: event.posterSmallUrl), !event.posterSmallUrl.isEmpty {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .frame(width: 78, height: 78)
                 .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -21,6 +21,10 @@ struct GuestListEvent: Decodable, Equatable {
     let startAt: String
     let endAt: String?
     let posterUrl: String
+    /// Majhen banner 3:4 (backend poster_card_url). Star backend ga ne vrne -> "".
+    let posterCardUrl: String
+    /// Slika za majhne prikaze: majhen banner, sicer velik.
+    var posterSmallUrl: String { posterCardUrl.isEmpty ? posterUrl : posterCardUrl }
     let clubId: Int
     let clubName: String
     let minAge: Int
@@ -32,18 +36,20 @@ struct GuestListEvent: Decodable, Equatable {
         case startAt = "start_at"
         case endAt = "end_at"
         case posterUrl = "poster_url"
+        case posterCardUrl = "poster_card_url"
         case clubId = "club_id"
         case clubName = "club_name"
         case minAge = "min_age"
     }
 
-    init(id: Int = 0, title: String = "", startAt: String = "", endAt: String? = nil, posterUrl: String = "",
+    init(id: Int = 0, title: String = "", startAt: String = "", endAt: String? = nil, posterUrl: String = "", posterCardUrl: String = "",
          clubId: Int = 0, clubName: String = "", minAge: Int = 0, status: String = "published") {
         self.id = id
         self.title = title
         self.startAt = startAt
         self.endAt = endAt
         self.posterUrl = posterUrl
+        self.posterCardUrl = posterCardUrl
         self.clubId = clubId
         self.clubName = clubName
         self.minAge = minAge
@@ -57,6 +63,7 @@ struct GuestListEvent: Decodable, Equatable {
         startAt = try c.decodeIfPresent(String.self, forKey: .startAt) ?? ""
         endAt = (try? c.decodeIfPresent(String.self, forKey: .endAt)) ?? nil
         posterUrl = (try? c.decodeIfPresent(String.self, forKey: .posterUrl)) ?? ""
+        posterCardUrl = (try? c.decodeIfPresent(String.self, forKey: .posterCardUrl)) ?? ""
         clubId = try c.decodeIfPresent(Int.self, forKey: .clubId) ?? 0
         clubName = try c.decodeIfPresent(String.self, forKey: .clubName) ?? ""
         // Manjkajoca meja = brez kljukice starosti; streznik jo vseeno uveljavi (400 age_confirmation_required).

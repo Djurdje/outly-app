@@ -65,7 +65,7 @@ struct StaffScansView: View {
 
     private func row(_ e: StaffScans.EventScans) -> some View {
         HStack(spacing: 12) {
-            if !e.posterUrl.isEmpty, let url = URL(string: e.posterUrl) {
+            if !e.posterSmallUrl.isEmpty, let url = URL(string: e.posterSmallUrl) {
                 PlakatDogodkaSlika(url: url, mirenPlaceholder: true)
                 .frame(width: 44, height: 44)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
