@@ -1,14 +1,13 @@
 import SwiftUI
 
 /// Znacka »Coming soon«: kot obvestilo (Martin, 9. 11. 2026) - temno ozadje #171717, rumen rob #E0B65E,
-/// ki je levo debelejsi in se proti desni izgubi, rumenkasto besedilo #E8C987 (kontrast 11,2 : 1).
+/// ki je levo debelejsi in se proti desni izgubi, rumenkasto besedilo #EBD08F (kontrast 11,9 : 1; usklajeno s spletom).
 /// NE modra (modra je samo za glavni gumb). Kljuc je loc (en vrednost je izrecna), ker naslov razdelka
 /// z istim angleskim besedilom v sl pomeni drugo.
 struct ComingSoonZnacka: View {
     private static let ozadje = Color(red: 23/255, green: 23/255, blue: 23/255)
     private static let rumena = Color(red: 224/255, green: 182/255, blue: 94/255)
-    private static let besedilo = Color(red: 232/255, green: 201/255, blue: 135/255)
-    private static let tankRob = Color(red: 44/255, green: 44/255, blue: 44/255)
+    private static let besedilo = Color(red: 235/255, green: 208/255, blue: 143/255)
 
     var body: some View {
         Text("Coming soon (badge)")
@@ -18,14 +17,12 @@ struct ComingSoonZnacka: View {
             .padding(.vertical, 4)
             .background(Self.ozadje)
             .clipShape(Capsule())
-            // Tanek siv rob po vsem obodu.
-            .overlay(Capsule().strokeBorder(Self.tankRob, lineWidth: 1))
-            // Rumen rob: tanek preliv od leve (polno) do desne (skoraj nic)...
+            // Rob 1 pt: preliv od leve (#E0B65E) do desne (alfa 0,06)...
             .overlay(
                 Capsule().strokeBorder(
-                    LinearGradient(colors: [Self.rumena, Self.rumena.opacity(0.05)],
+                    LinearGradient(colors: [Self.rumena, Self.rumena.opacity(0.06)],
                                    startPoint: .leading, endPoint: .trailing),
-                    lineWidth: 1.5)
+                    lineWidth: 1)
             )
             // ...in debelejsi (3 pt) samo na levem koncu, kjer ga maska hitro izgasne.
             .overlay(
