@@ -15,7 +15,14 @@ final class HitTednaTests: XCTestCase {
     }()
 
     private func dogodek(id: Int, zacetekPredDnevi dnevi: Double, prodanih: Int) throws -> APIEvent {
-        let zacetek = iso.string(from: zdaj.addingTimeInterval(-dnevi * 24 * 3600))
+        try dogodek(id: id, zacetekPredSekundami: dnevi * 24 * 3600, prodanih: prodanih)
+    }
+
+    private func dogodek(id: Int, zacetekPredSekundami sek: Double, prodanih: Int) throws -> APIEvent {
+        try dogodek(id: id, startAt: iso.string(from: zdaj.addingTimeInterval(-sek)), prodanih: prodanih)
+    }
+
+    private func dogodek(id: Int, startAt zacetek: String, prodanih: Int) throws -> APIEvent {
         let json = """
         {"id": \(id), "club_id": 1, "title": "T\(id)", "description": "", "poster_url": "",
          "start_at": "\(zacetek)", "end_at": null, "min_age": 18, "genres": [], "status": "published",
@@ -41,5 +48,30 @@ final class HitTednaTests: XCTestCase {
         let star = try dogodek(id: 1, zacetekPredDnevi: 8, prodanih: 100)
         let brez = try dogodek(id: 2, zacetekPredDnevi: 1, prodanih: 0)
         XCTAssertNil(HitTedna.izberi(iz: [star, brez], zdaj: zdaj))
+    }
+
+    // MARK: - Mejni primeri
+
+    func testZacetekTockoVZdajJeIzbran() throws {
+        let e = try dogodek(id: 1, zacetekPredSekundami: 0, prodanih: 5)
+        XCTAssertEqual(HitTedna.izberi(iz: [e], zdaj: zdaj)?.id, 1)
+    }
+
+    func testZacetekTockoPredSedmimiDnemiJeIzbran() throws {
+        let e = try dogodek(id: 1, zacetekPredSekundami: 7 * 24 * 3600, prodanih: 5)
+        XCTAssertEqual(HitTedna.izberi(iz: [e], zdaj: zdaj)?.id, 1)
+    }
+
+    func testZacetekSekundoPredMejoTednaNiIzbran() throws {
+        let e = try dogodek(id: 1, zacetekPredSekundami: 7 * 24 * 3600 + 1, prodanih: 5)
+        XCTAssertNil(HitTedna.izberi(iz: [e], zdaj: zdaj))
+    }
+
+    func testNeberljivAliManjkajocStartAtZProdajoNiIzbran() throws {
+        let neberljiv = try dogodek(id: 1, startAt: "ni datum", prodanih: 50)
+        let prazen = try dogodek(id: 2, startAt: "", prodanih: 50)
+        XCTAssertNil(neberljiv.startDate)
+        XCTAssertNil(prazen.startDate)
+        XCTAssertNil(HitTedna.izberi(iz: [neberljiv, prazen], zdaj: zdaj))
     }
 }
