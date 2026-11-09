@@ -1,17 +1,38 @@
 import SwiftUI
 
-/// Znacka »Coming soon«: nevtralna (temna prosojna), NE modra (modra je samo za glavni gumb).
-/// Kljuc je loc (en vrednost je izrecna), ker naslov razdelka z istim angleskim besedilom v sl pomeni drugo.
+/// Znacka »Coming soon«: kot obvestilo (Martin, 9. 11. 2026) - temno ozadje #171717, rumen rob #E0B65E,
+/// ki je levo debelejsi in se proti desni izgubi, rumenkasto besedilo #E8C987 (kontrast 11,2 : 1).
+/// NE modra (modra je samo za glavni gumb). Kljuc je loc (en vrednost je izrecna), ker naslov razdelka
+/// z istim angleskim besedilom v sl pomeni drugo.
 struct ComingSoonZnacka: View {
+    private static let ozadje = Color(red: 23/255, green: 23/255, blue: 23/255)
+    private static let rumena = Color(red: 224/255, green: 182/255, blue: 94/255)
+    private static let besedilo = Color(red: 232/255, green: 201/255, blue: 135/255)
+    private static let tankRob = Color(red: 44/255, green: 44/255, blue: 44/255)
+
     var body: some View {
         Text("Coming soon (badge)")
             .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.white)
+            .foregroundColor(Self.besedilo)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.black.opacity(0.6))
+            .background(Self.ozadje)
             .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1))
+            // Tanek siv rob po vsem obodu.
+            .overlay(Capsule().strokeBorder(Self.tankRob, lineWidth: 1))
+            // Rumen rob: tanek preliv od leve (polno) do desne (skoraj nic)...
+            .overlay(
+                Capsule().strokeBorder(
+                    LinearGradient(colors: [Self.rumena, Self.rumena.opacity(0.05)],
+                                   startPoint: .leading, endPoint: .trailing),
+                    lineWidth: 1.5)
+            )
+            // ...in debelejsi (3 pt) samo na levem koncu, kjer ga maska hitro izgasne.
+            .overlay(
+                Capsule().strokeBorder(Self.rumena, lineWidth: 3)
+                    .mask(LinearGradient(colors: [.white, .clear],
+                                         startPoint: .leading, endPoint: UnitPoint(x: 0.4, y: 0.5)))
+            )
     }
 }
 
