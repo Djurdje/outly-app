@@ -1,34 +1,35 @@
 import SwiftUI
 
-/// Znacka »Coming soon«: kot obvestilo (Martin, 9. 11. 2026) - temno ozadje #171717, rumen rob #E0B65E,
-/// ki je levo debelejsi in se proti desni izgubi, rumenkasto besedilo #EBD08F (kontrast 11,9 : 1; usklajeno s spletom).
-/// NE modra (modra je samo za glavni gumb). Kljuc je loc (en vrednost je izrecna), ker naslov razdelka
-/// z istim angleskim besedilom v sl pomeni drugo.
+/// Znacka »Coming soon« (Martin, 9. 11. 2026, seja: dizajn 2 obvestilo + preliv, barva 2 pol-pol G/E, velikost S6):
+/// zaobljen pravokotnik (radij 9, NE kapsula), ozadje #171717, rob 1 pt s prelivom od leve #ECD67F (polno) do desne
+/// (alfa 0,06), ravna 3 pt leva crta #ECD67F znotraj oblike (kot CSS inset box-shadow), besedilo #F4E8AE
+/// (kontrast na #171717 ~14,5 : 1). NE modra (modra je samo za glavni gumb). Kljuc je loc (en vrednost je izrecna),
+/// ker naslov razdelka z istim angleskim besedilom v sl pomeni drugo.
 struct ComingSoonZnacka: View {
     private static let ozadje = Color(red: 23/255, green: 23/255, blue: 23/255)
-    private static let rumena = Color(red: 224/255, green: 182/255, blue: 94/255)
-    private static let besedilo = Color(red: 235/255, green: 208/255, blue: 143/255)
+    private static let zlata = Color(red: 236/255, green: 214/255, blue: 127/255)
+    private static let besedilo = Color(red: 244/255, green: 232/255, blue: 174/255)
+    private static let oblika = RoundedRectangle(cornerRadius: 9, style: .continuous)
 
     var body: some View {
         Text("Coming soon (badge)")
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundColor(Self.besedilo)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.top, 7)
+            .padding(.bottom, 7)
+            .padding(.leading, 16)
+            .padding(.trailing, 14)
             .background(Self.ozadje)
-            .clipShape(Capsule())
-            // Rob 1 pt: preliv od leve (#E0B65E) do desne (alfa 0,06)...
+            // Leva crta 3 pt po vsej visini, porezana z isto obliko (sledi zaobljenima levima kotoma).
+            .overlay(alignment: .leading) {
+                Self.zlata.frame(width: 3)
+            }
+            .clipShape(Self.oblika)
             .overlay(
-                Capsule().strokeBorder(
-                    LinearGradient(colors: [Self.rumena, Self.rumena.opacity(0.06)],
+                Self.oblika.strokeBorder(
+                    LinearGradient(colors: [Self.zlata, Self.zlata.opacity(0.06)],
                                    startPoint: .leading, endPoint: .trailing),
                     lineWidth: 1)
-            )
-            // ...in debelejsi (3 pt) samo na levem koncu, kjer ga maska hitro izgasne.
-            .overlay(
-                Capsule().strokeBorder(Self.rumena, lineWidth: 3)
-                    .mask(LinearGradient(colors: [.white, .clear],
-                                         startPoint: .leading, endPoint: UnitPoint(x: 0.4, y: 0.5)))
             )
     }
 }
