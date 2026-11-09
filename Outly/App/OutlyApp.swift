@@ -50,7 +50,10 @@ struct OutlyApp: App {
                 .onChange(of: session.me?.id) { _, _ in PushObvestila.deljen.uskladi() }
                 // Zagon in vrnitev v ospredje: ce je dovoljenje ze odobreno, naj iOS (znova) vrne zeton (brez vprasanja).
                 .onChange(of: scenePhase) { _, faza in
-                    if faza == .active { PushObvestila.deljen.osvezi() }
+                    if faza == .active {
+                        PushObvestila.deljen.osvezi()
+                        session.pripraviSken()   // sken brez povezave: podatki za vrata so na disku, se preden vratar odpre skener
+                    }
                 }
                 .task { PushObvestila.deljen.osvezi() }
         }
