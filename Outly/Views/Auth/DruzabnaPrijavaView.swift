@@ -1,20 +1,20 @@
 import SwiftUI
 import AuthenticationServices
 
-/// Nadaljevanje, ki se lahko izvede NAJVEC ENKRAT (zaklep): ASWebAuthenticationSession ob `start() == false` in obdelava napake
-/// bi sicer obe poklicali `resume` (fatalna napaka). Natanko en izid.
-final class EnkratnoNadaljevanje<T>: @unchecked Sendable {
+/// Zastavica »prvic«: `continuation.resume` se sme poklicati NAJVEC ENKRAT (ASWebAuthenticationSession ob `start() == false` in obdelava
+/// napake bi sicer obe poklicali `resume`: fatalna napaka). Namenoma NE-genericen razred: genericen razred z deinit je pod privzeto
+/// izolacijo MainActor podrl optimizator (Release, EarlyPerfInliner, 14. 11. 2026).
+final class Enkrat: @unchecked Sendable {
     private let zaklep = NSLock()
-    private var nadaljevanje: CheckedContinuation<T, Error>?
+    private var opravljeno = false
 
-    init(_ nadaljevanje: CheckedContinuation<T, Error>) { self.nadaljevanje = nadaljevanje }
-
-    func resume(_ izid: Result<T, Error>) {
+    /// true samo pri prvem klicu.
+    func prvic() -> Bool {
         zaklep.lock()
-        let c = nadaljevanje
-        nadaljevanje = nil
-        zaklep.unlock()
-        c?.resume(with: izid)
+        defer { zaklep.unlock() }
+        if opravljeno { return false }
+        opravljeno = true
+        return true
     }
 }
 
@@ -64,16 +64,16 @@ final class GoogleSejaVodja: NSObject, ASWebAuthenticationPresentationContextPro
             nonceHash: DruzabnaPrijavaLogika.sha256Hex(nonce), state: state) else { throw APIError.invalidURL }
 
         let povratni: URL? = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<URL?, Error>) in
-            let enkrat = EnkratnoNadaljevanje(cont)
+            let enkrat = Enkrat()
             let obdelava: @Sendable (URL?, Error?) -> Void = { klic, napaka in
                 if let napaka {
                     if let e = napaka as? ASWebAuthenticationSessionError, e.code == .canceledLogin {
-                        enkrat.resume(.success(nil))
+                        if enkrat.prvic() { cont.resume(returning: nil) }
                     } else {
-                        enkrat.resume(.failure(napaka))
+                        if enkrat.prvic() { cont.resume(throwing: napaka) }
                     }
                 } else {
-                    enkrat.resume(.success(klic))
+                    if enkrat.prvic() { cont.resume(returning: klic) }
                 }
             }
             let nova = ASWebAuthenticationSession(url: url, callbackURLScheme: DruzabnaPrijavaLogika.googleShema(),
@@ -83,7 +83,7 @@ final class GoogleSejaVodja: NSObject, ASWebAuthenticationPresentationContextPro
             seja = nova
             if !nova.start() {
                 seja = nil
-                enkrat.resume(.failure(SupabaseAuthError(status: 0, code: "", message: "ASWebAuthenticationSession did not start")))
+                if enkrat.prvic() { cont.resume(throwing: SupabaseAuthError(status: 0, code: "", message: "ASWebAuthenticationSession did not start")) }
             }
         }
         seja = nil
@@ -121,7 +121,7 @@ func applovIdToken(_ avtorizacija: ASAuthorization) -> String? {
 /// Prijavni zaslon uporablja `SignInWithAppleButton` (DruzabniGumbi). Samo obseg `email` (ime Appla ne shranjujemo).
 @MainActor
 final class AppleVodja: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
-    private var enkrat: EnkratnoNadaljevanje<ASAuthorization?>?
+    private var cakajoce: CheckedContinuation<ASAuthorization?, Error>?
     private var kontroler: ASAuthorizationController?
 
     /// Vrne sejo ali nil ob preklicu.
@@ -132,7 +132,7 @@ final class AppleVodja: NSObject, ASAuthorizationControllerDelegate, ASAuthoriza
         zahteva.nonce = DruzabnaPrijavaLogika.sha256Hex(nonce)
 
         let avtorizacija: ASAuthorization? = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<ASAuthorization?, Error>) in
-            enkrat = EnkratnoNadaljevanje(cont)
+            cakajoce = cont
             let k = ASAuthorizationController(authorizationRequests: [zahteva])
             k.delegate = self
             k.presentationContextProvider = self
@@ -140,21 +140,27 @@ final class AppleVodja: NSObject, ASAuthorizationControllerDelegate, ASAuthoriza
             k.performRequests()
         }
         kontroler = nil
-        enkrat = nil
         guard let avtorizacija else { return nil }
         guard let idToken = applovIdToken(avtorizacija) else { throw APIError.decodingFailed }
         return try await SupabaseAuth.shared.signInWithIdToken(provider: "apple", idToken: idToken, nonce: nonce)
     }
 
+    /// Izid se sporoci najvec enkrat (MainActor: po prvem klicu je `cakajoce` nil).
+    private func konec(_ izid: Result<ASAuthorization?, Error>) {
+        guard let c = cakajoce else { return }
+        cakajoce = nil
+        c.resume(with: izid)
+    }
+
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        enkrat?.resume(.success(authorization))
+        konec(.success(authorization))
     }
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         if let a = error as? ASAuthorizationError, a.code == .canceled {
-            enkrat?.resume(.success(nil))
+            konec(.success(nil))
         } else {
-            enkrat?.resume(.failure(error))
+            konec(.failure(error))
         }
     }
 
