@@ -16,8 +16,6 @@ struct ClubDetailView: View {
     @State private var sledim = false
     @State private var sledilci = 0
     @State private var sledenjeTece = false
-    /// Brskanje brez racuna: Follow najprej odpre prijavo (PrijavaTok), nato se sledenje nadaljuje.
-    @State private var prijava: PrijavaZahteva?
 
     /// Organizator brez lastnega prizorisca (backend 037): brez naslova, zemljevida in pina;
     /// namesto "Club" pisemo "Organizer".
@@ -37,7 +35,6 @@ struct ClubDetailView: View {
         // Report v meniju »…« (outly-backend #189, Apple 1.2); ne za klub, v katerem sam delam.
         .prijavaMeni(targetType: .club, targetId: clubId, targetName: club?.name ?? "", skrij: jeMojKlub)
         .task { await load() }
-        .prijavaPoZahtevi($prijava)
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(clubId: clubId) }
     }
@@ -153,18 +150,8 @@ struct ClubDetailView: View {
     }
 
     private var followButton: some View {
-        // Tudi gost vidi Follow; dotik odpre prijavo, po njej se klub prebere znova (is_following) in sledenje nadaljuje.
         Button {
-            if session.isLoggedIn {
-                Task { await preklopiSledenje() }
-            } else {
-                prijava = PrijavaZahteva(nadaljuj: {
-                    Task {
-                        await load()
-                        if !sledim { await preklopiSledenje() }
-                    }
-                })
-            }
+            Task { await preklopiSledenje() }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: sledim ? "checkmark" : "plus")

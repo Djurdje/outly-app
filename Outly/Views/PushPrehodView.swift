@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// Cilj dotika (`PushCilj`) pride iz `OutlyAppDelegate` v `PushUsmerjevalnik.deljen.postavi`. Na HLADNEM zagonu je to pred
 /// prijavo in prej, kot obstaja MainTabView, zato cilj tam caka: `PushPrehod` (v ozadju MainTabView) ga prevzame ob prikazu
-/// in ob vsaki spremembi, SAMO prijavljen (od 19. 10. 2026 MainTabView vidi tudi gost; cilj pocaka na prijavo). Zaslon se odpre kot LIST s svojim NavigationStack (koren lista), cilji pa so potisnjeni pogledi BREZ
+/// in ob vsaki spremembi, SAMO prijavljen (od 14. 11. 2026 je MainTabView le s sejo, a cilj lahko pride, preden je `me` nalozen). Zaslon se odpre kot LIST s svojim NavigationStack (koren lista), cilji pa so potisnjeni pogledi BREZ
 /// lastnega NavigationStack (trdo pravilo 4): TicketsView, EventDetailView, TableServiceView. List je izbran zato, ker dotik
 /// pride kadarkoli (katerikoli zavihek, odprt zvonec) in Home ima svoj NavigationStack, ki ga od zunaj ni mogoce voditi.
 ///
@@ -17,10 +17,9 @@ struct PushPrehod: View {
     @EnvironmentObject private var usmerjevalnik: PushUsmerjevalnik
     @EnvironmentObject private var session: SessionStore
     @State private var cilj: PushCilj?
-    @ObservedObject private var nadzor = PrijavaNadzor.deljen
 
-    /// Prijavljen, `me` nalozen in noben list s prijavo ni odprt.
-    private var pripravljen: Bool { session.isLoggedIn && session.me != nil && !nadzor.jeKajOdprto }
+    /// Prijavljen in `me` nalozen.
+    private var pripravljen: Bool { session.isLoggedIn && session.me != nil }
 
     var body: some View {
         Color.clear
@@ -35,8 +34,7 @@ struct PushPrehod: View {
                 }
             }
             .onChange(of: usmerjevalnik.cakajoci) { _, _ in prevzemi() }
-            // Brskanje brez racuna: MainTabView obstaja tudi za gosta, cilji pa so osebni (vstopnice, strezba). Cilj caka do prijave
-            // in do zaprtja lista s prijavo (dva lista hkrati SwiftUI ne odpre); kratek zamik za animacijo zapiranja.
+            // Cilj caka, dokler `me` ni nalozen (kratek zamik, da se zaslon postavi).
             .onChange(of: pripravljen) { _, da in
                 guard da, usmerjevalnik.cakajoci != nil else { return }
                 Task {

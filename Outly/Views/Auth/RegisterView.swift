@@ -79,6 +79,9 @@ struct RegisterView: View {
                 }
                 .padding(.top, 8)
 
+                // Continue with Apple / Google: isti gumbi kot na prijavi (racun nastane ob prvi prijavi).
+                DruzabniGumbi()
+
                 VStack(spacing: 4) {
                     Text("By clicking continue, you agree to our")
                         .font(.system(size: 12))

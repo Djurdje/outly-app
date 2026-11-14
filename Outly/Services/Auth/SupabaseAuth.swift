@@ -42,6 +42,8 @@ struct SupabaseAuthError: Error, Sendable {
         case "session_expired", "refresh_token_not_found", "refresh_token_already_used", "bad_jwt":
             return String(localized: "Your session has expired. Please log in again.")
         case "user_not_found":                 return String(localized: "No account with this email.")
+        case "provider_disabled", "oauth_provider_not_supported":
+            return String(localized: "This sign-in method is not available right now.")
         case "validation_failed":              return String(localized: "Please check what you entered and try again.")
         default:
             if status >= 500 { return String(localized: "The server is having trouble. Please try again later.") }
@@ -135,6 +137,28 @@ final class SupabaseAuth: Sendable {
     /// Odjava. scope "local" = ta seja, "global" = vse naprave.
     func signOut(token: String, scope: String = "local") async throws {
         _ = try await send("logout?scope=\(scope)", method: "POST", token: token, json: nil)
+    }
+
+    // MARK: - Google in Apple
+
+    /// Prijava z Applovim id_tokenom (POST /token?grant_type=id_token). `nonce` je SUROV niz; Applu je bil poslan njegov SHA-256.
+    /// Zahteva, da je v Supabase vklopljen ponudnik Apple z `si.outly.app` med »Authorized Client IDs«.
+    func signInWithIdToken(provider: String, idToken: String, nonce: String) async throws -> SupabaseSession {
+        let data = try await post("token?grant_type=id_token",
+                                  json: DruzabnaPrijavaLogika.telesoIdToken(provider: provider, idToken: idToken, nonce: nonce))
+        return try decode(SupabaseSession.self, from: data)
+    }
+
+    /// Zamenja PKCE kodo iz povratnega URL-ja (prijava z Googlom prek /authorize) za sejo (POST /token?grant_type=pkce).
+    func exchangeCode(authCode: String, codeVerifier: String) async throws -> SupabaseSession {
+        let data = try await post("token?grant_type=pkce",
+                                  json: DruzabnaPrijavaLogika.telesoPkce(authCode: authCode, codeVerifier: codeVerifier))
+        return try decode(SupabaseSession.self, from: data)
+    }
+
+    /// PUT /user z `data` (user_metadata), npr. dokaz privolitve za racun iz Googla/Appla.
+    func updateUserData(token: String, body: [String: Any]) async throws {
+        _ = try await send("user", method: "PUT", token: token, json: body)
     }
 
     // MARK: - HTTP
