@@ -42,6 +42,15 @@ final class SessionStore: ObservableObject {
 
     var isLoggedIn: Bool { !token.isEmpty }
 
+    /// Racun je nastal z Googlom ali Applom (`app_metadata.provider` v zetonu ni `email`): CompleteAccountView pokaze uporabnisko ime.
+    var jeDruzabniRacun: Bool {
+        DruzabnaPrijavaLogika.jeDruzabniRacun(zahtevki: DruzabnaPrijavaLogika.zahtevki(izZetona: token))
+    }
+
+    /// Privolitev (pogoji) je v tem zagonu ze zapisana ali se zapisuje: zeton v Keychainu nosi staro stanje do prve osvezitve,
+    /// zato brez tega zastavka vsak GET /me znova poslje PUT /user.
+    private var privolitevUrejena = false
+
     /// Velja za navadne uporabnike. Poslovni racun (klub) in admin nimata datuma
     /// rojstva in zanrov osebe, zato ju ne silimo skozi ta tok.
     var needsOnboarding: Bool {
@@ -91,6 +100,22 @@ final class SessionStore: ObservableObject {
 
     /// Stari klic (samo dostopni zeton). Ostane za zdruzljivost; nova koda naj klice setSession.
     func setToken(_ newToken: String) { setSession(token: newToken, refreshToken: nil) }
+
+    /// Racun iz Googla/Appla nima `terms_version` v user_metadata (prijava ni prinesla pogojev): ob prijavi z Googlom/Applom
+    /// ob njunem gumbu stoji stavek o pogojih, tu ga zapisemo kot dokaz privolitve (isti kljuci kot pri registraciji).
+    /// Napaka tiho mine in odjave NE povzroci; ponovi se ob naslednjem GET /me (zagon).
+    func zagotoviPrivolitev() async {
+        let t = token
+        guard !t.isEmpty, !privolitevUrejena,
+              DruzabnaPrijavaLogika.potrebujePrivolitev(zahtevki: DruzabnaPrijavaLogika.zahtevki(izZetona: t)) else { return }
+        privolitevUrejena = true
+        do {
+            try await SupabaseAuth.shared.updateUserData(
+                token: t, body: DruzabnaPrijavaLogika.telesoPrivolitve(termsVersion: LegalLinks.termsVersion))
+        } catch {
+            privolitevUrejena = false
+        }
+    }
 
     /// Cakajoca odjava: najprej DELETE /me/devices/:zeton (PushObvestila), nato lokalno brisanje seje.
     private var odjavaTece = false
@@ -155,6 +180,7 @@ final class SessionStore: ObservableObject {
         KeychainService.shared.delete(.refreshToken)
         token = ""
         refreshToken = ""
+        privolitevUrejena = false
         me = nil
         meLoadError = nil
         // K1: shranjen Me (brez zetonov) in shramba skenerja gresta ob odjavi/zavrnjeni seji. Neposlani skeni ostanejo na disku;
@@ -225,6 +251,7 @@ final class SessionStore: ObservableObject {
             if me != fetched { me = fetched }   // didSet shrani Me za hladen zagon brez povezave (K1)
             if meLoadError != nil { meLoadError = nil }
             pripraviSken()
+            Task { await zagotoviPrivolitev() }
             return true
         } catch let api as APIError {
             if case let .requestFailed(code, _) = api, code == 401 {

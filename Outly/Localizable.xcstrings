@@ -485,6 +485,17 @@
         }
       }
     },
+    "Continue with Google": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadaljuj z Googlom"
+          }
+        }
+      }
+    },
     "Copy the venue's layout": {
       "extractionState": "manual",
       "localizations": {
@@ -1222,6 +1233,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neobvezno. Brez njega kartica pokaže sredino glavnega bannerja."
+          }
+        }
+      }
+    },
+    "or": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ali"
           }
         }
       }
@@ -2144,6 +2166,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "3–20 znakov: črke, števke, podčrtaj."
+          }
+        }
+      }
+    },
+    "3–20 letters, numbers or underscore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3–20 črk, številk ali podčrtajev."
           }
         }
       }
@@ -8925,6 +8958,17 @@
         }
       }
     },
+    "This sign-in method is not available right now.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta način prijave trenutno ni na voljo."
+          }
+        }
+      }
+    },
     "This ticket may already have been sent. Close this and refresh your tickets.": {
       "extractionState": "manual",
       "localizations": {
@@ -9004,6 +9048,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Status DDV"
+          }
+        }
+      }
+    },
+    "You must be at least 18 to create an Outly account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za račun Outly moraš imeti vsaj 18 let."
           }
         }
       }
@@ -17711,17 +17766,6 @@
         }
       }
     },
-    "You must be at least 18 to create an Outly account. You can browse events without an account.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Za račun Outly moraš imeti vsaj 18 let. Dogodke lahko brskaš tudi brez računa."
-          }
-        }
-      }
-    },
     "An Outly account is for people aged 18 and over, and some events have a higher age limit.": {
       "extractionState": "manual",
       "localizations": {
@@ -17817,28 +17861,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vnesi povezavo, ki se začne s http:// ali https://."
-          }
-        }
-      }
-    },
-    "Sign in to Outly": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prijavi se v Outly"
-          }
-        }
-      }
-    },
-    "Buy tickets, reserve VIP tables, follow clubs and see your friends' plans. You can browse events without an account.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kupuj vstopnice, rezerviraj VIP mize, sledi klubom in poglej načrte prijateljev. Dogodke lahko brskaš tudi brez računa."
           }
         }
       }

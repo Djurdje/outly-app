@@ -103,10 +103,10 @@ struct LoginView: View {
                 .disabled(isLoading)
                 .outlySij(moc: 0.5)
 
-                Spacer()
+                // Continue with Apple / Google (od 14. 11. 2026); stavek o pogojih je takoj pod gumbi.
+                DruzabniGumbi()
 
-                // "Continue with Apple" odstranjen: gumb ni delal nic (TODO), Apple
-                // nedelujoc gumb zavrne po smernici 2.1. Vrni ga, ko bo Sign in with Apple narejen.
+                Spacer()
 
                 VStack(spacing: 4) {
                     Text("By clicking continue, you agree to our")

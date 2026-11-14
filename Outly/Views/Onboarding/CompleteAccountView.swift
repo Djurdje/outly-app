@@ -6,6 +6,8 @@ import SwiftUI
 ///
 /// Poslje PATCH /me { phone?, dateOfBirth, country } in nadaljuje na izbiro zanrov.
 /// Datum rojstva je obvezen; drzava, telefon in zanri so neobvezni: »Skip for later« poslje samo datum rojstva (ista preverba 18+).
+/// Racun iz Googla/Appla (`session.jeDruzabniRacun`) dobi se polje za uporabnisko ime (predizpolnjeno s tistim, ki ga je ustvaril
+/// backend iz e-naslova); spremenjeno ime gre v istem PATCH /me.
 @MainActor
 struct CompleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
@@ -13,6 +15,7 @@ struct CompleteAccountView: View {
     @State private var countryCode: String = Locale.current.region?.identifier ?? "SI"
     @State private var dialCode: String = ""
     @State private var phoneNumber: String = ""
+    @State private var username: String = ""
     @State private var birthDate: Date = CompleteAccountView.defaultBirthDate
     @State private var message: String?
     @State private var isLoading = false
@@ -64,6 +67,21 @@ struct CompleteAccountView: View {
             Text("Complete your account")
                 .font(.system(size: 20, weight: .heavy))
                 .foregroundColor(.white)
+
+            // --- uporabnisko ime (samo racun iz Googla/Appla; pri registraciji z geslom ga je uporabnik ze vpisal) ---
+            if session.jeDruzabniRacun {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Username")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.outlyMuted)
+                    OutlyTextField(placeholder: "username", text: $username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                    Text("3–20 letters, numbers or underscore.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.outlyMuted)
+                }
+            }
 
             // --- telefon (neobvezen) ---
             VStack(alignment: .leading, spacing: 6) {
@@ -180,6 +198,7 @@ struct CompleteAccountView: View {
 
     private func prefill() {
         guard let me = session.me else { return }
+        if username.isEmpty { username = DruzabnaPrijavaLogika.predizpolnjenoIme(me.username) }
         if let c = me.country, !c.isEmpty { countryCode = c }
         if dialCode.isEmpty { dialCode = DialCodes.dial(forISO: countryCode) ?? "+386" }
         if let p = me.phone, !p.isEmpty {
@@ -231,6 +250,16 @@ struct CompleteAccountView: View {
 
         var update = APIClient.MeUpdate()
         update.dateOfBirth = izbran
+
+        if session.jeDruzabniRacun {
+            let ime = username.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let napaka = DruzabnaPrijavaLogika.napakaUporabniskegaImena(ime) {
+                message = napaka.sporocilo
+                return
+            }
+            // Neizpremenjeno ime ne gre na streznik (brez nepotrebnega 409 »already taken« zaradi lastnega imena).
+            if ime != session.me?.username { update.username = ime }
+        }
 
         if !preskoci {
             guard Countries.name(for: countryCode) != nil else {

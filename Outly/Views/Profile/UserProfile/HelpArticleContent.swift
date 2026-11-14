@@ -23,7 +23,7 @@ extension HelpArticle {
             ],
             notes: [
                 String(localized: "Your date of birth is used only to check age limits on events."),
-                String(localized: "You must be at least 18 to create an Outly account. You can browse events without an account."),
+                String(localized: "You must be at least 18 to create an Outly account."),
             ],
             destination: nil,
             related: ["age", "profile", "password"]

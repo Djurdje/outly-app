@@ -65,8 +65,6 @@ struct HomeView: View {
 
     @EnvironmentObject private var session: SessionStore
     private var authToken: String { session.token }
-    /// Prijava za gosta (zvonec obvestil), glej PrijavaTok.
-    @State private var prijava: PrijavaZahteva?
 
     @EnvironmentObject private var prefs: UserPreferences
     @EnvironmentObject private var locationManager: LocationManager
@@ -312,10 +310,8 @@ struct HomeView: View {
                         }
 
                         // 4b. Your friends' plans (Martin, 20. 9.): krogi prijateljev + Invite more + View.
-                        // Samo prijavljeni; brez nacrtov ostane kot namig, da dodas prijatelje.
-                        if session.isLoggedIn {
-                            FriendsPlansSection(plans: friendPlans, clubsById: clubsById)
-                        }
+                        // Brez nacrtov ostane kot namig, da dodas prijatelje.
+                        FriendsPlansSection(plans: friendPlans, clubsById: clubsById)
 
                         // 5. Big events coming up (Figma 51:111) — velik plakat
                         if let e = bigComingUp {
@@ -416,17 +412,6 @@ struct HomeView: View {
             // Ob vrnitvi na zavihek (npr. z zaslona dogodka po "I'm in") osvezimo profil in nacrte
             // (Martin, 24. 9.: Going events in Friends plans morajo sledit takoj, ne sele po pull-to-refresh).
             if !clubs.isEmpty { Task { await loadMe(); await osveziNacrte() } }
-        }
-        .prijavaPoZahtevi($prijava)
-        // Gost se je prijavil (list prijave): pozdrav, avatar, nacrti in prijatelji brez pull-to-refresh. Odjava zgradi zavihke na novo (AuthGateView).
-        .onChange(of: session.isLoggedIn) { _, prijavljen in
-            if prijavljen {
-                Task { await loadMe(); await osveziNacrte() }
-            } else {
-                // Odjava: osebni podatki prejsnjega racuna ne ostanejo v gostovskem pogledu (AuthGateView zavihke obicajno
-                // zgradi na novo; ce je bila odjava v listu s prijavo, sele ob zaprtju lista).
-                pocistiOsebno()
-            }
         }
         // Potisno obvestilo je prispelo, medtem ko je aplikacija odprta (OutlyAppDelegate): osvezi stevec na zvoncu (en GET /me).
         .onReceive(NotificationCenter.default.publisher(for: .outlyPushPrispel)) { _ in
@@ -676,12 +661,6 @@ struct HomeView: View {
                     Button {
                         if showNotifications {
                             zapriObvestila()
-                        } else if !session.isLoggedIn {
-                            // Brskanje brez racuna: obvestila so osebna, najprej prijava (po njej se odpre meni).
-                            prijava = PrijavaZahteva(nadaljuj: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { showNotifications = true }
-                                Task { await loadNotifications() }
-                            })
                         } else {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { showNotifications = true }
                             Task { await loadNotifications() }
@@ -792,20 +771,6 @@ struct HomeView: View {
         guard !authToken.isEmpty else { return }
         if let f = try? await APIClient.shared.fetchFriendsPlans(token: authToken) { friendPlans = f }
         if let m = try? await APIClient.shared.fetchMyPlans(token: authToken) { myPlans = m }
-    }
-
-    /// Osebna stanja domacega zaslona (pozdrav, nacrti, prijatelji, obvestila) na prazno.
-    private func pocistiOsebno() {
-        me = nil
-        friendPlans = []
-        myPlans = []
-        invites = []
-        friendRequests = []
-        receivedTickets = []
-        clubEvents = []
-        guestListInvites = []
-        tableService = []
-        showNotifications = false
     }
 
     private func loadMe() async {
