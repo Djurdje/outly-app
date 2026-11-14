@@ -295,10 +295,10 @@ final class Racun18InVrataTests: XCTestCase {
         XCTAssertEqual(napaka.nakupUserMessage, String(localized: "This promo code is not valid for this event."))
     }
 
-    // MARK: - Pogoji 1.1.4
+    // MARK: - Pogoji 1.1.5
 
     func testRazlicicaPogojev() {
-        XCTAssertEqual(LegalLinks.termsVersion, "1.1.4")
+        XCTAssertEqual(LegalLinks.termsVersion, "1.1.5")
     }
 
     // MARK: - Spletna stran kluba (#293, I48)
