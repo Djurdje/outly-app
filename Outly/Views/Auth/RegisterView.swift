@@ -27,7 +27,7 @@ struct RegisterView: View {
                 Image("logo")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxHeight: min(350, geo.size.height * 0.28))
+                    .frame(maxHeight: min(350, stabilnaVisinaZaslona() * 0.28))   // stabilno ob tipkovnici (geo se ob njej krci)
                     .clipped()
                     .padding(.top, 10)
 

@@ -178,6 +178,31 @@ final class DruzabnaPrijavaTests: XCTestCase {
         XCTAssertFalse(DruzabnaPrijavaLogika.potrebujePrivolitev(zahtevki: nil))
     }
 
+    // MARK: - Isti uporabnik pred izbrisom (I1)
+
+    func testIstiUporabnikPoSub() throws {
+        let a = try jwt(["sub": "AAA-1", "iat": 1])
+        let b = try jwt(["sub": "aaa-1", "iat": 2])
+        let c = try jwt(["sub": "BBB-2"])
+        XCTAssertTrue(DruzabnaPrijavaLogika.istiUporabnik(zeton: a, zeton: b))
+        XCTAssertFalse(DruzabnaPrijavaLogika.istiUporabnik(zeton: a, zeton: c))
+    }
+
+    func testIstiUporabnikManjkajocAliPokvarjenZetonJeNeujemanje() throws {
+        let a = try jwt(["sub": "AAA-1"])
+        XCTAssertFalse(DruzabnaPrijavaLogika.istiUporabnik(zeton: a, zeton: ""))
+        XCTAssertFalse(DruzabnaPrijavaLogika.istiUporabnik(zeton: "x.y", zeton: a))
+        XCTAssertFalse(DruzabnaPrijavaLogika.istiUporabnik(zeton: "", zeton: ""))
+        XCTAssertFalse(DruzabnaPrijavaLogika.istiUporabnik(zeton: try jwt(["sub": ""]), zeton: try jwt(["sub": ""])))
+        XCTAssertFalse(DruzabnaPrijavaLogika.istiUporabnik(zeton: try jwt(["iat": 1]), zeton: try jwt(["iat": 1])))
+    }
+
+    /// Povezavi v stavku o pogojih sta v nizu dobesedno (I2); morata biti enaki LegalLinks.
+    func testPovezaviVStavkuOPogojihEnakiLegalLinks() {
+        XCTAssertEqual(LegalLinks.terms.absoluteString, "https://outly.si/terms")
+        XCTAssertEqual(LegalLinks.privacy.absoluteString, "https://outly.si/privacy-app")
+    }
+
     // MARK: - Uporabnisko ime
 
     func testUporabniskoIme() {

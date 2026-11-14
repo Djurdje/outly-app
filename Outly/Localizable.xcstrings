@@ -283,13 +283,13 @@
         }
       }
     },
-    "By continuing, you confirm you are 18 or older, agree to the [Terms of Use](%@) and acknowledge the [Privacy Policy](%@).": {
+    "By continuing, you confirm you are 18 or older, agree to the [Terms of Use](https://outly.si/terms) and acknowledge the [Privacy Policy](https://outly.si/privacy-app).": {
       "extractionState": "manual",
       "localizations": {
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Z nadaljevanjem potrjuješ, da si star 18 let ali več, se strinjaš s [Pogoji uporabe](%@) in potrjuješ, da si prebral [Politiko zasebnosti](%@)."
+            "value": "Z nadaljevanjem potrjuješ, da si star 18 let ali več, se strinjaš s [Pogoji uporabe](https://outly.si/terms) in potrjuješ, da si prebral [Politiko zasebnosti](https://outly.si/privacy-app)."
           }
         }
       }
@@ -18510,6 +18510,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mize za ta dogodek se plačajo z gotovino na vratih. Osveži in poskusi znova."
+          }
+        }
+      }
+    },
+    "This is a different account than the one you are signed in with.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je drug račun, kot je tisti, s katerim si prijavljen."
           }
         }
       }

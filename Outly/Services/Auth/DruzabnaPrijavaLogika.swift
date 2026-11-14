@@ -119,6 +119,17 @@ enum DruzabnaPrijavaLogika {
         odgovor.contains("reauth_required")
     }
 
+    /// `sub` (uporabnik) obeh zetonov je enak in neprazen. Pred izbrisom racuna po ponovni prijavi: druga seja (izbira drugega Google
+    /// racuna ali Apple ID) bi sicer izbrisala TUJ racun. Manjkajoc ali pokvarjen zeton = ni enak.
+    nonisolated static func istiUporabnik(zeton a: String, zeton b: String) -> Bool {
+        func sub(_ t: String) -> String? {
+            guard let s = (zahtevki(izZetona: t)?["sub"] as? String)?.lowercased(), !s.isEmpty else { return nil }
+            return s
+        }
+        guard let x = sub(a), let y = sub(b) else { return false }
+        return x == y
+    }
+
     /// Ponudnik racuna za ponovno prijavo pred izbrisom: `apple` | `google`; nil za racun z geslom.
     nonisolated static func ponudnik(zahtevki: [String: Any]?) -> String? {
         guard jeDruzabniRacun(zahtevki: zahtevki),

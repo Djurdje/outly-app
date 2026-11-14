@@ -117,6 +117,12 @@ func applovIdToken(_ avtorizacija: ASAuthorization) -> String? {
     return String(data: podatki, encoding: .utf8)
 }
 
+/// Visina zaslona, ki se NE spremeni ob tipkovnici (za velikost logotipa na prijavi/registraciji: brez krcenja ob vnosu).
+@MainActor
+func stabilnaVisinaZaslona() -> CGFloat {
+    UIApplication.shared.kljucnoOkno?.screen.bounds.height ?? 800
+}
+
 /// Prijava z Applom v kodi (brez SwiftUI gumba): za ponovno potrditev pred izbrisom racuna (»Confirm with Apple«).
 /// Prijavni zaslon uporablja `SignInWithAppleButton` (DruzabniGumbi). Samo obseg `email` (ime Appla ne shranjujemo).
 @MainActor
@@ -187,8 +193,9 @@ struct DruzabniGumbi: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // Markdown povezave v prevedenem nizu (stavka ne sestavljamo iz delov: besedni red je v sl drugacen).
-            Text("By continuing, you confirm you are 18 or older, agree to the [Terms of Use](\(LegalLinks.terms.absoluteString)) and acknowledge the [Privacy Policy](\(LegalLinks.privacy.absoluteString)).")
+            // Markdown povezave: URL-ja DOBESEDNO v nizu (kot PogojiNakupa.swift; interpolacija v LocalizedStringKey ni zanesljiva).
+            // Morata ostati enaka LegalLinks.terms / .privacy (test DruzabnaPrijavaTests). Stavka ne sestavljamo iz delov.
+            Text("By continuing, you confirm you are 18 or older, agree to the [Terms of Use](https://outly.si/terms) and acknowledge the [Privacy Policy](https://outly.si/privacy-app).")
                 .font(.system(size: 12))
                 .foregroundColor(Color.white.opacity(0.6))
                 .tint(.white.opacity(0.9))

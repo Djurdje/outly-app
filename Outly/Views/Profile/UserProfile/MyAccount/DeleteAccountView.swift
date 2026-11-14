@@ -112,8 +112,18 @@ struct DeleteAccountView: View {
                     nova = try await googleVodja.prijava()
                 }
                 guard let nova else { return }
+                // Druga seja (izbira drugega Google racuna / Apple ID) NE sme izbrisati tujega racuna: isti `sub`, sicer nic.
+                guard DruzabnaPrijavaLogika.istiUporabnik(zeton: session.token, zeton: nova.accessToken) else {
+                    let tuj = nova.accessToken
+                    Task { try? await SupabaseAuth.shared.signOut(token: tuj) }   // nova seja ne ostane osirotela
+                    message = String(localized: "This is a different account than the one you are signed in with.")
+                    return
+                }
+                let stari = session.token
                 session.setSession(token: nova.accessToken, refreshToken: nova.refreshToken)
                 guard session.isLoggedIn else { return }
+                // Stara seja (osvezevalni zeton) ne ostane osirotela; napaka ne ustavi izbrisa.
+                Task { try? await SupabaseAuth.shared.signOut(token: stari) }
                 try await APIClient.shared.deleteAccountReauth(token: session.token)
             } else {
                 try await APIClient.shared.deleteAccount(token: session.token, password: password)
@@ -127,6 +137,11 @@ struct DeleteAccountView: View {
                 if DruzabnaPrijavaLogika.jeReauthPotreben(raw) {
                     // Seja je veljavna (NI odjava): prijava pri ponudniku je prestara ali je bila osvezena; poskusi znova.
                     message = String(localized: "Sign in again with Google or Apple, then retry deleting the account.")
+                    return
+                }
+                // Racun brez gesla: 401 brez reauth_required ni »napacno geslo«.
+                if ponudnik != nil {
+                    message = String(localized: "Something went wrong. Please try again.")
                     return
                 }
                 // 401 tu pomeni napacno geslo (streznik vrne "Invalid credentials"), NE potekle seje.
