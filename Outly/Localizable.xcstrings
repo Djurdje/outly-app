@@ -978,7 +978,7 @@
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Če si se prijavil z Applom ali Googlom, tapni Confirm with Apple ali Confirm with Google in se znova prijavi."
+            "value": "Če si se prijavil z Applom ali Googlom, tapni »Potrdi z Applom« ali »Potrdi z Googlom« in se znova prijavi."
           }
         }
       }
@@ -1022,7 +1022,7 @@
         "sl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Namesto gesla lahko tapneš Continue with Apple ali Continue with Google. Uporabniško ime izbereš ob dokončanju profila. Outly ne shrani tvojega imena ali slike iz Googla."
+            "value": "Namesto gesla lahko tapneš gumb za prijavo z Applom ali »Nadaljuj z Googlom«. Uporabniško ime izbereš ob dokončanju profila. Outly ne shrani tvojega imena ali slike iz Googla."
           }
         }
       }

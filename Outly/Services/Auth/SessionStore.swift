@@ -112,6 +112,8 @@ final class SessionStore: ObservableObject {
         do {
             try await SupabaseAuth.shared.updateUserData(
                 token: t, body: DruzabnaPrijavaLogika.telesoPrivolitve(termsVersion: LegalLinks.termsVersion))
+            // Odjava med PUT /user: osvezitev s starim osvezevalnim zetonom bi sprozila »Your session has expired«.
+            guard token == t else { return }
             // Takoj nov zeton: nosi `terms_version`, zato hladen zagon ne pozna znova in ne prepise `terms_accepted_at`.
             _ = await refreshAccessToken()
         } catch {

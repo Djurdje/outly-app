@@ -132,6 +132,8 @@ final class AppleVodja: NSObject, ASAuthorizationControllerDelegate, ASAuthoriza
 
     /// Vrne sejo ali nil ob preklicu.
     func prijava() async throws -> SupabaseSession? {
+        // Ze cakajoca zahteva: ne povozi `cakajoce` (prvo opravilo bi viselo).
+        guard cakajoce == nil else { return nil }
         let nonce = DruzabnaPrijavaLogika.nakljucenNiz()
         let zahteva = ASAuthorizationAppleIDProvider().createRequest()
         zahteva.requestedScopes = [.email]

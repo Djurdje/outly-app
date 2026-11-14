@@ -199,7 +199,7 @@ struct CompleteAccountView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.outlyMuted)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 40)
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
