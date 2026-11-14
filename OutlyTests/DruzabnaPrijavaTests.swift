@@ -31,37 +31,88 @@ final class DruzabnaPrijavaTests: XCTestCase {
                        "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
     }
 
-    func testAuthorizeURL() throws {
-        let osnova = try XCTUnwrap(URL(string: "https://x.supabase.co/auth/v1"))
-        let url = try XCTUnwrap(DruzabnaPrijavaLogika.authorizeURL(baseURL: osnova, provider: "google", challenge: "CH"))
-        XCTAssertEqual(url.path, "/auth/v1/authorize")
+    /// Brez `profile` (Martin 14. 11.: ime in slika iz Googla se ne shranjujeta), S256, nonce (hash), state, izbira racuna.
+    func testGoogleAvtorizacijaURL() throws {
+        let cid = "123-abc.apps.googleusercontent.com"
+        let url = try XCTUnwrap(DruzabnaPrijavaLogika.googleAvtorizacijaURL(clientID: cid, challenge: "CH", nonceHash: "NH", state: "ST"))
+        XCTAssertEqual(url.host, "accounts.google.com")
+        XCTAssertEqual(url.path, "/o/oauth2/v2/auth")
         let q = Dictionary(uniqueKeysWithValues: (URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? [])
             .map { ($0.name, $0.value ?? "") })
-        XCTAssertEqual(q["provider"], "google")
-        XCTAssertEqual(q["redirect_to"], "si.outly.app://auth-callback")
+        XCTAssertEqual(q["client_id"], cid)
+        XCTAssertEqual(q["redirect_uri"], "com.googleusercontent.apps.123-abc:/oauthredirect")
+        XCTAssertEqual(q["response_type"], "code")
+        XCTAssertEqual(q["scope"], "openid email")
+        XCTAssertFalse((q["scope"] ?? "").contains("profile"))
         XCTAssertEqual(q["code_challenge"], "CH")
-        XCTAssertEqual(q["code_challenge_method"], "s256")
+        XCTAssertEqual(q["code_challenge_method"], "S256")
+        XCTAssertEqual(q["nonce"], "NH")
+        XCTAssertEqual(q["state"], "ST")
+        XCTAssertEqual(q["prompt"], "select_account")
+    }
+
+    func testGoogleShemaJeObrnjenClientID() {
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleShema(clientID: "123-abc.apps.googleusercontent.com"), "com.googleusercontent.apps.123-abc")
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleRedirectURI(clientID: "123-abc.apps.googleusercontent.com"),
+                       "com.googleusercontent.apps.123-abc:/oauthredirect")
+    }
+
+    func testGoogleTeloIzmenjave() {
+        let t = DruzabnaPrijavaLogika.googleTeloIzmenjave(code: "4/0A+b", codeVerifier: "V-._~", clientID: "123-abc.apps.googleusercontent.com")
+        let deli = Set(t.split(separator: "&").map(String.init))
+        XCTAssertEqual(deli, ["grant_type=authorization_code", "code=4%2F0A%2Bb", "code_verifier=V-._~",
+                              "client_id=123-abc.apps.googleusercontent.com",
+                              "redirect_uri=com.googleusercontent.apps.123-abc%3A%2Foauthredirect"])
+        XCTAssertFalse(t.contains("client_secret"))
+    }
+
+    func testGoogleIdTokenIzOdgovora() {
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleIdToken(izOdgovora: Data(#"{"access_token":"a","id_token":"IDT"}"#.utf8)), "IDT")
+        XCTAssertNil(DruzabnaPrijavaLogika.googleIdToken(izOdgovora: Data(#"{"access_token":"a"}"#.utf8)))
+        XCTAssertNil(DruzabnaPrijavaLogika.googleIdToken(izOdgovora: Data(#"{"id_token":""}"#.utf8)))
+        XCTAssertNil(DruzabnaPrijavaLogika.googleIdToken(izOdgovora: Data("ni json".utf8)))
+    }
+
+    func testGumbGoogleSkritDokJeClientIDPrazen() {
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleKonfiguriran, !DruzabnaPrijavaLogika.googleIOSClientID.isEmpty)
+    }
+
+    func testReauthIzbrisa() {
+        XCTAssertTrue(DruzabnaPrijavaLogika.jeReauthPotreben(#"{"error":"reauth_required","message":"Sign in again with Google or Apple, then retry deleting the account."}"#))
+        XCTAssertFalse(DruzabnaPrijavaLogika.jeReauthPotreben("Invalid credentials."))
+        XCTAssertEqual(DruzabnaPrijavaLogika.teloIzbrisaPonudnik["reauth"] as? String, "provider")
+        XCTAssertEqual(DruzabnaPrijavaLogika.teloIzbrisaPonudnik.count, 1)
+    }
+
+    func testPonudnikRacuna() throws {
+        func z(_ p: String) throws -> [String: Any]? { DruzabnaPrijavaLogika.zahtevki(izZetona: try jwt(["app_metadata": ["provider": p]])) }
+        XCTAssertEqual(DruzabnaPrijavaLogika.ponudnik(zahtevki: try z("apple")), "apple")
+        XCTAssertEqual(DruzabnaPrijavaLogika.ponudnik(zahtevki: try z("google")), "google")
+        XCTAssertNil(DruzabnaPrijavaLogika.ponudnik(zahtevki: try z("email")))
+        XCTAssertNil(DruzabnaPrijavaLogika.ponudnik(zahtevki: nil))
     }
 
     func testRazclenPovratekKoda() throws {
-        let url = try XCTUnwrap(URL(string: "si.outly.app://auth-callback?code=abc-123"))
+        let url = try XCTUnwrap(URL(string: "com.googleusercontent.apps.1-a:/oauthredirect?code=abc-123&state=ST"))
         XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(url), .koda("abc-123"))
+        XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(url, state: "ST"), .koda("abc-123"))
+        XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(url, state: "DRUG"), .napacenState)
     }
 
     func testRazclenPovratekNapakaVQueryInFragmentu() throws {
-        let a = try XCTUnwrap(URL(string: "si.outly.app://auth-callback?error=access_denied&error_description=User+cancelled"))
+        let a = try XCTUnwrap(URL(string: "com.googleusercontent.apps.1-a:/oauthredirect?error=access_denied&error_description=User+cancelled"))
         XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(a), .napaka("access_denied", "User cancelled"))
-        let b = try XCTUnwrap(URL(string: "si.outly.app://auth-callback#error=server_error&error_description=Boom"))
+        let b = try XCTUnwrap(URL(string: "com.googleusercontent.apps.1-a:/oauthredirect#error=server_error&error_description=Boom"))
         XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(b), .napaka("server_error", "Boom"))
     }
 
     func testRazclenPovratekNapakaImaPrednostPredKodo() throws {
-        let url = try XCTUnwrap(URL(string: "si.outly.app://auth-callback?code=x&error=access_denied"))
+        let url = try XCTUnwrap(URL(string: "com.googleusercontent.apps.1-a:/oauthredirect?code=x&error=access_denied"))
         XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(url), .napaka("access_denied", nil))
     }
 
     func testRazclenPovratekBrezKode() throws {
-        let url = try XCTUnwrap(URL(string: "si.outly.app://auth-callback"))
+        let url = try XCTUnwrap(URL(string: "com.googleusercontent.apps.1-a:/oauthredirect"))
         XCTAssertEqual(DruzabnaPrijavaLogika.razclenPovratek(url), .neveljaven)
     }
 
@@ -73,13 +124,6 @@ final class DruzabnaPrijavaTests: XCTestCase {
         XCTAssertEqual(t["id_token"] as? String, "JWT")
         XCTAssertEqual(t["nonce"] as? String, "SUROV")
         XCTAssertEqual(t.count, 3)
-    }
-
-    func testTeloPkce() {
-        let t = DruzabnaPrijavaLogika.telesoPkce(authCode: "K", codeVerifier: "V")
-        XCTAssertEqual(t["auth_code"] as? String, "K")
-        XCTAssertEqual(t["code_verifier"] as? String, "V")
-        XCTAssertEqual(t.count, 2)
     }
 
     /// Isti kljuci in oblika datuma kot pri registraciji (`telesoRegistracije`): outly-backend#215.

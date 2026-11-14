@@ -31,10 +31,13 @@ struct PasswordSecurityView: View {
                 }
 
                 // Isti gradnik kot Personal info (Luka, 21. 9.: samo dva sloga vrstic v aplikaciji).
-                OutlyInfoCardButton(icon: "lock", title: "Login",
-                                    value: String(localized: "Change password"),
-                                    description: "You can change your password at any time.",
-                                    actionTitle: "Edit") { showChange = true }
+                // Racun iz Googla/Appla gesla nima (do tu pride samo prek clanka pomoci).
+                if !session.jeDruzabniRacun {
+                    OutlyInfoCardButton(icon: "lock", title: "Login",
+                                        value: String(localized: "Change password"),
+                                        description: "You can change your password at any time.",
+                                        actionTitle: "Edit") { showChange = true }
+                }
 
                 OutlyInfoCardButton(icon: "iphone.and.arrow.forward", title: "Sessions",
                                     value: String(localized: "Sign out of all devices"),

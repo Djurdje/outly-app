@@ -101,8 +101,8 @@ final class SessionStore: ObservableObject {
     /// Stari klic (samo dostopni zeton). Ostane za zdruzljivost; nova koda naj klice setSession.
     func setToken(_ newToken: String) { setSession(token: newToken, refreshToken: nil) }
 
-    /// Racun iz Googla/Appla nima `terms_version` v user_metadata (prijava ni prinesla pogojev): ob prijavi z Googlom/Applom
-    /// ob njunem gumbu stoji stavek o pogojih, tu ga zapisemo kot dokaz privolitve (isti kljuci kot pri registraciji).
+    /// Racun iz Googla/Appla nima `terms_version` v user_metadata (prijava ni prinesla pogojev): nad njunima gumboma stoji stavek
+    /// o pogojih, tu ga zapisemo kot dokaz privolitve (isti kljuci kot pri registraciji), nato osvezimo sejo.
     /// Napaka tiho mine in odjave NE povzroci; ponovi se ob naslednjem GET /me (zagon).
     func zagotoviPrivolitev() async {
         let t = token
@@ -112,6 +112,8 @@ final class SessionStore: ObservableObject {
         do {
             try await SupabaseAuth.shared.updateUserData(
                 token: t, body: DruzabnaPrijavaLogika.telesoPrivolitve(termsVersion: LegalLinks.termsVersion))
+            // Takoj nov zeton: nosi `terms_version`, zato hladen zagon ne pozna znova in ne prepise `terms_accepted_at`.
+            _ = await refreshAccessToken()
         } catch {
             privolitevUrejena = false
         }

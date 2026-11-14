@@ -24,13 +24,16 @@ struct LoginView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
+            // ScrollView (iPhone SE, velika pisava): vsebina se pomika, na visokih zaslonih zapolni zaslon (minHeight).
+            GeometryReader { geo in
+            ScrollView {
             VStack(spacing: 18) {
                 Spacer().frame(height: 30)
 
                 Image("logo")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxHeight: 350)
+                    .frame(maxHeight: min(350, geo.size.height * 0.28))
                     .clipped()
                     .padding(.top, 10)
 
@@ -103,29 +106,10 @@ struct LoginView: View {
                 .disabled(isLoading)
                 .outlySij(moc: 0.5)
 
-                // Continue with Apple / Google (od 14. 11. 2026); stavek o pogojih je takoj pod gumbi.
+                // Continue with Apple / Google (od 14. 11. 2026); stavek o pogojih je nad gumbi (DruzabniGumbi).
                 DruzabniGumbi()
 
                 Spacer()
-
-                VStack(spacing: 4) {
-                    Text("By clicking continue, you agree to our")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color.white.opacity(0.35))
-
-                    HStack(spacing: 6) {
-                        Link("Terms of Service", destination: LegalLinks.terms)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.9))
-                        Text("and")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.white.opacity(0.35))
-                        Link("Privacy Policy", destination: LegalLinks.privacy)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.9))
-                    }
-                }
-                .padding(.top, 10)
 
                 // Preklop jezika se pred prijavo.
                 JezikGumb()
@@ -134,6 +118,11 @@ struct LoginView: View {
                 Spacer()
             }
             .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+            .frame(minHeight: geo.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            }
         }
     }
 

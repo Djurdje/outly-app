@@ -13,7 +13,7 @@ extension HelpArticle {
             group: String(localized: "Getting started"),
             topic: String(localized: "Getting started  >  Account"),
             title: String(localized: "Creating an account"),
-            summary: String(localized: "Create your Outly account with your email and confirm it with a code."),
+            summary: String(localized: "Create your Outly account with your email, Apple or Google."),
             path: [],
             steps: [
                 String(localized: "Tap Sign up."),
@@ -22,6 +22,7 @@ extension HelpArticle {
                 String(localized: "Complete your profile: date of birth, country and the music you like."),
             ],
             notes: [
+                String(localized: "Instead of a password you can tap Continue with Apple or Continue with Google. You then choose your username when you complete your profile. Outly does not save your name or picture from Google."),
                 String(localized: "Your date of birth is used only to check age limits on events."),
                 String(localized: "You must be at least 18 to create an Outly account."),
             ],
@@ -668,6 +669,7 @@ extension HelpArticle {
                 String(localized: "Tap Delete Account and confirm."),
             ],
             notes: [
+                String(localized: "If you signed in with Apple or Google, tap Confirm with Apple or Confirm with Google and sign in again instead."),
                 String(localized: "Your personal data is removed; records of past purchases are kept anonymised, as required for accounting."),
                 String(localized: "Valid tickets on a deleted account cannot be recovered, so use them or send them to a friend first."),
             ],

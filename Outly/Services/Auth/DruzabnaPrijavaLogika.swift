@@ -5,21 +5,37 @@ import CryptoKit
 // Opomba: projekt ima SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor, zato je vsaka funkcija izrecno `nonisolated`
 // (isto kot SupabaseAuth.telesoRegistracije).
 
-/// Izid povratnega URL-ja po prijavi z Googlom (`si.outly.app://auth-callback?code=...`).
+/// Izid povratnega URL-ja po prijavi z Googlom (`com.googleusercontent.apps.<ID>:/oauthredirect?code=...&state=...`).
 enum PovratekPrijave: Equatable {
-    /// PKCE koda, ki jo je treba zamenjati pri POST /token?grant_type=pkce.
+    /// Avtorizacijska koda, ki jo je treba zamenjati pri Googlu (oauth2.googleapis.com/token).
     case koda(String)
-    /// GoTrue je vrnil napako (`error`, `error_description`), npr. `access_denied`, ko uporabnik na Googlu pritisne Cancel.
+    /// Google je vrnil napako (`error`, `error_description`), npr. `access_denied`, ko uporabnik pritisne Cancel.
     case napaka(String, String?)
+    /// `state` v povratku ni enak poslanemu (zahteva ni nasa): koda se NE uporabi.
+    case napacenState
     /// Brez kode in brez napake.
     case neveljaven
 }
 
 enum DruzabnaPrijavaLogika {
 
-    /// Shema vrnitve (Supabase Redirect URL mora biti dodan: `si.outly.app://auth-callback`).
-    nonisolated static let shemaVrnitve = "si.outly.app"
-    nonisolated static let vrnitveniURL = "si.outly.app://auth-callback"
+    /// iOS OAuth client ID za Google (Google Cloud Console, tip iOS, bundle `si.outly.app`), oblika `<stevilka>-<niz>.apps.googleusercontent.com`.
+    /// JAVEN podatek (sme v kodo). Dokler je prazen, gumb »Continue with Google« NI prikazan (Apple ostane). Vpise menedzer, ko ga Martin ustvari.
+    nonisolated static let googleIOSClientID = ""
+    nonisolated static var googleKonfiguriran: Bool { !googleIOSClientID.isEmpty }
+    private nonisolated static let googlePripona = ".apps.googleusercontent.com"
+    nonisolated static let googleAvtorizacijaNaslov = "https://accounts.google.com/o/oauth2/v2/auth"
+    nonisolated static let googleZetonNaslov = "https://oauth2.googleapis.com/token"
+
+    /// Shema vrnitve = obrnjen client ID (`com.googleusercontent.apps.<ID>`); `callbackURLScheme` ASWebAuthenticationSession.
+    nonisolated static func googleShema(clientID: String = googleIOSClientID) -> String {
+        let id = clientID.hasSuffix(googlePripona) ? String(clientID.dropLast(googlePripona.count)) : clientID
+        return "com.googleusercontent.apps." + id
+    }
+
+    nonisolated static func googleRedirectURI(clientID: String = googleIOSClientID) -> String {
+        googleShema(clientID: clientID) + ":/oauthredirect"
+    }
 
     private nonisolated static let znaki = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 
@@ -49,27 +65,75 @@ enum DruzabnaPrijavaLogika {
             .replacingOccurrences(of: "=", with: "")
     }
 
-    // MARK: - Google (PKCE)
+    // MARK: - Google (neposredno, brez Supabase /authorize)
 
-    /// `{baseURL}/authorize?provider=google&redirect_to=...&code_challenge=...&code_challenge_method=s256`
-    nonisolated static func authorizeURL(baseURL: URL, provider: String, challenge: String,
-                                         redirectTo: String = vrnitveniURL) -> URL? {
-        guard var c = URLComponents(url: baseURL.appendingPathComponent("authorize"), resolvingAgainstBaseURL: false) else { return nil }
+    // Supabasov /authorize za Google vedno doda obseg `profile` (supabase/auth google.go:49-51): ime in slika bi se shranila (Martin 14. 11.:
+    // ne zelimo). Zato od Googla zahtevamo samo `openid email`, id_token pa damo Supabasu (POST /token?grant_type=id_token).
+    // Supabase primerja sha256 hex surovega noncea z `nonce` v zetonu (token_oidc.go:294-306): Googlu gre `sha256Hex(surov)`, Supabasu surov.
+
+    /// `https://accounts.google.com/o/oauth2/v2/auth?...` (PKCE S256, `scope=openid email`, brez `profile`).
+    nonisolated static func googleAvtorizacijaURL(clientID: String = googleIOSClientID, redirectURI: String? = nil,
+                                                  challenge: String, nonceHash: String, state: String) -> URL? {
+        guard var c = URLComponents(string: googleAvtorizacijaNaslov) else { return nil }
         c.queryItems = [
-            URLQueryItem(name: "provider", value: provider),
-            URLQueryItem(name: "redirect_to", value: redirectTo),
+            URLQueryItem(name: "client_id", value: clientID),
+            URLQueryItem(name: "redirect_uri", value: redirectURI ?? googleRedirectURI(clientID: clientID)),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "scope", value: "openid email"),
             URLQueryItem(name: "code_challenge", value: challenge),
-            URLQueryItem(name: "code_challenge_method", value: "s256"),
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
+            URLQueryItem(name: "nonce", value: nonceHash),
+            URLQueryItem(name: "state", value: state),
+            URLQueryItem(name: "prompt", value: "select_account"),
         ]
         return c.url
     }
 
-    /// Razclenitev povratnega URL-ja. GoTrue pri PKCE doda `code` v query; napake lahko pridejo v query ali v fragment.
+    /// Telo POST oauth2.googleapis.com/token (`application/x-www-form-urlencoded`; iOS client nima secreta).
+    nonisolated static func googleTeloIzmenjave(code: String, codeVerifier: String, clientID: String = googleIOSClientID,
+                                                redirectURI: String? = nil) -> String {
+        formKodirano([
+            ("grant_type", "authorization_code"), ("code", code), ("code_verifier", codeVerifier),
+            ("client_id", clientID), ("redirect_uri", redirectURI ?? googleRedirectURI(clientID: clientID)),
+        ])
+    }
+
+    nonisolated static func formKodirano(_ pari: [(String, String)]) -> String {
+        let dovoljeno = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        func k(_ s: String) -> String { s.addingPercentEncoding(withAllowedCharacters: dovoljeno) ?? "" }
+        return pari.map { k($0.0) + "=" + k($0.1) }.joined(separator: "&")
+    }
+
+    /// `id_token` iz odgovora Googlovega /token (nil, ce ga ni ali je prazen).
+    nonisolated static func googleIdToken(izOdgovora data: Data) -> String? {
+        guard let o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let t = o["id_token"] as? String, !t.isEmpty else { return nil }
+        return t
+    }
+
+    /// Telo DELETE /me brez gesla (backend I73).
+    nonisolated static var teloIzbrisaPonudnik: [String: Any] { ["reauth": "provider"] }
+
+    /// 401 `reauth_required` pri DELETE /me (backend I73): seja je veljavna, treba je znova potrditi s ponudnikom. NE odjava.
+    nonisolated static func jeReauthPotreben(_ odgovor: String) -> Bool {
+        odgovor.contains("reauth_required")
+    }
+
+    /// Ponudnik racuna za ponovno prijavo pred izbrisom: `apple` | `google`; nil za racun z geslom.
+    nonisolated static func ponudnik(zahtevki: [String: Any]?) -> String? {
+        guard jeDruzabniRacun(zahtevki: zahtevki),
+              let p = (zahtevki?["app_metadata"] as? [String: Any])?["provider"] as? String else { return nil }
+        return p
+    }
+
+    /// Razclenitev povratnega URL-ja. Google vrne `code` v query; napake lahko pridejo v query ali v fragment.
     /// Vrednosti so v obliki `application/x-www-form-urlencoded` (presledek = `+`), ki je URLQueryItem ne pretvori sam.
-    nonisolated static func razclenPovratek(_ url: URL) -> PovratekPrijave {
+    /// `state`: ce je podan, mora biti enak `state` v povratku (sicer `.napacenState`, tudi ob napaki, ki je ne smemo zaupati).
+    nonisolated static func razclenPovratek(_ url: URL, state: String? = nil) -> PovratekPrijave {
         let c = URLComponents(url: url, resolvingAgainstBaseURL: false)
         var vrednosti = parametri(c?.percentEncodedQuery)
         for (k, v) in parametri(c?.percentEncodedFragment) where vrednosti[k] == nil { vrednosti[k] = v }
+        if let state, vrednosti["state"] != state { return .napacenState }
         if let e = vrednosti["error"] ?? vrednosti["error_code"], !e.isEmpty {
             return .napaka(e, vrednosti["error_description"])
         }
@@ -89,11 +153,6 @@ enum DruzabnaPrijavaLogika {
 
     private nonisolated static func dekodiraj(_ s: String) -> String? {
         s.replacingOccurrences(of: "+", with: " ").removingPercentEncoding
-    }
-
-    /// Telo POST /token?grant_type=pkce.
-    nonisolated static func telesoPkce(authCode: String, codeVerifier: String) -> [String: Any] {
-        ["auth_code": authCode, "code_verifier": codeVerifier]
     }
 
     // MARK: - Apple (id_token)

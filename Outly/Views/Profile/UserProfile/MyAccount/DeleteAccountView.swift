@@ -13,6 +13,13 @@ struct DeleteAccountView: View {
     @State private var message: String?
     @State private var isLoading = false
     @State private var showConfirm = false
+    @State private var googleVodja = GoogleSejaVodja()
+    @State private var appleVodja = AppleVodja()
+
+    /// `apple` | `google` za racun brez gesla; nil = racun z e-posto in geslom (nespremenjeno).
+    private var ponudnik: String? {
+        DruzabnaPrijavaLogika.ponudnik(zahtevki: DruzabnaPrijavaLogika.zahtevki(izZetona: session.token))
+    }
 
     var body: some View {
         ZStack {
@@ -26,13 +33,21 @@ struct DeleteAccountView: View {
                     .foregroundColor(.white.opacity(0.75))
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("Enter your password to confirm.")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.top, 6)
+                if let ponudnik {
+                    // Racun iz Googla/Appla gesla nima: pred izbrisom se znova prijavi pri ponudniku (backend zahteva svezo prijavo).
+                    Text(ponudnik == "apple" ? "Confirm with your Apple account to continue." : "Confirm with your Google account to continue.")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.top, 6)
+                } else {
+                    Text("Enter your password to confirm.")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.top, 6)
 
-                OutlySecureField(placeholder: "password", text: $password)
-                    .textContentType(.password)
+                    OutlySecureField(placeholder: "password", text: $password)
+                        .textContentType(.password)
+                }
 
                 if let message {
                     Text(message)
@@ -46,7 +61,7 @@ struct DeleteAccountView: View {
                 } label: {
                     HStack(spacing: 10) {
                         if isLoading { ProgressView().tint(.white) }
-                        Text(LocalizedStringKey(isLoading ? "Deleting..." : "Delete Account"))
+                        Text(LocalizedStringKey(isLoading ? "Deleting..." : (ponudnik == "apple" ? "Confirm with Apple" : ponudnik != nil ? "Confirm with Google" : "Delete Account")))
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .frame(maxWidth: .infinity)
@@ -55,8 +70,8 @@ struct DeleteAccountView: View {
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 }
-                .disabled(isLoading || password.isEmpty)
-                .opacity(password.isEmpty ? 0.6 : 1)
+                .disabled(isLoading || (ponudnik == nil && password.isEmpty))
+                .opacity(ponudnik == nil && password.isEmpty ? 0.6 : 1)
 
                 Button("Cancel") { dismiss() }
                     .frame(maxWidth: .infinity)
@@ -80,17 +95,40 @@ struct DeleteAccountView: View {
 
     private func deleteAccount() async {
         message = nil
-        guard !password.isEmpty else { message = String(localized: "Enter your password to continue."); return }
+        let ponudnik = self.ponudnik
+        if ponudnik == nil {
+            guard !password.isEmpty else { message = String(localized: "Enter your password to continue."); return }
+        }
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         do {
-            try await APIClient.shared.deleteAccount(token: session.token, password: password)
+            if let ponudnik {
+                // Nova prijava pri ponudniku = nov zeton s svezim `amr` (oauth); z NJIM DELETE /me. Preklic = nic.
+                let nova: SupabaseSession?
+                if ponudnik == "apple" {
+                    nova = try await appleVodja.prijava()
+                } else {
+                    nova = try await googleVodja.prijava()
+                }
+                guard let nova else { return }
+                session.setSession(token: nova.accessToken, refreshToken: nova.refreshToken)
+                guard session.isLoggedIn else { return }
+                try await APIClient.shared.deleteAccountReauth(token: session.token)
+            } else {
+                try await APIClient.shared.deleteAccount(token: session.token, password: password)
+            }
             // Racun ne obstaja vec: zeton izbrisi in vrni na prijavo. Brez DELETE /me/devices: streznik je naprave pobrisal sam
             // (kaskada), z zetonom izbrisanega racuna pa bi requireAuth racun ustvaril znova.
             session.logout(brezNaprave: true)
             authStage = "login"
         } catch let api as APIError {
-            if case let .requestFailed(code, _) = api, code == 401 {
+            if case let .requestFailed(code, raw) = api, code == 401 {
+                if DruzabnaPrijavaLogika.jeReauthPotreben(raw) {
+                    // Seja je veljavna (NI odjava): prijava pri ponudniku je prestara ali je bila osvezena; poskusi znova.
+                    message = String(localized: "Sign in again with Google or Apple, then retry deleting the account.")
+                    return
+                }
                 // 401 tu pomeni napacno geslo (streznik vrne "Invalid credentials"), NE potekle seje.
                 message = String(localized: "Wrong password.")
                 return

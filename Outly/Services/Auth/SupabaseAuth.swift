@@ -141,18 +141,11 @@ final class SupabaseAuth: Sendable {
 
     // MARK: - Google in Apple
 
-    /// Prijava z Applovim id_tokenom (POST /token?grant_type=id_token). `nonce` je SUROV niz; Applu je bil poslan njegov SHA-256.
-    /// Zahteva, da je v Supabase vklopljen ponudnik Apple z `si.outly.app` med »Authorized Client IDs«.
+    /// Prijava z id_tokenom Appla ali Googla (POST /token?grant_type=id_token). `nonce` je SUROV niz; ponudniku je bil poslan njegov SHA-256.
+    /// Zahteva Authorized Client IDs v Supabase: Apple `si.outly.app`; Google spletni + iOS client.
     func signInWithIdToken(provider: String, idToken: String, nonce: String) async throws -> SupabaseSession {
         let data = try await post("token?grant_type=id_token",
                                   json: DruzabnaPrijavaLogika.telesoIdToken(provider: provider, idToken: idToken, nonce: nonce))
-        return try decode(SupabaseSession.self, from: data)
-    }
-
-    /// Zamenja PKCE kodo iz povratnega URL-ja (prijava z Googlom prek /authorize) za sejo (POST /token?grant_type=pkce).
-    func exchangeCode(authCode: String, codeVerifier: String) async throws -> SupabaseSession {
-        let data = try await post("token?grant_type=pkce",
-                                  json: DruzabnaPrijavaLogika.telesoPkce(authCode: authCode, codeVerifier: codeVerifier))
         return try decode(SupabaseSession.self, from: data)
     }
 

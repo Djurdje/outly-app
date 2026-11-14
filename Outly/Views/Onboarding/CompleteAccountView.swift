@@ -11,6 +11,7 @@ import SwiftUI
 @MainActor
 struct CompleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
+    @AppStorage("authStage") private var authStage: String = "main"
 
     @State private var countryCode: String = Locale.current.region?.identifier ?? "SI"
     @State private var dialCode: String = ""
@@ -185,6 +186,21 @@ struct CompleteAccountView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading || isSkipping)
+
+            // Izhod za uporabnika, ki je izbral napacen racun (Google/Apple) ali ne izpolnjuje starosti: brez njega obtici.
+            Button {
+                session.logout()
+                authStage = "login"
+            } label: {
+                Text("Log out")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.outlyMuted)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(isLoading || isSkipping)
