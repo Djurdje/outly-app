@@ -45,7 +45,7 @@ final class APIClient: Sendable {
 
     /// GET /events (SEZNAM). Privzeto `lite=true` (backend #114): odgovor brez `description`, ki je pri
     /// vecjem stevilu dogodkov vecina teze odgovora. Seznami opisa ne kazejo; EventDetailView ga ob
-    /// odprtju dogodka dobi sam (loadPlan / loadOpis), zato `APIEvent.description` iz seznama ostane "".
+    /// odprtju dogodka dobi sam (loadPlan, ob napaki naloziPolniOpis), zato `APIEvent.description` iz seznama ostane "".
     /// Star backend parametra ne pozna in vrne poln odgovor — dekodiranje je enako.
     func fetchEvents(clubId: Int? = nil, upcoming: Bool = true, lite: Bool = true) async throws -> [APIEvent] {
         var q = [URLQueryItem(name: "upcoming", value: upcoming ? "true" : "false")]

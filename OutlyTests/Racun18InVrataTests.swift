@@ -269,23 +269,6 @@ final class Racun18InVrataTests: XCTestCase {
         XCTAssertNil(s.odmikNaprej(iskanje: ""))
     }
 
-    // MARK: - Odprti tokovi prijave (PrijavaNadzor)
-
-    func testNadzorTokovPoIdNePoStevcu() {
-        let n = PrijavaNadzor()   // lasten primerek, ne deljeni
-        let a = UUID(), b = UUID()
-        XCTAssertFalse(n.jeKajOdprto)
-        n.odpri(a)
-        n.odpri(a)                // ponovljen onAppear istega lista
-        n.odpri(b)                // list v listu
-        n.zapri(a)
-        XCTAssertTrue(n.jeKajOdprto)
-        n.zapri(b)
-        XCTAssertFalse(n.jeKajOdprto)   // en par se ni stel dvakrat
-        n.zapri(b)                // onDisappear in onDismiss oba: brez napake
-        XCTAssertFalse(n.jeKajOdprto)
-    }
-
     // MARK: - Potrditev cene (#277 N2)
 
     func testTeloNakupaNosiPricakovanoCenoEneVstopnice() {

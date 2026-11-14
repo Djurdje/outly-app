@@ -14,8 +14,6 @@ struct EventDetailView: View {
     @State private var showBarPrices = false
     @State private var showVip = false
     @EnvironmentObject private var session: SessionStore
-    /// Brskanje brez racuna: nakup in »I'm in« najprej odpreta prijavo (PrijavaTok), nato se dejanje nadaljuje.
-    @State private var prijava: PrijavaZahteva?
     /// Cena ene vstopnice po 409 »The ticket price has changed.« v nakupnem listu (ponovno odprt list jo pokaze namesto stare).
     @State private var cenaPo409: Int?
     /// Stevec sprememb »I'm in«: loadPlan, ki se je zacel pred zadnjo spremembo, ne prepise optimisticnega stanja.
@@ -30,7 +28,7 @@ struct EventDetailView: View {
     @State private var planSubmitting = false
 
     // Opis (GET /events?lite=true ga v seznamih ne vrne): ce `event.description` ni prazen, ga uporabimo;
-    // sicer ga nalozimo ob odprtju (loadPlan za prijavljene, loadOpis za goste).
+    // sicer ga nalozimo ob odprtju (loadPlan).
     @State private var nalozenOpis = ""
     private var opis: String { event.description.isEmpty ? nalozenOpis : event.description }
 
@@ -88,9 +86,7 @@ struct EventDetailView: View {
         .prijavaMeni(targetType: .event, targetId: event.id, targetName: event.title, skrij: jeMojDogodek)
         .task { await loadClub() }
         .task { await loadVenueClub() }
-        // Ponovno ob prijavi (gost -> prijavljen na tem zaslonu): moj nacrt in prijatelji.
-        .task(id: session.isLoggedIn) { await loadPlan() }
-        .task { await loadOpis() }
+        .task { await loadPlan() }
         // Stevec ogledov za nadzorno plosco kluba (Martin, 25. 9. 2026): enkrat na prikaz, brez zetona.
         .task { await APIClient.shared.postView(eventId: event.id) }
         .sheet(isPresented: $showBuy) {
@@ -107,7 +103,6 @@ struct EventDetailView: View {
                 VipTablesSheet(clubName: club?.name ?? String(localized: "Club"))
             }
         }
-        .prijavaPoZahtevi($prijava)
         .sheet(isPresented: $showBarPrices) {
             BarPricesView(clubName: barClub?.name ?? String(localized: "Club"), items: barClub?.barPrices ?? [])
         }
@@ -186,7 +181,6 @@ struct EventDetailView: View {
                 .lineLimit(3)
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
-            // Tudi gost vidi »I'm in«; dotik odpre prijavo (glej preklopiZanimanje).
             imInPill
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -516,12 +510,7 @@ struct EventDetailView: View {
                 // Cena na Outlyju -> nakup v aplikaciji (BuyTicketsView).
                 // Brez cene, a s tujo povezavo -> tuja prodaja v brskalniku.
                 if event.ticketPriceCents != nil {
-                    // Nakup zahteva racun (iOS nima nakupa brez racuna): gost najprej prijava, nato se odpre nakup.
-                    if session.isLoggedIn {
-                        showBuy = true
-                    } else {
-                        prijava = PrijavaZahteva(nadaljuj: { showBuy = true })
-                    }
+                    showBuy = true
                 } else if let urlStr = event.ticketUrl,
                           let url = Self.varnaPovezavaVstopnic(urlStr) {
                     UIApplication.shared.open(url)
@@ -898,21 +887,13 @@ struct EventDetailView: View {
             }
         } catch {
             // Tiho: "I'm in" gumb ostane v zacetnem stanju, ostali zaslon dela naprej.
-            // Opis pa ne sme izginiti: isti nadomestni klic kot za goste.
+            // Opis pa ne sme izginiti: nadomestni klic GET /events/:id (naloziPolniOpis).
             await naloziPolniOpis()
         }
     }
 
-    /// Opis za dogodek iz LAHKEGA seznama (GET /events?lite=true je brez `description`).
-    /// Prijavljeni ga dobijo z loadPlan (isti klic GET /events/:id), zato tu samo gost ali manjkajoc zeton;
-    /// dogodek, ki opis ze ima (iskanje, GET /events/:id), ne naredi nic. Tiho ob napaki: brez opisa se
-    /// blok "ABOUT" preprosto ne pokaze.
-    private func loadOpis() async {
-        guard !(session.isLoggedIn && !session.token.isEmpty) else { return }
-        await naloziPolniOpis()
-    }
-
-    /// GET /events/:id (javno) samo zaradi opisa; ne naredi nic, ce ga dogodek ze ima.
+    /// GET /events/:id (javno) samo zaradi opisa, kadar loadPlan ne uspe (GET /events?lite=true je brez `description`); ne naredi
+    /// nic, ce ga dogodek ze ima. Tiho ob napaki: brez opisa se blok "ABOUT" preprosto ne pokaze.
     private func naloziPolniOpis() async {
         guard event.description.isEmpty else { return }
         guard let poln = try? await APIClient.shared.fetchEvent(id: event.id) else { return }
@@ -924,16 +905,7 @@ struct EventDetailView: View {
     private func preklopiZanimanje() {
         guard !planSubmitting, myPlan != .going else { return }
         let token = session.token
-        guard !token.isEmpty else {
-            // Gost: prijava, nato moj nacrt s streznika in sele potem »I'm in« (ce ga se ni: lahko je ze interested ali going).
-            prijava = PrijavaZahteva(nadaljuj: {
-                Task {
-                    await loadPlan()
-                    if myPlan == nil { preklopiZanimanje() }
-                }
-            })
-            return
-        }
+        guard !token.isEmpty else { return }
         let prejsnje = myPlan
         let novo: EventPlan? = (myPlan == .interested) ? nil : .interested
         planVerzija += 1

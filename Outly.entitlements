@@ -8,5 +8,11 @@
 	     (sinhronizirana mapa bi jo dodala med vire paketa). Glej outly-app CLAUDE.md in backend DECISIONS 10. 10. 2026. -->
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- Sign in with Apple (od 14. 11. 2026): prijava z Applovim id_tokenom prek Supabase (SupabaseAuth.signInWithIdToken).
+	     Capability mora biti vklopljena tudi na App ID si.outly.app v Apple Developer (Martin). -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

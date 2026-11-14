@@ -283,6 +283,17 @@
         }
       }
     },
+    "By continuing, you confirm you are 18 or older, agree to the [Terms of Use](https://outly.si/terms) and acknowledge the [Privacy Policy](https://outly.si/privacy-app).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z nadaljevanjem potrjuješ, da si star 18 let ali več, se strinjaš s [Pogoji uporabe](https://outly.si/terms) in potrjuješ, da si prebral [Politiko zasebnosti](https://outly.si/privacy-app)."
+          }
+        }
+      }
+    },
     "Card": {
       "extractionState": "manual",
       "localizations": {
@@ -485,6 +496,61 @@
         }
       }
     },
+    "Confirm with Apple": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi z Applom"
+          }
+        }
+      }
+    },
+    "Confirm with Google": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Potrdi z Googlom"
+          }
+        }
+      }
+    },
+    "Confirm with your Apple account to continue.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nadaljevanje potrdi z računom Apple."
+          }
+        }
+      }
+    },
+    "Confirm with your Google account to continue.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za nadaljevanje potrdi z računom Google."
+          }
+        }
+      }
+    },
+    "Continue with Google": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadaljuj z Googlom"
+          }
+        }
+      }
+    },
     "Copy the venue's layout": {
       "extractionState": "manual",
       "localizations": {
@@ -531,6 +597,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ustvari klub"
+          }
+        }
+      }
+    },
+    "Create your Outly account with your email, Apple or Google.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ustvari račun v Outlyju z e-pošto, Applom ali Googlom."
           }
         }
       }
@@ -895,6 +972,17 @@
         }
       }
     },
+    "If you signed in with Apple or Google, tap Confirm with Apple or Confirm with Google and sign in again instead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Če si se prijavil z Applom ali Googlom, tapni »Potrdi z Applom« ali »Potrdi z Googlom« in se znova prijavi."
+          }
+        }
+      }
+    },
     "Illegal activity": {
       "extractionState": "manual",
       "localizations": {
@@ -924,6 +1012,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neprimerna ali žaljiva vsebina"
+          }
+        }
+      }
+    },
+    "Instead of a password you can tap Continue with Apple or Continue with Google. You then choose your username when you complete your profile. Outly does not save your name or picture from Google.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Namesto gesla lahko tapneš gumb za prijavo z Applom ali »Nadaljuj z Googlom«. Uporabniško ime izbereš ob dokončanju profila. Outly ne shrani tvojega imena ali slike iz Googla."
           }
         }
       }
@@ -1222,6 +1321,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neobvezno. Brez njega kartica pokaže sredino glavnega bannerja."
+          }
+        }
+      }
+    },
+    "or": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ali"
           }
         }
       }
@@ -2148,6 +2258,17 @@
         }
       }
     },
+    "3–20 letters, numbers or underscore.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3–20 črk, številk ali podčrtajev."
+          }
+        }
+      }
+    },
     "41 123 456": {
       "extractionState": "manual"
     },
@@ -2928,17 +3049,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Če sprejmeš, boš postal(a) "
-          }
-        }
-      }
-    },
-    "By clicking continue, you agree to our": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "S klikom na naprej se strinjaš z"
           }
         }
       }
@@ -5982,6 +6092,17 @@
         }
       }
     },
+    "Sign in again with Google or Apple, then retry deleting the account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Znova se prijavi z Googlom ali Applom in poskusi izbrisati račun še enkrat."
+          }
+        }
+      }
+    },
     "Square image works best. Optional.": {
       "extractionState": "manual",
       "localizations": {
@@ -8925,6 +9046,17 @@
         }
       }
     },
+    "This sign-in method is not available right now.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta način prijave trenutno ni na voljo."
+          }
+        }
+      }
+    },
     "This ticket may already have been sent. Close this and refresh your tickets.": {
       "extractionState": "manual",
       "localizations": {
@@ -9004,6 +9136,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Status DDV"
+          }
+        }
+      }
+    },
+    "You must be at least 18 to create an Outly account.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Za račun Outly moraš imeti vsaj 18 let."
           }
         }
       }
@@ -9268,17 +9411,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tapni \"Dodaj dogodek\" za objavo prvega."
-          }
-        }
-      }
-    },
-    "Tap Sign up, enter your username, email and a password. We send a code (6–10 digits) to your email — type it in to confirm your address.\n\nThen complete your profile: date of birth, country and the music you like. Your date of birth is used only to check age limits on events.\n\nYou must be at least 15 to use Outly.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tapni Sign up (registracija), vnesi uporabniško ime, e-pošto in geslo. Na e-pošto ti pošljemo kodo (6–10 števk) — vpiši jo, da potrdiš naslov.\n\nNato dokončaj profil: datum rojstva, državo in glasbo, ki jo imaš rad(a). Datum rojstva uporabimo samo za preverjanje starostnih omejitev pri dogodkih.\n\nZa uporabo Outlyja moraš imeti vsaj 15 let."
           }
         }
       }
@@ -11424,17 +11556,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "po proviziji in vračilih"
-          }
-        }
-      }
-    },
-    "and": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in"
           }
         }
       }
@@ -14631,17 +14752,6 @@
         }
       }
     },
-    "Create your Outly account with your email and confirm it with a code.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ustvari račun v Outlyju z e-pošto in ga potrdi s kodo."
-          }
-        }
-      }
-    },
     "Tap Sign up.": {
       "extractionState": "manual",
       "localizations": {
@@ -14693,17 +14803,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datum rojstva uporabimo samo za preverjanje starostnih omejitev pri dogodkih."
-          }
-        }
-      }
-    },
-    "You must be at least 15 to use Outly.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Za uporabo Outlyja moraš imeti vsaj 15 let."
           }
         }
       }
@@ -17711,17 +17810,6 @@
         }
       }
     },
-    "You must be at least 18 to create an Outly account. You can browse events without an account.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Za račun Outly moraš imeti vsaj 18 let. Dogodke lahko brskaš tudi brez računa."
-          }
-        }
-      }
-    },
     "An Outly account is for people aged 18 and over, and some events have a higher age limit.": {
       "extractionState": "manual",
       "localizations": {
@@ -17817,28 +17905,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vnesi povezavo, ki se začne s http:// ali https://."
-          }
-        }
-      }
-    },
-    "Sign in to Outly": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prijavi se v Outly"
-          }
-        }
-      }
-    },
-    "Buy tickets, reserve VIP tables, follow clubs and see your friends' plans. You can browse events without an account.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kupuj vstopnice, rezerviraj VIP mize, sledi klubom in poglej načrte prijateljev. Dogodke lahko brskaš tudi brez računa."
           }
         }
       }
@@ -18444,6 +18510,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mize za ta dogodek se plačajo z gotovino na vratih. Osveži in poskusi znova."
+          }
+        }
+      }
+    },
+    "This is a different account than the one you are signed in with.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To je drug račun, kot je tisti, s katerim si prijavljen."
           }
         }
       }

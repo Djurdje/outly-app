@@ -226,4 +226,11 @@ extension APIClient {
     func deleteAccount(token: String, password: String) async throws {
         _ = try await send(path: "me", method: "DELETE", token: token, json: ["password": password])
     }
+
+    /// DELETE /me za racun iz Googla/Appla (brez gesla; backend I73): telo `{ "reauth": "provider" }` in ZETON, izdan ob prijavi
+    /// pred manj kot 300 s (klicatelj se tik prej znova prijavi pri ponudniku). Star ali osvezen zeton: 401 `reauth_required`
+    /// (v `send` NI odjava, ker odgovor ne vsebuje besede »token«: `jeNapakaZetona`).
+    func deleteAccountReauth(token: String) async throws {
+        _ = try await send(path: "me", method: "DELETE", token: token, json: DruzabnaPrijavaLogika.teloIzbrisaPonudnik)
+    }
 }
