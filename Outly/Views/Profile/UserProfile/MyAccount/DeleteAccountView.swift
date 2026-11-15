@@ -106,8 +106,13 @@ struct DeleteAccountView: View {
             if let ponudnik {
                 // Nova prijava pri ponudniku = nov zeton s svezim `amr` (oauth); z NJIM DELETE /me. Preklic = nic.
                 let nova: SupabaseSession?
+                // Applov `authorizationCode` iz iste ponovne prijave (backend Issue #427: preklic Applovih zetonov). Samo v tej
+                // lokalni spremenljivki do klica DELETE /me; ne shranjuje se nikamor. Google: nil (brez polja).
+                var appleKoda: String? = nil
                 if ponudnik == "apple" {
-                    nova = try await appleVodja.prijava()
+                    let apple = try await appleVodja.prijava()
+                    nova = apple?.seja
+                    appleKoda = apple?.koda
                 } else {
                     nova = try await googleVodja.prijava()
                 }
@@ -124,7 +129,7 @@ struct DeleteAccountView: View {
                 guard session.isLoggedIn else { return }
                 // Stara seja (osvezevalni zeton) ne ostane osirotela; napaka ne ustavi izbrisa.
                 Task { try? await SupabaseAuth.shared.signOut(token: stari) }
-                try await APIClient.shared.deleteAccountReauth(token: session.token)
+                try await APIClient.shared.deleteAccountReauth(token: session.token, appleKoda: appleKoda)
             } else {
                 try await APIClient.shared.deleteAccount(token: session.token, password: password)
             }

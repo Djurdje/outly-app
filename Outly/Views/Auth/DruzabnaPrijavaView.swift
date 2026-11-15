@@ -117,6 +117,17 @@ func applovIdToken(_ avtorizacija: ASAuthorization) -> String? {
     return String(data: podatki, encoding: .utf8)
 }
 
+/// `authorizationCode` iz Applovega odgovora kot niz (nil, ce ga ni). Samo za izbris racuna (backend Issue #427); pri prijavi se ne uporablja.
+func applovaKoda(_ avtorizacija: ASAuthorization) -> String? {
+    DruzabnaPrijavaLogika.appleKoda(izPodatkov: (avtorizacija.credential as? ASAuthorizationAppleIDCredential)?.authorizationCode)
+}
+
+/// Seja iz ponovne prijave z Applom + `authorizationCode` iz ISTEGA credentiala (za preklic Applovih zetonov ob izbrisu).
+struct ApplovaPonovnaPrijava {
+    let seja: SupabaseSession
+    let koda: String?
+}
+
 /// Visina zaslona, ki se NE spremeni ob tipkovnici (za velikost logotipa na prijavi/registraciji: brez krcenja ob vnosu).
 @MainActor
 func stabilnaVisinaZaslona() -> CGFloat {
@@ -130,8 +141,8 @@ final class AppleVodja: NSObject, ASAuthorizationControllerDelegate, ASAuthoriza
     private var cakajoce: CheckedContinuation<ASAuthorization?, Error>?
     private var kontroler: ASAuthorizationController?
 
-    /// Vrne sejo ali nil ob preklicu.
-    func prijava() async throws -> SupabaseSession? {
+    /// Vrne sejo in Applov `authorizationCode` (iz istega credentiala kot `identityToken`) ali nil ob preklicu.
+    func prijava() async throws -> ApplovaPonovnaPrijava? {
         // Ze cakajoca zahteva: ne povozi `cakajoce` (prvo opravilo bi viselo).
         guard cakajoce == nil else { return nil }
         let nonce = DruzabnaPrijavaLogika.nakljucenNiz()
@@ -150,7 +161,8 @@ final class AppleVodja: NSObject, ASAuthorizationControllerDelegate, ASAuthoriza
         kontroler = nil
         guard let avtorizacija else { return nil }
         guard let idToken = applovIdToken(avtorizacija) else { throw APIError.decodingFailed }
-        return try await SupabaseAuth.shared.signInWithIdToken(provider: "apple", idToken: idToken, nonce: nonce)
+        let seja = try await SupabaseAuth.shared.signInWithIdToken(provider: "apple", idToken: idToken, nonce: nonce)
+        return ApplovaPonovnaPrijava(seja: seja, koda: applovaKoda(avtorizacija))
     }
 
     /// Izid se sporoci najvec enkrat (MainActor: po prvem klicu je `cakajoce` nil).

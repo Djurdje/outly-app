@@ -84,6 +84,26 @@ final class DruzabnaPrijavaTests: XCTestCase {
         XCTAssertEqual(DruzabnaPrijavaLogika.teloIzbrisaPonudnik.count, 1)
     }
 
+    /// Backend Issue #427: Applov authorizationCode v telesu DELETE /me; brez kode telo ostane `{ reauth: provider }`.
+    func testTeloIzbrisaZApplovoKodo() {
+        let z = DruzabnaPrijavaLogika.teloIzbrisaPonudnik(appleKoda: "c0de.abc")
+        XCTAssertEqual(z["reauth"] as? String, "provider")
+        XCTAssertEqual(z["apple_authorization_code"] as? String, "c0de.abc")
+        XCTAssertEqual(z.count, 2)
+        for brez in [DruzabnaPrijavaLogika.teloIzbrisaPonudnik(appleKoda: nil), DruzabnaPrijavaLogika.teloIzbrisaPonudnik(appleKoda: "")] {
+            XCTAssertEqual(brez["reauth"] as? String, "provider")
+            XCTAssertNil(brez["apple_authorization_code"])
+            XCTAssertEqual(brez.count, 1)
+        }
+    }
+
+    func testAppleKodaIzPodatkov() {
+        XCTAssertEqual(DruzabnaPrijavaLogika.appleKoda(izPodatkov: Data("c0de".utf8)), "c0de")
+        XCTAssertNil(DruzabnaPrijavaLogika.appleKoda(izPodatkov: nil))
+        XCTAssertNil(DruzabnaPrijavaLogika.appleKoda(izPodatkov: Data()))
+        XCTAssertNil(DruzabnaPrijavaLogika.appleKoda(izPodatkov: Data([0xFF, 0xFE, 0xFD])))   // ni UTF-8
+    }
+
     func testPonudnikRacuna() throws {
         func z(_ p: String) throws -> [String: Any]? { DruzabnaPrijavaLogika.zahtevki(izZetona: try jwt(["app_metadata": ["provider": p]])) }
         XCTAssertEqual(DruzabnaPrijavaLogika.ponudnik(zahtevki: try z("apple")), "apple")

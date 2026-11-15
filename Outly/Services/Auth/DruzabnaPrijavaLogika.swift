@@ -114,6 +114,21 @@ enum DruzabnaPrijavaLogika {
     /// Telo DELETE /me brez gesla (backend I73).
     nonisolated static var teloIzbrisaPonudnik: [String: Any] { ["reauth": "provider"] }
 
+    /// Telo DELETE /me brez gesla + Applov `authorizationCode` (backend Issue #427: streznik z njim preklice Applove zetone,
+    /// Apple 5.1.1(v)). Brez kode (nil/prazna) = isto kot `teloIzbrisaPonudnik` (izbris je pravica uporabnika). Star backend polje prezre.
+    nonisolated static func teloIzbrisaPonudnik(appleKoda: String?) -> [String: Any] {
+        var telo = teloIzbrisaPonudnik
+        if let appleKoda, !appleKoda.isEmpty { telo["apple_authorization_code"] = appleKoda }
+        return telo
+    }
+
+    /// `ASAuthorizationAppleIDCredential.authorizationCode` (Data?) kot niz; nil, ce ga ni, ni UTF-8 ali je prazen.
+    /// Koda se NE shranjuje (ne UserDefaults/Keychain/dnevnik/Sentry): zivi samo do klica DELETE /me.
+    nonisolated static func appleKoda(izPodatkov podatki: Data?) -> String? {
+        guard let podatki, let s = String(data: podatki, encoding: .utf8), !s.isEmpty else { return nil }
+        return s
+    }
+
     /// 401 `reauth_required` pri DELETE /me (backend I73): seja je veljavna, treba je znova potrditi s ponudnikom. NE odjava.
     nonisolated static func jeReauthPotreben(_ odgovor: String) -> Bool {
         odgovor.contains("reauth_required")
