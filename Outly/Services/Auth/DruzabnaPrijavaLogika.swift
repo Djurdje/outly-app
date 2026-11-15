@@ -20,9 +20,10 @@ enum PovratekPrijave: Equatable {
 enum DruzabnaPrijavaLogika {
 
     /// iOS OAuth client ID za Google (Google Cloud Console, tip iOS, bundle `si.outly.app`), oblika `<stevilka>-<niz>.apps.googleusercontent.com`.
-    /// JAVEN podatek (sme v kodo). Dokler je prazen, gumb »Continue with Google« NI prikazan (Apple ostane). Vpise menedzer, ko ga Martin ustvari.
-    nonisolated static let googleIOSClientID = ""
-    nonisolated static var googleKonfiguriran: Bool { !googleIOSClientID.isEmpty }
+    /// JAVEN podatek (sme v kodo). Ce bi bil prazen, gumb »Continue with Google« NI prikazan (Apple ostane). Vpisan 15. 11. 2026 (Martin: iOS client »Outly iOS«).
+    nonisolated static let googleIOSClientID = "897518826706-4docqj36hff0crmnfo47rp64mlg01dmf.apps.googleusercontent.com"
+    nonisolated static var googleKonfiguriran: Bool { jeGoogleKonfiguriran(clientID: googleIOSClientID) }
+    nonisolated static func jeGoogleKonfiguriran(clientID: String) -> Bool { !clientID.isEmpty }
     private nonisolated static let googlePripona = ".apps.googleusercontent.com"
     nonisolated static let googleAvtorizacijaNaslov = "https://accounts.google.com/o/oauth2/v2/auth"
     nonisolated static let googleZetonNaslov = "https://oauth2.googleapis.com/token"

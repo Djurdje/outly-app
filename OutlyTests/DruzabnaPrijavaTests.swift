@@ -74,7 +74,16 @@ final class DruzabnaPrijavaTests: XCTestCase {
     }
 
     func testGumbGoogleSkritDokJeClientIDPrazen() {
-        XCTAssertEqual(DruzabnaPrijavaLogika.googleKonfiguriran, !DruzabnaPrijavaLogika.googleIOSClientID.isEmpty)
+        XCTAssertFalse(DruzabnaPrijavaLogika.jeGoogleKonfiguriran(clientID: ""))
+        XCTAssertTrue(DruzabnaPrijavaLogika.jeGoogleKonfiguriran(clientID: "1-a.apps.googleusercontent.com"))
+    }
+
+    /// Dejanski iOS client ID (Martin, 15. 11. 2026): shema in redirect_uri morata biti obrnjen client ID.
+    func testDejanskiIOSClientID() {
+        XCTAssertTrue(DruzabnaPrijavaLogika.googleKonfiguriran)
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleIOSClientID, "897518826706-4docqj36hff0crmnfo47rp64mlg01dmf.apps.googleusercontent.com")
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleShema(), "com.googleusercontent.apps.897518826706-4docqj36hff0crmnfo47rp64mlg01dmf")
+        XCTAssertEqual(DruzabnaPrijavaLogika.googleRedirectURI(), "com.googleusercontent.apps.897518826706-4docqj36hff0crmnfo47rp64mlg01dmf:/oauthredirect")
     }
 
     func testReauthIzbrisa() {
