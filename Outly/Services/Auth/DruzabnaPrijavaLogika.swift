@@ -117,7 +117,7 @@ enum DruzabnaPrijavaLogika {
     /// Telo DELETE /me brez gesla + Applov `authorizationCode` (backend Issue #427: streznik z njim preklice Applove zetone,
     /// Apple 5.1.1(v)). Brez kode (nil/prazna) = isto kot `teloIzbrisaPonudnik` (izbris je pravica uporabnika). Star backend polje prezre.
     nonisolated static func teloIzbrisaPonudnik(appleKoda: String?) -> [String: Any] {
-        var telo = teloIzbrisaPonudnik
+        var telo: [String: Any] = teloIzbrisaPonudnik
         if let appleKoda, !appleKoda.isEmpty { telo["apple_authorization_code"] = appleKoda }
         return telo
     }

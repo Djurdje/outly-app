@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Figma: "my acc delete" (558:1943). Applova zahteva 5.1.1(v): brisanje racuna v aplikaciji.
-/// Backend (DELETE /me) zahteva geslo; ce ima uporabnik narocila, jih anonimizira
-/// (racunovodske listine ostanejo, osebni podatki ne).
+/// Backend (DELETE /me) zahteva geslo ali, za racun iz Googla/Appla, `{ reauth: "provider" }` s svezim zetonom (I73);
+/// pri Applu se doda se `apple_authorization_code` za preklic Applovih zetonov (backend #427). Ce ima uporabnik
+/// narocila, jih anonimizira (racunovodske listine ostanejo, osebni podatki ne).
 @MainActor
 struct DeleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
