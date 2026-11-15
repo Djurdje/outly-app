@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Figma: "my acc delete" (558:1943). Applova zahteva 5.1.1(v): brisanje racuna v aplikaciji.
-/// Backend (DELETE /me) zahteva geslo; ce ima uporabnik narocila, jih anonimizira
-/// (racunovodske listine ostanejo, osebni podatki ne).
+/// Backend (DELETE /me) zahteva geslo ali, za racun iz Googla/Appla, `{ reauth: "provider" }` s svezim zetonom (I73);
+/// pri Applu se doda se `apple_authorization_code` za preklic Applovih zetonov (backend #427). Ce ima uporabnik
+/// narocila, jih anonimizira (racunovodske listine ostanejo, osebni podatki ne).
 @MainActor
 struct DeleteAccountView: View {
     @EnvironmentObject private var session: SessionStore
@@ -106,8 +107,13 @@ struct DeleteAccountView: View {
             if let ponudnik {
                 // Nova prijava pri ponudniku = nov zeton s svezim `amr` (oauth); z NJIM DELETE /me. Preklic = nic.
                 let nova: SupabaseSession?
+                // Applov `authorizationCode` iz iste ponovne prijave (backend Issue #427: preklic Applovih zetonov). Samo v tej
+                // lokalni spremenljivki do klica DELETE /me; ne shranjuje se nikamor. Google: nil (brez polja).
+                var appleKoda: String? = nil
                 if ponudnik == "apple" {
-                    nova = try await appleVodja.prijava()
+                    let apple = try await appleVodja.prijava()
+                    nova = apple?.seja
+                    appleKoda = apple?.koda
                 } else {
                     nova = try await googleVodja.prijava()
                 }
@@ -124,7 +130,7 @@ struct DeleteAccountView: View {
                 guard session.isLoggedIn else { return }
                 // Stara seja (osvezevalni zeton) ne ostane osirotela; napaka ne ustavi izbrisa.
                 Task { try? await SupabaseAuth.shared.signOut(token: stari) }
-                try await APIClient.shared.deleteAccountReauth(token: session.token)
+                try await APIClient.shared.deleteAccountReauth(token: session.token, appleKoda: appleKoda)
             } else {
                 try await APIClient.shared.deleteAccount(token: session.token, password: password)
             }
