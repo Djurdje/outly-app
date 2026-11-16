@@ -50,10 +50,14 @@ struct AuthOkvir<Glavna: View, Noga: View>: View {
 }
 
 extension View {
-    /// Skrije pogled (visina 0, nevidno, brez dotikov in brez VoiceOverja), a ga OSTANE v drevesu, da ne izgubi @State.
+    /// Skrije pogled, a ga OSTANE v drevesu, da ne izgubi @State. Visina 0 s poravnavo `.top` (preliv samo navzdol, ne cez sosede nad njim),
+    /// `.clipped()` (izris in dotik samo v obmocju 0), `.disabled` (okolje isEnabled, tudi za UIKit gumbe), nevidno in brez VoiceOverja.
+    /// Pri vidnem stanju (skrij == false) clip ne odreze ni, ker pogledi nimajo sencenja prek roba.
     func skrijBrezUnicenja(_ skrij: Bool) -> some View {
         self
-            .frame(height: skrij ? 0 : nil)
+            .disabled(skrij)
+            .frame(height: skrij ? 0 : nil, alignment: .top)
+            .clipped()
             .opacity(skrij ? 0 : 1)
             .allowsHitTesting(!skrij)
             .accessibilityHidden(skrij)
