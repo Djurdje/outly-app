@@ -97,19 +97,15 @@ struct LoginView: View {
                     .outlySij(moc: 0.5)
 
                     // Continue with Apple / Google (od 14. 11. 2026); stavek o pogojih je nad gumbi (DruzabniGumbi).
-                    // Ob odprti tipkovnici skrito (tipkovnica bi jih prekrila, vsebina pa se ne sme pomikati).
-                    if !tipkovnica {
-                        DruzabniGumbi()
-                    }
+                    // Ob odprti tipkovnici skrito, a v drevesu (ohrani @State prijave z Applom/Googlom).
+                    DruzabniGumbi()
+                        .skrijBrezUnicenja(tipkovnica)
                 }
             } noga: { tipkovnica in
                 // Preklop jezika se pred prijavo.
-                if tipkovnica {
-                    Color.clear.frame(height: 0)
-                } else {
-                    JezikGumb()
-                        .padding(.top, 14)
-                }
+                JezikGumb()
+                    .padding(.top, 14)
+                    .skrijBrezUnicenja(tipkovnica)
             }
         }
     }

@@ -73,10 +73,9 @@ struct RegisterView: View {
                     .padding(.top, tipkovnica ? 0 : 8)
 
                     // Continue with Apple / Google: isti gumbi kot na prijavi (racun nastane ob prvi prijavi); stavek o pogojih je nad njima.
-                    // Ob odprti tipkovnici skrito (tipkovnica bi jih prekrila, vsebina pa se ne sme pomikati).
-                    if !tipkovnica {
-                        DruzabniGumbi()
-                    }
+                    // Ob odprti tipkovnici skrito, a v drevesu (ohrani @State prijave z Applom/Googlom).
+                    DruzabniGumbi()
+                        .skrijBrezUnicenja(tipkovnica)
                 }
             } noga: { _ in
                 Color.clear.frame(height: 0)

@@ -10,9 +10,11 @@ import UIKit
 struct AuthOkvir<Glavna: View, Noga: View>: View {
     @State private var tipkovnica = false
 
-    /// Glavni del (polja, gumbi). Argument: ali je tipkovnica odprta.
+    /// Glavni del (polja, gumbi). Argument: ali je tipkovnica odprta. Mora biti ENA vrednost pogleda (npr. en VStack).
+    /// Pogledov ob tipkovnici NE odstranjuj z `if` (izgubi se njihov @State, npr. nonce prijave z Applom): uporabi `.skrijBrezUnicenja(tipkovnica)`.
     private let glavna: (Bool) -> Glavna
-    /// Noga (jezik). Ob odprti tipkovnici naj vrne pogled visine 0 (ne `EmptyView`: razpored potrebuje tri poglede).
+    /// Noga (jezik). Mora biti ENA vrednost pogleda, ki ostane v drevesu; ob tipkovnici jo skrij z `.skrijBrezUnicenja(tipkovnica)`
+    /// (ne `EmptyView`/`if` brez `else`: razpored potrebuje tri poglede).
     private let noga: (Bool) -> Noga
 
     init(@ViewBuilder glavna: @escaping (Bool) -> Glavna, @ViewBuilder noga: @escaping (Bool) -> Noga) {
@@ -37,12 +39,24 @@ struct AuthOkvir<Glavna: View, Noga: View>: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            tipkovnica = true
+        // Samo tipkovnica te aplikacije (ne tuja, npr. v sistemskem oknu prijave z Applom/Googlom).
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { n in
+            if (n.userInfo?[UIResponder.keyboardIsLocalUserInfoKey] as? Bool) != false { tipkovnica = true }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            tipkovnica = false
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { n in
+            if (n.userInfo?[UIResponder.keyboardIsLocalUserInfoKey] as? Bool) != false { tipkovnica = false }
         }
+    }
+}
+
+extension View {
+    /// Skrije pogled (visina 0, nevidno, brez dotikov in brez VoiceOverja), a ga OSTANE v drevesu, da ne izgubi @State.
+    func skrijBrezUnicenja(_ skrij: Bool) -> some View {
+        self
+            .frame(height: skrij ? 0 : nil)
+            .opacity(skrij ? 0 : 1)
+            .allowsHitTesting(!skrij)
+            .accessibilityHidden(skrij)
     }
 }
 
@@ -93,12 +107,26 @@ struct AuthRaspored: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let sirina = proposal.width ?? 390
-        guard let m = mere(subviews, sirina: sirina) else { return CGSize(width: sirina, height: max(0, visina)) }
+        guard let m = mere(subviews, sirina: sirina) else {
+            // Varovalo (ni 3 podpogledov): pogledi enega pod drugim.
+            let ponudba = ProposedViewSize(width: sirina, height: nil)
+            return CGSize(width: sirina, height: subviews.reduce(0) { $0 + max(0, $1.sizeThatFits(ponudba).height) })
+        }
         return CGSize(width: sirina, height: m.skupaj)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        guard let m = mere(subviews, sirina: bounds.width) else { return }
+        guard let m = mere(subviews, sirina: bounds.width) else {
+            // Varovalo (ni 3 podpogledov): pogledi enega pod drugim, brez praznega zaslona.
+            var yv = bounds.minY
+            for v in subviews {
+                let h = max(0, v.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height)
+                v.place(at: CGPoint(x: bounds.minX, y: yv), anchor: .topLeading,
+                        proposal: ProposedViewSize(width: bounds.width, height: h))
+                yv += h
+            }
+            return
+        }
         var y = bounds.minY + m.zgoraj
 
         subviews[0].place(at: CGPoint(x: bounds.midX, y: y), anchor: .top,
