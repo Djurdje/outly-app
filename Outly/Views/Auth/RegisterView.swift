@@ -18,80 +18,68 @@ struct RegisterView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // ScrollView (iPhone SE, velika pisava): vsebina se pomika, na visokih zaslonih zapolni zaslon (minHeight).
-            GeometryReader { geo in
-            ScrollView {
-            VStack(spacing: 18) {
-                Spacer().frame(height: 30)
+            // Brez drsenja: AuthOkvir skrci logotip; ob tipkovnici skrije druzabne gumbe (rezerva: ScrollView).
+            AuthOkvir { tipkovnica in
+                VStack(spacing: tipkovnica ? 10 : 18) {
+                    Text("Create an account")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color.outlyBlue)
+                        .padding(.top, 6)
 
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: min(350, stabilnaVisinaZaslona() * 0.28))   // stabilno ob tipkovnici (geo se ob njej krci)
-                    .clipped()
-                    .padding(.top, 10)
+                    VStack(spacing: tipkovnica ? 8 : 12) {
+                        OutlyTextField(placeholder: "username", text: $username)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
 
-                Text("Create an account")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color.outlyBlue)
-                    .padding(.top, 6)
+                        OutlyTextField(placeholder: "email@domain.com", text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
 
-                VStack(spacing: 12) {
-                    OutlyTextField(placeholder: "username", text: $username)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-
-                    OutlyTextField(placeholder: "email@domain.com", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-
-                    OutlySecureField(placeholder: "password", text: $password)
-                    OutlySecureField(placeholder: "confirm password", text: $confirmPassword)
-                }
-                .padding(.top, 10)
-
-                if let message = message {
-                    Text(message)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(messageIsSuccess ? .green : .red)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 4)
-                        .padding(.horizontal, 18)
-                }
-
-                HStack(spacing: 14) {
-                    OutlyPrimaryButton(title: isLoading ? "Signing up..." : "Sign up", isLoading: isLoading) {
-                        Task { await register() }
+                        OutlySecureField(placeholder: "password", text: $password)
+                        OutlySecureField(placeholder: "confirm password", text: $confirmPassword)
                     }
-                    .disabled(isLoading)
-                    .outlySij(moc: 0.5)
+                    .padding(.top, tipkovnica ? 0 : 10)
 
-                    Button {
-                        authStage = "login"
-                    } label: {
-                        Text("Sign in")
-                            .font(.system(size: 16, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.white)
-                            .foregroundColor(Color.black.opacity(0.65))
-                            .cornerRadius(14)
+                    if let message = message {
+                        Text(message)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(messageIsSuccess ? .green : .red)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
+                            .padding(.horizontal, 18)
                     }
-                    .disabled(isLoading)
+
+                    HStack(spacing: 14) {
+                        OutlyPrimaryButton(title: isLoading ? "Signing up..." : "Sign up", isLoading: isLoading) {
+                            Task { await register() }
+                        }
+                        .disabled(isLoading)
+                        .outlySij(moc: 0.5)
+
+                        Button {
+                            authStage = "login"
+                        } label: {
+                            Text("Sign in")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.white)
+                                .foregroundColor(Color.black.opacity(0.65))
+                                .cornerRadius(14)
+                        }
+                        .disabled(isLoading)
+                    }
+                    .padding(.top, tipkovnica ? 0 : 8)
+
+                    // Continue with Apple / Google: isti gumbi kot na prijavi (racun nastane ob prvi prijavi); stavek o pogojih je nad njima.
+                    // Ob odprti tipkovnici skrito (tipkovnica bi jih prekrila, vsebina pa se ne sme pomikati).
+                    if !tipkovnica {
+                        DruzabniGumbi()
+                    }
                 }
-                .padding(.top, 8)
-
-                // Continue with Apple / Google: isti gumbi kot na prijavi (racun nastane ob prvi prijavi); stavek o pogojih je nad njima.
-                DruzabniGumbi()
-
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
-            .frame(minHeight: geo.size.height)
-            }
-            .scrollBounceBehavior(.basedOnSize)
+            } noga: { _ in
+                Color.clear.frame(height: 0)
             }
         }
         .preferredColorScheme(.dark)

@@ -24,104 +24,92 @@ struct LoginView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // ScrollView (iPhone SE, velika pisava): vsebina se pomika, na visokih zaslonih zapolni zaslon (minHeight).
-            GeometryReader { geo in
-            ScrollView {
-            VStack(spacing: 18) {
-                Spacer().frame(height: 30)
+            // Brez drsenja: AuthOkvir skrci logotip; ob tipkovnici skrije druzabne gumbe in jezik (rezerva: ScrollView).
+            AuthOkvir { tipkovnica in
+                VStack(spacing: tipkovnica ? 12 : 18) {
+                    Button {
+                        loginNotice = ""
+                        authStage = "register"
+                    } label: {
+                        Text("Create an account")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color.outlyBlue)
+                            .padding(.top, 6)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 6)
 
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: min(350, stabilnaVisinaZaslona() * 0.28))   // stabilno ob tipkovnici (geo se ob njej krci)
-                    .clipped()
-                    .padding(.top, 10)
+                    Text("Sign in with your email and password")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(.top, -6)
 
-                Button {
-                    loginNotice = ""
-                    authStage = "register"
-                } label: {
-                    Text("Create an account")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color.outlyBlue)
-                        .padding(.top, 6)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 6)
+                    VStack(spacing: 12) {
+                        OutlyTextField(placeholder: "email@domain.com", text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
 
-                Text("Sign in with your email and password")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
+                        OutlySecureField(placeholder: "password", text: $password)
+                    }
+                    .padding(.top, 6)
+
+                    HStack {
+                        Spacer()
+                        NavigationLink {
+                            ForgotPasswordView()
+                        } label: {
+                            Text("Forgot password?")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    }
                     .padding(.top, -6)
 
-                VStack(spacing: 12) {
-                    OutlyTextField(placeholder: "email@domain.com", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
+                    if let n = session.sessionExpiredNotice {
+                        Text(n)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.orange)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 18)
+                    }
 
-                    OutlySecureField(placeholder: "password", text: $password)
-                }
-                .padding(.top, 6)
+                    if !loginNotice.isEmpty {
+                        Text(loginNotice)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.green)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 18)
+                    }
 
-                HStack {
-                    Spacer()
-                    NavigationLink {
-                        ForgotPasswordView()
-                    } label: {
-                        Text("Forgot password?")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.8))
+                    if let message = message {
+                        Text(message)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 18)
+                    }
+
+                    OutlyPrimaryButton(title: isLoading ? "Continue..." : "Continue", isLoading: isLoading) {
+                        Task { await login() }
+                    }
+                    .disabled(isLoading)
+                    .outlySij(moc: 0.5)
+
+                    // Continue with Apple / Google (od 14. 11. 2026); stavek o pogojih je nad gumbi (DruzabniGumbi).
+                    // Ob odprti tipkovnici skrito (tipkovnica bi jih prekrila, vsebina pa se ne sme pomikati).
+                    if !tipkovnica {
+                        DruzabniGumbi()
                     }
                 }
-                .padding(.top, -6)
-
-                if let n = session.sessionExpiredNotice {
-                    Text(n)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.orange)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 18)
-                }
-
-                if !loginNotice.isEmpty {
-                    Text(loginNotice)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.green)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 18)
-                }
-
-                if let message = message {
-                    Text(message)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 18)
-                }
-
-                OutlyPrimaryButton(title: isLoading ? "Continue..." : "Continue", isLoading: isLoading) {
-                    Task { await login() }
-                }
-                .disabled(isLoading)
-                .outlySij(moc: 0.5)
-
-                // Continue with Apple / Google (od 14. 11. 2026); stavek o pogojih je nad gumbi (DruzabniGumbi).
-                DruzabniGumbi()
-
-                Spacer()
-
+            } noga: { tipkovnica in
                 // Preklop jezika se pred prijavo.
-                JezikGumb()
-                    .padding(.top, 14)
-
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
-            .frame(minHeight: geo.size.height)
-            }
-            .scrollBounceBehavior(.basedOnSize)
+                if tipkovnica {
+                    Color.clear.frame(height: 0)
+                } else {
+                    JezikGumb()
+                        .padding(.top, 14)
+                }
             }
         }
     }
